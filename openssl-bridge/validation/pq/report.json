@@ -1,0 +1,28 @@
+{
+  "stage": "pq",
+  "complete_replacement": false,
+  "wrapper_commit": "a9d89e193368148ccfe237c3ab0c61efb2dea768",
+  "cryptography_commit": "19ff77880bbd485464849366122982cd3a04d94b",
+  "integration_patch_at_wrapper_commit": "openssl-bridge/compatibility/cryptography.patch",
+  "runs": [
+    {
+      "backend": "openssl4",
+      "log": "integration-pq-openssl4.log.gz",
+      "summary": "4689 passed, 23 skipped, 4 warnings in 490.98s (0:08:10)",
+      "canonical_nox_exit": 0
+    },
+    {
+      "backend": "boringssl",
+      "log": "integration-pq-boringssl.log.gz",
+      "summary": "3805 passed, 907 skipped, 4 warnings in 46.20s",
+      "canonical_nox_exit": 0
+    },
+    {
+      "backend": "awslc",
+      "log": "integration-pq-awslc.log.gz",
+      "summary": "4320 passed, 392 skipped, 4 warnings in 893.83s (0:14:53)",
+      "canonical_nox_exit": 0
+    }
+  ],
+  "scope": "Full canonical nox local with pinned Wycheproof and x509-limbo. Incremental integration still retains openssl and openssl-sys; not PR acceptance."
+}

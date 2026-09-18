@@ -64,3 +64,14 @@ int OB_rsa_pss_saltlen(EVP_PKEY_CTX *ctx, int length);
 int OB_rsa_oaep_label(EVP_PKEY_CTX *ctx, const unsigned char *label, int length);
 
 int OB_signature_nonce(EVP_PKEY_CTX *ctx, unsigned int nonce_type);
+
+size_t OB_x509_stack_len(const STACK_OF(X509) *stack);
+X509 *OB_x509_stack_get(const STACK_OF(X509) *stack, size_t index);
+void OB_x509_stack_free(STACK_OF(X509) *stack);
+#if OB_BACKEND_CODE == 2 || OB_BACKEND_CODE == 3
+int OB_private_key_pkcs8(const EVP_PKEY *key, unsigned char *output, size_t capacity, size_t *length);
+#endif
+#if OB_BACKEND_CODE == 0 || OB_BACKEND_CODE == 1
+int OB_pkcs7_kind(const PKCS7 *p7);
+const STACK_OF(X509) *OB_pkcs7_certificates(const PKCS7 *p7);
+#endif

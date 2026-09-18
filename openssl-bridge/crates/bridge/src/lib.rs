@@ -5,6 +5,7 @@
 //! finalization consumes it. Fallible allocation and cloning return errors.
 pub mod aead;
 pub mod cipher;
+pub mod containers;
 pub mod curve25519;
 pub mod curve448;
 pub mod dh;
@@ -20,6 +21,8 @@ pub mod mldsa;
 #[cfg(any(openssl_350, backend = "boringssl", backend = "awslc"))]
 pub mod mlkem;
 mod number;
+#[cfg(any(backend = "openssl", backend = "libressl"))]
+pub mod pkcs7;
 pub mod poly1305;
 #[cfg(any(openssl_350, backend = "boringssl", backend = "awslc"))]
 mod pq;

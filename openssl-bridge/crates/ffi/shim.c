@@ -1,5 +1,44 @@
 #include "wrapper.h"
 #include <string.h>
+#include <limits.h>
+
+size_t OB_x509_stack_len(const STACK_OF(X509) *stack) {
+    if (stack == NULL) return 0;
+    return (size_t)sk_X509_num(stack);
+}
+X509 *OB_x509_stack_get(const STACK_OF(X509) *stack, size_t index) {
+    if (index >= OB_x509_stack_len(stack) || index > INT_MAX) return NULL;
+    return sk_X509_value(stack, (int)index);
+}
+void OB_x509_stack_free(STACK_OF(X509) *stack) {
+    sk_X509_pop_free(stack, X509_free);
+}
+#if OB_BACKEND_CODE == 2 || OB_BACKEND_CODE == 3
+#include <openssl/bytestring.h>
+int OB_private_key_pkcs8(const EVP_PKEY *key, unsigned char *output, size_t capacity, size_t *length) {
+    CBB bytes;
+    *length = 0;
+    if (!CBB_init_fixed(&bytes, output, capacity)) return 0;
+    if (!EVP_marshal_private_key(&bytes, key) ||
+        !CBB_finish(&bytes, NULL, length)) {
+        /* Failed builders only permit cleanup. The Rust caller owns and
+         * erases the entire fixed output buffer, including partial writes. */
+        CBB_cleanup(&bytes);
+        return 0;
+    }
+    return 1;
+}
+#endif
+#if OB_BACKEND_CODE == 0 || OB_BACKEND_CODE == 1
+int OB_pkcs7_kind(const PKCS7 *p7) {
+    return p7->type == NULL ? -1 : OBJ_obj2nid(p7->type);
+}
+const STACK_OF(X509) *OB_pkcs7_certificates(const PKCS7 *p7) {
+    if (OB_pkcs7_kind(p7) != NID_pkcs7_signed || p7->d.sign == NULL)
+        return NULL;
+    return p7->d.sign->cert;
+}
+#endif
 
 /* Keep macro evaluation in the selected backend's C headers. */
 int OB_md_size(const EVP_MD *md) { return EVP_MD_size(md); }

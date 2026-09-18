@@ -317,7 +317,7 @@ index 9f7d181..cce5b38 100644
 +source = "registry+https://github.com/rust-lang/crates.io-index"
 +checksum = "f0805222e57f7521d6a62e36fa9163bc891acd422f971defe97d64e70d0a4fe5"
 diff --git a/Cargo.toml b/Cargo.toml
-index c9783a4..855cde6 100644
+index c9783a4..a6e24ce 100644
 --- a/Cargo.toml
 +++ b/Cargo.toml
 @@ -21,6 +21,8 @@ rust-version = "1.83.0"
@@ -10546,7 +10546,7 @@ index 24fc6a6..2a80ec8 100644
          let cipher = ChunkCipher::new(py, params, &keys)?;
          let mut header = [0; HEADER_LEN];
 diff --git a/src/rust/src/error.rs b/src/rust/src/error.rs
-index cd7c850..52c984a 100644
+index cd7c850..1b08d76 100644
 --- a/src/rust/src/error.rs
 +++ b/src/rust/src/error.rs
 @@ -58,6 +58,50 @@ impl From<openssl::error::ErrorStack> for CryptographyError {
@@ -10600,16 +10600,19 @@ index cd7c850..52c984a 100644
  impl From<pem::PemError> for CryptographyError {
      fn from(e: pem::PemError) -> CryptographyError {
          CryptographyError::Py(pyo3::exceptions::PyValueError::new_err(format!(
-@@ -70,7 +114,7 @@ impl From<cryptography_key_parsing::KeyParsingError> for CryptographyError {
+@@ -70,7 +114,10 @@ impl From<cryptography_key_parsing::KeyParsingError> for CryptographyError {
      fn from(e: cryptography_key_parsing::KeyParsingError) -> CryptographyError {
          match e {
              cryptography_key_parsing::KeyParsingError::Parse(e) => CryptographyError::KeyParsing(e),
 -            cryptography_key_parsing::KeyParsingError::OpenSSL(e) => CryptographyError::OpenSSL(e),
++            cryptography_key_parsing::KeyParsingError::Bridge(openssl_bridge::Error::InvalidInput(message)) => {
++                pyo3::exceptions::PyValueError::new_err(message).into()
++            }
 +            cryptography_key_parsing::KeyParsingError::Bridge(e) => e.into(),
              cryptography_key_parsing::KeyParsingError::InvalidKey => {
                  CryptographyError::Py(pyo3::exceptions::PyValueError::new_err("Invalid key"))
              }
-@@ -155,13 +199,24 @@ impl From<cryptography_key_parsing::KeySerializationError> for CryptographyError
+@@ -155,13 +202,24 @@ impl From<cryptography_key_parsing::KeySerializationError> for CryptographyError
              cryptography_key_parsing::KeySerializationError::Write(e) => {
                  CryptographyError::Asn1Write(e)
              }
@@ -10637,7 +10640,7 @@ index cd7c850..52c984a 100644
  pub(crate) fn list_from_openssl_error<'p>(
      py: pyo3::Python<'p>,
      error_stack: &openssl::error::ErrorStack,
-@@ -377,11 +432,11 @@ mod tests {
+@@ -377,11 +435,11 @@ mod tests {
              .into();
              assert!(matches!(e, CryptographyError::Py(_)));
  
@@ -10652,7 +10655,7 @@ index cd7c850..52c984a 100644
  
              let e = pyo3::CastIntoError::new(
                  py.None().into_bound(py),
-@@ -410,12 +465,13 @@ mod tests {
+@@ -410,12 +468,13 @@ mod tests {
              CryptographyError::Asn1Write(asn1::WriteError::AllocationError)
          ));
  
@@ -10796,7 +10799,7 @@ index 94ace30..ed1a2df 100644
                  if #[cfg(not(any(CRYPTOGRAPHY_IS_LIBRESSL, CRYPTOGRAPHY_IS_BORINGSSL, CRYPTOGRAPHY_IS_AWSLC)))] {
                      let providers = super::super::_initialize_providers(openssl_mod.py())?;
 diff --git a/src/rust/src/pkcs12.rs b/src/rust/src/pkcs12.rs
-index 48c190c..dea27e1 100644
+index 48c190c..c6c004c 100644
 --- a/src/rust/src/pkcs12.rs
 +++ b/src/rust/src/pkcs12.rs
 @@ -99,8 +99,12 @@ pub(crate) fn symmetric_encrypt(
@@ -10830,10 +10833,170 @@ index 48c190c..dea27e1 100644
          mac_algorithm_md,
      )?;
      let mac_digest = {
+@@ -558,32 +562,43 @@ fn decode_p12(
+     py: pyo3::Python<'_>,
+     data: CffiBuf<'_>,
+     password: Option<CffiBuf<'_>>,
+-) -> CryptographyResult<openssl::pkcs12::ParsedPkcs12_2> {
+-    let p12 = openssl::pkcs12::Pkcs12::from_der(data.as_bytes()).map_err(|_| {
+-        pyo3::exceptions::PyValueError::new_err("Could not deserialize PKCS12 data")
+-    })?;
+-
+-    let password = if let Some(p) = password.as_ref() {
+-        std::str::from_utf8(p.as_bytes())
+-            .map_err(|_| pyo3::exceptions::PyUnicodeDecodeError::new_err(()))?
+-    } else {
+-        // Treat `password=None` the same as empty string. They're actually
+-        // not the same in PKCS#12, but OpenSSL transparently handles them the
+-        // same.
+-        ""
+-    };
+-    // PKCS12_parse runs the MAC and PBE KDFs for however many iterations
+-    // the bundle specifies, which can take a while, so don't hold the GIL.
++) -> CryptographyResult<openssl_bridge::containers::ParsedPkcs12> {
++    // Native password-based decoding runs without the GIL. Snapshot both inputs
++    // first: a Python buffer may otherwise be mutated while native code reads it.
++    let data = openssl_bridge::secret::SecretBytes::from(data.as_bytes().to_vec());
++    let password_bytes = password.as_ref().map_or(&[][..], |p| p.as_bytes());
++    std::str::from_utf8(password_bytes)
++        .map_err(|_| pyo3::exceptions::PyUnicodeDecodeError::new_err(()))?;
++    if password_bytes.contains(&0) {
++        return Err(pyo3::exceptions::PyValueError::new_err(
++            "PKCS12 password must not contain NUL bytes",
++        )
++        .into());
++    }
++    let mut password_bytes = password_bytes.to_vec();
++    password_bytes.push(0);
++    let password = openssl_bridge::secret::SecretBytes::from(password_bytes);
+     let parsed = py
+-        .detach(|| p12.parse2(password))
+-        .map_err(|_| pyo3::exceptions::PyValueError::new_err("Invalid password or PKCS12 data"))?;
+-
+-    if let Err(e) = asn1::parse_single::<cryptography_x509::pkcs12::Pfx<'_>>(data.as_bytes()) {
++        .detach(|| {
++            openssl_bridge::containers::parse_pkcs12(
++                data.as_ref(),
++                Some(std::ffi::CStr::from_bytes_with_nul(password.as_ref()).unwrap()),
++            )
++        })
++        .map_err(|error| match error {
++            openssl_bridge::containers::Pkcs12Error::Encoding(_) => CryptographyError::from(
++                pyo3::exceptions::PyValueError::new_err("Could not deserialize PKCS12 data"),
++            ),
++            openssl_bridge::containers::Pkcs12Error::PasswordOrData(_) => CryptographyError::from(
++                pyo3::exceptions::PyValueError::new_err("Invalid password or PKCS12 data"),
++            ),
++            openssl_bridge::containers::Pkcs12Error::Output(error) => error.into(),
++        })?;
++    if let Err(e) = asn1::parse_single::<cryptography_x509::pkcs12::Pfx<'_>>(data.as_ref()) {
+         let warning_cls = pyo3::exceptions::PyUserWarning::type_object(py);
+         let message = std::ffi::CString::new(format!("PKCS#12 bundle could not be parsed as DER, falling back to parsing as BER. In the future, this may become an exception. Error details: {e}")).unwrap();
+         pyo3::PyErr::warn(py, &warning_cls, &message, 1)?;
+     }
+-
+     Ok(parsed)
+ }
+ 
+@@ -603,14 +618,13 @@ fn load_key_and_certificates<'p>(
+ 
+     let p12 = decode_p12(py, data, password)?;
+ 
+-    let private_key = if let Some(pkey) = p12.pkey {
+-        let pkey_bytes = pkey.private_key_to_pkcs8()?;
+-        keys::load_der_private_key_bytes(py, &pkey_bytes, None, false)?
++    let private_key = if let Some(pkey_bytes) = p12.private_key {
++        keys::load_der_private_key_bytes(py, pkey_bytes.as_ref(), None, false)?
+     } else {
+         py.None().into_bound(py)
+     };
+-    let cert = if let Some(ossl_cert) = p12.cert {
+-        let cert_der = pyo3::types::PyBytes::new(py, &ossl_cert.to_der()?).unbind();
++    let cert = if let Some(ossl_cert) = p12.certificate {
++        let cert_der = pyo3::types::PyBytes::new(py, &ossl_cert.der).unbind();
+         Some(x509::certificate::load_der_x509_certificate(
+             py, cert_der, None,
+         )?)
+@@ -618,7 +632,8 @@ fn load_key_and_certificates<'p>(
+         None
+     };
+     let additional_certs = pyo3::types::PyList::empty(py);
+-    if let Some(ossl_certs) = p12.ca {
++    {
++        let ossl_certs = p12.additional_certificates;
+         cfg_if::cfg_if! {
+             if #[cfg(not(CRYPTOGRAPHY_IS_LIBRESSL))] {
+                 let it = ossl_certs.iter();
+@@ -628,7 +643,7 @@ fn load_key_and_certificates<'p>(
+         };
+ 
+         for ossl_cert in it {
+-            let cert_der = pyo3::types::PyBytes::new(py, &ossl_cert.to_der()?).unbind();
++            let cert_der = pyo3::types::PyBytes::new(py, &ossl_cert.der).unbind();
+             let cert = x509::certificate::load_der_x509_certificate(py, cert_der, None)?;
+             additional_certs.append(cert)?;
+         }
+@@ -649,17 +664,17 @@ fn load_pkcs12<'p>(
+ 
+     let p12 = decode_p12(py, data, password)?;
+ 
+-    let private_key = if let Some(pkey) = p12.pkey {
+-        let pkey_bytes = pkey.private_key_to_pkcs8()?;
+-        keys::load_der_private_key_bytes(py, &pkey_bytes, None, false)?
++    let private_key = if let Some(pkey_bytes) = p12.private_key {
++        keys::load_der_private_key_bytes(py, pkey_bytes.as_ref(), None, false)?
+     } else {
+         py.None().into_bound(py)
+     };
+-    let cert = if let Some(ossl_cert) = p12.cert {
+-        let cert_der = pyo3::types::PyBytes::new(py, &ossl_cert.to_der()?).unbind();
++    let cert = if let Some(ossl_cert) = p12.certificate {
++        let cert_der = pyo3::types::PyBytes::new(py, &ossl_cert.der).unbind();
+         let cert = x509::certificate::load_der_x509_certificate(py, cert_der, None)?;
+         let alias = ossl_cert
+-            .alias()
++            .alias
++            .as_deref()
+             .map(|a| pyo3::types::PyBytes::new(py, a).unbind());
+ 
+         PKCS12Certificate::new(pyo3::Py::new(py, cert)?, alias)
+@@ -670,7 +685,8 @@ fn load_pkcs12<'p>(
+         py.None()
+     };
+     let additional_certs = pyo3::types::PyList::empty(py);
+-    if let Some(ossl_certs) = p12.ca {
++    {
++        let ossl_certs = p12.additional_certificates;
+         cfg_if::cfg_if! {
+             if #[cfg(not(CRYPTOGRAPHY_IS_LIBRESSL))] {
+                 let it = ossl_certs.iter();
+@@ -680,10 +696,11 @@ fn load_pkcs12<'p>(
+         };
+ 
+         for ossl_cert in it {
+-            let cert_der = pyo3::types::PyBytes::new(py, &ossl_cert.to_der()?).unbind();
++            let cert_der = pyo3::types::PyBytes::new(py, &ossl_cert.der).unbind();
+             let cert = x509::certificate::load_der_x509_certificate(py, cert_der, None)?;
+             let alias = ossl_cert
+-                .alias()
++                .alias
++                .as_deref()
+                 .map(|a| pyo3::types::PyBytes::new(py, a).unbind());
+ 
+             let p12_cert = PKCS12Certificate::new(pyo3::Py::new(py, cert)?, alias);
 diff --git a/src/rust/src/pkcs7.rs b/src/rust/src/pkcs7.rs
-index 6ac87c1..4b4a76e 100644
+index 6ac87c1..7cc46cb 100644
 --- a/src/rust/src/pkcs7.rs
 +++ b/src/rust/src/pkcs7.rs
+@@ -16,7 +16,7 @@ use cryptography_x509::csr::Attribute;
+ use cryptography_x509::pkcs7::PKCS7_DATA_OID;
+ use cryptography_x509::{common, oid, pkcs7};
+ #[cfg(not(any(CRYPTOGRAPHY_IS_BORINGSSL, CRYPTOGRAPHY_IS_AWSLC)))]
+-use openssl::pkcs7::Pkcs7;
++use openssl_bridge::containers::Pkcs7Certificates;
+ use pyo3::types::{PyAnyMethods, PyBytesMethods, PyListMethods};
+ #[cfg(not(any(CRYPTOGRAPHY_IS_BORINGSSL, CRYPTOGRAPHY_IS_AWSLC)))]
+ use pyo3::PyTypeInfo;
 @@ -446,8 +446,12 @@ pub(crate) fn symmetric_decrypt(
          .getattr(pyo3::intern!(py, "block_size"))?
          .extract()?;
@@ -10849,6 +11012,111 @@ index 6ac87c1..4b4a76e 100644
  
      // Decrypt the data
      let mut decrypted_data = vec![0; data.len() + (block_size / 8)];
+@@ -726,20 +730,20 @@ fn smime_canonicalize(data: &[u8], text_mode: bool) -> (Cow<'_, [u8]>, Cow<'_, [
+ #[cfg(not(any(CRYPTOGRAPHY_IS_BORINGSSL, CRYPTOGRAPHY_IS_AWSLC)))]
+ fn load_pkcs7_certificates(
+     py: pyo3::Python<'_>,
+-    pkcs7: Pkcs7,
++    pkcs7: Pkcs7Certificates,
+ ) -> CryptographyResult<pyo3::Bound<'_, pyo3::types::PyList>> {
+-    let nid = pkcs7.type_().map(|t| t.nid());
+-    if nid != Some(openssl::nid::Nid::PKCS7_SIGNED) {
+-        let nid_string = nid.map_or("empty".to_string(), |n| n.as_raw().to_string());
+-        return Err(CryptographyError::from(
+-            exceptions::UnsupportedAlgorithm::new_err((
+-                format!("Only basic signed structures are currently supported. NID for this data was {nid_string}"),
+-                exceptions::Reasons::UNSUPPORTED_SERIALIZATION,
+-            )),
+-        ));
+-    }
+-
+-    let signed_certificates = pkcs7.signed().and_then(|x| x.certificates());
++    let signed_certificates = match pkcs7 {
++        Pkcs7Certificates::Signed(certificates) => certificates,
++        Pkcs7Certificates::Other(nid) => {
++            let nid_string = nid.map_or("empty".to_string(), |n| n.to_string());
++            return Err(CryptographyError::from(
++                exceptions::UnsupportedAlgorithm::new_err((
++                    format!("Only basic signed structures are currently supported. NID for this data was {nid_string}"),
++                    exceptions::Reasons::UNSUPPORTED_SERIALIZATION,
++                )),
++            ));
++        }
++    };
+     match signed_certificates {
+         None => Err(CryptographyError::from(
+             pyo3::exceptions::PyValueError::new_err(
+@@ -749,7 +753,7 @@ fn load_pkcs7_certificates(
+         Some(certificates) => {
+             let result = pyo3::types::PyList::empty(py);
+             for c in certificates {
+-                let cert_der = pyo3::types::PyBytes::new(py, c.to_der()?.as_slice()).unbind();
++                let cert_der = pyo3::types::PyBytes::new(py, c.as_slice()).unbind();
+                 let cert = load_der_x509_certificate(py, cert_der, None)?;
+                 result.append(cert)?;
+             }
+@@ -849,7 +853,7 @@ fn load_der_pkcs7_certificates(
+ ) -> CryptographyResult<pyo3::Bound<'_, pyo3::types::PyList>> {
+     cfg_if::cfg_if! {
+         if #[cfg(not(any(CRYPTOGRAPHY_IS_BORINGSSL, CRYPTOGRAPHY_IS_AWSLC)))] {
+-            let pkcs7_decoded = openssl::pkcs7::Pkcs7::from_der(data.as_bytes(py)).map_err(|_| {
++            let pkcs7_decoded = openssl_bridge::containers::parse_pkcs7_certificates(data.as_bytes(py)).map_err(|_| {
+                 CryptographyError::from(pyo3::exceptions::PyValueError::new_err(
+                     "Unable to parse PKCS7 data",
+                 ))
+diff --git a/src/rust/src/test_support.rs b/src/rust/src/test_support.rs
+index 4dc9759..919310f 100644
+--- a/src/rust/src/test_support.rs
++++ b/src/rust/src/test_support.rs
+@@ -70,33 +70,23 @@ fn pkcs7_verify(
+     certs: Vec<pyo3::Py<PyCertificate>>,
+     options: pyo3::Bound<'_, pyo3::types::PyList>,
+ ) -> CryptographyResult<()> {
+-    let p7 = match encoding {
+-        crate::serialization::Encoding::DER => openssl::pkcs7::Pkcs7::from_der(sig)?,
+-        crate::serialization::Encoding::PEM => openssl::pkcs7::Pkcs7::from_pem(sig)?,
+-        _ => openssl::pkcs7::Pkcs7::from_smime(sig)?.0,
++    let encoding = match encoding {
++        crate::serialization::Encoding::DER => openssl_bridge::pkcs7::Encoding::Der,
++        crate::serialization::Encoding::PEM => openssl_bridge::pkcs7::Encoding::Pem,
++        _ => openssl_bridge::pkcs7::Encoding::Smime,
+     };
+-
+-    let mut flags = openssl::pkcs7::Pkcs7Flags::empty();
+-    if options.contains(types::PKCS7_TEXT.get(py)?)? {
+-        flags |= openssl::pkcs7::Pkcs7Flags::TEXT;
+-    }
+-
+-    let store = {
+-        let mut b = openssl::x509::store::X509StoreBuilder::new()?;
+-        for cert in &certs {
+-            let der = asn1::write_single(cert.get().raw.borrow_dependent())?;
+-            b.add_cert(openssl::x509::X509::from_der(&der)?)?;
+-        }
+-        b.build()
+-    };
+-    let certs = openssl::stack::Stack::new()?;
+-
+-    p7.verify(
+-        &certs,
+-        &store,
++    let text = options.contains(types::PKCS7_TEXT.get(py)?)?;
++    let certificates = certs
++        .iter()
++        .map(|cert| asn1::write_single(cert.get().raw.borrow_dependent()))
++        .collect::<Result<Vec<_>, _>>()?;
++    let anchors: Vec<&[u8]> = certificates.iter().map(Vec::as_slice).collect();
++    openssl_bridge::pkcs7::verify(
++        encoding,
++        sig,
+         msg.as_ref().map(|m| m.as_bytes()),
+-        None,
+-        flags,
++        &anchors,
++        text,
+     )?;
+ 
+     Ok(())
 diff --git a/src/rust/src/types.rs b/src/rust/src/types.rs
 index d0fff8b..f8c5f4f 100644
 --- a/src/rust/src/types.rs

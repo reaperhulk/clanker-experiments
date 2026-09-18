@@ -98,3 +98,13 @@ use independent bindings. Passive key-material types preserve legacy component
 round trips while requiring explicit validation before cryptographic use.
 Shared number/serialization adapters remain temporary and the full cryptography
 backend matrix is still required. DSA is the next finite-field operation.
+
+## Container decoding under validation
+
+Typed shared key serialization now replaces the generic native key adapters.
+PKCS#12 and legacy PKCS#7 decoding return owned bytes; native container handles
+never cross the safe API. Private output buffers are erased on success and
+failure. The PKCS#7 test verifier uses a narrow operation with explicit trust
+anchors. Full integration and cross-backend wrapper checks are in progress.
+Provider/FIPS initialization, Argon2, error queues, dependency removal, and the
+Python buffer boundary remain before the primary acceptance matrix.
