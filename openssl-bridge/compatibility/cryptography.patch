@@ -312,7 +312,7 @@ index 9f7d181..ed6ec3b 100644
 +source = "registry+https://github.com/rust-lang/crates.io-index"
 +checksum = "f0805222e57f7521d6a62e36fa9163bc891acd422f971defe97d64e70d0a4fe5"
 diff --git a/Cargo.toml b/Cargo.toml
-index c9783a4..a1eecca 100644
+index c9783a4..bfd7526 100644
 --- a/Cargo.toml
 +++ b/Cargo.toml
 @@ -21,6 +21,7 @@ rust-version = "1.83.0"
@@ -3376,6 +3376,212 @@ index c58be6a..c83406b 100644
      }
  
      fn __copy__(slf: pyo3::PyRef<'_, Self>) -> pyo3::PyRef<'_, Self> {
+diff --git a/src/rust/src/backend/ed448.rs b/src/rust/src/backend/ed448.rs
+index f5a31ff..403068b 100644
+--- a/src/rust/src/backend/ed448.rs
++++ b/src/rust/src/backend/ed448.rs
+@@ -9,34 +9,63 @@ use crate::exceptions;
+ 
+ #[pyo3::pyclass(frozen, module = "cryptography.hazmat.bindings._rust.openssl.ed448")]
+ pub(crate) struct Ed448PrivateKey {
+-    pkey: openssl::pkey::PKey<openssl::pkey::Private>,
++    pkey: openssl_bridge::curve448::Ed448SigningKey,
+ }
+ 
+ #[pyo3::pyclass(frozen, module = "cryptography.hazmat.bindings._rust.openssl.ed448")]
+ pub(crate) struct Ed448PublicKey {
+-    pkey: openssl::pkey::PKey<openssl::pkey::Public>,
++    pkey: openssl_bridge::curve448::Ed448VerifyingKey,
+ }
+ 
+ #[pyo3::pyfunction]
+ fn generate_key() -> CryptographyResult<Ed448PrivateKey> {
+     Ok(Ed448PrivateKey {
+-        pkey: openssl::pkey::PKey::generate_ed448()?,
++        pkey: openssl_bridge::curve448::Ed448SigningKey::generate()?,
+     })
+ }
+ 
++// Temporary serialization boundary until the shared key parser is migrated.
+ pub(crate) fn private_key_from_pkey(
+     pkey: &openssl::pkey::PKeyRef<openssl::pkey::Private>,
+-) -> Ed448PrivateKey {
+-    Ed448PrivateKey {
+-        pkey: pkey.to_owned(),
+-    }
++) -> CryptographyResult<Ed448PrivateKey> {
++    let bytes = pkey.raw_private_key()?;
++    let bytes = bytes
++        .as_slice()
++        .try_into()
++        .map_err(|_| openssl_bridge::Error::InvalidInput("unexpected private key length"))?;
++    Ok(Ed448PrivateKey {
++        pkey: openssl_bridge::curve448::Ed448SigningKey::from_seed(bytes)?,
++    })
+ }
+ 
+ pub(crate) fn public_key_from_pkey(
+     pkey: &openssl::pkey::PKeyRef<openssl::pkey::Public>,
+-) -> Ed448PublicKey {
+-    Ed448PublicKey {
+-        pkey: pkey.to_owned(),
++) -> CryptographyResult<Ed448PublicKey> {
++    let bytes = pkey.raw_public_key()?;
++    let bytes = bytes
++        .as_slice()
++        .try_into()
++        .map_err(|_| openssl_bridge::Error::InvalidInput("unexpected public key length"))?;
++    Ok(Ed448PublicKey {
++        pkey: openssl_bridge::curve448::Ed448VerifyingKey::from_bytes(bytes)?,
++    })
++}
++
++impl Ed448PrivateKey {
++    fn serialization_key(&self) -> CryptographyResult<openssl::pkey::PKey<openssl::pkey::Private>> {
++        let bytes = self.pkey.to_seed()?;
++        Ok(openssl::pkey::PKey::private_key_from_raw_bytes(
++            bytes.as_ref(),
++            openssl::pkey::Id::ED448,
++        )?)
++    }
++}
++impl Ed448PublicKey {
++    fn serialization_key(&self) -> CryptographyResult<openssl::pkey::PKey<openssl::pkey::Public>> {
++        Ok(openssl::pkey::PKey::public_key_from_raw_bytes(
++            &self.pkey.to_bytes()?,
++            openssl::pkey::Id::ED448,
++        )?)
+     }
+ }
+ 
+@@ -44,20 +73,21 @@ pub(crate) fn public_key_from_pkey(
+ // them is a risk.
+ #[pyo3::pyfunction]
+ fn from_private_bytes(data: CffiBuf<'_>) -> pyo3::PyResult<Ed448PrivateKey> {
++    let length_error =
++        || pyo3::exceptions::PyValueError::new_err("An Ed448 private key is 57 bytes long");
++    let bytes = data.as_bytes().try_into().map_err(|_| length_error())?;
+     let pkey =
+-        openssl::pkey::PKey::private_key_from_raw_bytes(data.as_bytes(), openssl::pkey::Id::ED448)
+-            .map_err(|_| {
+-                pyo3::exceptions::PyValueError::new_err("An Ed448 private key is 57 bytes long")
+-            })?;
++        openssl_bridge::curve448::Ed448SigningKey::from_seed(bytes).map_err(|_| length_error())?;
+     Ok(Ed448PrivateKey { pkey })
+ }
+ 
+ #[pyo3::pyfunction]
+ fn from_public_bytes(data: &[u8]) -> pyo3::PyResult<Ed448PublicKey> {
+-    let pkey = openssl::pkey::PKey::public_key_from_raw_bytes(data, openssl::pkey::Id::ED448)
+-        .map_err(|_| {
+-            pyo3::exceptions::PyValueError::new_err("An Ed448 public key is 57 bytes long")
+-        })?;
++    let length_error =
++        || pyo3::exceptions::PyValueError::new_err("An Ed448 public key is 57 bytes long");
++    let bytes = data.try_into().map_err(|_| length_error())?;
++    let pkey = openssl_bridge::curve448::Ed448VerifyingKey::from_bytes(bytes)
++        .map_err(|_| length_error())?;
+     Ok(Ed448PublicKey { pkey })
+ }
+ 
+@@ -68,25 +98,14 @@ impl Ed448PrivateKey {
+         py: pyo3::Python<'p>,
+         data: CffiBuf<'_>,
+     ) -> CryptographyResult<pyo3::Bound<'p, pyo3::types::PyBytes>> {
+-        let mut signer = openssl::sign::Signer::new_without_digest(&self.pkey)?;
+-        let len = signer.len()?;
+-        let data_bytes = data.as_bytes();
+-        Ok(pyo3::types::PyBytes::new_with(py, len, |b| {
+-            let n = py
+-                .detach(|| signer.sign_oneshot(b, data_bytes))
+-                .map_err(CryptographyError::from)?;
+-            assert_eq!(n, b.len());
+-            Ok(())
+-        })?)
++        let data = data.as_bytes();
++        let signature = py.detach(|| self.pkey.sign(data))?;
++        Ok(pyo3::types::PyBytes::new(py, &signature))
+     }
+ 
+     fn public_key(&self) -> CryptographyResult<Ed448PublicKey> {
+-        let raw_bytes = self.pkey.raw_public_key()?;
+         Ok(Ed448PublicKey {
+-            pkey: openssl::pkey::PKey::public_key_from_raw_bytes(
+-                &raw_bytes,
+-                openssl::pkey::Id::ED448,
+-            )?,
++            pkey: self.pkey.verifying_key()?,
+         })
+     }
+ 
+@@ -94,8 +113,8 @@ impl Ed448PrivateKey {
+         &self,
+         py: pyo3::Python<'p>,
+     ) -> CryptographyResult<pyo3::Bound<'p, pyo3::types::PyBytes>> {
+-        let raw_bytes = self.pkey.raw_private_key()?;
+-        Ok(pyo3::types::PyBytes::new(py, &raw_bytes))
++        let raw_bytes = self.pkey.to_seed()?;
++        Ok(pyo3::types::PyBytes::new(py, raw_bytes.as_ref()))
+     }
+ 
+     fn private_bytes<'p>(
+@@ -108,7 +127,7 @@ impl Ed448PrivateKey {
+         utils::pkey_private_bytes(
+             py,
+             slf,
+-            &slf.borrow().pkey,
++            &slf.borrow().serialization_key()?,
+             encoding,
+             format,
+             encryption_algorithm,
+@@ -137,10 +156,11 @@ impl Ed448PublicKey {
+         signature: CffiBuf<'_>,
+         data: CffiBuf<'_>,
+     ) -> CryptographyResult<()> {
+-        let mut verifier = openssl::sign::Verifier::new_without_digest(&self.pkey)?;
+-        let sig_bytes = signature.as_bytes();
+-        let data_bytes = data.as_bytes();
+-        let valid = py.detach(|| verifier.verify_oneshot(sig_bytes, data_bytes))?;
++        let signature = signature.as_bytes();
++        let data = data.as_bytes();
++        let valid = py
++            .detach(|| self.pkey.verify(data, signature))
++            .unwrap_or(false);
+ 
+         if !valid {
+             return Err(CryptographyError::from(
+@@ -155,7 +175,7 @@ impl Ed448PublicKey {
+         &self,
+         py: pyo3::Python<'p>,
+     ) -> CryptographyResult<pyo3::Bound<'p, pyo3::types::PyBytes>> {
+-        let raw_bytes = self.pkey.raw_public_key()?;
++        let raw_bytes = self.pkey.to_bytes()?;
+         Ok(pyo3::types::PyBytes::new(py, &raw_bytes))
+     }
+ 
+@@ -165,11 +185,19 @@ impl Ed448PublicKey {
+         encoding: crate::serialization::Encoding,
+         format: crate::serialization::PublicFormat,
+     ) -> CryptographyResult<pyo3::Bound<'p, pyo3::types::PyBytes>> {
+-        utils::pkey_public_bytes(py, slf, &slf.borrow().pkey, encoding, format, true, true)
++        utils::pkey_public_bytes(
++            py,
++            slf,
++            &slf.borrow().serialization_key()?,
++            encoding,
++            format,
++            true,
++            true,
++        )
+     }
+ 
+-    fn __eq__(&self, other: pyo3::PyRef<'_, Self>) -> bool {
+-        self.pkey.public_eq(&other.pkey)
++    fn __eq__(&self, other: pyo3::PyRef<'_, Self>) -> CryptographyResult<bool> {
++        Ok(self.pkey.to_bytes()? == other.pkey.to_bytes()?)
+     }
+ 
+     fn __copy__(slf: pyo3::PyRef<'_, Self>) -> pyo3::PyRef<'_, Self> {
 diff --git a/src/rust/src/backend/hashes.rs b/src/rust/src/backend/hashes.rs
 index fa3b924..656cdff 100644
 --- a/src/rust/src/backend/hashes.rs
@@ -3773,7 +3979,7 @@ index ee4829c..7b8081d 100644
      if output.len() != length {
          return Err(CryptographyError::from(
 diff --git a/src/rust/src/backend/keys.rs b/src/rust/src/backend/keys.rs
-index 37b8dd7..db50050 100644
+index 37b8dd7..298069e 100644
 --- a/src/rust/src/backend/keys.rs
 +++ b/src/rust/src/backend/keys.rs
 @@ -140,7 +140,7 @@ fn private_key_from_pkey<'p>(
@@ -3785,7 +3991,12 @@ index 37b8dd7..db50050 100644
              .into_pyobject(py)?
              .into_any()),
  
-@@ -153,7 +153,7 @@ fn private_key_from_pkey<'p>(
+@@ -149,11 +149,11 @@ fn private_key_from_pkey<'p>(
+             CRYPTOGRAPHY_IS_BORINGSSL,
+             CRYPTOGRAPHY_IS_AWSLC
+         )))]
+-        openssl::pkey::Id::X448 => Ok(crate::backend::x448::private_key_from_pkey(pkey)
++        openssl::pkey::Id::X448 => Ok(crate::backend::x448::private_key_from_pkey(pkey)?
              .into_pyobject(py)?
              .into_any()),
  
@@ -3794,6 +4005,15 @@ index 37b8dd7..db50050 100644
              .into_pyobject(py)?
              .into_any()),
  
+@@ -162,7 +162,7 @@ fn private_key_from_pkey<'p>(
+             CRYPTOGRAPHY_IS_BORINGSSL,
+             CRYPTOGRAPHY_IS_AWSLC
+         )))]
+-        openssl::pkey::Id::ED448 => Ok(crate::backend::ed448::private_key_from_pkey(pkey)
++        openssl::pkey::Id::ED448 => Ok(crate::backend::ed448::private_key_from_pkey(pkey)?
+             .into_pyobject(py)?
+             .into_any()),
+         openssl::pkey::Id::DSA => Ok(crate::backend::dsa::private_key_from_pkey(py, pkey)?
 @@ -339,7 +339,7 @@ fn public_key_from_pkey<'p>(
          openssl::pkey::Id::EC => Ok(crate::backend::ec::public_key_from_pkey(py, pkey)?
              .into_pyobject(py)?
@@ -3803,7 +4023,12 @@ index 37b8dd7..db50050 100644
              .into_pyobject(py)?
              .into_any()),
          #[cfg(not(any(
-@@ -351,7 +351,7 @@ fn public_key_from_pkey<'p>(
+@@ -347,11 +347,11 @@ fn public_key_from_pkey<'p>(
+             CRYPTOGRAPHY_IS_BORINGSSL,
+             CRYPTOGRAPHY_IS_AWSLC
+         )))]
+-        openssl::pkey::Id::X448 => Ok(crate::backend::x448::public_key_from_pkey(pkey)
++        openssl::pkey::Id::X448 => Ok(crate::backend::x448::public_key_from_pkey(pkey)?
              .into_pyobject(py)?
              .into_any()),
  
@@ -3812,6 +4037,15 @@ index 37b8dd7..db50050 100644
              .into_pyobject(py)?
              .into_any()),
          #[cfg(not(any(
+@@ -359,7 +359,7 @@ fn public_key_from_pkey<'p>(
+             CRYPTOGRAPHY_IS_BORINGSSL,
+             CRYPTOGRAPHY_IS_AWSLC
+         )))]
+-        openssl::pkey::Id::ED448 => Ok(crate::backend::ed448::public_key_from_pkey(pkey)
++        openssl::pkey::Id::ED448 => Ok(crate::backend::ed448::public_key_from_pkey(pkey)?
+             .into_pyobject(py)?
+             .into_any()),
+ 
 diff --git a/src/rust/src/backend/keywrap.rs b/src/rust/src/backend/keywrap.rs
 index eaf7d28..ba289e6 100644
 --- a/src/rust/src/backend/keywrap.rs
@@ -5340,6 +5574,202 @@ index 577fa2d..18938c7 100644
      }
  
      fn __copy__(slf: pyo3::PyRef<'_, Self>) -> pyo3::PyRef<'_, Self> {
+diff --git a/src/rust/src/backend/x448.rs b/src/rust/src/backend/x448.rs
+index 9374d87..7f63de3 100644
+--- a/src/rust/src/backend/x448.rs
++++ b/src/rust/src/backend/x448.rs
+@@ -8,34 +8,63 @@ use crate::error::CryptographyResult;
+ 
+ #[pyo3::pyclass(frozen, module = "cryptography.hazmat.bindings._rust.openssl.x448")]
+ pub(crate) struct X448PrivateKey {
+-    pkey: openssl::pkey::PKey<openssl::pkey::Private>,
++    pkey: openssl_bridge::curve448::X448SecretKey,
+ }
+ 
+ #[pyo3::pyclass(frozen, module = "cryptography.hazmat.bindings._rust.openssl.x448")]
+ pub(crate) struct X448PublicKey {
+-    pkey: openssl::pkey::PKey<openssl::pkey::Public>,
++    pkey: openssl_bridge::curve448::X448PublicKey,
+ }
+ 
+ #[pyo3::pyfunction]
+-fn generate_key() -> CryptographyResult<X448PrivateKey> {
++pub(crate) fn generate_key() -> CryptographyResult<X448PrivateKey> {
+     Ok(X448PrivateKey {
+-        pkey: openssl::pkey::PKey::generate_x448()?,
++        pkey: openssl_bridge::curve448::X448SecretKey::generate()?,
+     })
+ }
+ 
++// Temporary serialization boundary until the shared key parser is migrated.
+ pub(crate) fn private_key_from_pkey(
+     pkey: &openssl::pkey::PKeyRef<openssl::pkey::Private>,
+-) -> X448PrivateKey {
+-    X448PrivateKey {
+-        pkey: pkey.to_owned(),
+-    }
++) -> CryptographyResult<X448PrivateKey> {
++    let bytes = pkey.raw_private_key()?;
++    let bytes = bytes
++        .as_slice()
++        .try_into()
++        .map_err(|_| openssl_bridge::Error::InvalidInput("unexpected private key length"))?;
++    Ok(X448PrivateKey {
++        pkey: openssl_bridge::curve448::X448SecretKey::from_bytes(bytes)?,
++    })
+ }
+ 
+ pub(crate) fn public_key_from_pkey(
+     pkey: &openssl::pkey::PKeyRef<openssl::pkey::Public>,
+-) -> X448PublicKey {
+-    X448PublicKey {
+-        pkey: pkey.to_owned(),
++) -> CryptographyResult<X448PublicKey> {
++    let bytes = pkey.raw_public_key()?;
++    let bytes = bytes
++        .as_slice()
++        .try_into()
++        .map_err(|_| openssl_bridge::Error::InvalidInput("unexpected public key length"))?;
++    Ok(X448PublicKey {
++        pkey: openssl_bridge::curve448::X448PublicKey::from_bytes(bytes)?,
++    })
++}
++
++impl X448PrivateKey {
++    fn serialization_key(&self) -> CryptographyResult<openssl::pkey::PKey<openssl::pkey::Private>> {
++        let bytes = self.pkey.to_bytes()?;
++        Ok(openssl::pkey::PKey::private_key_from_raw_bytes(
++            bytes.as_ref(),
++            openssl::pkey::Id::X448,
++        )?)
++    }
++}
++impl X448PublicKey {
++    fn serialization_key(&self) -> CryptographyResult<openssl::pkey::PKey<openssl::pkey::Public>> {
++        Ok(openssl::pkey::PKey::public_key_from_raw_bytes(
++            &self.pkey.to_bytes()?,
++            openssl::pkey::Id::X448,
++        )?)
+     }
+ }
+ 
+@@ -43,21 +72,21 @@ pub(crate) fn public_key_from_pkey(
+ // them is a risk.
+ #[pyo3::pyfunction]
+ fn from_private_bytes(data: CffiBuf<'_>) -> pyo3::PyResult<X448PrivateKey> {
++    let length_error =
++        || pyo3::exceptions::PyValueError::new_err("An X448 private key is 56 bytes long");
++    let bytes = data.as_bytes().try_into().map_err(|_| length_error())?;
+     let pkey =
+-        openssl::pkey::PKey::private_key_from_raw_bytes(data.as_bytes(), openssl::pkey::Id::X448)
+-            .map_err(|e| {
+-            pyo3::exceptions::PyValueError::new_err(format!(
+-                "An X448 private key is 56 bytes long: {e}"
+-            ))
+-        })?;
++        openssl_bridge::curve448::X448SecretKey::from_bytes(bytes).map_err(|_| length_error())?;
+     Ok(X448PrivateKey { pkey })
+ }
++
+ #[pyo3::pyfunction]
+-fn from_public_bytes(data: &[u8]) -> pyo3::PyResult<X448PublicKey> {
+-    let pkey = openssl::pkey::PKey::public_key_from_raw_bytes(data, openssl::pkey::Id::X448)
+-        .map_err(|_| {
+-            pyo3::exceptions::PyValueError::new_err("An X448 public key is 32 bytes long")
+-        })?;
++pub(crate) fn from_public_bytes(data: &[u8]) -> pyo3::PyResult<X448PublicKey> {
++    let length_error =
++        || pyo3::exceptions::PyValueError::new_err("An X448 public key is 56 bytes long");
++    let bytes = data.try_into().map_err(|_| length_error())?;
++    let pkey =
++        openssl_bridge::curve448::X448PublicKey::from_bytes(bytes).map_err(|_| length_error())?;
+     Ok(X448PublicKey { pkey })
+ }
+ 
+@@ -68,25 +97,16 @@ impl X448PrivateKey {
+         py: pyo3::Python<'p>,
+         peer_public_key: &X448PublicKey,
+     ) -> CryptographyResult<pyo3::Bound<'p, pyo3::types::PyBytes>> {
+-        let mut deriver = openssl::derive::Deriver::new(&self.pkey)?;
+-        deriver.set_peer(&peer_public_key.pkey)?;
+-
+-        Ok(pyo3::types::PyBytes::new_with(py, deriver.len()?, |b| {
+-            let n = deriver.derive(b).map_err(|_| {
+-                pyo3::exceptions::PyValueError::new_err("Error computing shared key.")
+-            })?;
+-            assert_eq!(n, b.len());
+-            Ok(())
+-        })?)
++        let secret = self
++            .pkey
++            .exchange(&peer_public_key.pkey)
++            .map_err(|_| pyo3::exceptions::PyValueError::new_err("Error computing shared key."))?;
++        Ok(pyo3::types::PyBytes::new(py, secret.as_ref()))
+     }
+ 
+     fn public_key(&self) -> CryptographyResult<X448PublicKey> {
+-        let raw_bytes = self.pkey.raw_public_key()?;
+         Ok(X448PublicKey {
+-            pkey: openssl::pkey::PKey::public_key_from_raw_bytes(
+-                &raw_bytes,
+-                openssl::pkey::Id::X448,
+-            )?,
++            pkey: self.pkey.public_key()?,
+         })
+     }
+ 
+@@ -94,8 +114,8 @@ impl X448PrivateKey {
+         &self,
+         py: pyo3::Python<'p>,
+     ) -> CryptographyResult<pyo3::Bound<'p, pyo3::types::PyBytes>> {
+-        let raw_bytes = self.pkey.raw_private_key()?;
+-        Ok(pyo3::types::PyBytes::new(py, &raw_bytes))
++        let raw_bytes = self.pkey.to_bytes()?;
++        Ok(pyo3::types::PyBytes::new(py, raw_bytes.as_ref()))
+     }
+ 
+     fn private_bytes<'p>(
+@@ -108,7 +128,7 @@ impl X448PrivateKey {
+         utils::pkey_private_bytes(
+             py,
+             slf,
+-            &slf.borrow().pkey,
++            &slf.borrow().serialization_key()?,
+             encoding,
+             format,
+             encryption_algorithm,
+@@ -135,7 +155,7 @@ impl X448PublicKey {
+         &self,
+         py: pyo3::Python<'p>,
+     ) -> CryptographyResult<pyo3::Bound<'p, pyo3::types::PyBytes>> {
+-        let raw_bytes = self.pkey.raw_public_key()?;
++        let raw_bytes = self.pkey.to_bytes()?;
+         Ok(pyo3::types::PyBytes::new(py, &raw_bytes))
+     }
+ 
+@@ -145,11 +165,19 @@ impl X448PublicKey {
+         encoding: crate::serialization::Encoding,
+         format: crate::serialization::PublicFormat,
+     ) -> CryptographyResult<pyo3::Bound<'p, pyo3::types::PyBytes>> {
+-        utils::pkey_public_bytes(py, slf, &slf.borrow().pkey, encoding, format, false, true)
++        utils::pkey_public_bytes(
++            py,
++            slf,
++            &slf.borrow().serialization_key()?,
++            encoding,
++            format,
++            false,
++            true,
++        )
+     }
+ 
+-    fn __eq__(&self, other: pyo3::PyRef<'_, Self>) -> bool {
+-        self.pkey.public_eq(&other.pkey)
++    fn __eq__(&self, other: pyo3::PyRef<'_, Self>) -> CryptographyResult<bool> {
++        Ok(self.pkey.to_bytes()? == other.pkey.to_bytes()?)
+     }
+ 
+     fn __copy__(slf: pyo3::PyRef<'_, Self>) -> pyo3::PyRef<'_, Self> {
 diff --git a/src/rust/src/cobblestone.rs b/src/rust/src/cobblestone.rs
 index 24fc6a6..2a80ec8 100644
 --- a/src/rust/src/cobblestone.rs
@@ -5604,6 +6034,18 @@ index 6ac87c1..4b4a76e 100644
  
      // Decrypt the data
      let mut decrypted_data = vec![0; data.len() + (block_size / 8)];
+diff --git a/src/rust/src/types.rs b/src/rust/src/types.rs
+index d0fff8b..f8c5f4f 100644
+--- a/src/rust/src/types.rs
++++ b/src/rust/src/types.rs
+@@ -594,6 +594,7 @@ pub static CTR: LazyPyImport =
+     LazyPyImport::new("cryptography.hazmat.primitives.ciphers.modes", &["CTR"]);
+ pub static GCM: LazyPyImport =
+     LazyPyImport::new("cryptography.hazmat.primitives.ciphers.modes", &["GCM"]);
++#[cfg(not(CRYPTOGRAPHY_IS_BORINGSSL))]
+ pub static XTS: LazyPyImport =
+     LazyPyImport::new("cryptography.hazmat.primitives.ciphers.modes", &["XTS"]);
+ 
 diff --git a/tests/hazmat/primitives/test_aes.py b/tests/hazmat/primitives/test_aes.py
 index 10484b9..1384852 100644
 --- a/tests/hazmat/primitives/test_aes.py

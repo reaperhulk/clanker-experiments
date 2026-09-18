@@ -82,3 +82,11 @@ Named-curve key generation/import, ECDSA, deterministic ECDSA, ECDH, and point
 encoding now use typed keys. All five native backend builds pass the wrapper
 suite and Clippy. Cryptography integration is being checked and still uses a
 component conversion only at its existing shared parser/serializer boundary.
+
+## Ed448/X448 integration under validation
+
+OpenSSL Ed448 and X448 use distinct signing, verification, agreement-private,
+and agreement-public key types with exact array sizes and fresh native operation
+contexts. RFC 8032/7748 vectors check signatures, shared secrets, and rejection
+of low-order agreement peers. These algorithms remain absent on forks that do
+not implement them, matching cryptography's existing capability guards.

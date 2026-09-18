@@ -179,3 +179,19 @@ fn pristine_key_schedules_produce_independent_cipher_states() {
         assert_eq!(&output[..32], &[9; 32]);
     }
 }
+
+#[test]
+fn blowfish_ecb_has_no_iv() {
+    if !Cipher::BlowfishEcb.is_available() {
+        return;
+    }
+    let mut ctx =
+        Stream::new(Cipher::BlowfishEcb, Direction::Encrypt, &[0; 8], &[], false).unwrap();
+    let mut output = [0; 16];
+    let n = ctx.update_into(&[0; 8], &mut output).unwrap();
+    assert_eq!(
+        &output[..n],
+        &[0x4e, 0xf9, 0x97, 0x45, 0x61, 0x98, 0xdd, 0x78]
+    );
+    assert!(ctx.finish().unwrap().is_empty());
+}

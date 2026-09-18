@@ -6,6 +6,7 @@
 pub mod aead;
 pub mod cipher;
 pub mod curve25519;
+pub mod curve448;
 pub mod ec;
 pub mod error;
 pub mod gcm;
