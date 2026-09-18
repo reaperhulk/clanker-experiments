@@ -6,6 +6,7 @@ pub mod auxiliary;
 pub mod brands;
 pub mod camera;
 pub mod color;
+pub mod components;
 pub mod container;
 pub mod context;
 pub mod conversion;

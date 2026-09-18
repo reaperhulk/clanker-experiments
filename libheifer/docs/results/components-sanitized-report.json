@@ -1,0 +1,12 @@
+{
+  "scope": "Original-header component descriptions, typed storage, IDs, arbitrary datatypes, content IDs and transforms.",
+  "cases": 67329,
+  "mismatches": 0,
+  "client_sanitizers": true,
+  "leak_check": false,
+  "client_sha256": "2ccd87ab20f1b08583709452df4129cecee9b35b83bea131b484eeddc901e703",
+  "corpus_sha256": "251166d1a5955a2251afd7d7ae85d8b400c9d955011d70b4e0f0633dafd84465",
+  "differences": [],
+  "reference_sha256": "5d70927cded8be6d1b4da912971aed75d426ba079c84d0b8462785ec5b9c92f7",
+  "candidate_sha256": "81e5ad1516997b3a6d445541f4c78416799f718662ed679245b2063d10161165"
+}

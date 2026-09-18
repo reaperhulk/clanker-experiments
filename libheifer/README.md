@@ -54,6 +54,7 @@ python tools/test_properties.py --reference-build .build/reference
 python tools/test_decode_properties.py --reference-build .build/reference
 python tools/test_camera.py --reference-build .build/reference
 python tools/test_sensor.py --reference-build .build/reference
+python tools/test_components.py --reference-build .build/reference
 python tools/test_context.py --reference-build .build/reference --sanitize --output .build/context-sanitized-report.json
 python tools/test_decoding_options.py --reference-build .build/reference
 python tools/test_transforms.py --reference-build .build/reference
@@ -123,3 +124,8 @@ Imaging metadata APIs store Bayer patterns, polarization filters, bad-pixel maps
 non-uniformity correction and chroma location with copied arrays and exact float
 bits. Their in-memory behavior is tested independently; complete uncompressed
 file-property parsing, encoding and multi-component codec paths remain open.
+
+Decoded-image components have independent IDs, types, datatypes and aligned
+storage, including reference-only entries and duplicate channels. Typed access
+returns element strides; raw access returns byte strides. Handle descriptions,
+multi-component codec paths and content-ID serialization remain unfinished.

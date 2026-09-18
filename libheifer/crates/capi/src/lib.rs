@@ -15,6 +15,7 @@ mod auxiliary;
 pub use auxiliary::DepthRepresentationInfo;
 mod camera;
 mod color;
+mod components;
 mod context;
 mod decoding;
 mod image;

@@ -4,6 +4,8 @@ use crate::error::Error;
 
 #[derive(Debug)]
 pub struct Plane {
+    pub component_ids: Vec<u32>,
+    pub datatype: i32,
     pub channel: i32,
     pub width: u32,
     pub height: u32,
@@ -90,6 +92,8 @@ impl Plane {
         let offset = (16 - (storage.as_ptr() as usize & 15)) & 15;
         Ok(Self {
             _reservation: reservation,
+            component_ids: Vec::new(),
+            datatype: 0,
             channel,
             width,
             height,
@@ -134,7 +138,7 @@ impl From<crate::context::ContextError> for DecodingWarning {
 #[derive(Debug)]
 pub struct Image {
     pub sensor: crate::sensor::SensorMetadata,
-    pub component_ids: crate::sensor::ComponentIds,
+    pub component_ids: crate::components::ComponentIds,
     pub budget: Option<std::sync::Arc<crate::security::Budget>>,
     pub last_error: std::sync::Mutex<std::ffi::CString>,
     pub color: crate::color::ColorMetadata,
@@ -180,7 +184,7 @@ impl Image {
         }
         Ok(Self {
             sensor: crate::sensor::SensorMetadata::default(),
-            component_ids: crate::sensor::ComponentIds::default(),
+            component_ids: crate::components::ComponentIds::default(),
             budget: None,
             last_error: std::sync::Mutex::new(std::ffi::CString::default()),
             width,
@@ -213,16 +217,107 @@ impl Image {
             11 | 13 | 15 => 4,
             _ => 1,
         };
-        self.planes.try_reserve(1).map_err(|_| Error::ALLOCATION)?;
-        self.planes.push(Plane::new(
+        let mut plane = Plane::new(
             channel,
             width,
             height,
             bit_depth,
             components,
             self.budget.as_ref(),
-        )?);
-        self.component_ids.plane(channel, self.chroma);
+        )?;
+        let descriptions = crate::components::types_for_channel(channel, self.chroma)
+            .into_iter()
+            .map(crate::components::Description::reference)
+            .collect::<Vec<_>>();
+        self.register_plane(&mut plane, descriptions)?;
+        self.planes.push(plane);
+        Ok(())
+    }
+    fn register_plane(
+        &mut self,
+        plane: &mut Plane,
+        descriptions: Vec<crate::components::Description>,
+    ) -> Result<(), Error> {
+        self.planes.try_reserve(1).map_err(|_| Error::ALLOCATION)?;
+        self.component_ids
+            .descriptions
+            .try_reserve(descriptions.len())
+            .map_err(|_| Error::ALLOCATION)?;
+        plane
+            .component_ids
+            .try_reserve(descriptions.len())
+            .map_err(|_| Error::ALLOCATION)?;
+        for mut description in descriptions {
+            description.channel = plane.channel;
+            description.datatype = plane.datatype;
+            description.bit_depth = u16::from(plane.bit_depth);
+            description.width = plane.width;
+            description.height = plane.height;
+            description.has_data = true;
+            plane
+                .component_ids
+                .push(self.component_ids.add(description)?);
+        }
+        // Caller owns the buffer until registration succeeds.
+        Ok(())
+    }
+    pub fn add_component(
+        &mut self,
+        width: u32,
+        height: u32,
+        kind: u16,
+        datatype: i32,
+        bit_depth: i32,
+    ) -> Result<u32, Error> {
+        let mut plane = Plane::new(
+            crate::components::channel_for_type(kind),
+            width,
+            height,
+            bit_depth,
+            1,
+            self.budget.as_ref(),
+        )?;
+        plane.datatype = datatype;
+        self.register_plane(
+            &mut plane,
+            vec![crate::components::Description::reference(kind)],
+        )?;
+        let id = plane.component_ids[0];
+        self.planes.push(plane);
+        Ok(id)
+    }
+    pub fn component_plane(&self, id: u32) -> Option<&Plane> {
+        self.planes.iter().find(|p| p.component_ids.contains(&id))
+    }
+    pub fn component_plane_mut(&mut self, id: u32) -> Option<&mut Plane> {
+        self.planes
+            .iter_mut()
+            .find(|p| p.component_ids.contains(&id))
+    }
+    fn add_cloned_plane(
+        &mut self,
+        source: &Plane,
+        descriptions: &crate::components::ComponentIds,
+        width: u32,
+        height: u32,
+    ) -> Result<(), Error> {
+        let bytes = (usize::from(source.bit_depth).next_power_of_two() / 8).max(1);
+        let mut plane = Plane::new(
+            source.channel,
+            width,
+            height,
+            source.bit_depth.into(),
+            source.bytes_per_pixel / bytes,
+            self.budget.as_ref(),
+        )?;
+        plane.datatype = source.datatype;
+        let descriptions = source
+            .component_ids
+            .iter()
+            .filter_map(|id| descriptions.find(*id).cloned())
+            .collect();
+        self.register_plane(&mut plane, descriptions)?;
+        self.planes.push(plane);
         Ok(())
     }
     pub fn plane(&self, channel: i32) -> Option<&Plane> {
@@ -242,7 +337,20 @@ impl Image {
             .ok_or(Error::new(5, 2001, c"No such channel"))?;
         self.planes.try_reserve(1).map_err(|_| Error::ALLOCATION)?;
         let mut plane = source.planes.remove(index);
-        self.component_ids.plane(plane.channel, source.chroma);
+        let ids = std::mem::take(&mut plane.component_ids);
+        for old_id in ids {
+            if let Some(index) = source
+                .component_ids
+                .descriptions
+                .iter()
+                .position(|d| d.id == old_id)
+            {
+                let mut desc = source.component_ids.descriptions.remove(index);
+                desc.channel = to;
+                desc.kind = crate::components::types_for_channel(to, 99)[0];
+                plane.component_ids.push(self.component_ids.add(desc)?);
+            }
+        }
         plane.channel = to;
         self.planes.push(plane);
         Ok(())
@@ -260,6 +368,9 @@ impl Image {
     }
     fn standard_planes(&self) -> bool {
         self.planes.iter().all(|p| {
+            if !matches!(p.channel, 0..=6 | 10..=13) {
+                return false;
+            }
             let (sx, sy) = self.subsampling(p.channel);
             p.width == self.width.div_ceil(sx) && p.height == self.height.div_ceil(sy)
         })
@@ -471,7 +582,7 @@ impl Image {
                 right / sx - left / sx + 1,
                 bottom / sy - top / sy + 1,
             );
-            out.add_plane(source.channel, w, h, source.bit_depth.into())?;
+            out.add_cloned_plane(source, &self.component_ids, w, h)?;
             let dest = out.planes.last_mut().unwrap();
             for row in 0..h as usize {
                 let from = (y as usize + row) * source.stride + x as usize * source.bytes_per_pixel;
@@ -513,7 +624,7 @@ impl Image {
             } else {
                 (source.width, source.height)
             };
-            out.add_plane(source.channel, w, h, source.bit_depth.into())?;
+            out.add_cloned_plane(source, &self.component_ids, w, h)?;
             let dest = out.planes.last_mut().unwrap();
             let bytes = source.bytes_per_pixel;
             for y in 0..h as usize {
@@ -536,6 +647,9 @@ impl Image {
         }
         if quarters == 0 {
             out.component_ids = self.component_ids.clone();
+            for (dest, source) in out.planes.iter_mut().zip(&self.planes) {
+                dest.component_ids = source.component_ids.clone();
+            }
         }
         Ok(out)
     }

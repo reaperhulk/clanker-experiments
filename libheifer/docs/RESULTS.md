@@ -8,8 +8,8 @@ with VUI unspecified-color, monochrome-decoding and typed missing-parameter fixe
 
 ## Implemented scope
 
-172 of 465 public functions are exported, plus `heif_error_success`.
-293 functions are missing. Even the exported functions are marked **partial**:
+206 of 465 public functions are exported, plus `heif_error_success`.
+259 functions are missing. Even the exported functions are marked **partial**:
 coverage is finite, platform coverage is incomplete, and one malformed-box
 behavior gap is explicitly retained. There is no claim of a compatible library.
 
@@ -41,7 +41,7 @@ behavior gap is explicitly retained. There is no claim of a compatible library.
 | Color/HDR differential | 198,932 transcripts, 0 mismatches | All uint16 NCLX setter inputs, all uint8 option-version pairs, all chromaticity coordinates, exact floating-point bits, ICC ownership, HDR boundaries and output sentinels; no image-handle APIs or color transforms |
 | Context/handle differential | 1,786 transcripts, 0 mismatches | Copied/borrowed input, destroyed input copies, aliases, handles after free/reload, early and late read failures, primary/hidden/boundary IDs, metadata bytes/filters, thumbnails, alpha references, color profiles, rotations, every synthetic-file/property truncation; no C decoding |
 | C client sanitizers | ASan/UBSan clients pass the context corpus | Libraries are not sanitizer-instrumented; local LeakSanitizer could not run under ptrace, so leak detection was explicitly disabled |
-| ABI | Fifteen structs match original-header size, alignment and every field offset; struct-return and data-symbol clients pass | Linux x86_64 only |
+| ABI | Seventeen structs match original-header size, alignment and every field offset; struct-return and data-symbol clients pass | Linux x86_64 only |
 | Mutation checks | Thirteen deliberately wrong implementations rejected | Wrong filetype enum, error code, plane samples, primary coordinate, primary item ID, alpha reload state, worker callbacks, warning text, mask samples, overlay alpha, decode-operation/total-memory budgets and ABI field order; isolated builds, successful baselines, compiler/crash failures do not count |
 | HEVC configuration | 400 cases, 0 mismatches | SPS prefixes, coded-size limits, crop/depth/chroma bounds, sub-layer flags, empty/reordered/missing parameter sets and recovery after early slices |
 | Auxiliary/depth APIs | 512 file transcripts, 0 mismatches; C-client ASan/UBSan pass | Twelve APIs; every auxiliary-box version, filters/counts/output sentinels, copied type strings, typed child errors, exact depth float bits, malformed SEI and handles after reload/free. Also passes with optional codecs disabled |
@@ -53,6 +53,8 @@ behavior gap is explicitly retained. There is no claim of a compatible library.
 | Camera mutations | Two additional defects rejected | Incorrect focal scaling (365 mismatches) and quaternion normalization (165), with independent passing baselines; the default mutation set now contains 22 defects |
 | Sensor metadata | 1,039 transcripts, 0 mismatches; C-client ASan/UBSan pass | Twenty-two APIs; exact float/NaN bits, copied arrays, nulls, output sentinels, component ID allocation and crop/scale propagation. Also passes without codecs; sensor file parsing and serialization remain open |
 | Sensor mutations | Three additional defects rejected | polarization_match_order (704 mismatches), polarization_nan_bits (2 mismatches), component_id_sequence (704 mismatches); independent passing baselines, isolated builds; default set now contains 25 defects |
+| Decoded-component APIs | 67,329 transcripts, 0 mismatches; C-client ASan/UBSan pass | Thirty-four APIs; every uint16 reference type, all 1–128-bit depths, datatype passthrough, duplicate channels, reference-only descriptions, pointer identity, typed strides, setter errors and crop/scale. Handle-side APIs and file/codec integration remain open |
+| Component mutations | Three new defects and the relocated ID-sequence defect rejected | component_id_sequence (704 mismatches), component_reference_count (67328 mismatches), component_typed_stride (1674 mismatches), component_crop_datatype (1061 mismatches); independently passing baselines and isolated builds; default set now contains 28 defects |
 | Error-buffer lifetimes | 144 cases, 0 mismatches; C-client ASan/UBSan pass | Unrelated handles/context errors, aliases and releases; the pre-fix candidate use-after-free was reproduced under ASan |
 | Coded-size mutation | One additional defect rejected (138 mismatches) | Independent baseline passed; changed the tightened limit floor from 65,536 to 65,535; the full default mutation set now contains fourteen defects |
 | HEVC native output | 5/5 fixtures match exactly | Y/Cb/Cr data, image IDs/order, dimensions, depths and strides; transformations disabled, native NCLX passthrough; **alpha not compared** |
@@ -221,3 +223,22 @@ polarization metadata wins, including an earlier wildcard entry. Cropping copies
 metadata while scaling drops it, following the pinned reference. Existing image
 and transform suites pass against the same sensor candidate (6,553 and 12,240
 transcripts respectively).
+
+The decoded-component increment adds independent descriptions and per-plane ID
+lists, including components without data. The allocator and typed getters support
+integer, floating-point and complex storage up to 128 bits; getters preserve the
+reference's casts regardless of the declared datatype. Crop copies per-component
+types and datatypes into new IDs; scale recreates ordinary unsigned planes.
+Unknown channels cause the reference's explicit crop/scale error. The new suite
+found and fixed that earlier transform gap and the missing-type sentinel.
+Content-ID setter errors are tested; serialized content-ID behavior still needs
+encoder integration. Unknown-ID scalar getters that dereference null upstream
+are excluded from equivalence comparisons. Candidate getters return safe
+sentinels for those calls. Existing image and transform regressions pass against
+the same candidate (6,553 and 12,240 transcripts).
+
+The component suite also passes against the codec-free binary.
+
+The sensor CI at `8f07766` passed all development steps, all twenty-five mutations
+and the three-platform Rust builds. Only the full-API gate failed
+(`results/ci-sensor-report.json`).

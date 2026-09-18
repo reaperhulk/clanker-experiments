@@ -398,6 +398,15 @@
       "crates/capi/tests/abi.rs"
     ]
   },
+  "heif_image_add_component": {
+    "notes": "Linux x86_64 original-header comparisons: every uint16 reference type, all 1..128 depths, datatype passthrough, descriptions including reference-only IDs, duplicate channels, all typed storage accessors, pointer/stride semantics, owned content IDs and crop/scale. File/codec integration, serialized content IDs, allocation-failure and cross-platform ABI validation remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/components.c",
+      "tools/test_components.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
   "heif_image_add_decoding_warning": {
     "notes": "Original-header independent diagnostics, warning pagination/copy, context thread values, grid worker callbacks and serial tile validation. Arbitrary concurrent clients, allocation failure and other codecs remain open.",
     "status": "partial",
@@ -547,6 +556,276 @@
       "tools/test_images.py"
     ]
   },
+  "heif_image_get_component": {
+    "notes": "Linux x86_64 original-header comparisons: every uint16 reference type, all 1..128 depths, datatype passthrough, descriptions including reference-only IDs, duplicate channels, all typed storage accessors, pointer/stride semantics, owned content IDs and crop/scale. File/codec integration, serialized content IDs, allocation-failure and cross-platform ABI validation remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/components.c",
+      "tools/test_components.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_image_get_component_bits_per_pixel": {
+    "notes": "Linux x86_64 original-header comparisons: every uint16 reference type, all 1..128 depths, datatype passthrough, descriptions including reference-only IDs, duplicate channels, all typed storage accessors, pointer/stride semantics, owned content IDs and crop/scale. File/codec integration, serialized content IDs, allocation-failure and cross-platform ABI validation remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/components.c",
+      "tools/test_components.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_image_get_component_channel": {
+    "notes": "Linux x86_64 original-header comparisons: every uint16 reference type, all 1..128 depths, datatype passthrough, descriptions including reference-only IDs, duplicate channels, all typed storage accessors, pointer/stride semantics, owned content IDs and crop/scale. File/codec integration, serialized content IDs, allocation-failure and cross-platform ABI validation remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/components.c",
+      "tools/test_components.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_image_get_component_complex32": {
+    "notes": "Linux x86_64 original-header comparisons: every uint16 reference type, all 1..128 depths, datatype passthrough, descriptions including reference-only IDs, duplicate channels, all typed storage accessors, pointer/stride semantics, owned content IDs and crop/scale. File/codec integration, serialized content IDs, allocation-failure and cross-platform ABI validation remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/components.c",
+      "tools/test_components.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_image_get_component_complex32_readonly": {
+    "notes": "Linux x86_64 original-header comparisons: every uint16 reference type, all 1..128 depths, datatype passthrough, descriptions including reference-only IDs, duplicate channels, all typed storage accessors, pointer/stride semantics, owned content IDs and crop/scale. File/codec integration, serialized content IDs, allocation-failure and cross-platform ABI validation remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/components.c",
+      "tools/test_components.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_image_get_component_complex64": {
+    "notes": "Linux x86_64 original-header comparisons: every uint16 reference type, all 1..128 depths, datatype passthrough, descriptions including reference-only IDs, duplicate channels, all typed storage accessors, pointer/stride semantics, owned content IDs and crop/scale. File/codec integration, serialized content IDs, allocation-failure and cross-platform ABI validation remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/components.c",
+      "tools/test_components.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_image_get_component_complex64_readonly": {
+    "notes": "Linux x86_64 original-header comparisons: every uint16 reference type, all 1..128 depths, datatype passthrough, descriptions including reference-only IDs, duplicate channels, all typed storage accessors, pointer/stride semantics, owned content IDs and crop/scale. File/codec integration, serialized content IDs, allocation-failure and cross-platform ABI validation remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/components.c",
+      "tools/test_components.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_image_get_component_datatype": {
+    "notes": "Linux x86_64 original-header comparisons: every uint16 reference type, all 1..128 depths, datatype passthrough, descriptions including reference-only IDs, duplicate channels, all typed storage accessors, pointer/stride semantics, owned content IDs and crop/scale. File/codec integration, serialized content IDs, allocation-failure and cross-platform ABI validation remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/components.c",
+      "tools/test_components.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_image_get_component_float32": {
+    "notes": "Linux x86_64 original-header comparisons: every uint16 reference type, all 1..128 depths, datatype passthrough, descriptions including reference-only IDs, duplicate channels, all typed storage accessors, pointer/stride semantics, owned content IDs and crop/scale. File/codec integration, serialized content IDs, allocation-failure and cross-platform ABI validation remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/components.c",
+      "tools/test_components.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_image_get_component_float32_readonly": {
+    "notes": "Linux x86_64 original-header comparisons: every uint16 reference type, all 1..128 depths, datatype passthrough, descriptions including reference-only IDs, duplicate channels, all typed storage accessors, pointer/stride semantics, owned content IDs and crop/scale. File/codec integration, serialized content IDs, allocation-failure and cross-platform ABI validation remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/components.c",
+      "tools/test_components.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_image_get_component_float64": {
+    "notes": "Linux x86_64 original-header comparisons: every uint16 reference type, all 1..128 depths, datatype passthrough, descriptions including reference-only IDs, duplicate channels, all typed storage accessors, pointer/stride semantics, owned content IDs and crop/scale. File/codec integration, serialized content IDs, allocation-failure and cross-platform ABI validation remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/components.c",
+      "tools/test_components.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_image_get_component_float64_readonly": {
+    "notes": "Linux x86_64 original-header comparisons: every uint16 reference type, all 1..128 depths, datatype passthrough, descriptions including reference-only IDs, duplicate channels, all typed storage accessors, pointer/stride semantics, owned content IDs and crop/scale. File/codec integration, serialized content IDs, allocation-failure and cross-platform ABI validation remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/components.c",
+      "tools/test_components.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_image_get_component_height": {
+    "notes": "Linux x86_64 original-header comparisons: every uint16 reference type, all 1..128 depths, datatype passthrough, descriptions including reference-only IDs, duplicate channels, all typed storage accessors, pointer/stride semantics, owned content IDs and crop/scale. File/codec integration, serialized content IDs, allocation-failure and cross-platform ABI validation remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/components.c",
+      "tools/test_components.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_image_get_component_int16": {
+    "notes": "Linux x86_64 original-header comparisons: every uint16 reference type, all 1..128 depths, datatype passthrough, descriptions including reference-only IDs, duplicate channels, all typed storage accessors, pointer/stride semantics, owned content IDs and crop/scale. File/codec integration, serialized content IDs, allocation-failure and cross-platform ABI validation remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/components.c",
+      "tools/test_components.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_image_get_component_int16_readonly": {
+    "notes": "Linux x86_64 original-header comparisons: every uint16 reference type, all 1..128 depths, datatype passthrough, descriptions including reference-only IDs, duplicate channels, all typed storage accessors, pointer/stride semantics, owned content IDs and crop/scale. File/codec integration, serialized content IDs, allocation-failure and cross-platform ABI validation remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/components.c",
+      "tools/test_components.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_image_get_component_int32": {
+    "notes": "Linux x86_64 original-header comparisons: every uint16 reference type, all 1..128 depths, datatype passthrough, descriptions including reference-only IDs, duplicate channels, all typed storage accessors, pointer/stride semantics, owned content IDs and crop/scale. File/codec integration, serialized content IDs, allocation-failure and cross-platform ABI validation remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/components.c",
+      "tools/test_components.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_image_get_component_int32_readonly": {
+    "notes": "Linux x86_64 original-header comparisons: every uint16 reference type, all 1..128 depths, datatype passthrough, descriptions including reference-only IDs, duplicate channels, all typed storage accessors, pointer/stride semantics, owned content IDs and crop/scale. File/codec integration, serialized content IDs, allocation-failure and cross-platform ABI validation remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/components.c",
+      "tools/test_components.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_image_get_component_int64": {
+    "notes": "Linux x86_64 original-header comparisons: every uint16 reference type, all 1..128 depths, datatype passthrough, descriptions including reference-only IDs, duplicate channels, all typed storage accessors, pointer/stride semantics, owned content IDs and crop/scale. File/codec integration, serialized content IDs, allocation-failure and cross-platform ABI validation remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/components.c",
+      "tools/test_components.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_image_get_component_int64_readonly": {
+    "notes": "Linux x86_64 original-header comparisons: every uint16 reference type, all 1..128 depths, datatype passthrough, descriptions including reference-only IDs, duplicate channels, all typed storage accessors, pointer/stride semantics, owned content IDs and crop/scale. File/codec integration, serialized content IDs, allocation-failure and cross-platform ABI validation remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/components.c",
+      "tools/test_components.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_image_get_component_int8": {
+    "notes": "Linux x86_64 original-header comparisons: every uint16 reference type, all 1..128 depths, datatype passthrough, descriptions including reference-only IDs, duplicate channels, all typed storage accessors, pointer/stride semantics, owned content IDs and crop/scale. File/codec integration, serialized content IDs, allocation-failure and cross-platform ABI validation remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/components.c",
+      "tools/test_components.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_image_get_component_int8_readonly": {
+    "notes": "Linux x86_64 original-header comparisons: every uint16 reference type, all 1..128 depths, datatype passthrough, descriptions including reference-only IDs, duplicate channels, all typed storage accessors, pointer/stride semantics, owned content IDs and crop/scale. File/codec integration, serialized content IDs, allocation-failure and cross-platform ABI validation remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/components.c",
+      "tools/test_components.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_image_get_component_readonly": {
+    "notes": "Linux x86_64 original-header comparisons: every uint16 reference type, all 1..128 depths, datatype passthrough, descriptions including reference-only IDs, duplicate channels, all typed storage accessors, pointer/stride semantics, owned content IDs and crop/scale. File/codec integration, serialized content IDs, allocation-failure and cross-platform ABI validation remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/components.c",
+      "tools/test_components.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_image_get_component_type": {
+    "notes": "Linux x86_64 original-header comparisons: every uint16 reference type, all 1..128 depths, datatype passthrough, descriptions including reference-only IDs, duplicate channels, all typed storage accessors, pointer/stride semantics, owned content IDs and crop/scale. File/codec integration, serialized content IDs, allocation-failure and cross-platform ABI validation remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/components.c",
+      "tools/test_components.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_image_get_component_uint16": {
+    "notes": "Linux x86_64 original-header comparisons: every uint16 reference type, all 1..128 depths, datatype passthrough, descriptions including reference-only IDs, duplicate channels, all typed storage accessors, pointer/stride semantics, owned content IDs and crop/scale. File/codec integration, serialized content IDs, allocation-failure and cross-platform ABI validation remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/components.c",
+      "tools/test_components.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_image_get_component_uint16_readonly": {
+    "notes": "Linux x86_64 original-header comparisons: every uint16 reference type, all 1..128 depths, datatype passthrough, descriptions including reference-only IDs, duplicate channels, all typed storage accessors, pointer/stride semantics, owned content IDs and crop/scale. File/codec integration, serialized content IDs, allocation-failure and cross-platform ABI validation remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/components.c",
+      "tools/test_components.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_image_get_component_uint32": {
+    "notes": "Linux x86_64 original-header comparisons: every uint16 reference type, all 1..128 depths, datatype passthrough, descriptions including reference-only IDs, duplicate channels, all typed storage accessors, pointer/stride semantics, owned content IDs and crop/scale. File/codec integration, serialized content IDs, allocation-failure and cross-platform ABI validation remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/components.c",
+      "tools/test_components.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_image_get_component_uint32_readonly": {
+    "notes": "Linux x86_64 original-header comparisons: every uint16 reference type, all 1..128 depths, datatype passthrough, descriptions including reference-only IDs, duplicate channels, all typed storage accessors, pointer/stride semantics, owned content IDs and crop/scale. File/codec integration, serialized content IDs, allocation-failure and cross-platform ABI validation remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/components.c",
+      "tools/test_components.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_image_get_component_uint64": {
+    "notes": "Linux x86_64 original-header comparisons: every uint16 reference type, all 1..128 depths, datatype passthrough, descriptions including reference-only IDs, duplicate channels, all typed storage accessors, pointer/stride semantics, owned content IDs and crop/scale. File/codec integration, serialized content IDs, allocation-failure and cross-platform ABI validation remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/components.c",
+      "tools/test_components.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_image_get_component_uint64_readonly": {
+    "notes": "Linux x86_64 original-header comparisons: every uint16 reference type, all 1..128 depths, datatype passthrough, descriptions including reference-only IDs, duplicate channels, all typed storage accessors, pointer/stride semantics, owned content IDs and crop/scale. File/codec integration, serialized content IDs, allocation-failure and cross-platform ABI validation remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/components.c",
+      "tools/test_components.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_image_get_component_width": {
+    "notes": "Linux x86_64 original-header comparisons: every uint16 reference type, all 1..128 depths, datatype passthrough, descriptions including reference-only IDs, duplicate channels, all typed storage accessors, pointer/stride semantics, owned content IDs and crop/scale. File/codec integration, serialized content IDs, allocation-failure and cross-platform ABI validation remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/components.c",
+      "tools/test_components.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
   "heif_image_get_content_light_level": {
     "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open.",
     "status": "partial",
@@ -625,6 +904,15 @@
     "tests": [
       "tests/sensor.c",
       "tools/test_sensor.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_image_get_number_of_used_components": {
+    "notes": "Linux x86_64 original-header comparisons: every uint16 reference type, all 1..128 depths, datatype passthrough, descriptions including reference-only IDs, duplicate channels, all typed storage accessors, pointer/stride semantics, owned content IDs and crop/scale. File/codec integration, serialized content IDs, allocation-failure and cross-platform ABI validation remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/components.c",
+      "tools/test_components.py",
       "crates/capi/tests/abi.rs"
     ]
   },
@@ -762,6 +1050,15 @@
     "tests": [
       "tests/sensor.c",
       "tools/test_sensor.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_image_get_used_component_ids": {
+    "notes": "Linux x86_64 original-header comparisons: every uint16 reference type, all 1..128 depths, datatype passthrough, descriptions including reference-only IDs, duplicate channels, all typed storage accessors, pointer/stride semantics, owned content IDs and crop/scale. File/codec integration, serialized content IDs, allocation-failure and cross-platform ABI validation remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/components.c",
+      "tools/test_components.py",
       "crates/capi/tests/abi.rs"
     ]
   },
@@ -1276,6 +1573,15 @@
     "tests": [
       "tests/color.c",
       "tools/test_color.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_image_set_gimi_component_content_id": {
+    "notes": "Linux x86_64 original-header comparisons: every uint16 reference type, all 1..128 depths, datatype passthrough, descriptions including reference-only IDs, duplicate channels, all typed storage accessors, pointer/stride semantics, owned content IDs and crop/scale. File/codec integration, serialized content IDs, allocation-failure and cross-platform ABI validation remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/components.c",
+      "tools/test_components.py",
       "crates/capi/tests/abi.rs"
     ]
   },

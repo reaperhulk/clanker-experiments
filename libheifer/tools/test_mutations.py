@@ -37,7 +37,10 @@ MUTATIONS = [
     ("camera_quaternion", "src/camera.rs", "quaternion[3] = (1.0 - sum).sqrt();", "quaternion[3] = (1.0 - sum).sqrt() * 0.5;", "camera"),
     ("polarization_match_order", "src/sensor.rs", ".position(|p|", ".rposition(|p|", "sensor"),
     ("polarization_nan_bits", "crates/capi/src/sensor.rs", "value.to_bits() == u32::MAX", "value.to_bits() == u32::MAX - 1", "sensor"),
-    ("component_id_sequence", "src/sensor.rs", "self.next.wrapping_add(1)", "self.next.wrapping_add(2)", "sensor"),
+    ("component_id_sequence", "src/components.rs", "self.next.wrapping_add(1)", "self.next.wrapping_add(2)", "sensor"),
+    ("component_reference_count", "crates/capi/src/components.rs", "i.component_ids.descriptions.len() as u32", "i.component_ids.descriptions.iter().filter(|d| d.has_data).count() as u32", "components"),
+    ("component_typed_stride", "crates/capi/src/components.rs", "stride.write(plane.map_or(0, |p| p.stride / std::mem::size_of::<$ty>()));", "stride.write(plane.map_or(0, |p| p.stride));", "components"),
+    ("component_crop_datatype", "src/image.rs", "plane.datatype = source.datatype;", "plane.datatype = 0;", "components"),
     ("coded_size_limit", "src/decoding.rs", ".max(65536)", ".max(65535)", "hevc_limits"),
     ("error_field_order", "crates/capi/src/lib.rs", "pub code: c_int,\n    pub subcode: c_int,", "pub subcode: c_int,\n    pub code: c_int,", "abi"),
 ]
