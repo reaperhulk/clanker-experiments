@@ -94,6 +94,7 @@ impl Plane {
 
 #[derive(Debug)]
 pub struct Image {
+    pub color: crate::color::ColorMetadata,
     pub width: u32,
     pub height: u32,
     pub colorspace: i32,
@@ -134,6 +135,7 @@ impl Image {
             height,
             colorspace,
             chroma,
+            color: crate::color::ColorMetadata::default(),
             premultiplied_alpha: false,
             pixel_aspect_ratio: (1, 1),
             planes: Vec::new(),

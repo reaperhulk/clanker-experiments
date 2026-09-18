@@ -3,6 +3,7 @@
 #![forbid(unsafe_code)]
 
 pub mod brands;
+pub mod color;
 pub mod container;
 pub mod error;
 #[cfg(feature = "hevc")]

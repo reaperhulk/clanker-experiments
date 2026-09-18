@@ -51,8 +51,8 @@ tested for candidate safety and recorded separately, never counted as matches.
 
 1. **Contract and test foundation.** Freeze API inventory and header hashes;
    independent C clients, layouts/enum values, symbol checks, strict missing-function
-   gate, reproducible baseline and corpus manifests. Bootstrap an empty repository
-   with an empty main commit so all implementation is reviewable in the PR.
+   gate, reproducible baseline and corpus manifests. Keep the implementation on
+   its feature branch so all changes remain reviewable in the PR.
 2. **Fundamental values and buffers.** Brands/sniffing, errors, library lifecycle,
    security limits, image allocation/planes, color/HDR profiles, options and timestamps.
    Differential malformed-input, integer-boundary and lifetime tests first.
@@ -104,3 +104,9 @@ differences must remain visible, and block the final compatibility claim.
 
 The machine-readable inventory and checked-in test reports record implemented
 coverage. The whole-library success criteria remain open until stage 8 passes.
+
+Draft PR: https://github.com/reaperhulk/clanker-experiments/pull/1. The first
+implementation iteration covers 37 functions (brands and planes); the second
+adds 28 color/HDR functions. All 65 remain partial, with 400 functions missing.
+The full header contract, finite behavioral reports, known differences and
+performance evidence are retained in `compat/` and `docs/results/`.

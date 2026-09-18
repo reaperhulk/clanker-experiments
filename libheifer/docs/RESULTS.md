@@ -7,14 +7,17 @@ the optional experimental HEVC feature uses rusty_h265/rusty_h265-accel 0.6.0.
 
 ## Implemented scope
 
-37 of 465 public functions are exported, plus `heif_error_success`.
-428 functions are missing. Even the exported functions are marked **partial**:
+65 of 465 public functions are exported, plus `heif_error_success`.
+400 functions are missing. Even the exported functions are marked **partial**:
 coverage is finite, platform coverage is incomplete, and one malformed-box
 behavior gap is explicitly retained. There is no claim of a compatible library.
 
 - Version, brands and MIME/file sniffing; owned compatible-brand lists.
 - Image creation, aligned zeroed planes, layout/stride/bit-depth/channel queries,
   plane access, alpha-premultiplication flag and pixel aspect ratio.
+- Color-conversion option defaults/copy, ICC and NCLX profile storage/queries,
+  HDR content light, mastering display, ambient viewing and diffuse white metadata.
+  Profile storage does not yet perform color conversion during decoding.
 - Rust-only bounded item-container parsing and experimental direct HEVC native
   YUV decoding. Neither context/handle nor decode C functions are implemented.
 
@@ -25,11 +28,13 @@ behavior gap is explicitly retained. There is no claim of a compatible library.
 | Header inventory | 465 functions, 1 exported variable, 37 structs, 38 enums, 108 macros; hashes for 29 headers | Three unexported plugin convenience variables retained separately; C++ wrappers tracked by header hash |
 | Brand/version differential | 17,126 cases, 0 mismatches in this corpus | Original-header C clients in separate processes; header truncation, malformed lengths, extended sizes, duplicate brands, NULs, signatures, error messages, out-argument preservation |
 | Image differential | 6,553 transcripts, 0 mismatches | Color/chroma combinations, dimensions, bit-depth boundaries, alignment/stride, zeroed storage, duplicate planes, pointer identity, flags; excludes transforms and resource budgets |
-| ABI | heif_error size/alignment/field offsets agree; struct-return and data-symbol clients pass | Linux x86_64 only |
+| Color/HDR differential | 198,932 transcripts, 0 mismatches | All uint16 NCLX setter inputs, all uint8 option-version pairs, all chromaticity coordinates, exact floating-point bits, ICC ownership, HDR boundaries and output sentinels; no image-handle APIs or color transforms |
+| ABI | Eight structs match original-header size, alignment and every field offset; struct-return and data-symbol clients pass | Linux x86_64 only |
+| Mutation checks | Five deliberately wrong implementations rejected | Wrong filetype enum, error code, plane samples, primary coordinate and ABI field order; isolated builds, successful baselines, compiler/crash failures do not count |
 | HEVC native output | 5/5 fixtures match exactly | Y/Cb/Cr data, image IDs/order, dimensions, depths and strides; transformations disabled, native NCLX passthrough; **alpha not compared** |
 | HEVC default output | 4/5 tested color-plane outputs match | Example image differs because default NCLX conversion is not implemented |
 | Dependency guard | Pass | Two reviewed codec crates; no native build scripts or codec link dependencies in the resolved candidate graph |
-| Rust checks | Unit tests, ABI test, formatting and Clippy pass | Full sanitizer, fuzzing and cross-platform ABI validation remain open |
+| Rust checks | Unit tests, ABI test, formatting and Clippy pass | Linux, macOS and Windows Rust build jobs passed for the foundation; full sanitizer, fuzzing and cross-platform ABI validation remain open |
 | Completeness gate | **Fail**, as required | Missing API and unvalidated entries prevent a success claim |
 
 The separately retained `known-differences.json` records malformed non-ftyp box
@@ -39,9 +44,10 @@ not HEVC conformance or full container compatibility. The decoder experiment has
 not established safe resource-budget behavior on hostile inputs.
 
 A Valgrind attempt could not execute the client in this environment (permission
-denied). No memory-safety or leak-test pass is claimed. The authored CI workflow
-has not run remotely because publishing is blocked. Its completion step is
-intentionally failing until the API contract is implemented and validated.
+denied). No memory-safety or leak-test pass is claimed. The first remote CI run passed Rust builds on Linux, macOS and Windows and
+all Linux development checks. Its only failing step was the intentionally red
+full-completion gate. The color/HDR iteration adds its differential and mutation
+checks to that workflow; see the PR for current run status.
 
 ## Initial performance evidence
 
@@ -67,7 +73,9 @@ these are directions for investigation, not native wall-clock speedup estimates.
 Optimizing small wrapper copies is unlikely to solve the dominant costs.
 
 Raw samples, exact binary/corpus hashes, environment details and the profiler
-output are in [results](results/). No performance optimization is claimed yet.
+output are in [results](results/). The initial benchmark and profile used the
+foundation source at commit `4210217dacc0dd411fc5e874d31579dea765432c`; they
+precede the color/HDR storage APIs. No performance optimization is claimed yet.
 
 ## Next implementation work
 
@@ -79,4 +87,4 @@ output are in [results](results/). No performance optimization is claimed yet.
 4. Profile and optimize the actual codec hot paths, with repeated output-checked
    A/B results; expand beyond the current single-file native-sample benchmark.
 5. Complete cross-platform ABI, fuzzing, memory-safety, downstream-client and
-   full API gates before turning the future PR into a compatibility claim.
+   full API gates before marking the draft PR ready or making a compatibility claim.

@@ -1,0 +1,55 @@
+{
+  "scope": "five deliberate defects; not comprehensive mutation coverage",
+  "mutations": [
+    {
+      "mutation": "filetype_enum",
+      "suite": "brands",
+      "source": "src/brands.rs",
+      "before": "Supported = 1,",
+      "after": "Supported = 7,",
+      "candidate_sha256": "161c47d9e5384427a134ca6f42bfdb6ac36a8352c2108ae3d21cd50e3c12832b",
+      "mismatches": 533,
+      "detected": true
+    },
+    {
+      "mutation": "error_code",
+      "suite": "brands",
+      "source": "src/error.rs",
+      "before": "Self::new(5, 2001, c\"NULL argument passed\")",
+      "after": "Self::new(2, 2001, c\"NULL argument passed\")",
+      "candidate_sha256": "69c17793521c237a1f6ad263251abf6fccb5f9808d582c240681191e897c1807",
+      "mismatches": 17126,
+      "detected": true
+    },
+    {
+      "mutation": "plane_pixels",
+      "suite": "images",
+      "source": "src/image.rs",
+      "before": "storage.resize(allocation, 0);",
+      "after": "storage.resize(allocation, 0);\n        storage[..16].fill(1);",
+      "candidate_sha256": "700ba45b0b71293a1bf652f66f5a18701d8e97f98754521fc8d55039e4c6e8ee",
+      "mismatches": 612,
+      "detected": true
+    },
+    {
+      "mutation": "primary_coordinate",
+      "suite": "color",
+      "source": "src/color.rs",
+      "before": "color_primary_red_x: rx,",
+      "after": "color_primary_red_x: rx + 0.0001,",
+      "candidate_sha256": "58dddd32f28d632762b18bde82f361392a43290c0a7c964c4074de95c289e7df",
+      "mismatches": 776,
+      "detected": true
+    },
+    {
+      "mutation": "error_field_order",
+      "suite": "abi",
+      "source": "crates/capi/src/lib.rs",
+      "before": "pub code: c_int,\n    pub subcode: c_int,",
+      "after": "pub subcode: c_int,\n    pub code: c_int,",
+      "candidate_sha256": "1b215d382a770333542fead2595f50179410b413a1fb43186a2cb8fb1fb8296f",
+      "detected": true
+    }
+  ],
+  "all_detected": true
+}

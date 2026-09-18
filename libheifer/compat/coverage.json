@@ -23,6 +23,42 @@
       "tools/test_brands.py"
     ]
   },
+  "heif_color_conversion_options_ext_alloc": {
+    "status": "partial",
+    "tests": [
+      "tests/color.c",
+      "tools/test_color.py",
+      "crates/capi/tests/abi.rs"
+    ],
+    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open."
+  },
+  "heif_color_conversion_options_ext_copy": {
+    "status": "partial",
+    "tests": [
+      "tests/color.c",
+      "tools/test_color.py",
+      "crates/capi/tests/abi.rs"
+    ],
+    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open."
+  },
+  "heif_color_conversion_options_ext_free": {
+    "status": "partial",
+    "tests": [
+      "tests/color.c",
+      "tools/test_color.py",
+      "crates/capi/tests/abi.rs"
+    ],
+    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open."
+  },
+  "heif_color_conversion_options_set_defaults": {
+    "status": "partial",
+    "tests": [
+      "tests/color.c",
+      "tools/test_color.py",
+      "crates/capi/tests/abi.rs"
+    ],
+    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open."
+  },
   "heif_error_success": {
     "notes": "Direct upstream-header C client reads the exported struct. Other architectures pending.",
     "status": "partial",
@@ -126,6 +162,15 @@
       "tools/test_images.py"
     ]
   },
+  "heif_image_get_ambient_viewing_environment": {
+    "status": "partial",
+    "tests": [
+      "tests/color.c",
+      "tools/test_color.py",
+      "crates/capi/tests/abi.rs"
+    ],
+    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open."
+  },
   "heif_image_get_bits_per_pixel": {
     "notes": "6553 differential cases on Linux x86_64; other architectures, allocation failure, transforms and codec integration remain open.",
     "status": "partial",
@@ -150,6 +195,15 @@
       "tools/test_images.py"
     ]
   },
+  "heif_image_get_color_profile_type": {
+    "status": "partial",
+    "tests": [
+      "tests/color.c",
+      "tools/test_color.py",
+      "crates/capi/tests/abi.rs"
+    ],
+    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open."
+  },
   "heif_image_get_colorspace": {
     "notes": "6553 differential cases on Linux x86_64; other architectures, allocation failure, transforms and codec integration remain open.",
     "status": "partial",
@@ -158,6 +212,15 @@
       "tools/test_images.py"
     ]
   },
+  "heif_image_get_content_light_level": {
+    "status": "partial",
+    "tests": [
+      "tests/color.c",
+      "tools/test_color.py",
+      "crates/capi/tests/abi.rs"
+    ],
+    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open."
+  },
   "heif_image_get_height": {
     "notes": "6553 differential cases on Linux x86_64; other architectures, allocation failure, transforms and codec integration remain open.",
     "status": "partial",
@@ -165,6 +228,33 @@
       "tests/images.c",
       "tools/test_images.py"
     ]
+  },
+  "heif_image_get_mastering_display_colour_volume": {
+    "status": "partial",
+    "tests": [
+      "tests/color.c",
+      "tools/test_color.py",
+      "crates/capi/tests/abi.rs"
+    ],
+    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open."
+  },
+  "heif_image_get_nclx_color_profile": {
+    "status": "partial",
+    "tests": [
+      "tests/color.c",
+      "tools/test_color.py",
+      "crates/capi/tests/abi.rs"
+    ],
+    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open."
+  },
+  "heif_image_get_nominal_diffuse_white_luminance": {
+    "status": "partial",
+    "tests": [
+      "tests/color.c",
+      "tools/test_color.py",
+      "crates/capi/tests/abi.rs"
+    ],
+    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open."
   },
   "heif_image_get_pixel_aspect_ratio": {
     "notes": "6553 differential cases on Linux x86_64; other architectures, allocation failure, transforms and codec integration remain open.",
@@ -222,6 +312,24 @@
       "tools/test_images.py"
     ]
   },
+  "heif_image_get_raw_color_profile": {
+    "status": "partial",
+    "tests": [
+      "tests/color.c",
+      "tools/test_color.py",
+      "crates/capi/tests/abi.rs"
+    ],
+    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open."
+  },
+  "heif_image_get_raw_color_profile_size": {
+    "status": "partial",
+    "tests": [
+      "tests/color.c",
+      "tools/test_color.py",
+      "crates/capi/tests/abi.rs"
+    ],
+    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open."
+  },
   "heif_image_get_width": {
     "notes": "6553 differential cases on Linux x86_64; other architectures, allocation failure, transforms and codec integration remain open.",
     "status": "partial",
@@ -230,6 +338,15 @@
       "tools/test_images.py"
     ]
   },
+  "heif_image_has_ambient_viewing_environment": {
+    "status": "partial",
+    "tests": [
+      "tests/color.c",
+      "tools/test_color.py",
+      "crates/capi/tests/abi.rs"
+    ],
+    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open."
+  },
   "heif_image_has_channel": {
     "notes": "6553 differential cases on Linux x86_64; other architectures, allocation failure, transforms and codec integration remain open.",
     "status": "partial",
@@ -237,6 +354,33 @@
       "tests/images.c",
       "tools/test_images.py"
     ]
+  },
+  "heif_image_has_content_light_level": {
+    "status": "partial",
+    "tests": [
+      "tests/color.c",
+      "tools/test_color.py",
+      "crates/capi/tests/abi.rs"
+    ],
+    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open."
+  },
+  "heif_image_has_mastering_display_colour_volume": {
+    "status": "partial",
+    "tests": [
+      "tests/color.c",
+      "tools/test_color.py",
+      "crates/capi/tests/abi.rs"
+    ],
+    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open."
+  },
+  "heif_image_has_nominal_diffuse_white_luminance": {
+    "status": "partial",
+    "tests": [
+      "tests/color.c",
+      "tools/test_color.py",
+      "crates/capi/tests/abi.rs"
+    ],
+    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open."
   },
   "heif_image_is_premultiplied_alpha": {
     "notes": "6553 differential cases on Linux x86_64; other architectures, allocation failure, transforms and codec integration remain open.",
@@ -254,6 +398,51 @@
       "tools/test_images.py"
     ]
   },
+  "heif_image_set_ambient_viewing_environment": {
+    "status": "partial",
+    "tests": [
+      "tests/color.c",
+      "tools/test_color.py",
+      "crates/capi/tests/abi.rs"
+    ],
+    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open."
+  },
+  "heif_image_set_content_light_level": {
+    "status": "partial",
+    "tests": [
+      "tests/color.c",
+      "tools/test_color.py",
+      "crates/capi/tests/abi.rs"
+    ],
+    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open."
+  },
+  "heif_image_set_mastering_display_colour_volume": {
+    "status": "partial",
+    "tests": [
+      "tests/color.c",
+      "tools/test_color.py",
+      "crates/capi/tests/abi.rs"
+    ],
+    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open."
+  },
+  "heif_image_set_nclx_color_profile": {
+    "status": "partial",
+    "tests": [
+      "tests/color.c",
+      "tools/test_color.py",
+      "crates/capi/tests/abi.rs"
+    ],
+    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open."
+  },
+  "heif_image_set_nominal_diffuse_white_luminance": {
+    "status": "partial",
+    "tests": [
+      "tests/color.c",
+      "tools/test_color.py",
+      "crates/capi/tests/abi.rs"
+    ],
+    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open."
+  },
   "heif_image_set_pixel_aspect_ratio": {
     "notes": "6553 differential cases on Linux x86_64; other architectures, allocation failure, transforms and codec integration remain open.",
     "status": "partial",
@@ -270,6 +459,15 @@
       "tools/test_images.py"
     ]
   },
+  "heif_image_set_raw_color_profile": {
+    "status": "partial",
+    "tests": [
+      "tests/color.c",
+      "tools/test_color.py",
+      "crates/capi/tests/abi.rs"
+    ],
+    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open."
+  },
   "heif_list_compatible_brands": {
     "notes": "Tested on Linux x86_64; cross-platform ABI and exhaustive input coverage pending.",
     "status": "partial",
@@ -285,6 +483,60 @@
       "tests/brands.c",
       "tools/test_brands.py"
     ]
+  },
+  "heif_mastering_display_colour_volume_decode": {
+    "status": "partial",
+    "tests": [
+      "tests/color.c",
+      "tools/test_color.py",
+      "crates/capi/tests/abi.rs"
+    ],
+    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open."
+  },
+  "heif_nclx_color_profile_alloc": {
+    "status": "partial",
+    "tests": [
+      "tests/color.c",
+      "tools/test_color.py",
+      "crates/capi/tests/abi.rs"
+    ],
+    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open."
+  },
+  "heif_nclx_color_profile_free": {
+    "status": "partial",
+    "tests": [
+      "tests/color.c",
+      "tools/test_color.py",
+      "crates/capi/tests/abi.rs"
+    ],
+    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open."
+  },
+  "heif_nclx_color_profile_set_color_primaries": {
+    "status": "partial",
+    "tests": [
+      "tests/color.c",
+      "tools/test_color.py",
+      "crates/capi/tests/abi.rs"
+    ],
+    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open."
+  },
+  "heif_nclx_color_profile_set_matrix_coefficients": {
+    "status": "partial",
+    "tests": [
+      "tests/color.c",
+      "tools/test_color.py",
+      "crates/capi/tests/abi.rs"
+    ],
+    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open."
+  },
+  "heif_nclx_color_profile_set_transfer_characteristics": {
+    "status": "partial",
+    "tests": [
+      "tests/color.c",
+      "tools/test_color.py",
+      "crates/capi/tests/abi.rs"
+    ],
+    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open."
   },
   "heif_read_main_brand": {
     "notes": "Tested on Linux x86_64; cross-platform ABI and exhaustive input coverage pending.",
