@@ -7,6 +7,8 @@ import argparse
 import hashlib
 import json
 import os
+import shlex
+import shutil
 import subprocess
 import sys
 import time
@@ -48,12 +50,51 @@ def run(command: list[str], directory: Path, env: dict[str, str], log: Path) -> 
             check=False,
         )
     print(f"Exit {result.returncode}; log: {log}", flush=True)
+    if result.returncode:
+        print("\n".join(log.read_text(errors="replace").splitlines()[-80:]), flush=True)
     return {
         "command": command,
         "exit_code": result.returncode,
         "elapsed_seconds": round(time.monotonic() - started, 2),
         "log": log.name,
     }
+
+
+def fips_build_environment(env: dict[str, str], output: Path) -> None:
+    """Keep the test provider configuration out of Cargo's own libgit2/OpenSSL.
+
+    Python retains the startup configuration. Cargo children use the ordinary
+    build environment, and its target runner restores FIPS before each Rust
+    test binary starts. No tests or nox commands are changed or omitted.
+    """
+    config = Path(env["OPENSSL_CONF"]).resolve()
+    if not config.is_file():
+        raise SystemExit(f"missing startup FIPS configuration: {config}")
+    cargo = shutil.which("cargo", path=env["PATH"])
+    if cargo is None:
+        raise SystemExit("cargo is required")
+    version = subprocess.check_output(["rustc", "-vV"], env=env, text=True)
+    host = next(
+        line.removeprefix("host: ")
+        for line in version.splitlines()
+        if line.startswith("host: ")
+    )
+    runner_key = f"CARGO_TARGET_{host.upper().replace('-', '_')}_RUNNER"
+    if env.get(runner_key):
+        raise SystemExit(f"FIPS validation requires control of {runner_key}")
+    scripts = output / "fips-tools"
+    scripts.mkdir(exist_ok=True)
+    wrapper = scripts / "cargo"
+    wrapper.write_text(
+        f'#!/bin/sh\nOPENSSL_CONF=/dev/null exec {shlex.quote(cargo)} "$@"\n'
+    )
+    wrapper.chmod(0o755)
+    runner = scripts / "test-runner"
+    runner.write_text(f'#!/bin/sh\nOPENSSL_CONF={shlex.quote(str(config))} exec "$@"\n')
+    runner.chmod(0o755)
+    env["PATH"] = f"{scripts}{os.pathsep}{env['PATH']}"
+    env["CARGO"] = str(wrapper)
+    env[runner_key] = str(runner)
 
 
 def main() -> int:
@@ -164,6 +205,8 @@ def main() -> int:
                 run(command, ROOT, library_env, output / f"{name}.log")
             )
     env["CARGO_TARGET_DIR"] = str(output / "cryptography-target")
+    if args.fips:
+        fips_build_environment(env, output)
     junit = output / "python-tests.xml"
     report["checks"].append(
         run(

@@ -17,6 +17,10 @@ on:
 permissions:
   contents: read
 
+defaults:
+  run:
+    shell: bash
+
 concurrency:
   group: openssl-bridge-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
