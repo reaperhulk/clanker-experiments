@@ -24,6 +24,17 @@ The updated standalone TLS suite passes 13 tests on OpenSSL 4 and LibreSSL and
 pyOpenSSL reruns and the final 17-row cryptography regression matrix are pending.
 No full secondary acceptance is claimed by these development results.
 
+The first full CI matrix passed the Python/Rust cryptography suites on all 15
+current-toolchain rows. The coverage gate correctly flagged the dynamically
+collected import check for the deleted `_conditional` CFFI helper. Its explicit
+replacement verifies that the helper, `Binding`, and `_rust._openssl` are absent;
+the validation report records this single test replacement. Other missing tests
+and new skips still fail the gate. The two MSRV rows need a lifetime-lint fix.
+Standalone CI also found LibreSSL accepts incomplete certificate serialization;
+the wrapper now rejects missing public keys/signatures consistently. Its X.509
+tests pass all four native families. A safety-comment placement fix addresses
+the Rust 1.83 standalone lint failure. Final CI must pass with these corrections.
+
 CI applies both portable patches to pinned upstream checkouts. In addition to
 the existing matrix, five core integration rows run the full pyOpenSSL suite,
 format/lint/types, physical CFFI removal and import checks. They compare every

@@ -17619,7 +17619,7 @@ index 0000000..f2d2887
 +}
 diff --git a/src/rust/src/pyopenssl/tls.rs b/src/rust/src/pyopenssl/tls.rs
 new file mode 100644
-index 0000000..c3c5479
+index 0000000..5bfee10
 --- /dev/null
 +++ b/src/rust/src/pyopenssl/tls.rs
 @@ -0,0 +1,855 @@
@@ -18426,7 +18426,7 @@ index 0000000..c3c5479
 +}
 +
 +#[pyfunction]
-+fn tls_constants<'p>(py: Python<'p>) -> PyResult<Bound<'p, PyDict>> {
++fn tls_constants(py: Python<'_>) -> PyResult<Bound<'_, PyDict>> {
 +    let values = PyDict::new(py);
 +    for (name, value) in tls::compatibility_constants() {
 +        values.set_item(name, value)?;
@@ -18887,6 +18887,40 @@ index b8818f9..c39e33d 100644
          ),
          skip_message="Does not support PKCS1v1.5.",
      )
+diff --git a/tests/test_meta.py b/tests/test_meta.py
+index 6ed99d8..b41a5a4 100644
+--- a/tests/test_meta.py
++++ b/tests/test_meta.py
+@@ -2,6 +2,7 @@
+ # 2.0, and the BSD License. See the LICENSE file in the root of this repository
+ # for complete details.
+ 
++import importlib.util
+ import os
+ import pkgutil
+ import subprocess
+@@ -12,6 +13,21 @@ import pytest
+ import cryptography
+ 
+ 
++def test_removed_cffi_binding():
++    from cryptography.hazmat.bindings import _rust
++    from cryptography.hazmat.bindings.openssl import binding
++
++    # The former conditional CFFI module must not survive in built packages.
++    assert (
++        importlib.util.find_spec(
++            "cryptography.hazmat.bindings.openssl._conditional"
++        )
++        is None
++    )
++    assert not hasattr(binding, "Binding")
++    assert not hasattr(_rust, "_openssl")
++
++
+ def find_all_modules() -> list[str]:
+     return sorted(
+         mod
 diff --git a/tests/wycheproof/test_rsa.py b/tests/wycheproof/test_rsa.py
 index c408209..c29cc49 100644
 --- a/tests/wycheproof/test_rsa.py

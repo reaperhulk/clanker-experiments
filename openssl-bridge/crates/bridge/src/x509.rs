@@ -389,6 +389,26 @@ impl Certificate {
         Ok(Self(pointer(cert)?))
     }
     pub fn encode(&mut self, encoding: Encoding) -> Result<Vec<u8>> {
+        if encoding != Encoding::Text {
+            // SAFETY: These getters borrow immutable fields of this exclusive
+            // certificate. Inspect the raw bit strings without decoding an EVP
+            // key, so unknown public-key algorithms can still be preserved.
+            unsafe {
+                let mut signature = ptr::null();
+                let mut algorithm = ptr::null();
+                ffi::X509_get0_signature(&mut signature, &mut algorithm, self.0.as_ptr());
+                let public_key = ffi::X509_get0_pubkey_bitstr(self.0.as_ptr());
+                if signature.is_null()
+                    || public_key.is_null()
+                    || ffi::ASN1_STRING_length(signature) <= 0
+                    || ffi::ASN1_STRING_length(public_key) <= 0
+                {
+                    return Err(Error::InvalidState(
+                        "certificate encoding requires a signature and public key",
+                    ));
+                }
+            }
+        }
         let mut bio = Bio::memory()?;
         // SAFETY: Exclusive certificate access and fresh output BIO. No native
         // object or buffer can be concurrently modified during serialization.

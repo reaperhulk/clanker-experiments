@@ -253,6 +253,24 @@ def main() -> int:
             if after[k] == "skipped" and before[k] != "skipped"
         )
         report["added_tests"] = sorted(set(after) - set(before))
+        # Removing CFFI also removes one dynamically collected module-import
+        # case. Require its explicit replacement to prove the old module and
+        # binding are absent; do not silently discard that baseline identity.
+        removed_module = "cryptography.hazmat.bindings.openssl._conditional"
+        old_test = f"tests.test_meta::test_no_circular_imports[{removed_module}]"
+        replacement = "tests.test_meta::test_removed_cffi_binding"
+        report["replaced_tests"] = {}
+        if (
+            not args.baseline
+            and old_test in report["missing_tests"]
+            and after.get(replacement) == "passed"
+            and not (
+                args.cryptography
+                / "src/cryptography/hazmat/bindings/openssl/_conditional.py"
+            ).exists()
+        ):
+            report["missing_tests"].remove(old_test)
+            report["replaced_tests"][old_test] = replacement
     report["validation_passed"] = (
         all(c["exit_code"] == 0 for c in report["checks"])
         and report["unchanged_during_run"]

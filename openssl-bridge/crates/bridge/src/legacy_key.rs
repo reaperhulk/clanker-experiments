@@ -36,8 +36,8 @@ pub fn curve_names() -> Result<Vec<String>> {
     for curve in curves {
         // SAFETY: A built-in curve NID has a backend-owned static short name.
         let name = pointer(unsafe { ffi::OBJ_nid2sn(curve.nid) }.cast_mut())?;
-        // SAFETY: The name is a live NUL-terminated static string, copied here.
         names.push(
+            // SAFETY: The name is a live NUL-terminated static string, copied here.
             unsafe { CStr::from_ptr(name.as_ptr()) }
                 .to_string_lossy()
                 .into_owned(),
