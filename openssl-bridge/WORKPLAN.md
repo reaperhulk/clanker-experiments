@@ -75,3 +75,10 @@ The pinned source revisions, original CI matrix, API inventory, and current
 integration patch are in `compatibility/`. Native libraries are development
 inputs, not vendored runtime dependencies. Test reports must name both the
 upstream revision and the exact abstraction source they exercised.
+
+## EC integration under validation
+
+Named-curve key generation/import, ECDSA, deterministic ECDSA, ECDH, and point
+encoding now use typed keys. All five native backend builds pass the wrapper
+suite and Clippy. Cryptography integration is being checked and still uses a
+component conversion only at its existing shared parser/serializer boundary.

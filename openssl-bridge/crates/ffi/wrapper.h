@@ -55,3 +55,5 @@ int OB_rsa_mgf1_md(EVP_PKEY_CTX *ctx, const EVP_MD *md);
 int OB_rsa_oaep_md(EVP_PKEY_CTX *ctx, const EVP_MD *md);
 int OB_rsa_pss_saltlen(EVP_PKEY_CTX *ctx, int length);
 int OB_rsa_oaep_label(EVP_PKEY_CTX *ctx, const unsigned char *label, int length);
+
+int OB_signature_nonce(EVP_PKEY_CTX *ctx, unsigned int nonce_type);

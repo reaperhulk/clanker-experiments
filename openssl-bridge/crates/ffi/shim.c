@@ -37,3 +37,16 @@ int OB_rsa_oaep_label(EVP_PKEY_CTX *ctx, const unsigned char *label, int length)
     if (result <= 0) OPENSSL_free(copy);
     return result;
 }
+
+int OB_signature_nonce(EVP_PKEY_CTX *ctx, unsigned int nonce_type) {
+#if OB_BACKEND_CODE == 0 && OPENSSL_VERSION_NUMBER >= 0x30200000L
+    OSSL_PARAM params[2];
+    params[0] = OSSL_PARAM_construct_uint("nonce-type", &nonce_type);
+    params[1] = OSSL_PARAM_construct_end();
+    return EVP_PKEY_CTX_set_params(ctx, params);
+#else
+    (void)ctx;
+    (void)nonce_type;
+    return 0;
+#endif
+}

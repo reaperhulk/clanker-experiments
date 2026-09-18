@@ -145,3 +145,26 @@ Starting an operation fallibly copies the appropriate native state and requires
 a full IV before returning a stream. Native copy reads a const source; all
 payload operations use a distinct context. Private scratch allocations used for
 password-encrypted keys are erased on both success and failure.
+
+## Named-curve EC keys
+
+The EC API admits only the listed prime-field named curves and checks their
+native cofactor is one. Public imports accept canonical compressed or
+uncompressed encodings, reject infinity and off-curve points, and run the native
+key check before publishing a key. Coordinates are encoded at their exact field
+width; native point parsing rejects values outside the field rather than reducing
+them modulo the field. Private imports require `1 <= scalar < order` and derive
+the public point internally, so callers cannot supply inconsistent components.
+The scalar range also meets OpenSSL's documented precondition for constant-time
+single-scalar `EC_POINT_mul`; no arbitrary multi-scalar operation is exposed.
+See https://docs.openssl.org/3.0/man3/EC_POINT_add/.
+
+Key objects remain immutable after construction and each ECDSA/ECDH operation
+owns a fresh native context. ECDH requires the same curve on both keys and returns
+an erased-on-drop secret of the full field width. Its inputs have already passed
+point and cofactor validation; native peer validation is also left enabled.
+ECDSA accepts a prehash with a checked fixed digest length, returns bounded DER,
+and confines deterministic nonce controls to supported OpenSSL signing contexts.
+Private scalar exports and native temporary BIGNUMs are erased on destruction.
+No raw key pointer, arbitrary curve, generator, or unvalidated peer crosses the
+safe public interface.
