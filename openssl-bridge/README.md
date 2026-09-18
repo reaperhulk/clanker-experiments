@@ -37,6 +37,16 @@ operation-oriented rather than a drop-in copy of rust-openssl.
 
 ## Build
 
+The workspace contains two separate Cargo packages: `openssl-bridge` is the
+safe dependency used by cryptography, and `openssl-bridge-sys` generates the
+private native bindings. The integration patch uses a path dependency so the
+exact code under review is built:
+
+```toml
+[dependencies]
+openssl-bridge = { path = "../clanker-experiments/openssl-bridge/crates/bridge" }
+```
+
 Requires Rust, libclang for bindgen, and a supported backend installation.
 Set `OPENSSL_DIR`, optionally `OPENSSL_INCLUDE_DIR`, `OPENSSL_LIB_DIR`, and
 `OPENSSL_STATIC`. Without an explicit installation, discovery uses pkg-config.
@@ -45,6 +55,17 @@ The baseline cryptography revision is recorded in `compatibility/sources.json`.
 Cryptography's `AGENTS.md` requires builds and checks through nox sessions.
 
 ## Integration and results
+
+[GitHub Actions](../.github/workflows/openssl-bridge.yml) runs standalone Cargo
+tests, formatting, and Clippy against system OpenSSL, OpenSSL 4, LibreSSL,
+BoringSSL, and AWS-LC, including Rust 1.83 checks. A separate matrix applies the
+integration patch to the pinned cryptography revision and runs its full
+`nox -e local` check across all 17 recorded backend/version/configuration rows.
+It includes Wycheproof and X.509 Limbo, rejects missing tests and new upstream
+skips, and uploads logs, source identities, and JUnit results even after failure.
+Native sources, test inputs, and action revisions are pinned; native installations
+are cached by their source and build recipe. The aggregate `openssl-bridge CI`
+check passes only when both matrices pass.
 
 Apply [cryptography.patch](compatibility/cryptography.patch) to the pinned
 revision in [sources.json](compatibility/sources.json). Keep the two repositories

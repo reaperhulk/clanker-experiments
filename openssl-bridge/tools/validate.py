@@ -70,9 +70,15 @@ def main() -> int:
     parser.add_argument("--openssl-lib-dir", type=Path)
     parser.add_argument("--static", action="store_true")
     parser.add_argument("--fips", action="store_true")
+    parser.add_argument(
+        "--integration-only",
+        action="store_true",
+        help="Run the full cryptography check; standalone crate CI runs separately",
+    )
     parser.add_argument("--no-legacy", choices=["0", "1"])
     parser.add_argument(
-        "--baseline", action="store_true",
+        "--baseline",
+        action="store_true",
         help="Require an unmodified cryptography checkout and omit wrapper checks",
     )
     parser.add_argument("--out", type=Path, required=True)
@@ -128,7 +134,7 @@ def main() -> int:
         "complete_replacement": False,
         "checks": [],
     }
-    if not args.baseline:
+    if not args.baseline and not args.integration_only:
         library_env = env.copy()
         if args.fips:
             # The standalone vector suite deliberately exercises non-FIPS
@@ -141,7 +147,18 @@ def main() -> int:
         )
         for name, command in [
             ("library", ["cargo", "test", "--workspace", "--locked"]),
-            ("clippy", ["cargo", "clippy", "--workspace", "--all-targets", "--", "-D", "warnings"]),
+            (
+                "clippy",
+                [
+                    "cargo",
+                    "clippy",
+                    "--workspace",
+                    "--all-targets",
+                    "--",
+                    "-D",
+                    "warnings",
+                ],
+            ),
         ]:
             report["checks"].append(
                 run(command, ROOT, library_env, output / f"{name}.log")
@@ -188,7 +205,8 @@ def main() -> int:
         before, after = baseline["test_outcomes"], report.get("test_outcomes", {})
         report["missing_tests"] = sorted(set(before) - set(after))
         report["new_skips"] = sorted(
-            k for k in set(before) & set(after)
+            k
+            for k in set(before) & set(after)
             if after[k] == "skipped" and before[k] != "skipped"
         )
         report["added_tests"] = sorted(set(after) - set(before))
@@ -197,6 +215,8 @@ def main() -> int:
         and report["unchanged_during_run"]
         and not report.get("missing_tests")
         and not report.get("new_skips")
+        and bool(report.get("test_outcomes"))
+        and "failed" not in report.get("test_outcomes", {}).values()
         and (args.baseline or not report["remaining_original_dependencies"])
     )
     # Passing this development row never asserts API completeness or full matrix
