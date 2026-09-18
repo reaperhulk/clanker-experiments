@@ -1,0 +1,20 @@
+{
+  "wrapper_commit": "6a88b7294a504fced3f5c4be2cd528c14698ef8c",
+  "cryptography_commit": "19ff77880bbd485464849366122982cd3a04d94b",
+  "complete_replacement": false,
+  "runs": [
+    {
+      "backend": "openssl",
+      "summary": "4227 passed, 486 skipped, 4 warnings in 1501.52s (0:25:01)",
+      "canonical_nox_exit": 0,
+      "log": "integration-buffers-openssl.log.gz"
+    },
+    {
+      "backend": "boringssl",
+      "summary": "3806 passed, 907 skipped, 4 warnings in 705.54s (0:11:45)",
+      "canonical_nox_exit": 0,
+      "log": "integration-buffers-boringssl.log.gz"
+    }
+  ],
+  "scope": "Full canonical nox local, including both pinned external vector suites. Initial buffer isolation; later bounded extraction and DSA performance changes not covered."
+}

@@ -1,0 +1,84 @@
+{
+  "stage": "Incremental RSA integration; NOT a complete replacement",
+  "abstraction_commit": "29ae424b303d918c6090bdf4ed0db492a613f969",
+  "source_sha256": "94f6033b2269fdf7aa6059b26c82de72906422d2b91661a619ea05ab89b68889",
+  "integration_patch_sha256": "8b7f5d9d4c5398e96eba026ac615a571c84a920ace62de18de9a730c8184deb0",
+  "upstream_sources": {
+    "cryptography": "19ff77880bbd485464849366122982cd3a04d94b",
+    "pyopenssl": "567808adb4d859323424c3a6bc183e13a1ac59e8",
+    "wycheproof": "3fa63dd0344abb611f1fb1d77e119938603ea230",
+    "x509-limbo": "118721335e675edde10015df89b138cf292d7554",
+    "backend_builds": {
+      "openssl": {
+        "commit": "f089acdf4bc7ba94a79f4bf6eb7362c3e7d14aa9"
+      },
+      "boringssl": {
+        "commit": "8626998e7fdd6d779f37b7ba0b726631bbb76266"
+      },
+      "awslc": {
+        "commit": "39b142ec346e514af5e49cbd6036e2ed3b893466"
+      },
+      "libressl": {
+        "version": "4.3.2",
+        "archive_sha256": "edf01aee24c65d69e6a9efcb9d44bcda682ff9d4f3bbbd95e794e1dfa90847b5"
+      }
+    }
+  },
+  "python_version": "3.12.14",
+  "rust_version": "1.90.0",
+  "complete_replacement": false,
+  "complete_upstream_matrix": false,
+  "original_openssl_dependencies_remain": true,
+  "rows": [
+    {
+      "backend": "openssl",
+      "python_passed": 4225,
+      "python_skipped": 486,
+      "nox_local_success": true,
+      "log": "integration-rsa-final-openssl.log.gz",
+      "uncompressed_log_sha256": "963b1f9c854b351c4ac504d98013447ad329aed396c3ef65aa1407fd2f9d2097"
+    },
+    {
+      "backend": "openssl4",
+      "python_passed": 4688,
+      "python_skipped": 23,
+      "nox_local_success": true,
+      "log": "integration-rsa-final-openssl4.log.gz",
+      "uncompressed_log_sha256": "976f9153ad3d590c495ee653c217e9882077db1999896d1c397e70b4847df6f1"
+    },
+    {
+      "backend": "libressl",
+      "python_passed": 3970,
+      "python_skipped": 741,
+      "nox_local_success": true,
+      "log": "integration-rsa-final-libressl.log.gz",
+      "uncompressed_log_sha256": "79d84b367bdb90e9449ac8887d07f76ed7260ead8c6fea06367ee3bcf5c0f316"
+    },
+    {
+      "backend": "boringssl",
+      "python_passed": 3805,
+      "python_skipped": 906,
+      "nox_local_success": true,
+      "log": "integration-rsa-clean-boringssl.log.gz",
+      "uncompressed_log_sha256": "27a67293ed2338eda9d36223246110027d8332d46aacbf83dac991bb4c9ce09b"
+    },
+    {
+      "backend": "awslc",
+      "python_passed": 4319,
+      "python_skipped": 392,
+      "nox_local_success": true,
+      "log": "integration-rsa-clean-awslc.log.gz",
+      "uncompressed_log_sha256": "b8c370cf651c2d3858d2a0642f2add85ff2a2999823ae0287ed62744c3bada7e"
+    }
+  ],
+  "retries": {
+    "boringssl": "Reused release artifacts failed with E0463 (internal crate could not be resolved). An unchanged-source complete nox run with a new target directory passed; both logs are archived.",
+    "awslc": "Used a fresh target directory due to previous stale-artifact failures."
+  },
+  "msrv": {
+    "rust_version": "1.83.0",
+    "library_test_and_doctest_success": true,
+    "log": "wrapper-rsa-msrv.log.gz"
+  },
+  "baseline_comparison": "System OpenSSL counts match the unmodified baseline. Other backend counts match the prior incremental checkpoint; unmodified baselines remain outstanding."
+}

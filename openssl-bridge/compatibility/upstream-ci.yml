@@ -1,0 +1,521 @@
+name: CI
+on:
+  pull_request: {}
+  push:
+    branches:
+      - main
+      - '*.*.x'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
+env:
+  CARGO_INCREMENTAL: 0
+  # Enable uv's debug output everywhere, minus its per-file cache/index
+  # log lines. All directives must stay scoped to uv targets (no bare
+  # level like `debug`) so other Rust binaries that read RUST_LOG are
+  # unaffected. Keep in sync with UV_RUST_LOG in noxfile.py, which
+  # covers nox-run installs outside CI.
+  RUST_LOG: uv=debug,uv_client::cached_client=warn,uv_client::registry_client=error,uv_resolver::resolver=warn
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        PYTHON:
+          - {VERSION: "3.9", NOXSESSION: "flake"}
+          - {VERSION: "3.14", NOXSESSION: "flake"}
+          - {VERSION: "3.14", NOXSESSION: "rust"}
+          - {VERSION: "3.12", NOXSESSION: "docs", OPENSSL: {TYPE: "openssl", VERSION: "4.0.1"}}
+          - {VERSION: "3.14t", NOXSESSION: "rust,tests"}
+          - {VERSION: "3.15", NOXSESSION: "rust,tests"}
+          - {VERSION: "3.15t", NOXSESSION: "rust,tests"}
+          - {VERSION: "pypy3.11", NOXSESSION: "tests-nocoverage"}
+          - {VERSION: "3.14", NOXSESSION: "tests", OPENSSL: {TYPE: "openssl", VERSION: "4.0.2", CONFIG_FLAGS: "no-engine no-rc2 no-srtp no-ct no-psk"}}
+          - {VERSION: "3.14", NOXSESSION: "tests", OPENSSL: {TYPE: "openssl", VERSION: "4.0.2", CONFIG_FLAGS: "no-legacy", NO_LEGACY: "0"}}
+          - {VERSION: "3.14", NOXSESSION: "tests", OPENSSL: {TYPE: "openssl", VERSION: "4.0.2", CONFIG_FLAGS: "no-legacy", NO_LEGACY: "1"}}
+          - {VERSION: "3.14", NOXSESSION: "tests", NOXARGS: "--enable-fips=1", OPENSSL: {TYPE: "openssl", CONFIG_FLAGS: "enable-fips", VERSION: "3.6.4"}}
+          - {VERSION: "3.14", NOXSESSION: "tests", OPENSSL: {TYPE: "openssl", VERSION: "3.0.22"}}
+          - {VERSION: "3.14", NOXSESSION: "tests", OPENSSL: {TYPE: "openssl", VERSION: "3.4.7"}}
+          - {VERSION: "3.14", NOXSESSION: "tests", OPENSSL: {TYPE: "openssl", VERSION: "3.5.8"}}
+          - {VERSION: "3.14", NOXSESSION: "rust,tests", OPENSSL: {TYPE: "openssl", VERSION: "4.0.2"}}
+          - {VERSION: "3.14", NOXSESSION: "tests-ssh", OPENSSL: {TYPE: "openssl", VERSION: "3.6.4"}}
+          - {VERSION: "3.14", NOXSESSION: "rust,tests", OPENSSL: {TYPE: "libressl", VERSION: "4.2.1"}}
+          - {VERSION: "3.14", NOXSESSION: "rust,tests", OPENSSL: {TYPE: "libressl", VERSION: "4.3.2"}}
+          # Latest commit on the BoringSSL main branch, as of Sep 18, 2026.
+          - {VERSION: "3.14", NOXSESSION: "rust,tests", OPENSSL: {TYPE: "boringssl", VERSION: "8626998e7fdd6d779f37b7ba0b726631bbb76266"}}
+          # Latest tag of AWS-LC main branch, as of Sep 16, 2026.
+          - {VERSION: "3.14", NOXSESSION: "rust,tests", OPENSSL: {TYPE: "aws-lc", VERSION: "v5.9.0"}}
+          # Latest commit on the OpenSSL master branch, as of Sep 18, 2026.
+          - {VERSION: "3.14", NOXSESSION: "tests", OPENSSL: {TYPE: "openssl", VERSION: "7c234e584350f623083e0c52c02c4bb5e7c836ff"}}
+          # Builds with various Rust versions. Includes MSRV and next
+          # potential future MSRV.
+          # - 1.85: 2024 edition
+          # - 1.95: cfg_select
+          - {VERSION: "3.14", NOXSESSION: "rust,tests", RUST: "1.83.0"}
+          - {VERSION: "3.14", NOXSESSION: "rust,tests", RUST: "1.83.0", OPENSSL: {TYPE: "aws-lc", VERSION: "v5.9.0"}}
+          - {VERSION: "3.14", NOXSESSION: "rust,tests", RUST: "1.83.0", OPENSSL: {TYPE: "boringssl", VERSION: "8626998e7fdd6d779f37b7ba0b726631bbb76266"}}
+          - {VERSION: "3.14", NOXSESSION: "rust,tests", RUST: "beta"}
+          - {VERSION: "3.14", NOXSESSION: "rust,tests", RUST: "nightly"}
+          - {VERSION: "3.14", NOXSESSION: "tests-rust-debug"}
+          # Not actually an MSRV, just for coverage on this
+          - {VERSION: "3.14", NOXSESSION: "tests", RUST: "1.87", OPENSSL: {TYPE: "openssl", VERSION: "4.0.2"}}
+          - {VERSION: "3.14", NOXSESSION: "tests", RUST: "1.87", NOXARGS: "--enable-fips=1", OPENSSL: {TYPE: "openssl", CONFIG_FLAGS: "enable-fips", VERSION: "3.6.4"}}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 3
+        with:
+          persist-credentials: false
+      - name: Setup python
+        id: setup-python
+        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        with:
+          version-file: ci-constraints-requirements.txt
+          python-version: ${{ matrix.PYTHON.VERSION }}
+          activate-environment: true
+          cache-dependency-glob: ci-constraints-requirements.txt
+        timeout-minutes: 3
+      # The rust session's test binaries link libpython.
+      - run: echo "LD_LIBRARY_PATH=$(python -c 'import sysconfig; print(sysconfig.get_config_var("LIBDIR"))')" >> $GITHUB_ENV
+      - name: Setup rust
+        uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772
+        with:
+          toolchain: ${{ matrix.PYTHON.RUST }}
+          components: rustfmt,clippy
+        if: matrix.PYTHON.RUST
+
+      # llvm-tools is only used to process Rust coverage data, which the
+      # tests-nocoverage session doesn't collect.
+      - run: rustup component add llvm-tools-preview
+        if: matrix.PYTHON.NOXSESSION != 'flake' && matrix.PYTHON.NOXSESSION != 'docs' && matrix.PYTHON.NOXSESSION != 'tests-nocoverage'
+      - name: Clone test vectors
+        timeout-minutes: 2
+        uses: ./.github/actions/fetch-vectors
+        if: matrix.PYTHON.NOXSESSION != 'flake' && matrix.PYTHON.NOXSESSION != 'docs' && matrix.PYTHON.NOXSESSION != 'rust'
+      - name: Build custom OpenSSL/LibreSSL
+        id: openssl
+        uses: ./.github/actions/build-openssl
+        with:
+          type: ${{ matrix.PYTHON.OPENSSL.TYPE }}
+          version: ${{ matrix.PYTHON.OPENSSL.VERSION }}
+          config-flags: ${{ matrix.PYTHON.OPENSSL.CONFIG_FLAGS }}
+        if: matrix.PYTHON.OPENSSL
+      - name: Cache rust and pip
+        uses: ./.github/actions/cache
+        timeout-minutes: 2
+        with:
+          # openssl-sys reruns its build script when the include directory
+          # is newer than the cached fingerprint, so the key names the
+          # specific OpenSSL build, not just its configuration.
+          key: "${{ steps.setup-python.outputs.python-runtime-id }}-${{ matrix.PYTHON.NOXSESSION }}-${{ steps.openssl.outputs.cache-key }}-0"
+      # This must run after the cache action: rust-cache prunes binaries
+      # that already existed in ~/.cargo/bin before it ran, so installing
+      # bindgen first means it never gets cached. When the cache is warm,
+      # cargo sees the binary is already installed and skips the build.
+      - run: rustup run stable cargo install bindgen-cli
+        if: matrix.PYTHON.OPENSSL.TYPE == 'boringssl' || matrix.PYTHON.OPENSSL.TYPE == 'aws-lc'
+
+      - run: uv pip install -c ci-constraints-requirements.txt 'nox[uv]' 'tomli; python_version < "3.11"'
+      - name: Create nox environment
+        run: |
+            nox -v --install-only
+        env:
+          NOXSESSION: ${{ matrix.PYTHON.NOXSESSION }}
+          # Needed until https://github.com/PyO3/pyo3/issues/5093
+          PYO3_USE_ABI3_FORWARD_COMPATIBILITY: 1
+      - name: Tests
+        run: |
+            nox --no-install --  --color=yes --wycheproof-root=wycheproof --x509-limbo-root=x509-limbo ${{ matrix.PYTHON.NOXARGS }}
+        env:
+          NOXSESSION: ${{ matrix.PYTHON.NOXSESSION }}
+          COLUMNS: 80
+          CRYPTOGRAPHY_OPENSSL_NO_LEGACY: ${{ matrix.PYTHON.OPENSSL.NO_LEGACY }}
+
+      - uses: ./.github/actions/upload-coverage
+
+  distros:
+    runs-on: ${{ matrix.IMAGE.RUNNER }}
+    container: ghcr.io/pyca/cryptography-runner-${{ matrix.IMAGE.IMAGE }}
+    strategy:
+      fail-fast: false
+      matrix:
+        IMAGE:
+          - {IMAGE: "bookworm", NOXSESSION: "tests", RUNNER: "ubuntu-latest"}
+          - {IMAGE: "trixie", NOXSESSION: "tests", RUNNER: "ubuntu-latest"}
+          - {IMAGE: "sid", NOXSESSION: "tests", RUNNER: "ubuntu-latest"}
+          - {IMAGE: "ubuntu-jammy", NOXSESSION: "tests", RUNNER: "ubuntu-latest"}
+          - {IMAGE: "ubuntu-noble", NOXSESSION: "tests", RUNNER: "ubuntu-latest"}
+          - {IMAGE: "ubuntu-resolute", NOXSESSION: "tests", RUNNER: "ubuntu-latest"}
+          - {IMAGE: "ubuntu-rolling", NOXSESSION: "tests", RUNNER: "ubuntu-latest"}
+          - {IMAGE: "fedora", NOXSESSION: "tests", RUNNER: "ubuntu-latest"}
+          - {IMAGE: "centos-stream9", NOXSESSION: "tests", RUNNER: "ubuntu-latest"}
+          - {IMAGE: "centos-stream10", NOXSESSION: "tests", RUNNER: "ubuntu-latest"}
+
+          - {IMAGE: "ubuntu-rolling:aarch64", NOXSESSION: "tests", RUNNER: "ubuntu-24.04-arm"}
+          - {IMAGE: "ubuntu-rolling:armv7l", NOXSESSION: "tests", RUNNER: "ubuntu-24.04-arm"}
+          - {IMAGE: "ubuntu-rolling:ppc64le", NOXSESSION: "tests", RUNNER: "ubuntu-24.04-ppc64le"}
+    timeout-minutes: 15
+    env:
+      RUSTUP_HOME: /root/.rustup
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 3
+        with:
+          persist-credentials: false
+      - name: Cache rust and pip
+        uses: ./.github/actions/cache
+        timeout-minutes: 2
+        with:
+          key: ${{ matrix.IMAGE.IMAGE }}
+      - name: Clone test vectors
+        timeout-minutes: 2
+        uses: ./.github/actions/fetch-vectors
+      # When run in a docker container the home directory doesn't have the same owner as the
+      # apparent user so pip refuses to create a cache dir
+      - name: create pip cache dir
+        run: mkdir -p "${HOME}/.cache/pip"
+      - run: |
+          echo "OPENSSL_FORCE_FIPS_MODE=1" >> $GITHUB_ENV
+        if: matrix.IMAGE.FIPS
+      - run: /venv/bin/python -m pip install -c ci-constraints-requirements.txt 'nox[uv]' 'tomli; python_version < "3.11"'
+      - run: '/venv/bin/nox -v --install-only'
+        env:
+          # OPENSSL_ENABLE_SHA1_SIGNATURES is for CentOS 9 Stream
+          OPENSSL_ENABLE_SHA1_SIGNATURES: 1
+          NOXSESSION: ${{ matrix.IMAGE.NOXSESSION }}
+      - run: '/venv/bin/nox --no-install --  --color=yes --wycheproof-root="wycheproof" --x509-limbo-root="x509-limbo"'
+        env:
+          COLUMNS: 80
+          # OPENSSL_ENABLE_SHA1_SIGNATURES is for CentOS 9 Stream
+          OPENSSL_ENABLE_SHA1_SIGNATURES: 1
+          NOXSESSION: ${{ matrix.IMAGE.NOXSESSION }}
+      - uses: ./.github/actions/upload-coverage
+
+  alpine:
+    runs-on: ${{ matrix.IMAGE.RUNNER }}
+    container:
+      image: ghcr.io/pyca/cryptography-runner-${{ matrix.IMAGE.IMAGE }}
+      volumes:
+        - /staticnodehost:/staticnodecontainer:rw,rshared
+        - /staticnodehost/24:/__e/node24:ro,rshared
+    strategy:
+      fail-fast: false
+      matrix:
+        IMAGE:
+          - {IMAGE: "alpine", NOXSESSION: "tests", RUNNER: "ubuntu-latest"}
+          - {IMAGE: "alpine:aarch64", NOXSESSION: "tests", RUNNER: "ubuntu-24.04-arm"}
+    timeout-minutes: 15
+    env:
+      RUSTUP_HOME: /root/.rustup
+    steps:
+      - name: Ridiculous-er workaround for static node
+        run: |
+          cp -R /staticnode/* /staticnodecontainer/
+      - name: Ridiculous alpine workaround for actions support on arm64
+        run: |
+          # This modifies /etc/os-release so the JS actions
+          # from GH can't detect that it's on alpine:aarch64. It will
+          # then use a glibc nodejs, which works fine when gcompat
+          # is installed in the container (which it is)
+          sed -i "s:ID=alpine:ID=NotpineForGHA:" /etc/os-release
+        if: matrix.IMAGE.IMAGE == 'alpine:aarch64'
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 3
+        with:
+          persist-credentials: false
+      - name: Cache rust and pip
+        uses: ./.github/actions/cache
+        timeout-minutes: 2
+        with:
+          key: ${{ matrix.IMAGE.IMAGE }}
+      - name: Clone test vectors
+        timeout-minutes: 2
+        uses: ./.github/actions/fetch-vectors
+      # When run in a docker container the home directory doesn't have the same owner as the
+      # apparent user so pip refuses to create a cache dir
+      - name: create pip cache dir
+        run: mkdir -p "${HOME}/.cache/pip"
+      - run: |
+          echo "OPENSSL_FORCE_FIPS_MODE=1" >> $GITHUB_ENV
+        if: matrix.IMAGE.FIPS
+      - run: /venv/bin/python -m pip install -c ci-constraints-requirements.txt 'nox[uv]' 'tomli; python_version < "3.11"'
+      - run: '/venv/bin/nox -v --install-only'
+        env:
+          # OPENSSL_ENABLE_SHA1_SIGNATURES is for CentOS 9 Stream
+          OPENSSL_ENABLE_SHA1_SIGNATURES: 1
+          NOXSESSION: ${{ matrix.IMAGE.NOXSESSION }}
+      - run: '/venv/bin/nox --no-install --  --color=yes --wycheproof-root="wycheproof" --x509-limbo-root="x509-limbo"'
+        env:
+          COLUMNS: 80
+          # OPENSSL_ENABLE_SHA1_SIGNATURES is for CentOS 9 Stream
+          OPENSSL_ENABLE_SHA1_SIGNATURES: 1
+          NOXSESSION: ${{ matrix.IMAGE.NOXSESSION }}
+      - uses: ./.github/actions/upload-coverage
+
+  macos:
+    runs-on: macos-26
+    strategy:
+      fail-fast: false
+      matrix:
+        PYTHON:
+          - {VERSION: "3.9", NOXSESSION: "tests"}
+          - {VERSION: "3.14", NOXSESSION: "tests"}
+          - {VERSION: "3.14t", NOXSESSION: "tests"}
+          - {VERSION: "3.15", NOXSESSION: "tests"}
+          - {VERSION: "3.15t", NOXSESSION: "tests"}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 3
+        with:
+          persist-credentials: false
+      - name: Setup python
+        id: setup-python
+        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        with:
+          version-file: ci-constraints-requirements.txt
+          python-version: ${{ matrix.PYTHON.VERSION }}
+          activate-environment: true
+          cache-dependency-glob: ci-constraints-requirements.txt
+        timeout-minutes: 3
+      # Before the cache step: the artifact id is part of its key.
+      - name: Download OpenSSL
+        id: openssl
+        uses: ./.github/actions/fetch-openssl
+        with:
+          workflow: build-macos-openssl.yml
+          name: openssl-macos-arm64
+          path: "../openssl-macos-arm64/"
+      # Keyed on the resolved interpreter version (like the linux and
+      # windows jobs), not just the matrix name: the alpha that an
+      # unreleased minor resolves to moves over time, and a cached maturin/pyo3
+      # config built by an older alpha gets rewritten by maturin on every
+      # run, which re-dirties pyo3-ffi and recompiles it, pyo3, and every
+      # crate above them despite a warm cache.
+      #
+      # Also keyed on the OpenSSL artifact: its header mtimes are its
+      # creation time, and a cargo cache older than the artifact would
+      # otherwise recompile openssl-sys and everything above it every run.
+      - name: Cache rust and pip
+        uses: ./.github/actions/cache
+        timeout-minutes: 2
+        with:
+          key: ${{ matrix.PYTHON.NOXSESSION }}-${{ steps.setup-python.outputs.python-runtime-id }}-${{ steps.openssl.outputs.artifact-id }}
+      - run: rustup component add llvm-tools-preview
+
+      - run: uv pip install -c ci-constraints-requirements.txt 'nox[uv]' 'tomli; python_version < "3.11"'
+
+      - name: Clone test vectors
+        timeout-minutes: 2
+        uses: ./.github/actions/fetch-vectors
+
+      - name: Build nox environment
+        run: |
+          OPENSSL_DIR=$(readlink -f ../openssl-macos-arm64/) \
+            OPENSSL_STATIC=1 \
+            CFLAGS="-Werror -Wno-error=deprecated-declarations -Wno-error=incompatible-pointer-types-discards-qualifiers -Wno-error=unused-function" \
+            nox -v --install-only
+        env:
+          NOXSESSION: ${{ matrix.PYTHON.NOXSESSION }}
+          MACOSX_DEPLOYMENT_TARGET: "11.0"
+      - name: Tests
+        run: nox --no-install --  --color=yes --wycheproof-root=wycheproof --x509-limbo-root=x509-limbo
+        env:
+          NOXSESSION: ${{ matrix.PYTHON.NOXSESSION }}
+          COLUMNS: 80
+
+      - uses: ./.github/actions/upload-coverage
+
+  windows:
+    runs-on: ${{ matrix.WINDOWS.RUNNER }}
+    strategy:
+      fail-fast: false
+      matrix:
+        WINDOWS:
+          - {ARCH: 'x64', WINDOWS: 'win64', RUNNER: 'windows-latest'}
+        PYTHON:
+          - {VERSION: "3.9", NOXSESSION: "tests-nocoverage"}
+          - {VERSION: "3.14", NOXSESSION: "tests"}
+          - {VERSION: "3.14t", NOXSESSION: "tests"}
+          - {VERSION: "3.15", NOXSESSION: "tests"}
+          - {VERSION: "3.15t", NOXSESSION: "tests"}
+        include:
+          - WINDOWS: {ARCH: 'arm64', WINDOWS: 'arm64', RUNNER: 'windows-11-arm'}
+            PYTHON: {VERSION: "3.14", NOXSESSION: "tests-nocoverage"}
+          - WINDOWS: {ARCH: 'arm64', WINDOWS: 'arm64', RUNNER: 'windows-11-arm'}
+            PYTHON: {VERSION: "3.15", NOXSESSION: "tests-nocoverage"}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 3
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/windows-tests
+        with:
+          python-version: ${{ matrix.PYTHON.VERSION }}
+          noxsession: ${{ matrix.PYTHON.NOXSESSION }}
+          arch: ${{ matrix.WINDOWS.ARCH }}
+          openssl-name: ${{ matrix.WINDOWS.WINDOWS }}
+
+      - uses: ./.github/actions/upload-coverage
+
+  linux-downstream:
+    runs-on: ubuntu-26.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - DOWNSTREAM: paramiko
+            REPO: paramiko/paramiko
+            # Latest commit on the paramiko main branch, as of Aug 30, 2026.
+            REF: 142f593e40ad767c5e3556cbace66dc84589620c
+            PATH: paramiko
+          - DOWNSTREAM: pyopenssl
+            REPO: pyca/pyopenssl
+            # Latest commit on the pyopenssl main branch, as of Sep 09, 2026.
+            REF: 567808adb4d859323424c3a6bc183e13a1ac59e8
+            PATH: pyopenssl
+          - DOWNSTREAM: pyopenssl-release
+            REPO: pyca/pyopenssl
+            # Latest release tag of pyopenssl-release, as of Aug 02, 2026.
+            REF: 26.4.0
+            PATH: pyopenssl
+          - DOWNSTREAM: twisted
+            REPO: twisted/twisted
+            # Latest commit on the twisted trunk branch, as of Sep 17, 2026.
+            REF: 86f26338335cf21383a45241dbb6df5b3050afbd
+            PATH: twisted
+          - DOWNSTREAM: aws-encryption-sdk-python
+            REPO: awslabs/aws-encryption-sdk-python
+            # Latest commit on the aws-encryption-sdk-python master branch, as of Sep 17, 2026.
+            REF: a6c0413bb0ddc9bccdefad9f1d2c031e0bc4db29
+            PATH: aws-encryption-sdk-python
+          - DOWNSTREAM: certbot
+            REPO: certbot/certbot
+            # Latest commit on the certbot main branch, as of Sep 10, 2026.
+            REF: 485649333422392901e7ef891630f0129985df8e
+            PATH: certbot
+          - DOWNSTREAM: certbot-josepy
+            REPO: certbot/josepy
+            # Latest commit on the certbot-josepy main branch, as of Sep 17, 2026.
+            REF: 7069e07e20408bf1bf911427f5d386a2d6471d5d
+            PATH: josepy
+          - DOWNSTREAM: mitmproxy
+            REPO: mitmproxy/mitmproxy
+            # Latest commit on the mitmproxy main branch, as of Sep 10, 2026.
+            REF: b506c68108e287104045333ade476d92c39c275e
+            PATH: mitmproxy
+          - DOWNSTREAM: scapy
+            REPO: secdev/scapy
+            # Latest commit on the scapy master branch, as of Sep 17, 2026.
+            REF: 7d694547317875f0455435ef531a1b866ebce276
+            PATH: scapy
+          - DOWNSTREAM: sigstore-python
+            REPO: sigstore/sigstore-python
+            # Latest commit on the sigstore-python main branch, as of Sep 17, 2026.
+            REF: 50a73f5e96ba6c3d89647e28872c71cbd71af41b
+            PATH: sigstore-python
+    name: "Downstream tests for ${{ matrix.DOWNSTREAM }}"
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 3
+        with:
+          persist-credentials: false
+      - name: Checkout downstream repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 3
+        with:
+          repository: ${{ matrix.REPO }}
+          ref: ${{ matrix.REF }}
+          path: ${{ matrix.PATH }}
+          persist-credentials: false
+      - name: Cache rust and pip
+        uses: ./.github/actions/cache
+        timeout-minutes: 2
+      - name: Setup python
+        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        with:
+          version-file: ci-constraints-requirements.txt
+          python-version: '3.14'
+          cache-dependency-glob: ci-constraints-requirements.txt
+        timeout-minutes: 3
+
+      - run: uv venv
+      - run: source .venv/bin/activate && ./.github/downstream.d/${{ matrix.DOWNSTREAM }}.sh install
+      - run: uv pip install -v .
+      # cryptography main has a version of "(X+1).0.0.dev1" where X is the
+      # most recently released major version. A package used by a downstream
+      # may depend on cryptography <=X. If you use entrypoints stuff, this can
+      # lead to runtime errors due to version incompatibilities. Rename the
+      # dist-info directory to pretend to be an older version to "solve" this.
+      - run: |
+          .venv/bin/python <<EOF
+          import json
+          import importlib.metadata
+          import shutil
+          import urllib.request
+
+          d = importlib.metadata.distribution("cryptography")
+          with urllib.request.urlopen("https://pypi.org/pypi/cryptography/json") as r:
+              latest_version = json.load(r)["info"]["version"]
+          new_path = d.locate_file(f"cryptography-{latest_version}.dist-info")
+          shutil.move(d.locate_file(f"cryptography-{d.version}.dist-info"), new_path)
+
+          EOF
+      - run: source .venv/bin/activate && ./.github/downstream.d/${{ matrix.DOWNSTREAM }}.sh run
+
+  all-green:
+    # https://github.community/t/is-it-possible-to-require-all-github-actions-tasks-to-pass-without-enumerating-them/117957/4?u=graingert
+    runs-on: ubuntu-latest
+    needs: [linux, alpine, distros, macos, windows, linux-downstream]
+    if: ${{ always() }}
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 3
+        with:
+          persist-credentials: false
+      - name: Decide whether the needed jobs succeeded or failed
+        uses: re-actors/alls-green@b5b5b37504aa4183270bd3d855c52a67f212be35 # v1.3.0
+        with:
+          jobs: ${{ toJSON(needs) }}
+      - run: pip install -c ci-constraints-requirements.txt coverage[toml]
+        if: ${{ always() }}
+      - name: Download coverage data
+        if: ${{ always() }}
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: coverage-data-*
+          merge-multiple: true
+          path: coverage-data/
+      - name: Combine coverage and fail if it's <100%.
+        if: ${{ always() }}
+        id: combinecoverage
+        run: |
+          set +e
+          echo "## Coverage" >> $GITHUB_STEP_SUMMARY
+          python -u .github/bin/merge_rust_coverage.py coverage-data/ | tee COV_REPORT
+          COV_EXIT_CODE=${PIPESTATUS[0]}
+          if [ $COV_EXIT_CODE -ne 0 ]; then
+            echo "🚨 Coverage failed. Under 100" | tee -a $GITHUB_STEP_SUMMARY
+          fi
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cat COV_REPORT >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          exit $COV_EXIT_CODE
+      - name: Upload HTML report.
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: _html-coverage-report
+          path: htmlcov
+          if-no-files-found: ignore
+        if: ${{ failure() && steps.combinecoverage.outcome == 'failure' }}

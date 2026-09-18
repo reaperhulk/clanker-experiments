@@ -1,0 +1,78 @@
+{
+  "stage": "Incremental MAC/KDF/random/Curve25519 integration; NOT a complete replacement",
+  "abstraction_commit": "387b74cdcf7e7edc7a7d05e5dea0305d83c8dbf8",
+  "source_sha256": "1fa845226f351cdc43685f1e409803012dcf64674f44568ccd3f38b7ec23e5a1",
+  "integration_patch_sha256": "64f413052ba6e3d5685d34076d7a114859e8b0cf60b0737bf20fcf0615fe3ad1",
+  "upstream_sources": {
+    "cryptography": "19ff77880bbd485464849366122982cd3a04d94b",
+    "pyopenssl": "567808adb4d859323424c3a6bc183e13a1ac59e8",
+    "wycheproof": "3fa63dd0344abb611f1fb1d77e119938603ea230",
+    "x509-limbo": "118721335e675edde10015df89b138cf292d7554",
+    "backend_builds": {
+      "openssl": {
+        "commit": "f089acdf4bc7ba94a79f4bf6eb7362c3e7d14aa9"
+      },
+      "boringssl": {
+        "commit": "8626998e7fdd6d779f37b7ba0b726631bbb76266"
+      },
+      "awslc": {
+        "commit": "39b142ec346e514af5e49cbd6036e2ed3b893466"
+      },
+      "libressl": {
+        "version": "4.3.2",
+        "archive_sha256": "edf01aee24c65d69e6a9efcb9d44bcda682ff9d4f3bbbd95e794e1dfa90847b5"
+      }
+    }
+  },
+  "python_version": "3.12.14",
+  "rust_version": "1.90.0",
+  "complete_replacement": false,
+  "complete_upstream_matrix": false,
+  "original_openssl_dependencies_remain": true,
+  "rows": [
+    {
+      "backend": "OpenSSL 3.0.13 system",
+      "python_passed": 4225,
+      "python_skipped": 486,
+      "nox_local_success": true,
+      "log": "integration-primitives-openssl.log.gz",
+      "uncompressed_log_sha256": "8b852dd61384fcdc5ec4171a49c965c9998ed2c751a4bfd4f0982a1de0900eff"
+    },
+    {
+      "backend": "OpenSSL 4.0.2",
+      "python_passed": 4688,
+      "python_skipped": 23,
+      "nox_local_success": true,
+      "log": "integration-primitives-openssl4.log.gz",
+      "uncompressed_log_sha256": "b121fa0ec4109d4c8dc409b32051963676f89490e1faa8e82e20c978a5c90799"
+    },
+    {
+      "backend": "LibreSSL 4.3.2",
+      "python_passed": 3970,
+      "python_skipped": 741,
+      "nox_local_success": true,
+      "log": "integration-primitives-libressl.log.gz",
+      "uncompressed_log_sha256": "fc7a9853b63fa78c4b9a0178843a67ca72f683ef272554627a092905c5301e69"
+    },
+    {
+      "backend": "BoringSSL 8626998e7fdd6d779f37b7ba0b726631bbb76266",
+      "python_passed": 3805,
+      "python_skipped": 906,
+      "nox_local_success": true,
+      "log": "integration-primitives-boringssl.log.gz",
+      "uncompressed_log_sha256": "e1bd353ef378228daf2b1274fe384b0fb369696b317c07413607d744007ca9df"
+    },
+    {
+      "backend": "AWS-LC 5.9.0",
+      "python_passed": 4319,
+      "python_skipped": 392,
+      "nox_local_success": true,
+      "log": "integration-primitives-awslc-clean.log.gz",
+      "uncompressed_log_sha256": "c3063872c50fd5d785d515600358daab6fc0a0b5e890c0c69b74e114c0d457d0"
+    }
+  ],
+  "retries": {
+    "awslc": "Initial reused release directory failed with colliding StableCrateId values. An unchanged-source nox -e local run in a fresh Cargo target directory passed; both logs are archived."
+  },
+  "baseline_comparison": "System OpenSSL passed/skipped counts match the unmodified baseline. Other backend counts match the earlier incremental checkpoint; unmodified baselines remain outstanding."
+}

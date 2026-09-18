@@ -1,0 +1,159 @@
+name: openssl-bridge
+
+on:
+  pull_request:
+    paths:
+      - 'openssl-bridge/**'
+      - '.github/workflows/openssl-bridge.yml'
+      - '.github/actions/openssl-bridge-native/**'
+  push:
+    branches: [main, openssl-bridge-tls-validation]
+    paths:
+      - 'openssl-bridge/**'
+      - '.github/workflows/openssl-bridge.yml'
+      - '.github/actions/openssl-bridge-native/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+concurrency:
+  group: openssl-bridge-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_INCREMENTAL: '0'
+  CARGO_BUILD_JOBS: '2'
+  PYTEST_XDIST_AUTO_NUM_WORKERS: '2'
+  CFLAGS: -Werror=implicit-function-declaration
+
+jobs:
+  matrix:
+    runs-on: ubuntu-24.04
+    outputs:
+      library: ${{ steps.matrix.outputs.library }}
+      integration: ${{ steps.matrix.outputs.integration }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          path: clanker-experiments
+      - id: matrix
+        run: python3 clanker-experiments/openssl-bridge/tools/ci.py matrix --github-output "$GITHUB_OUTPUT"
+
+  library:
+    name: Rust / ${{ matrix.id }} / ${{ matrix.rust }}
+    needs: matrix
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.matrix.outputs.library) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          path: clanker-experiments
+      - uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772
+        with:
+          toolchain: ${{ matrix.rust }}
+          components: rustfmt,clippy
+      - uses: ./clanker-experiments/.github/actions/openssl-bridge-native
+        with:
+          row: ${{ matrix.id }}
+      - name: Format, test, and lint the standalone crates
+        working-directory: clanker-experiments/openssl-bridge
+        env:
+          CARGO_TARGET_DIR: ${{ runner.temp }}/library-target
+        run: |
+          cargo fmt --all -- --check
+          cargo test --workspace --locked 2>&1 | tee "$GITHUB_WORKSPACE/ci-results/library.log"
+          cargo clippy --workspace --all-targets --locked -- -D warnings 2>&1 | tee "$GITHUB_WORKSPACE/ci-results/clippy.log"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        if: always()
+        with:
+          name: openssl-bridge-library-${{ matrix.id }}
+          path: ci-results/*.log
+          if-no-files-found: warn
+          retention-days: 14
+
+  cryptography:
+    name: cryptography / ${{ matrix.id }} / ${{ matrix.rust }}
+    needs: matrix
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.matrix.outputs.integration) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          path: clanker-experiments
+      - name: Check out pinned upstream and vectors, and apply integration patch
+        env:
+          BRIDGE_ROW: ${{ matrix.id }}
+        run: python3 clanker-experiments/openssl-bridge/tools/ci.py prepare --row "$BRIDGE_ROW" --work .
+      - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        with:
+          version-file: cryptography/ci-constraints-requirements.txt
+          python-version: '3.12'
+          activate-environment: true
+          cache-dependency-glob: cryptography/ci-constraints-requirements.txt
+      - uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772
+        with:
+          toolchain: ${{ matrix.rust }}
+          components: rustfmt,clippy
+      - uses: ./clanker-experiments/.github/actions/openssl-bridge-native
+        with:
+          row: ${{ matrix.id }}
+      - name: Install nox and configure libpython for Rust tests
+        run: |
+          uv pip install -c cryptography/ci-constraints-requirements.txt 'nox[uv]'
+          python -c 'import os, sysconfig; print("LD_LIBRARY_PATH=" + sysconfig.get_config_var("LIBDIR"), file=open(os.environ["GITHUB_ENV"], "a"))'
+      - name: Full cryptography Python and Rust suite
+        env:
+          BRIDGE_BACKEND: ${{ matrix.backend }}
+          BRIDGE_FIPS: ${{ matrix.fips }}
+        run: |
+          args=(--integration-only --cryptography cryptography --wycheproof wycheproof --limbo x509-limbo
+            --backend "$BRIDGE_BACKEND" --openssl-dir "$OPENSSL_DIR"
+            --baseline-report baseline.json --out ci-results)
+          if [[ "$OPENSSL_STATIC" == 1 ]]; then args+=(--static); fi
+          if [[ -n "${OPENSSL_LIB_DIR:-}" ]]; then args+=(--openssl-lib-dir "$OPENSSL_LIB_DIR"); fi
+          if [[ "$BRIDGE_FIPS" == true ]]; then args+=(--fips); fi
+          python clanker-experiments/openssl-bridge/tools/validate.py "${args[@]}"
+      - name: Full pyOpenSSL suite without CFFI
+        if: contains(fromJSON('["system", "openssl4", "libressl", "boringssl", "awslc"]'), matrix.id)
+        env:
+          BRIDGE_ROW: ${{ matrix.id }}
+        run: |
+          python clanker-experiments/openssl-bridge/tools/validate_pyopenssl.py \
+            --cryptography cryptography --pyopenssl pyopenssl --row "$BRIDGE_ROW" --out ci-results \
+            --ca-file /etc/ssl/certs/ca-certificates.crt
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        if: always()
+        with:
+          name: openssl-bridge-cryptography-${{ matrix.id }}
+          path: |
+            ci-results/*.log
+            ci-results/*.json
+            ci-results/*.xml
+          if-no-files-found: warn
+          retention-days: 14
+
+  required:
+    name: openssl-bridge CI
+    if: always()
+    needs: [library, cryptography]
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Require every matrix job to pass
+        env:
+          LIBRARY_RESULT: ${{ needs.library.result }}
+          CRYPTOGRAPHY_RESULT: ${{ needs.cryptography.result }}
+        run: test "$LIBRARY_RESULT" = success && test "$CRYPTOGRAPHY_RESULT" = success

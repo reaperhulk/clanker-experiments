@@ -1,0 +1,290 @@
+#!/usr/bin/env python3
+"""Run a reproducible library + cryptography validation row; never open a PR."""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import os
+import shlex
+import shutil
+import subprocess
+import sys
+import time
+import xml.etree.ElementTree as ET
+from pathlib import Path
+
+import tomllib
+
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def source_hash() -> str:
+    digest = hashlib.sha256()
+    for path in sorted((ROOT / "crates").rglob("*")):
+        if path.is_file():
+            digest.update(str(path.relative_to(ROOT)).encode())
+            digest.update(b"\0")
+            digest.update(path.read_bytes())
+            digest.update(b"\0")
+    for name in ("Cargo.toml", "Cargo.lock"):
+        digest.update((ROOT / name).read_bytes())
+    return digest.hexdigest()
+
+
+def git(directory: Path, *args: str) -> bytes:
+    return subprocess.check_output(["git", "-C", str(directory), *args])
+
+
+def run(command: list[str], directory: Path, env: dict[str, str], log: Path) -> dict:
+    print(f"Running {' '.join(command)} in {directory}", flush=True)
+    started = time.monotonic()
+    with log.open("w") as output:
+        result = subprocess.run(
+            command,
+            cwd=directory,
+            env=env,
+            stdout=output,
+            stderr=subprocess.STDOUT,
+            check=False,
+        )
+    print(f"Exit {result.returncode}; log: {log}", flush=True)
+    if result.returncode:
+        print("\n".join(log.read_text(errors="replace").splitlines()[-80:]), flush=True)
+    return {
+        "command": command,
+        "exit_code": result.returncode,
+        "elapsed_seconds": round(time.monotonic() - started, 2),
+        "log": log.name,
+    }
+
+
+def fips_build_environment(env: dict[str, str], output: Path) -> None:
+    """Keep the test provider configuration out of Cargo's own libgit2/OpenSSL.
+
+    Python retains the startup configuration. Cargo children use the ordinary
+    build environment, and its target runner restores FIPS before each Rust
+    test binary starts. No tests or nox commands are changed or omitted.
+    """
+    config = Path(env["OPENSSL_CONF"]).resolve()
+    if not config.is_file():
+        raise SystemExit(f"missing startup FIPS configuration: {config}")
+    cargo = shutil.which("cargo", path=env["PATH"])
+    if cargo is None:
+        raise SystemExit("cargo is required")
+    version = subprocess.check_output(["rustc", "-vV"], env=env, text=True)
+    host = next(
+        line.removeprefix("host: ")
+        for line in version.splitlines()
+        if line.startswith("host: ")
+    )
+    runner_key = f"CARGO_TARGET_{host.upper().replace('-', '_')}_RUNNER"
+    if env.get(runner_key):
+        raise SystemExit(f"FIPS validation requires control of {runner_key}")
+    scripts = output / "fips-tools"
+    scripts.mkdir(exist_ok=True)
+    wrapper = scripts / "cargo"
+    wrapper.write_text(
+        f'#!/bin/sh\nOPENSSL_CONF=/dev/null exec {shlex.quote(cargo)} "$@"\n'
+    )
+    wrapper.chmod(0o755)
+    runner = scripts / "test-runner"
+    runner.write_text(f'#!/bin/sh\nOPENSSL_CONF={shlex.quote(str(config))} exec "$@"\n')
+    runner.chmod(0o755)
+    env["PATH"] = f"{scripts}{os.pathsep}{env['PATH']}"
+    env["CARGO"] = str(wrapper)
+    env[runner_key] = str(runner)
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--cryptography", type=Path, required=True)
+    parser.add_argument("--wycheproof", type=Path, required=True)
+    parser.add_argument("--limbo", type=Path, required=True)
+    parser.add_argument(
+        "--backend",
+        choices=["openssl", "libressl", "boringssl", "awslc"],
+        required=True,
+    )
+    parser.add_argument("--openssl-dir", type=Path, required=True)
+    parser.add_argument("--openssl-lib-dir", type=Path)
+    parser.add_argument("--static", action="store_true")
+    parser.add_argument("--fips", action="store_true")
+    parser.add_argument(
+        "--integration-only",
+        action="store_true",
+        help="Run the full cryptography check; standalone crate CI runs separately",
+    )
+    parser.add_argument("--no-legacy", choices=["0", "1"])
+    parser.add_argument(
+        "--baseline",
+        action="store_true",
+        help="Require an unmodified cryptography checkout and omit wrapper checks",
+    )
+    parser.add_argument("--out", type=Path, required=True)
+    parser.add_argument(
+        "--baseline-report",
+        type=Path,
+        help="Compare Python test identities and skips with an unmodified baseline",
+    )
+    args = parser.parse_args()
+    output = args.out.resolve()
+    output.mkdir(parents=True, exist_ok=True)
+    sources = json.loads((ROOT / "compatibility/sources.json").read_text())
+    for path, key in [
+        (args.cryptography, "cryptography"),
+        (args.wycheproof, "wycheproof"),
+        (args.limbo, "x509-limbo"),
+    ]:
+        revision = git(path, "rev-parse", "HEAD").decode().strip()
+        if revision != sources[key]:
+            raise SystemExit(
+                f"{key} is {revision}, expected pinned revision {sources[key]}"
+            )
+
+    env = os.environ.copy()
+    env.update(
+        OPENSSL_DIR=str(args.openssl_dir.resolve()),
+        OPENSSL_STATIC="1" if args.static else "0",
+        CARGO_INCREMENTAL="0",
+    )
+    if args.openssl_lib_dir:
+        env["OPENSSL_LIB_DIR"] = str(args.openssl_lib_dir.resolve())
+    else:
+        env.pop("OPENSSL_LIB_DIR", None)
+    env.pop("OPENSSL_INCLUDE_DIR", None)
+    if args.no_legacy is not None:
+        env["CRYPTOGRAPHY_OPENSSL_NO_LEGACY"] = args.no_legacy
+    env.setdefault("PYTEST_XDIST_AUTO_NUM_WORKERS", "4")
+    env["CARGO_TARGET_DIR"] = str(output / "library-target")
+    code_hash = source_hash()
+    integration_diff = git(args.cryptography, "diff", "HEAD", "--binary")
+    if args.baseline and git(args.cryptography, "status", "--porcelain"):
+        raise SystemExit("Baseline checkout must have no tracked or untracked changes")
+    report = {
+        "backend": args.backend,
+        "baseline": args.baseline,
+        "fips_requested": args.fips,
+        "no_legacy": env.get("CRYPTOGRAPHY_OPENSSL_NO_LEGACY"),
+        "cryptography_openssl_conf": env.get("OPENSSL_CONF", "native default"),
+        "openssl_dir": str(args.openssl_dir.resolve()),
+        "source_sha256": code_hash,
+        "cryptography_commit": sources["cryptography"],
+        "cryptography_patch_sha256": hashlib.sha256(integration_diff).hexdigest(),
+        "complete_replacement": False,
+        "checks": [],
+    }
+    if not args.baseline and not args.integration_only:
+        library_env = env.copy()
+        if args.fips:
+            # The standalone vector suite deliberately exercises non-FIPS
+            # algorithms too. Run it in ordinary mode on the same native build;
+            # the complete cryptography Python AND Rust suite below retains the
+            # startup FIPS configuration and checks its rejection behavior.
+            library_env["OPENSSL_CONF"] = os.devnull
+        report["library_openssl_conf"] = library_env.get(
+            "OPENSSL_CONF", "native default"
+        )
+        for name, command in [
+            ("library", ["cargo", "test", "--workspace", "--locked"]),
+            (
+                "clippy",
+                [
+                    "cargo",
+                    "clippy",
+                    "--workspace",
+                    "--all-targets",
+                    "--",
+                    "-D",
+                    "warnings",
+                ],
+            ),
+        ]:
+            report["checks"].append(
+                run(command, ROOT, library_env, output / f"{name}.log")
+            )
+    env["CARGO_TARGET_DIR"] = str(output / "cryptography-target")
+    if args.fips:
+        fips_build_environment(env, output)
+    junit = output / "python-tests.xml"
+    report["checks"].append(
+        run(
+            [
+                "nox",
+                "-e",
+                "local",
+                "--",
+                f"--wycheproof-root={args.wycheproof.resolve()}",
+                f"--x509-limbo-root={args.limbo.resolve()}",
+                f"--junitxml={junit}",
+                *(["--enable-fips=1"] if args.fips else []),
+            ],
+            args.cryptography.resolve(),
+            env,
+            output / "cryptography.log",
+        )
+    )
+    report["unchanged_during_run"] = (
+        code_hash == source_hash()
+        and integration_diff == git(args.cryptography, "diff", "HEAD", "--binary")
+    )
+    lock = tomllib.loads((args.cryptography / "Cargo.lock").read_text())
+    report["remaining_original_dependencies"] = sorted(
+        {p["name"] for p in lock["package"] if p["name"] in {"openssl", "openssl-sys"}}
+    )
+    if junit.exists():
+        cases = ET.parse(junit).findall(".//testcase")
+        report["test_outcomes"] = {
+            f"{case.get('classname')}::{case.get('name')}": "skipped"
+            if case.find("skipped") is not None
+            else "failed"
+            if case.find("failure") is not None or case.find("error") is not None
+            else "passed"
+            for case in cases
+        }
+    if args.baseline_report:
+        baseline = json.loads(args.baseline_report.read_text())
+        before, after = baseline["test_outcomes"], report.get("test_outcomes", {})
+        report["missing_tests"] = sorted(set(before) - set(after))
+        report["new_skips"] = sorted(
+            k
+            for k in set(before) & set(after)
+            if after[k] == "skipped" and before[k] != "skipped"
+        )
+        report["added_tests"] = sorted(set(after) - set(before))
+        # Removing CFFI also removes one dynamically collected module-import
+        # case. Require its explicit replacement to prove the old module and
+        # binding are absent; do not silently discard that baseline identity.
+        removed_module = "cryptography.hazmat.bindings.openssl._conditional"
+        old_test = f"tests.test_meta::test_no_circular_imports[{removed_module}]"
+        replacement = "tests.test_meta::test_removed_cffi_binding"
+        report["replaced_tests"] = {}
+        if (
+            not args.baseline
+            and old_test in report["missing_tests"]
+            and after.get(replacement) == "passed"
+            and not (
+                args.cryptography
+                / "src/cryptography/hazmat/bindings/openssl/_conditional.py"
+            ).exists()
+        ):
+            report["missing_tests"].remove(old_test)
+            report["replaced_tests"][old_test] = replacement
+    report["validation_passed"] = (
+        all(c["exit_code"] == 0 for c in report["checks"])
+        and report["unchanged_during_run"]
+        and not report.get("missing_tests")
+        and not report.get("new_skips")
+        and bool(report.get("test_outcomes"))
+        and "failed" not in report.get("test_outcomes", {}).values()
+        and (args.baseline or not report["remaining_original_dependencies"])
+    )
+    # Passing this development row never asserts API completeness or full matrix
+    # coverage. The separate primary acceptance requirements still apply.
+    (output / "report.json").write_text(json.dumps(report, indent=2) + "\n")
+    return 0 if report["validation_passed"] else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

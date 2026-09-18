@@ -1,0 +1,40 @@
+{
+  "stage": "dsa",
+  "complete_replacement": false,
+  "wrapper_commit": "b57514da55bc1e01471624b7be2f4afebd8fbcfd",
+  "cryptography_commit": "19ff77880bbd485464849366122982cd3a04d94b",
+  "integration_patch_at_wrapper_commit": "openssl-bridge/compatibility/cryptography.patch",
+  "runs": [
+    {
+      "backend": "openssl",
+      "log": "integration-dsa-openssl.log.gz",
+      "summary": "4226 passed, 486 skipped, 4 warnings in 588.57s (0:09:48)",
+      "canonical_nox_exit": 0
+    },
+    {
+      "backend": "openssl4",
+      "log": "integration-dsa-openssl4.log.gz",
+      "summary": "4689 passed, 23 skipped, 4 warnings in 673.99s (0:11:13)",
+      "canonical_nox_exit": 0
+    },
+    {
+      "backend": "libressl",
+      "log": "integration-dsa-libressl.log.gz",
+      "summary": "3971 passed, 741 skipped, 4 warnings in 687.29s (0:11:27)",
+      "canonical_nox_exit": 0
+    },
+    {
+      "backend": "boringssl",
+      "log": "integration-dsa-boringssl.log.gz",
+      "summary": "3805 passed, 907 skipped, 4 warnings in 41.94s",
+      "canonical_nox_exit": 0
+    },
+    {
+      "backend": "awslc",
+      "log": "integration-dsa-awslc.log.gz",
+      "summary": "4320 passed, 392 skipped, 4 warnings in 1035.96s (0:17:15)",
+      "canonical_nox_exit": 0
+    }
+  ],
+  "scope": "Full canonical nox local with pinned Wycheproof and x509-limbo. Incremental integration still retains openssl and openssl-sys; not PR acceptance."
+}

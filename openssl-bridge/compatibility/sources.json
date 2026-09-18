@@ -1,0 +1,71 @@
+{
+  "cryptography": "19ff77880bbd485464849366122982cd3a04d94b",
+  "pyopenssl": "567808adb4d859323424c3a6bc183e13a1ac59e8",
+  "wycheproof": "3fa63dd0344abb611f1fb1d77e119938603ea230",
+  "x509-limbo": "118721335e675edde10015df89b138cf292d7554",
+  "backend_builds": {
+    "openssl": {
+      "commit": "f089acdf4bc7ba94a79f4bf6eb7362c3e7d14aa9",
+      "version": "4.0.2"
+    },
+    "boringssl": {
+      "commit": "8626998e7fdd6d779f37b7ba0b726631bbb76266"
+    },
+    "awslc": {
+      "commit": "39b142ec346e514af5e49cbd6036e2ed3b893466"
+    },
+    "libressl": {
+      "version": "4.3.2",
+      "archive_sha256": "edf01aee24c65d69e6a9efcb9d44bcda682ff9d4f3bbbd95e794e1dfa90847b5"
+    }
+  },
+  "additional_backend_builds": {
+    "3.0.22": {
+      "commit": "a279090b9cd6b682a5a178410765a63e619fa2d9",
+      "extra_configure_flags": []
+    },
+    "3.4.7": {
+      "commit": "0c5d912057abf47505b4ad455da49fbab99b76f1",
+      "extra_configure_flags": []
+    },
+    "3.5.8": {
+      "commit": "f4dc4d58b48d346a8270183f89acf826d459b0ca",
+      "extra_configure_flags": []
+    },
+    "4.0.2-minimal": {
+      "commit": "f089acdf4bc7ba94a79f4bf6eb7362c3e7d14aa9",
+      "extra_configure_flags": [
+        "no-engine",
+        "no-rc2",
+        "no-srtp",
+        "no-ct",
+        "no-psk"
+      ]
+    },
+    "4.0.2-no-legacy": {
+      "commit": "f089acdf4bc7ba94a79f4bf6eb7362c3e7d14aa9",
+      "extra_configure_flags": [
+        "no-legacy"
+      ]
+    },
+    "main": {
+      "commit": "7c234e584350f623083e0c52c02c4bb5e7c836ff",
+      "extra_configure_flags": []
+    },
+    "3.6.4-fips": {
+      "commit": "d3c1b1169b3569ff3069e5b399f47b2b28e03d79",
+      "extra_configure_flags": [
+        "enable-fips"
+      ]
+    },
+    "libressl-4.2.1": {
+      "version": "4.2.1",
+      "archive_sha256": "6d5c2f58583588ea791f4c8645004071d00dfa554a5bf788a006ca1eb5abd70b"
+    }
+  },
+  "openssl_common_configure_flags": [
+    "no-shared",
+    "no-tests",
+    "-fPIC"
+  ]
+}

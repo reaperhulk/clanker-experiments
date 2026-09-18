@@ -1,0 +1,62 @@
+name: Build pinned TLS backend
+description: Build or restore the native backend selected by openssl-bridge's matrix
+inputs:
+  row:
+    description: Row ID in openssl-bridge/compatibility/matrix.json
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Install native build dependencies
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends clang libclang-dev libssl-dev cmake ninja-build pkg-config perl
+    - name: Resolve pinned build inputs
+      id: native
+      shell: bash
+      env:
+        BRIDGE_ROW: ${{ inputs.row }}
+      run: |
+        python3 clanker-experiments/openssl-bridge/tools/ci.py plan \
+          --row "$BRIDGE_ROW" --cache native-backends \
+          --github-output "$GITHUB_OUTPUT" --github-env "$GITHUB_ENV"
+    - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      if: steps.native.outputs.system != 'true'
+      id: cache
+      with:
+        path: ${{ steps.native.outputs.prefix }}
+        key: ${{ steps.native.outputs.cache_key }}
+    - name: Build or verify native installation
+      shell: bash
+      env:
+        BRIDGE_ROW: ${{ inputs.row }}
+      run: |
+        mkdir -p ci-results
+        python3 clanker-experiments/openssl-bridge/tools/ci.py build \
+          --row "$BRIDGE_ROW" --cache native-backends \
+          --work "$RUNNER_TEMP/native-sources" --jobs 2 \
+          2>&1 | tee ci-results/native-build.log
+    - uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      if: steps.native.outputs.system != 'true' && steps.cache.outputs.cache-hit != 'true'
+      with:
+        path: ${{ steps.native.outputs.prefix }}
+        key: ${{ steps.native.outputs.cache_key }}
+    - name: Install host trust bundle for LibreSSL default lookup
+      if: inputs.row == 'libressl' || inputs.row == 'libressl421'
+      shell: bash
+      run: |
+        python3 - <<'PY'
+        import hashlib
+        import os
+        import shutil
+        from pathlib import Path
+
+        # LibreSSL's native default lookup ignores SSL_CERT_FILE. Refresh the
+        # runner's trust bundle in this isolated installation after cache restore.
+        bundle = Path('/etc/ssl/certs/ca-certificates.crt')
+        destination = Path(os.environ['OPENSSL_DIR']) / 'etc/ssl/cert.pem'
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(bundle, destination)
+        print(destination, hashlib.sha256(destination.read_bytes()).hexdigest())
+        PY
