@@ -37,13 +37,18 @@ index 006a2e1..ca58192 100755
    fi
    popd
 diff --git a/CHANGELOG.rst b/CHANGELOG.rst
-index 025e676..95e67a7 100644
+index 025e676..8077280 100644
 --- a/CHANGELOG.rst
 +++ b/CHANGELOG.rst
-@@ -8,6 +8,14 @@ Changelog
+@@ -8,6 +8,19 @@ Changelog
  
  .. note:: This version is not yet released and is under active development.
  
++* Mutable input buffers are snapshotted before native operations. Output-buffer
++  APIs publish successful results from separate storage, allowing overlapping
++  input and output views without aliased native buffers. Failed one-shot
++  authenticated decryption leaves the destination unchanged.
++
 +* FIPS mode must be configured before process startup using OpenSSL configuration.
 +  The private activation hook now checks configuration without changing global
 +  properties while other libraries may be using OpenSSL.
@@ -418,7 +423,7 @@ index 9f7d181..81091f9 100644
 -checksum = "accd4ea62f7bb7a82fe23066fb0957d48ef677f6eeb8215f372f52e48bb32426"
 +checksum = "f0805222e57f7521d6a62e36fa9163bc891acd422f971defe97d64e70d0a4fe5"
 diff --git a/Cargo.toml b/Cargo.toml
-index c9783a4..5a2db6d 100644
+index c9783a4..693ef6f 100644
 --- a/Cargo.toml
 +++ b/Cargo.toml
 @@ -6,7 +6,6 @@ members = [
@@ -3361,8 +3366,1431 @@ index 920abfb..736b294 100644
 +    out.extend_from_slice(bytes);
 +    out.into()
  }
+diff --git a/src/rust/cryptography-openssl/Cargo.toml b/src/rust/cryptography-openssl/Cargo.toml
+deleted file mode 100644
+index b260f58..0000000
+--- a/src/rust/cryptography-openssl/Cargo.toml
++++ /dev/null
+@@ -1,18 +0,0 @@
+-[package]
+-name = "cryptography-openssl"
+-version.workspace = true
+-authors.workspace = true
+-edition.workspace = true
+-publish.workspace = true
+-rust-version.workspace = true
+-license.workspace = true
+-
+-[dependencies]
+-cfg-if.workspace = true
+-foreign-types.workspace = true
+-foreign-types-shared.workspace = true
+-openssl.workspace = true
+-openssl-sys.workspace = true
+-
+-[lints.rust]
+-unexpected_cfgs = { level = "warn", check-cfg = ['cfg(CRYPTOGRAPHY_OPENSSL_320_OR_GREATER)', 'cfg(CRYPTOGRAPHY_OPENSSL_350_OR_GREATER)', 'cfg(CRYPTOGRAPHY_IS_LIBRESSL)', 'cfg(CRYPTOGRAPHY_IS_BORINGSSL)', 'cfg(CRYPTOGRAPHY_IS_AWSLC)'] }
+diff --git a/src/rust/cryptography-openssl/build.rs b/src/rust/cryptography-openssl/build.rs
+deleted file mode 100644
+index fbe0143..0000000
+--- a/src/rust/cryptography-openssl/build.rs
++++ /dev/null
+@@ -1,48 +0,0 @@
+-// This file is dual licensed under the terms of the Apache License, Version
+-// 2.0, and the BSD License. See the LICENSE file in the root of this repository
+-// for complete details.
+-
+-use std::env;
+-
+-#[allow(clippy::unusual_byte_groupings)]
+-fn main() {
+-    // Without any rerun-if directives cargo reruns the build script (and
+-    // recompiles the crate) whenever any mtime in the package changes,
+-    // which defeats CI build caching. Everything below depends only on
+-    // this file and metadata from openssl-sys (which cargo tracks as a
+-    // dependency on its own).
+-    println!("cargo:rerun-if-changed=build.rs");
+-
+-    if let Ok(version) = env::var("DEP_OPENSSL_VERSION_NUMBER") {
+-        let version = u64::from_str_radix(&version, 16).unwrap();
+-
+-        if version >= 0x3_02_00_00_0 {
+-            println!("cargo:rustc-cfg=CRYPTOGRAPHY_OPENSSL_320_OR_GREATER");
+-        }
+-        if version >= 0x3_05_00_00_0 {
+-            println!("cargo:rustc-cfg=CRYPTOGRAPHY_OPENSSL_350_OR_GREATER");
+-        }
+-    }
+-
+-    if env::var("DEP_OPENSSL_LIBRESSL_VERSION_NUMBER").is_ok() {
+-        println!("cargo:rustc-cfg=CRYPTOGRAPHY_IS_LIBRESSL");
+-    }
+-
+-    let is_boringssl = env::var("DEP_OPENSSL_BORINGSSL").is_ok();
+-    let is_awslc = env::var("DEP_OPENSSL_AWSLC").is_ok();
+-
+-    if is_boringssl || is_awslc {
+-        let cfg_name = if is_boringssl {
+-            "CRYPTOGRAPHY_IS_BORINGSSL"
+-        } else {
+-            "CRYPTOGRAPHY_IS_AWSLC"
+-        };
+-        println!("cargo:rustc-cfg={cfg_name}");
+-        if env::var_os("CARGO_CFG_UNIX").is_some() {
+-            match env::var("CARGO_CFG_TARGET_OS").as_deref() {
+-                Ok("macos") => println!("cargo:rustc-link-lib=c++"),
+-                _ => println!("cargo:rustc-link-lib=stdc++"),
+-            }
+-        }
+-    }
+-}
+diff --git a/src/rust/cryptography-openssl/src/aead.rs b/src/rust/cryptography-openssl/src/aead.rs
+deleted file mode 100644
+index 6bf0e7f..0000000
+--- a/src/rust/cryptography-openssl/src/aead.rs
++++ /dev/null
+@@ -1,104 +0,0 @@
+-// This file is dual licensed under the terms of the Apache License, Version
+-// 2.0, and the BSD License. See the LICENSE file in the root of this repository
+-// for complete details.
+-
+-use foreign_types_shared::{ForeignType, ForeignTypeRef};
+-use openssl_sys as ffi;
+-
+-use crate::{cvt, cvt_p, OpenSSLResult};
+-
+-pub enum AeadType {
+-    ChaCha20Poly1305,
+-    Aes128GcmSiv,
+-    Aes256GcmSiv,
+-}
+-
+-foreign_types::foreign_type! {
+-    type CType = ffi::EVP_AEAD_CTX;
+-    fn drop = ffi::EVP_AEAD_CTX_free;
+-
+-    pub struct AeadCtx;
+-    pub struct AeadCtxRef;
+-}
+-
+-// SAFETY: Can safely be used from multiple threads concurrently.
+-unsafe impl Sync for AeadCtx {}
+-// SAFETY: Can safely be sent between threads.
+-unsafe impl Send for AeadCtx {}
+-
+-impl AeadCtx {
+-    pub fn new(aead: AeadType, key: &[u8]) -> OpenSSLResult<AeadCtx> {
+-        let aead = match aead {
+-            // SAFETY: No preconditions.
+-            AeadType::ChaCha20Poly1305 => unsafe { ffi::EVP_aead_chacha20_poly1305() },
+-            // SAFETY: No preconditions.
+-            AeadType::Aes128GcmSiv => unsafe { ffi::EVP_aead_aes_128_gcm_siv() },
+-            // SAFETY: No preconditions.
+-            AeadType::Aes256GcmSiv => unsafe { ffi::EVP_aead_aes_256_gcm_siv() },
+-        };
+-
+-        let key_ptr = key.as_ptr();
+-        let tag_len = ffi::EVP_AEAD_DEFAULT_TAG_LENGTH as usize;
+-        // SAFETY: We're passing a valid key and aead.
+-        unsafe {
+-            let ctx = cvt_p(ffi::EVP_AEAD_CTX_new(aead, key_ptr, key.len(), tag_len))?;
+-            Ok(AeadCtx::from_ptr(ctx))
+-        }
+-    }
+-}
+-
+-impl AeadCtxRef {
+-    pub fn encrypt(
+-        &self,
+-        data: &[u8],
+-        nonce: &[u8],
+-        ad: &[u8],
+-        out: &mut [u8],
+-    ) -> OpenSSLResult<()> {
+-        let mut out_len = out.len();
+-        // SAFETY: All the lengths and pointers are known valid.
+-        unsafe {
+-            let res = ffi::EVP_AEAD_CTX_seal(
+-                self.as_ptr(),
+-                out.as_mut_ptr(),
+-                &mut out_len,
+-                out.len(),
+-                nonce.as_ptr(),
+-                nonce.len(),
+-                data.as_ptr(),
+-                data.len(),
+-                ad.as_ptr(),
+-                ad.len(),
+-            );
+-            cvt(res)?;
+-        }
+-        Ok(())
+-    }
+-
+-    pub fn decrypt(
+-        &self,
+-        data: &[u8],
+-        nonce: &[u8],
+-        ad: &[u8],
+-        out: &mut [u8],
+-    ) -> OpenSSLResult<()> {
+-        let mut out_len = out.len();
+-        // SAFETY: All the lengths and pointers are known valid.
+-        unsafe {
+-            let res = ffi::EVP_AEAD_CTX_open(
+-                self.as_ptr(),
+-                out.as_mut_ptr(),
+-                &mut out_len,
+-                out.len(),
+-                nonce.as_ptr(),
+-                nonce.len(),
+-                data.as_ptr(),
+-                data.len(),
+-                ad.as_ptr(),
+-                ad.len(),
+-            );
+-            cvt(res)?;
+-        }
+-        Ok(())
+-    }
+-}
+diff --git a/src/rust/cryptography-openssl/src/cmac.rs b/src/rust/cryptography-openssl/src/cmac.rs
+deleted file mode 100644
+index e93790d..0000000
+--- a/src/rust/cryptography-openssl/src/cmac.rs
++++ /dev/null
+@@ -1,74 +0,0 @@
+-// This file is dual licensed under the terms of the Apache License, Version
+-// 2.0, and the BSD License. See the LICENSE file in the root of this repository
+-// for complete details.
+-
+-use std::ptr;
+-
+-use foreign_types_shared::{ForeignType, ForeignTypeRef};
+-use openssl_sys as ffi;
+-
+-use crate::hmac::DigestBytes;
+-use crate::{cvt, cvt_p, OpenSSLResult};
+-
+-foreign_types::foreign_type! {
+-    type CType = ffi::CMAC_CTX;
+-    fn drop = ffi::CMAC_CTX_free;
+-
+-    pub struct Cmac;
+-    pub struct CmacRef;
+-}
+-
+-// SAFETY: It's safe to have `&` references from multiple threads.
+-unsafe impl Sync for Cmac {}
+-// SAFETY: It's safe to move the `Cmac` from one thread to another.
+-unsafe impl Send for Cmac {}
+-
+-impl Cmac {
+-    pub fn new(key: &[u8], cipher: &openssl::cipher::CipherRef) -> OpenSSLResult<Cmac> {
+-        // SAFETY: All FFI conditions are handled.
+-        unsafe {
+-            let ctx = Cmac::from_ptr(cvt_p(ffi::CMAC_CTX_new())?);
+-            cvt(ffi::CMAC_Init(
+-                ctx.as_ptr(),
+-                key.as_ptr().cast(),
+-                key.len(),
+-                cipher.as_ptr(),
+-                ptr::null_mut(),
+-            ))?;
+-            Ok(ctx)
+-        }
+-    }
+-}
+-
+-impl CmacRef {
+-    pub fn update(&mut self, data: &[u8]) -> OpenSSLResult<()> {
+-        // SAFETY: All FFI conditions are handled.
+-        unsafe {
+-            cvt(ffi::CMAC_Update(
+-                self.as_ptr(),
+-                data.as_ptr().cast(),
+-                data.len(),
+-            ))?;
+-        }
+-        Ok(())
+-    }
+-
+-    pub fn finish(&mut self) -> OpenSSLResult<DigestBytes> {
+-        let mut buf = [0; ffi::EVP_MAX_MD_SIZE as usize];
+-        let mut len = ffi::EVP_MAX_MD_SIZE as usize;
+-        // SAFETY: All FFI conditions are handled.
+-        unsafe {
+-            cvt(ffi::CMAC_Final(self.as_ptr(), buf.as_mut_ptr(), &mut len))?;
+-        }
+-        Ok(DigestBytes { buf, len })
+-    }
+-
+-    pub fn copy(&self) -> OpenSSLResult<Cmac> {
+-        // SAFETY: All FFI conditions are handled.
+-        unsafe {
+-            let h = Cmac::from_ptr(cvt_p(ffi::CMAC_CTX_new())?);
+-            cvt(ffi::CMAC_CTX_copy(h.as_ptr(), self.as_ptr()))?;
+-            Ok(h)
+-        }
+-    }
+-}
+diff --git a/src/rust/cryptography-openssl/src/fips.rs b/src/rust/cryptography-openssl/src/fips.rs
+deleted file mode 100644
+index e66cd4b..0000000
+--- a/src/rust/cryptography-openssl/src/fips.rs
++++ /dev/null
+@@ -1,54 +0,0 @@
+-// This file is dual licensed under the terms of the Apache License, Version
+-// 2.0, and the BSD License. See the LICENSE file in the root of this repository
+-// for complete details.
+-
+-#[cfg(not(any(
+-    CRYPTOGRAPHY_IS_LIBRESSL,
+-    CRYPTOGRAPHY_IS_BORINGSSL,
+-    CRYPTOGRAPHY_IS_AWSLC
+-)))]
+-use std::ptr;
+-
+-#[cfg(not(any(
+-    CRYPTOGRAPHY_IS_LIBRESSL,
+-    CRYPTOGRAPHY_IS_BORINGSSL,
+-    CRYPTOGRAPHY_IS_AWSLC
+-)))]
+-use openssl_sys as ffi;
+-
+-#[cfg(not(any(
+-    CRYPTOGRAPHY_IS_LIBRESSL,
+-    CRYPTOGRAPHY_IS_BORINGSSL,
+-    CRYPTOGRAPHY_IS_AWSLC
+-)))]
+-use crate::{cvt, OpenSSLResult};
+-
+-pub fn is_enabled() -> bool {
+-    cfg_if::cfg_if! {
+-        if #[cfg(any(CRYPTOGRAPHY_IS_LIBRESSL, CRYPTOGRAPHY_IS_BORINGSSL))] {
+-            false
+-        } else if #[cfg(CRYPTOGRAPHY_IS_AWSLC)] {
+-            openssl::fips::enabled()
+-        } else {
+-            // OpenSSL case
+-            // SAFETY: No pre-conditions
+-            unsafe {
+-                ffi::EVP_default_properties_is_fips_enabled(ptr::null_mut()) == 1
+-            }
+-        }
+-    }
+-}
+-
+-#[cfg(not(any(
+-    CRYPTOGRAPHY_IS_LIBRESSL,
+-    CRYPTOGRAPHY_IS_BORINGSSL,
+-    CRYPTOGRAPHY_IS_AWSLC
+-)))]
+-pub fn enable() -> OpenSSLResult<()> {
+-    // SAFETY: No pre-conditions
+-    unsafe {
+-        cvt(ffi::EVP_default_properties_enable_fips(ptr::null_mut(), 1))?;
+-    }
+-
+-    Ok(())
+-}
+diff --git a/src/rust/cryptography-openssl/src/hmac.rs b/src/rust/cryptography-openssl/src/hmac.rs
+deleted file mode 100644
+index 3124356..0000000
+--- a/src/rust/cryptography-openssl/src/hmac.rs
++++ /dev/null
+@@ -1,110 +0,0 @@
+-// This file is dual licensed under the terms of the Apache License, Version
+-// 2.0, and the BSD License. See the LICENSE file in the root of this repository
+-// for complete details.
+-
+-use std::ptr;
+-
+-use foreign_types_shared::{ForeignType, ForeignTypeRef};
+-use openssl_sys as ffi;
+-
+-use crate::{cvt, cvt_p, OpenSSLResult};
+-
+-foreign_types::foreign_type! {
+-    type CType = ffi::HMAC_CTX;
+-    fn drop = ffi::HMAC_CTX_free;
+-
+-    pub struct Hmac;
+-    pub struct HmacRef;
+-}
+-
+-// SAFETY: It's safe to have `&` references from multiple threads.
+-unsafe impl Sync for Hmac {}
+-// SAFETY: It's safe to move the `Hmac` from one thread to another.
+-unsafe impl Send for Hmac {}
+-
+-impl Hmac {
+-    // On BoringSSL and AWS-LC, the length is a size_t, so the length conversion is a
+-    // no-op.
+-    #[cfg_attr(
+-        any(CRYPTOGRAPHY_IS_BORINGSSL, CRYPTOGRAPHY_IS_AWSLC),
+-        allow(clippy::useless_conversion)
+-    )]
+-    pub fn new(key: &[u8], md: openssl::hash::MessageDigest) -> OpenSSLResult<Hmac> {
+-        // SAFETY: All FFI conditions are handled.
+-        unsafe {
+-            let h = Hmac::from_ptr(cvt_p(ffi::HMAC_CTX_new())?);
+-            cvt(ffi::HMAC_Init_ex(
+-                h.as_ptr(),
+-                key.as_ptr().cast(),
+-                key.len()
+-                    .try_into()
+-                    .expect("Key too long for OpenSSL's length type"),
+-                md.as_ptr(),
+-                ptr::null_mut(),
+-            ))?;
+-            Ok(h)
+-        }
+-    }
+-}
+-
+-impl HmacRef {
+-    pub fn update(&mut self, data: &[u8]) -> OpenSSLResult<()> {
+-        // SAFETY: All FFI conditions are handled.
+-        unsafe {
+-            cvt(ffi::HMAC_Update(self.as_ptr(), data.as_ptr(), data.len()))?;
+-        }
+-        Ok(())
+-    }
+-
+-    pub fn finish(&mut self) -> OpenSSLResult<DigestBytes> {
+-        let mut buf = [0; ffi::EVP_MAX_MD_SIZE as usize];
+-        let mut len = ffi::EVP_MAX_MD_SIZE as std::os::raw::c_uint;
+-        // SAFETY: All FFI conditions are handled.
+-        unsafe {
+-            cvt(ffi::HMAC_Final(self.as_ptr(), buf.as_mut_ptr(), &mut len))?;
+-        }
+-        Ok(DigestBytes {
+-            buf,
+-            len: len.try_into().unwrap(),
+-        })
+-    }
+-
+-    pub fn copy(&self) -> OpenSSLResult<Hmac> {
+-        // SAFETY: All FFI conditions are handled.
+-        unsafe {
+-            let h = Hmac::from_ptr(cvt_p(ffi::HMAC_CTX_new())?);
+-            cvt(ffi::HMAC_CTX_copy(h.as_ptr(), self.as_ptr()))?;
+-            Ok(h)
+-        }
+-    }
+-}
+-
+-pub struct DigestBytes {
+-    pub(crate) buf: [u8; ffi::EVP_MAX_MD_SIZE as usize],
+-    pub(crate) len: usize,
+-}
+-
+-impl std::ops::Deref for DigestBytes {
+-    type Target = [u8];
+-
+-    #[inline]
+-    fn deref(&self) -> &[u8] {
+-        &self.buf[..self.len]
+-    }
+-}
+-
+-#[cfg(test)]
+-mod tests {
+-    use openssl_sys as ffi;
+-
+-    use super::DigestBytes;
+-
+-    #[test]
+-    fn test_digest_bytes() {
+-        let d = DigestBytes {
+-            buf: [19; ffi::EVP_MAX_MD_SIZE as usize],
+-            len: 12,
+-        };
+-        assert_eq!(&*d, b"\x13\x13\x13\x13\x13\x13\x13\x13\x13\x13\x13\x13");
+-    }
+-}
+diff --git a/src/rust/cryptography-openssl/src/lib.rs b/src/rust/cryptography-openssl/src/lib.rs
+deleted file mode 100644
+index 744459f..0000000
+--- a/src/rust/cryptography-openssl/src/lib.rs
++++ /dev/null
+@@ -1,62 +0,0 @@
+-// This file is dual licensed under the terms of the Apache License, Version
+-// 2.0, and the BSD License. See the LICENSE file in the root of this repository
+-// for complete details.
+-
+-#![deny(rust_2018_idioms, clippy::undocumented_unsafe_blocks)]
+-
+-#[cfg(any(CRYPTOGRAPHY_IS_BORINGSSL, CRYPTOGRAPHY_IS_AWSLC))]
+-pub mod aead;
+-pub mod cmac;
+-pub mod fips;
+-pub mod hmac;
+-#[cfg(any(
+-    CRYPTOGRAPHY_IS_BORINGSSL,
+-    CRYPTOGRAPHY_IS_AWSLC,
+-    CRYPTOGRAPHY_OPENSSL_350_OR_GREATER
+-))]
+-pub mod mldsa;
+-#[cfg(any(
+-    CRYPTOGRAPHY_IS_BORINGSSL,
+-    CRYPTOGRAPHY_IS_AWSLC,
+-    CRYPTOGRAPHY_OPENSSL_350_OR_GREATER
+-))]
+-pub mod mlkem;
+-#[cfg(any(
+-    CRYPTOGRAPHY_IS_BORINGSSL,
+-    CRYPTOGRAPHY_IS_LIBRESSL,
+-    CRYPTOGRAPHY_IS_AWSLC
+-))]
+-pub mod poly1305;
+-pub mod rand;
+-pub mod utils;
+-
+-pub type OpenSSLResult<T> = Result<T, openssl::error::ErrorStack>;
+-
+-#[inline]
+-fn cvt(r: std::os::raw::c_int) -> Result<std::os::raw::c_int, openssl::error::ErrorStack> {
+-    if r <= 0 {
+-        Err(openssl::error::ErrorStack::get())
+-    } else {
+-        Ok(r)
+-    }
+-}
+-
+-#[inline]
+-fn cvt_p<T>(r: *mut T) -> Result<*mut T, openssl::error::ErrorStack> {
+-    if r.is_null() {
+-        Err(openssl::error::ErrorStack::get())
+-    } else {
+-        Ok(r)
+-    }
+-}
+-
+-#[cfg(test)]
+-mod tests {
+-    use std::ptr;
+-
+-    #[test]
+-    fn test_cvt() {
+-        assert!(crate::cvt(-1).is_err());
+-        assert!(crate::cvt_p(ptr::null_mut::<()>()).is_err());
+-    }
+-}
+diff --git a/src/rust/cryptography-openssl/src/mldsa.rs b/src/rust/cryptography-openssl/src/mldsa.rs
+deleted file mode 100644
+index 3ab0da6..0000000
+--- a/src/rust/cryptography-openssl/src/mldsa.rs
++++ /dev/null
+@@ -1,495 +0,0 @@
+-// This file is dual licensed under the terms of the Apache License, Version
+-// 2.0, and the BSD License. See the LICENSE file in the root of this repository
+-// for complete details.
+-
+-#[cfg(CRYPTOGRAPHY_IS_AWSLC)]
+-use std::os::raw::c_int;
+-
+-#[cfg(any(CRYPTOGRAPHY_IS_BORINGSSL, CRYPTOGRAPHY_IS_AWSLC))]
+-use foreign_types_shared::ForeignType;
+-#[cfg(any(
+-    CRYPTOGRAPHY_IS_BORINGSSL,
+-    CRYPTOGRAPHY_IS_AWSLC,
+-    CRYPTOGRAPHY_OPENSSL_350_OR_GREATER
+-))]
+-use foreign_types_shared::ForeignTypeRef;
+-#[cfg(any(
+-    CRYPTOGRAPHY_IS_BORINGSSL,
+-    CRYPTOGRAPHY_IS_AWSLC,
+-    CRYPTOGRAPHY_OPENSSL_350_OR_GREATER
+-))]
+-use openssl_sys as ffi;
+-
+-#[cfg(any(
+-    CRYPTOGRAPHY_IS_BORINGSSL,
+-    CRYPTOGRAPHY_IS_AWSLC,
+-    CRYPTOGRAPHY_OPENSSL_350_OR_GREATER
+-))]
+-use crate::cvt;
+-#[cfg(any(CRYPTOGRAPHY_IS_BORINGSSL, CRYPTOGRAPHY_IS_AWSLC))]
+-use crate::cvt_p;
+-use crate::OpenSSLResult;
+-
+-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+-pub enum MlDsaVariant {
+-    MlDsa44,
+-    MlDsa65,
+-    MlDsa87,
+-}
+-
+-/// The length, in bytes, of an ML-DSA external mu (message representative)
+-/// value, as defined in FIPS 204.
+-pub const MLDSA_MU_BYTES: usize = 64;
+-
+-#[cfg(CRYPTOGRAPHY_IS_AWSLC)]
+-pub const PKEY_ID: openssl::pkey::Id = openssl::pkey::Id::from_raw(ffi::NID_PQDSA);
+-
+-/// Check whether a PKey is an ML-DSA key.
+-///
+-/// OpenSSL 3.x provider-based keys return -1 from EVP_PKEY_get_id(), so
+-/// NID-based matching does not work. `PKeyRef::is_a` queries by algorithm
+-/// name instead.
+-#[cfg(any(
+-    CRYPTOGRAPHY_IS_BORINGSSL,
+-    CRYPTOGRAPHY_IS_AWSLC,
+-    CRYPTOGRAPHY_OPENSSL_350_OR_GREATER
+-))]
+-pub fn is_mldsa_pkey<T>(pkey: &openssl::pkey::PKeyRef<T>) -> bool {
+-    cfg_if::cfg_if! {
+-        if #[cfg(CRYPTOGRAPHY_IS_BORINGSSL)] {
+-            let raw = pkey.id().as_raw();
+-            raw == ffi::NID_ML_DSA_44 || raw == ffi::NID_ML_DSA_65 || raw == ffi::NID_ML_DSA_87
+-        } else if #[cfg(CRYPTOGRAPHY_IS_AWSLC)] {
+-            pkey.id() == PKEY_ID
+-        } else if #[cfg(CRYPTOGRAPHY_OPENSSL_350_OR_GREATER)] {
+-            pkey.is_a(openssl::pkey::KeyType::ML_DSA_44)
+-                || pkey.is_a(openssl::pkey::KeyType::ML_DSA_65)
+-                || pkey.is_a(openssl::pkey::KeyType::ML_DSA_87)
+-        }
+-    }
+-}
+-
+-impl MlDsaVariant {
+-    #[cfg(CRYPTOGRAPHY_IS_AWSLC)]
+-    pub fn nid(self) -> c_int {
+-        match self {
+-            MlDsaVariant::MlDsa44 => ffi::NID_MLDSA44,
+-            MlDsaVariant::MlDsa65 => ffi::NID_MLDSA65,
+-            MlDsaVariant::MlDsa87 => ffi::NID_MLDSA87,
+-        }
+-    }
+-
+-    pub fn from_pkey<T: openssl::pkey::HasPublic>(
+-        pkey: &openssl::pkey::PKeyRef<T>,
+-    ) -> MlDsaVariant {
+-        cfg_if::cfg_if! {
+-            if #[cfg(CRYPTOGRAPHY_IS_BORINGSSL)] {
+-                match pkey.id().as_raw() {
+-                    ffi::NID_ML_DSA_44 => MlDsaVariant::MlDsa44,
+-                    ffi::NID_ML_DSA_65 => MlDsaVariant::MlDsa65,
+-                    ffi::NID_ML_DSA_87 => MlDsaVariant::MlDsa87,
+-                    _ => panic!("Unsupported ML-DSA variant"),
+-                }
+-            } else if #[cfg(CRYPTOGRAPHY_IS_AWSLC)] {
+-                // SAFETY: EVP_PKEY_pqdsa_get_type returns the NID of the
+-                // PQDSA algorithm for a valid PQDSA pkey.
+-                let nid = unsafe { ffi::EVP_PKEY_pqdsa_get_type(pkey.as_ptr()) };
+-                match nid {
+-                    ffi::NID_MLDSA44 => MlDsaVariant::MlDsa44,
+-                    ffi::NID_MLDSA65 => MlDsaVariant::MlDsa65,
+-                    ffi::NID_MLDSA87 => MlDsaVariant::MlDsa87,
+-                    _ => panic!("Unsupported ML-DSA variant"),
+-                }
+-            } else if #[cfg(CRYPTOGRAPHY_OPENSSL_350_OR_GREATER)] {
+-                // Provider-based keys in OpenSSL 3.x return -1 from
+-                // EVP_PKEY_get_id(), so we must use name-based lookup.
+-                if pkey.is_a(openssl::pkey::KeyType::ML_DSA_44) {
+-                    MlDsaVariant::MlDsa44
+-                } else if pkey.is_a(openssl::pkey::KeyType::ML_DSA_65) {
+-                    MlDsaVariant::MlDsa65
+-                } else if pkey.is_a(openssl::pkey::KeyType::ML_DSA_87) {
+-                    MlDsaVariant::MlDsa87
+-                } else {
+-                    panic!("Unsupported ML-DSA variant")
+-                }
+-            }
+-        }
+-    }
+-}
+-
+-#[cfg(CRYPTOGRAPHY_IS_BORINGSSL)]
+-fn evp_pkey_alg(variant: MlDsaVariant) -> *const ffi::EVP_PKEY_ALG {
+-    // SAFETY: These functions return static, non-null pointers to the
+-    // EVP_PKEY_ALG for each ML-DSA variant.
+-    unsafe {
+-        match variant {
+-            MlDsaVariant::MlDsa44 => ffi::EVP_pkey_ml_dsa_44(),
+-            MlDsaVariant::MlDsa65 => ffi::EVP_pkey_ml_dsa_65(),
+-            MlDsaVariant::MlDsa87 => ffi::EVP_pkey_ml_dsa_87(),
+-        }
+-    }
+-}
+-
+-fn set_context_string<T>(
+-    pkey_ctx: &mut openssl::pkey_ctx::PkeyCtxRef<T>,
+-    context: &[u8],
+-) -> OpenSSLResult<()> {
+-    cfg_if::cfg_if! {
+-        if #[cfg(any(CRYPTOGRAPHY_IS_BORINGSSL, CRYPTOGRAPHY_IS_AWSLC))] {
+-            // SAFETY: pkey_ctx is a valid EVP_PKEY_CTX.
+-            let res = unsafe {
+-                ffi::EVP_PKEY_CTX_set1_signature_context_string(
+-                    pkey_ctx.as_ptr(),
+-                    context.as_ptr(),
+-                    context.len(),
+-                )
+-            };
+-            cvt(res)?;
+-        } else if #[cfg(CRYPTOGRAPHY_OPENSSL_350_OR_GREATER)] {
+-            pkey_ctx.set_context_string(context)?;
+-        }
+-    }
+-    Ok(())
+-}
+-
+-/// Extract the raw 32-byte seed from an ML-DSA private key.
+-pub fn mldsa_seed_raw(
+-    pkey: &openssl::pkey::PKeyRef<openssl::pkey::Private>,
+-) -> OpenSSLResult<[u8; 32]> {
+-    let mut seed = [0u8; 32];
+-    cfg_if::cfg_if! {
+-        if #[cfg(any(CRYPTOGRAPHY_IS_BORINGSSL, CRYPTOGRAPHY_IS_AWSLC))] {
+-            let mut seed_len = seed.len();
+-            // SAFETY: pkey is a valid EVP_PKEY and seed is a 32-byte buffer.
+-            unsafe {
+-                cvt(ffi::EVP_PKEY_get_private_seed(
+-                    pkey.as_ptr(),
+-                    seed.as_mut_ptr(),
+-                    &mut seed_len,
+-                ))?;
+-            }
+-            assert_eq!(seed_len, 32);
+-        } else if #[cfg(CRYPTOGRAPHY_OPENSSL_350_OR_GREATER)] {
+-            pkey.seed_into(&mut seed)?;
+-        }
+-    }
+-    Ok(seed)
+-}
+-
+-pub fn new_raw_private_key(
+-    variant: MlDsaVariant,
+-    data: &[u8],
+-) -> OpenSSLResult<openssl::pkey::PKey<openssl::pkey::Private>> {
+-    cfg_if::cfg_if! {
+-        if #[cfg(CRYPTOGRAPHY_IS_BORINGSSL)] {
+-            // SAFETY: EVP_PKEY_from_private_seed creates a new EVP_PKEY from
+-            // the seed. evp_pkey_alg returns a valid algorithm pointer.
+-            unsafe {
+-                let pkey = cvt_p(ffi::EVP_PKEY_from_private_seed(
+-                    evp_pkey_alg(variant),
+-                    data.as_ptr(),
+-                    data.len(),
+-                ))?;
+-                Ok(openssl::pkey::PKey::from_ptr(pkey))
+-            }
+-        } else if #[cfg(CRYPTOGRAPHY_IS_AWSLC)] {
+-            // SAFETY: EVP_PKEY_pqdsa_new_raw_private_key creates a new
+-            // EVP_PKEY from raw key bytes. For ML-DSA, a seed expands into
+-            // the full keypair.
+-            unsafe {
+-                let pkey = cvt_p(ffi::EVP_PKEY_pqdsa_new_raw_private_key(
+-                    variant.nid(),
+-                    data.as_ptr(),
+-                    data.len(),
+-                ))?;
+-                Ok(openssl::pkey::PKey::from_ptr(pkey))
+-            }
+-        } else if #[cfg(CRYPTOGRAPHY_OPENSSL_350_OR_GREATER)] {
+-            let key_type = match variant {
+-                MlDsaVariant::MlDsa44 => openssl::pkey::KeyType::ML_DSA_44,
+-                MlDsaVariant::MlDsa65 => openssl::pkey::KeyType::ML_DSA_65,
+-                MlDsaVariant::MlDsa87 => openssl::pkey::KeyType::ML_DSA_87,
+-            };
+-            openssl::pkey::PKey::private_key_from_seed(None, key_type, None, data)
+-        }
+-    }
+-}
+-
+-pub fn new_raw_public_key(
+-    variant: MlDsaVariant,
+-    data: &[u8],
+-) -> OpenSSLResult<openssl::pkey::PKey<openssl::pkey::Public>> {
+-    cfg_if::cfg_if! {
+-        if #[cfg(CRYPTOGRAPHY_IS_BORINGSSL)] {
+-            let nid = match variant {
+-                MlDsaVariant::MlDsa44 => ffi::NID_ML_DSA_44,
+-                MlDsaVariant::MlDsa65 => ffi::NID_ML_DSA_65,
+-                MlDsaVariant::MlDsa87 => ffi::NID_ML_DSA_87,
+-            };
+-            openssl::pkey::PKey::public_key_from_raw_bytes(
+-                data,
+-                openssl::pkey::Id::from_raw(nid),
+-            )
+-        } else if #[cfg(CRYPTOGRAPHY_IS_AWSLC)] {
+-            // SAFETY: EVP_PKEY_pqdsa_new_raw_public_key creates a new
+-            // EVP_PKEY from raw public key bytes.
+-            unsafe {
+-                let pkey = cvt_p(ffi::EVP_PKEY_pqdsa_new_raw_public_key(
+-                    variant.nid(),
+-                    data.as_ptr(),
+-                    data.len(),
+-                ))?;
+-                Ok(openssl::pkey::PKey::from_ptr(pkey))
+-            }
+-        } else if #[cfg(CRYPTOGRAPHY_OPENSSL_350_OR_GREATER)] {
+-            let key_type = match variant {
+-                MlDsaVariant::MlDsa44 => openssl::pkey::KeyType::ML_DSA_44,
+-                MlDsaVariant::MlDsa65 => openssl::pkey::KeyType::ML_DSA_65,
+-                MlDsaVariant::MlDsa87 => openssl::pkey::KeyType::ML_DSA_87,
+-            };
+-            openssl::pkey::PKey::public_key_from_raw_bytes_ex(None, key_type, None, data)
+-        }
+-    }
+-}
+-
+-pub fn sign(
+-    pkey: &openssl::pkey::PKeyRef<openssl::pkey::Private>,
+-    data: &[u8],
+-    context: &[u8],
+-) -> OpenSSLResult<Vec<u8>> {
+-    let mut md_ctx = openssl::md_ctx::MdCtx::new()?;
+-    let pkey_ctx = md_ctx.digest_sign_init(None, pkey)?;
+-    if !context.is_empty() {
+-        set_context_string(pkey_ctx, context)?;
+-    }
+-    let mut sig = vec![];
+-    md_ctx.digest_sign_to_vec(data, &mut sig)?;
+-    Ok(sig)
+-}
+-
+-pub fn verify(
+-    pkey: &openssl::pkey::PKeyRef<openssl::pkey::Public>,
+-    signature: &[u8],
+-    data: &[u8],
+-    context: &[u8],
+-) -> OpenSSLResult<bool> {
+-    let mut md_ctx = openssl::md_ctx::MdCtx::new()?;
+-    let pkey_ctx = md_ctx.digest_verify_init(None, pkey)?;
+-    if !context.is_empty() {
+-        set_context_string(pkey_ctx, context)?;
+-    }
+-    Ok(md_ctx.digest_verify(data, signature).unwrap_or(false))
+-}
+-
+-/// Enable "external mu" mode on an OpenSSL signing/verification context by
+-/// setting the integer `mu` signature parameter (OSSL_SIGNATURE_PARAM_MU) to 1.
+-#[cfg(CRYPTOGRAPHY_OPENSSL_350_OR_GREATER)]
+-fn set_mu<T>(pkey_ctx: &mut openssl::pkey_ctx::PkeyCtxRef<T>) -> OpenSSLResult<()> {
+-    // A fixed OSSL_PARAM array holding the integer "mu" parameter set to 1
+-    // enables external mu mode. The provider reads it back with
+-    // OSSL_PARAM_get_int, which accepts an unsigned integer param, so we can
+-    // build the array on the stack rather than via an allocating
+-    // OSSL_PARAM_BLD.
+-    let mut mu: std::ffi::c_uint = 1;
+-    // SAFETY: `params` and its backing `mu` value outlive the call into
+-    // OpenSSL, and the array is terminated with OSSL_PARAM_construct_end().
+-    unsafe {
+-        let params = [
+-            ffi::OSSL_PARAM_construct_uint(c"mu".as_ptr(), &mut mu),
+-            ffi::OSSL_PARAM_construct_end(),
+-        ];
+-        cvt(ffi::EVP_PKEY_CTX_set_params(
+-            pkey_ctx.as_ptr(),
+-            params.as_ptr(),
+-        ))?;
+-    }
+-    Ok(())
+-}
+-
+-/// Sign a precomputed external mu (message representative). `mu` must be
+-/// [`MLDSA_MU_BYTES`] long, and already incorporates any context string, so no
+-/// context is accepted here.
+-pub fn sign_mu(
+-    pkey: &openssl::pkey::PKeyRef<openssl::pkey::Private>,
+-    mu: &[u8],
+-) -> OpenSSLResult<Vec<u8>> {
+-    // The BoringSSL path passes `mu` to the low-level API as a bare pointer
+-    // that is read for exactly MLDSA_MU_BYTES, so enforce the length here for
+-    // soundness rather than relying on callers.
+-    assert_eq!(mu.len(), MLDSA_MU_BYTES);
+-    cfg_if::cfg_if! {
+-        if #[cfg(CRYPTOGRAPHY_IS_BORINGSSL)] {
+-            // BoringSSL has no EVP-level external mu support, so we drop down to
+-            // the low-level ML-DSA API, reconstructing the private key from its
+-            // 32-byte seed.
+-            let seed = mldsa_seed_raw(pkey)?;
+-            // SAFETY: `seed` is a valid 32-byte seed and `mu` is a valid
+-            // MLDSA_MU_BYTES buffer; both outlive the calls below.
+-            unsafe {
+-                match MlDsaVariant::from_pkey(pkey) {
+-                    MlDsaVariant::MlDsa44 => {
+-                        let mut key = std::mem::MaybeUninit::<ffi::MLDSA44_private_key>::uninit();
+-                        cvt(ffi::MLDSA44_private_key_from_seed(
+-                            key.as_mut_ptr(),
+-                            seed.as_ptr(),
+-                            seed.len(),
+-                        ))?;
+-                        let key = key.assume_init();
+-                        let mut sig = vec![0u8; ffi::MLDSA44_SIGNATURE_BYTES as usize];
+-                        cvt(ffi::MLDSA44_sign_message_representative(
+-                            sig.as_mut_ptr(),
+-                            &key,
+-                            mu.as_ptr(),
+-                        ))?;
+-                        Ok(sig)
+-                    }
+-                    MlDsaVariant::MlDsa65 => {
+-                        let mut key = std::mem::MaybeUninit::<ffi::MLDSA65_private_key>::uninit();
+-                        cvt(ffi::MLDSA65_private_key_from_seed(
+-                            key.as_mut_ptr(),
+-                            seed.as_ptr(),
+-                            seed.len(),
+-                        ))?;
+-                        let key = key.assume_init();
+-                        let mut sig = vec![0u8; ffi::MLDSA65_SIGNATURE_BYTES as usize];
+-                        cvt(ffi::MLDSA65_sign_message_representative(
+-                            sig.as_mut_ptr(),
+-                            &key,
+-                            mu.as_ptr(),
+-                        ))?;
+-                        Ok(sig)
+-                    }
+-                    MlDsaVariant::MlDsa87 => {
+-                        let mut key = std::mem::MaybeUninit::<ffi::MLDSA87_private_key>::uninit();
+-                        cvt(ffi::MLDSA87_private_key_from_seed(
+-                            key.as_mut_ptr(),
+-                            seed.as_ptr(),
+-                            seed.len(),
+-                        ))?;
+-                        let key = key.assume_init();
+-                        let mut sig = vec![0u8; ffi::MLDSA87_SIGNATURE_BYTES as usize];
+-                        cvt(ffi::MLDSA87_sign_message_representative(
+-                            sig.as_mut_ptr(),
+-                            &key,
+-                            mu.as_ptr(),
+-                        ))?;
+-                        Ok(sig)
+-                    }
+-                }
+-            }
+-        } else if #[cfg(CRYPTOGRAPHY_IS_AWSLC)] {
+-            // AWS-LC's EVP_PKEY_sign treats its input as an external mu (the
+-            // "ExternalMu" format) for ML-DSA keys.
+-            let mut ctx = openssl::pkey_ctx::PkeyCtx::new(pkey)?;
+-            ctx.sign_init()?;
+-            let mut sig = vec![];
+-            ctx.sign_to_vec(mu, &mut sig)?;
+-            Ok(sig)
+-        } else if #[cfg(CRYPTOGRAPHY_OPENSSL_350_OR_GREATER)] {
+-            // OpenSSL signs an external mu by setting the "mu" parameter and
+-            // passing the 64-byte mu in place of the message. ML-DSA only
+-            // supports the digest-sign flow (EVP_PKEY_sign_init is not
+-            // implemented for it), so we cannot use the one-shot PkeyCtx path
+-            // the AWS-LC branch uses.
+-            let mut md_ctx = openssl::md_ctx::MdCtx::new()?;
+-            let pkey_ctx = md_ctx.digest_sign_init(None, pkey)?;
+-            set_mu(pkey_ctx)?;
+-            let mut sig = vec![];
+-            md_ctx.digest_sign_to_vec(mu, &mut sig)?;
+-            Ok(sig)
+-        }
+-    }
+-}
+-
+-/// Verify a signature over a precomputed external mu (message representative).
+-/// `mu` must be [`MLDSA_MU_BYTES`] long.
+-pub fn verify_mu(
+-    pkey: &openssl::pkey::PKeyRef<openssl::pkey::Public>,
+-    signature: &[u8],
+-    mu: &[u8],
+-) -> OpenSSLResult<bool> {
+-    // The BoringSSL path passes `mu` to the low-level API as a bare pointer
+-    // that is read for exactly MLDSA_MU_BYTES, so enforce the length here for
+-    // soundness rather than relying on callers.
+-    assert_eq!(mu.len(), MLDSA_MU_BYTES);
+-    cfg_if::cfg_if! {
+-        if #[cfg(CRYPTOGRAPHY_IS_BORINGSSL)] {
+-            let raw = pkey.raw_public_key()?;
+-            // SAFETY: We parse the low-level public key from its encoded form
+-            // and verify the signature over the MLDSA_MU_BYTES `mu`.
+-            unsafe {
+-                match MlDsaVariant::from_pkey(pkey) {
+-                    MlDsaVariant::MlDsa44 => {
+-                        let mut key = std::mem::MaybeUninit::<ffi::MLDSA44_public_key>::uninit();
+-                        let mut cbs = std::mem::MaybeUninit::<ffi::CBS>::uninit();
+-                        ffi::CBS_init(cbs.as_mut_ptr(), raw.as_ptr(), raw.len());
+-                        cvt(ffi::MLDSA44_parse_public_key(
+-                            key.as_mut_ptr(),
+-                            cbs.as_mut_ptr(),
+-                        ))?;
+-                        let key = key.assume_init();
+-                        Ok(ffi::MLDSA44_verify_message_representative(
+-                            &key,
+-                            signature.as_ptr(),
+-                            signature.len(),
+-                            mu.as_ptr(),
+-                        ) == 1)
+-                    }
+-                    MlDsaVariant::MlDsa65 => {
+-                        let mut key = std::mem::MaybeUninit::<ffi::MLDSA65_public_key>::uninit();
+-                        let mut cbs = std::mem::MaybeUninit::<ffi::CBS>::uninit();
+-                        ffi::CBS_init(cbs.as_mut_ptr(), raw.as_ptr(), raw.len());
+-                        cvt(ffi::MLDSA65_parse_public_key(
+-                            key.as_mut_ptr(),
+-                            cbs.as_mut_ptr(),
+-                        ))?;
+-                        let key = key.assume_init();
+-                        Ok(ffi::MLDSA65_verify_message_representative(
+-                            &key,
+-                            signature.as_ptr(),
+-                            signature.len(),
+-                            mu.as_ptr(),
+-                        ) == 1)
+-                    }
+-                    MlDsaVariant::MlDsa87 => {
+-                        let mut key = std::mem::MaybeUninit::<ffi::MLDSA87_public_key>::uninit();
+-                        let mut cbs = std::mem::MaybeUninit::<ffi::CBS>::uninit();
+-                        ffi::CBS_init(cbs.as_mut_ptr(), raw.as_ptr(), raw.len());
+-                        cvt(ffi::MLDSA87_parse_public_key(
+-                            key.as_mut_ptr(),
+-                            cbs.as_mut_ptr(),
+-                        ))?;
+-                        let key = key.assume_init();
+-                        Ok(ffi::MLDSA87_verify_message_representative(
+-                            &key,
+-                            signature.as_ptr(),
+-                            signature.len(),
+-                            mu.as_ptr(),
+-                        ) == 1)
+-                    }
+-                }
+-            }
+-        } else if #[cfg(CRYPTOGRAPHY_IS_AWSLC)] {
+-            let mut ctx = openssl::pkey_ctx::PkeyCtx::new(pkey)?;
+-            ctx.verify_init()?;
+-            Ok(ctx.verify(mu, signature).unwrap_or(false))
+-        } else if #[cfg(CRYPTOGRAPHY_OPENSSL_350_OR_GREATER)] {
+-            let mut md_ctx = openssl::md_ctx::MdCtx::new()?;
+-            let pkey_ctx = md_ctx.digest_verify_init(None, pkey)?;
+-            set_mu(pkey_ctx)?;
+-            Ok(md_ctx.digest_verify(mu, signature).unwrap_or(false))
+-        }
+-    }
+-}
+-
+-#[cfg(test)]
+-mod tests {
+-    use super::MlDsaVariant;
+-
+-    #[test]
+-    #[should_panic(expected = "Unsupported ML-DSA variant")]
+-    fn test_from_pkey_wrong_type() {
+-        let key = openssl::pkey::PKey::generate_ed25519().unwrap();
+-        MlDsaVariant::from_pkey(&key);
+-    }
+-}
+diff --git a/src/rust/cryptography-openssl/src/mlkem.rs b/src/rust/cryptography-openssl/src/mlkem.rs
+deleted file mode 100644
+index 7757a2b..0000000
+--- a/src/rust/cryptography-openssl/src/mlkem.rs
++++ /dev/null
+@@ -1,302 +0,0 @@
+-// This file is dual licensed under the terms of the Apache License, Version
+-// 2.0, and the BSD License. See the LICENSE file in the root of this repository
+-// for complete details.
+-
+-#[cfg(CRYPTOGRAPHY_IS_AWSLC)]
+-use std::os::raw::c_int;
+-
+-use foreign_types_shared::ForeignType;
+-#[cfg(any(CRYPTOGRAPHY_IS_BORINGSSL, CRYPTOGRAPHY_IS_AWSLC))]
+-use foreign_types_shared::ForeignTypeRef;
+-use openssl_sys as ffi;
+-
+-#[cfg(any(CRYPTOGRAPHY_IS_BORINGSSL, CRYPTOGRAPHY_IS_AWSLC))]
+-use crate::cvt_p;
+-use crate::{cvt, OpenSSLResult};
+-
+-#[cfg(CRYPTOGRAPHY_IS_AWSLC)]
+-pub const PKEY_ID: openssl::pkey::Id = openssl::pkey::Id::from_raw(ffi::NID_kem);
+-
+-/// Check whether a PKey is an ML-KEM key.
+-///
+-/// OpenSSL 3.x provider-based keys return -1 from EVP_PKEY_get_id(), so
+-/// NID-based matching does not work. `PKeyRef::is_a` queries by algorithm
+-/// name instead.
+-#[cfg(any(
+-    CRYPTOGRAPHY_IS_BORINGSSL,
+-    CRYPTOGRAPHY_IS_AWSLC,
+-    CRYPTOGRAPHY_OPENSSL_350_OR_GREATER
+-))]
+-pub fn is_mlkem_pkey<T>(pkey: &openssl::pkey::PKeyRef<T>) -> bool {
+-    cfg_if::cfg_if! {
+-        if #[cfg(CRYPTOGRAPHY_IS_BORINGSSL)] {
+-            let raw = pkey.id().as_raw();
+-            raw == ffi::NID_ML_KEM_768 || raw == ffi::NID_ML_KEM_1024
+-        } else if #[cfg(CRYPTOGRAPHY_IS_AWSLC)] {
+-            pkey.id() == PKEY_ID
+-        } else if #[cfg(CRYPTOGRAPHY_OPENSSL_350_OR_GREATER)] {
+-            pkey.is_a(openssl::pkey::KeyType::ML_KEM_768)
+-                || pkey.is_a(openssl::pkey::KeyType::ML_KEM_1024)
+-        }
+-    }
+-}
+-
+-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+-pub enum MlKemVariant {
+-    MlKem768,
+-    MlKem1024,
+-}
+-
+-impl MlKemVariant {
+-    #[cfg(CRYPTOGRAPHY_IS_AWSLC)]
+-    pub fn nid(self) -> c_int {
+-        match self {
+-            MlKemVariant::MlKem768 => ffi::NID_MLKEM768,
+-            MlKemVariant::MlKem1024 => ffi::NID_MLKEM1024,
+-        }
+-    }
+-
+-    pub fn from_pkey<T: openssl::pkey::HasPublic>(
+-        pkey: &openssl::pkey::PKeyRef<T>,
+-    ) -> MlKemVariant {
+-        cfg_if::cfg_if! {
+-            if #[cfg(CRYPTOGRAPHY_IS_BORINGSSL)] {
+-                match pkey.id().as_raw() {
+-                    ffi::NID_ML_KEM_768 => MlKemVariant::MlKem768,
+-                    ffi::NID_ML_KEM_1024 => MlKemVariant::MlKem1024,
+-                    _ => panic!("Unsupported ML-KEM variant"),
+-                }
+-            } else if #[cfg(CRYPTOGRAPHY_IS_AWSLC)] {
+-                // SAFETY: EVP_PKEY_kem_get_type returns the NID of the KEM
+-                // algorithm for a valid KEM pkey.
+-                let nid = unsafe { ffi::EVP_PKEY_kem_get_type(pkey.as_ptr()) };
+-                match nid {
+-                    ffi::NID_MLKEM768 => MlKemVariant::MlKem768,
+-                    ffi::NID_MLKEM1024 => MlKemVariant::MlKem1024,
+-                    _ => panic!("Unsupported ML-KEM variant"),
+-                }
+-            } else if #[cfg(CRYPTOGRAPHY_OPENSSL_350_OR_GREATER)] {
+-                // Provider-based keys in OpenSSL 3.x return -1 from
+-                // EVP_PKEY_get_id(), so we must use name-based lookup.
+-                if pkey.is_a(openssl::pkey::KeyType::ML_KEM_768) {
+-                    MlKemVariant::MlKem768
+-                } else if pkey.is_a(openssl::pkey::KeyType::ML_KEM_1024) {
+-                    MlKemVariant::MlKem1024
+-                } else {
+-                    panic!("Unsupported ML-KEM variant")
+-                }
+-            }
+-        }
+-    }
+-}
+-
+-#[cfg(CRYPTOGRAPHY_IS_BORINGSSL)]
+-fn evp_pkey_alg(variant: MlKemVariant) -> *const ffi::EVP_PKEY_ALG {
+-    // SAFETY: These functions return static, non-null pointers to the
+-    // EVP_PKEY_ALG for each ML-KEM variant.
+-    unsafe {
+-        match variant {
+-            MlKemVariant::MlKem768 => ffi::EVP_pkey_ml_kem_768(),
+-            MlKemVariant::MlKem1024 => ffi::EVP_pkey_ml_kem_1024(),
+-        }
+-    }
+-}
+-
+-#[cfg(CRYPTOGRAPHY_IS_AWSLC)]
+-extern "C" {
+-    // Manually declared because this function is in an experimental header
+-    // in AWS-LC (April 2026).
+-    // https://github.com/aws/aws-lc/blob/23b13826748f942ed7d6c4bcb9971dc9244cbc6f/include/openssl/experimental/kem_deterministic_api.h#L31
+-    fn EVP_PKEY_keygen_deterministic(
+-        ctx: *mut ffi::EVP_PKEY_CTX,
+-        out_pkey: *mut *mut ffi::EVP_PKEY,
+-        seed: *const u8,
+-        seed_len: *mut usize,
+-    ) -> c_int;
+-}
+-
+-/// Extract the raw 64-byte seed from an ML-KEM private key.
+-pub fn mlkem_seed_raw(
+-    pkey: &openssl::pkey::PKeyRef<openssl::pkey::Private>,
+-) -> OpenSSLResult<[u8; 64]> {
+-    let mut seed = [0u8; 64];
+-    cfg_if::cfg_if! {
+-        if #[cfg(any(CRYPTOGRAPHY_IS_BORINGSSL, CRYPTOGRAPHY_IS_AWSLC))] {
+-            let mut seed_len = seed.len();
+-            // SAFETY: pkey is a valid EVP_PKEY and seed is a 64-byte buffer.
+-            unsafe {
+-                cvt(ffi::EVP_PKEY_get_private_seed(
+-                    pkey.as_ptr(),
+-                    seed.as_mut_ptr(),
+-                    &mut seed_len,
+-                ))?;
+-            }
+-            assert_eq!(seed_len, 64);
+-        } else if #[cfg(CRYPTOGRAPHY_OPENSSL_350_OR_GREATER)] {
+-            pkey.seed_into(&mut seed)?;
+-        }
+-    }
+-    Ok(seed)
+-}
+-
+-pub fn new_raw_private_key(
+-    variant: MlKemVariant,
+-    seed: &[u8],
+-) -> OpenSSLResult<openssl::pkey::PKey<openssl::pkey::Private>> {
+-    cfg_if::cfg_if! {
+-        if #[cfg(CRYPTOGRAPHY_IS_BORINGSSL)] {
+-            // SAFETY: EVP_PKEY_from_private_seed creates a new EVP_PKEY from
+-            // the seed. evp_pkey_alg returns a valid algorithm pointer.
+-            unsafe {
+-                let pkey = cvt_p(ffi::EVP_PKEY_from_private_seed(
+-                    evp_pkey_alg(variant),
+-                    seed.as_ptr(),
+-                    seed.len(),
+-                ))?;
+-                Ok(openssl::pkey::PKey::from_ptr(pkey))
+-            }
+-        } else if #[cfg(CRYPTOGRAPHY_IS_AWSLC)] {
+-            let ctx = openssl::pkey_ctx::PkeyCtx::new_id(PKEY_ID)?;
+-            // SAFETY: ctx is a valid EVP_PKEY_CTX for KEM.
+-            unsafe {
+-                cvt(ffi::EVP_PKEY_CTX_kem_set_params(
+-                    ctx.as_ptr(),
+-                    variant.nid(),
+-                ))?
+-            };
+-            // SAFETY: ctx is a valid EVP_PKEY_CTX with KEM params set.
+-            unsafe { cvt(ffi::EVP_PKEY_keygen_init(ctx.as_ptr()))? };
+-
+-            let mut pkey: *mut ffi::EVP_PKEY = std::ptr::null_mut();
+-            let mut seed_len = seed.len();
+-            // SAFETY: ctx is initialized for keygen, seed points to valid memory.
+-            unsafe {
+-                cvt(EVP_PKEY_keygen_deterministic(
+-                    ctx.as_ptr(),
+-                    &mut pkey,
+-                    seed.as_ptr(),
+-                    &mut seed_len,
+-                ))?;
+-            }
+-            assert_eq!(seed_len, 64);
+-            // SAFETY: EVP_PKEY_keygen_deterministic succeeded, pkey is valid.
+-            let pkey = unsafe { openssl::pkey::PKey::from_ptr(pkey) };
+-            Ok(pkey)
+-        } else if #[cfg(CRYPTOGRAPHY_OPENSSL_350_OR_GREATER)] {
+-            let key_type = match variant {
+-                MlKemVariant::MlKem768 => openssl::pkey::KeyType::ML_KEM_768,
+-                MlKemVariant::MlKem1024 => openssl::pkey::KeyType::ML_KEM_1024,
+-            };
+-            openssl::pkey::PKey::private_key_from_seed(None, key_type, None, seed)
+-        }
+-    }
+-}
+-
+-pub fn new_raw_public_key(
+-    variant: MlKemVariant,
+-    data: &[u8],
+-) -> OpenSSLResult<openssl::pkey::PKey<openssl::pkey::Public>> {
+-    cfg_if::cfg_if! {
+-        if #[cfg(CRYPTOGRAPHY_IS_BORINGSSL)] {
+-            let nid = match variant {
+-                MlKemVariant::MlKem768 => ffi::NID_ML_KEM_768,
+-                MlKemVariant::MlKem1024 => ffi::NID_ML_KEM_1024,
+-            };
+-            openssl::pkey::PKey::public_key_from_raw_bytes(
+-                data,
+-                openssl::pkey::Id::from_raw(nid),
+-            )
+-        } else if #[cfg(CRYPTOGRAPHY_IS_AWSLC)] {
+-            // SAFETY: data points to valid memory of the given length.
+-            unsafe {
+-                let pkey = cvt_p(ffi::EVP_PKEY_kem_new_raw_public_key(
+-                    variant.nid(),
+-                    data.as_ptr(),
+-                    data.len(),
+-                ))?;
+-                Ok(openssl::pkey::PKey::from_ptr(pkey))
+-            }
+-        } else if #[cfg(CRYPTOGRAPHY_OPENSSL_350_OR_GREATER)] {
+-            let key_type = match variant {
+-                MlKemVariant::MlKem768 => openssl::pkey::KeyType::ML_KEM_768,
+-                MlKemVariant::MlKem1024 => openssl::pkey::KeyType::ML_KEM_1024,
+-            };
+-            openssl::pkey::PKey::public_key_from_raw_bytes_ex(None, key_type, None, data)
+-        }
+-    }
+-}
+-
+-pub fn encapsulate(
+-    pkey: &openssl::pkey::PKeyRef<openssl::pkey::Public>,
+-) -> OpenSSLResult<(Vec<u8>, Vec<u8>)> {
+-    let (ct_bytes, ss_bytes) = match MlKemVariant::from_pkey(pkey) {
+-        MlKemVariant::MlKem768 => (1088, 32),
+-        MlKemVariant::MlKem1024 => (1568, 32),
+-    };
+-    let ctx = openssl::pkey_ctx::PkeyCtx::new(pkey)?;
+-    #[cfg(any(CRYPTOGRAPHY_IS_BORINGSSL, CRYPTOGRAPHY_OPENSSL_350_OR_GREATER))]
+-    {
+-        // SAFETY: ctx is a valid EVP_PKEY_CTX for the KEM operation.
+-        let res = unsafe { ffi::EVP_PKEY_encapsulate_init(ctx.as_ptr(), std::ptr::null()) };
+-        cvt(res)?;
+-    }
+-
+-    let mut ciphertext = vec![0u8; ct_bytes];
+-    let mut shared_secret = vec![0u8; ss_bytes];
+-    let mut ct_len = ciphertext.len();
+-    let mut ss_len = shared_secret.len();
+-    // SAFETY: ctx is a valid EVP_PKEY_CTX, buffers are correctly sized.
+-    unsafe {
+-        cvt(ffi::EVP_PKEY_encapsulate(
+-            ctx.as_ptr(),
+-            ciphertext.as_mut_ptr(),
+-            &mut ct_len,
+-            shared_secret.as_mut_ptr(),
+-            &mut ss_len,
+-        ))?;
+-    }
+-    assert_eq!(ct_len, ct_bytes);
+-    assert_eq!(ss_len, ss_bytes);
+-    Ok((ciphertext, shared_secret))
+-}
+-
+-pub fn decapsulate(
+-    pkey: &openssl::pkey::PKeyRef<openssl::pkey::Private>,
+-    ciphertext: &[u8],
+-) -> OpenSSLResult<Vec<u8>> {
+-    let ctx = openssl::pkey_ctx::PkeyCtx::new(pkey)?;
+-    #[cfg(any(CRYPTOGRAPHY_IS_BORINGSSL, CRYPTOGRAPHY_OPENSSL_350_OR_GREATER))]
+-    {
+-        // SAFETY: ctx is a valid EVP_PKEY_CTX for the KEM operation.
+-        let res = unsafe { ffi::EVP_PKEY_decapsulate_init(ctx.as_ptr(), std::ptr::null()) };
+-        cvt(res)?;
+-    }
+-
+-    let ss_bytes: usize = 32;
+-    let mut shared_secret = vec![0u8; ss_bytes];
+-    let mut ss_len = ss_bytes;
+-    // SAFETY: ctx is a valid EVP_PKEY_CTX, buffers are correctly sized.
+-    unsafe {
+-        cvt(ffi::EVP_PKEY_decapsulate(
+-            ctx.as_ptr(),
+-            shared_secret.as_mut_ptr(),
+-            &mut ss_len,
+-            ciphertext.as_ptr(),
+-            ciphertext.len(),
+-        ))?;
+-    }
+-    assert_eq!(ss_len, ss_bytes);
+-    Ok(shared_secret)
+-}
+-
+-#[cfg(test)]
+-mod tests {
+-    use super::MlKemVariant;
+-
+-    #[test]
+-    #[should_panic(expected = "Unsupported ML-KEM variant")]
+-    fn test_from_pkey_wrong_type() {
+-        let key = openssl::pkey::PKey::generate_ed25519().unwrap();
+-        MlKemVariant::from_pkey(&key);
+-    }
+-}
+diff --git a/src/rust/cryptography-openssl/src/poly1305.rs b/src/rust/cryptography-openssl/src/poly1305.rs
+deleted file mode 100644
+index d19141a..0000000
+--- a/src/rust/cryptography-openssl/src/poly1305.rs
++++ /dev/null
+@@ -1,51 +0,0 @@
+-// This file is dual licensed under the terms of the Apache License, Version
+-// 2.0, and the BSD License. See the LICENSE file in the root of this repository
+-// for complete details.
+-
+-use std::mem::MaybeUninit;
+-
+-use openssl_sys as ffi;
+-
+-pub struct Poly1305State {
+-    // The state data must be allocated in the heap so that its address does not change. This is
+-    // because BoringSSL APIs that take a `poly1305_state*` ignore all the data before an aligned
+-    // address. Since a stack-allocated struct would change address on every copy, BoringSSL would
+-    // interpret each copy differently, causing unexpected behavior.
+-    context: Box<ffi::poly1305_state>,
+-}
+-
+-impl Poly1305State {
+-    pub fn new(key: &[u8]) -> Poly1305State {
+-        assert_eq!(key.len(), 32);
+-        let mut ctx: Box<MaybeUninit<ffi::poly1305_state>> =
+-            Box::new(MaybeUninit::<ffi::poly1305_state>::uninit());
+-
+-        // SAFETY: After initializing the context, unwrap the
+-        // `Box<MaybeUninit<poly1305_state>>` into a `Box<poly1305_state>`
+-        // while keeping the same memory address. See the docstring of the
+-        // `Poly1305State` struct above for the rationale.
+-        let initialized_ctx: Box<ffi::poly1305_state> = unsafe {
+-            ffi::CRYPTO_poly1305_init(ctx.as_mut().as_mut_ptr(), key.as_ptr());
+-            let raw_ctx_ptr = (*Box::into_raw(ctx)).as_mut_ptr();
+-            Box::from_raw(raw_ctx_ptr)
+-        };
+-
+-        Poly1305State {
+-            context: initialized_ctx,
+-        }
+-    }
+-
+-    pub fn update(&mut self, data: &[u8]) {
+-        // SAFETY: context is valid, as is the data ptr.
+-        unsafe {
+-            ffi::CRYPTO_poly1305_update(self.context.as_mut(), data.as_ptr(), data.len());
+-        };
+-    }
+-
+-    pub fn finalize(&mut self, output: &mut [u8]) {
+-        assert_eq!(output.len(), 16);
+-        // SAFETY: context is valid and we verified that the output is the
+-        // right length.
+-        unsafe { ffi::CRYPTO_poly1305_finish(self.context.as_mut(), output.as_mut_ptr()) };
+-    }
+-}
+diff --git a/src/rust/cryptography-openssl/src/rand.rs b/src/rust/cryptography-openssl/src/rand.rs
+deleted file mode 100644
+index fcca54f..0000000
+--- a/src/rust/cryptography-openssl/src/rand.rs
++++ /dev/null
+@@ -1,24 +0,0 @@
+-// This file is dual licensed under the terms of the Apache License, Version
+-// 2.0, and the BSD License. See the LICENSE file in the root of this repository
+-// for complete details.
+-
+-use crate::OpenSSLResult;
+-
+-/// Fill a buffer with random bytes.
+-pub fn rand_bytes(buf: &mut [u8]) -> OpenSSLResult<()> {
+-    #[cfg(any(
+-        CRYPTOGRAPHY_IS_LIBRESSL,
+-        CRYPTOGRAPHY_IS_BORINGSSL,
+-        CRYPTOGRAPHY_IS_AWSLC
+-    ))]
+-    openssl::rand::rand_bytes(buf)?;
+-
+-    #[cfg(not(any(
+-        CRYPTOGRAPHY_IS_LIBRESSL,
+-        CRYPTOGRAPHY_IS_BORINGSSL,
+-        CRYPTOGRAPHY_IS_AWSLC
+-    )))]
+-    openssl::rand::rand_priv_bytes(buf)?;
+-
+-    Ok(())
+-}
+diff --git a/src/rust/cryptography-openssl/src/utils.rs b/src/rust/cryptography-openssl/src/utils.rs
+deleted file mode 100644
+index 799b50b..0000000
+--- a/src/rust/cryptography-openssl/src/utils.rs
++++ /dev/null
+@@ -1,9 +0,0 @@
+-// This file is dual licensed under the terms of the Apache License, Version
+-// 2.0, and the BSD License. See the LICENSE file in the root of this repository
+-// for complete details.
+-
+-use crate::OpenSSLResult;
+-
+-pub fn bn_to_big_endian_bytes(b: &openssl::bn::BigNumRef) -> OpenSSLResult<Vec<u8>> {
+-    b.to_vec_padded(b.num_bits() / 8 + 1)
+-}
 diff --git a/src/rust/src/backend/aead.rs b/src/rust/src/backend/aead.rs
-index 2289d1c..c64aff6 100644
+index 2289d1c..11bb56a 100644
 --- a/src/rust/src/backend/aead.rs
 +++ b/src/rust/src/backend/aead.rs
 @@ -46,11 +46,13 @@ fn extract_aad(aad: Option<Aad<'_>>) -> CryptographyResult<(ExtractedAad<'_>, us
@@ -3930,7 +5358,23 @@ index 2289d1c..c64aff6 100644
                      )?,
                  })
              }
-@@ -680,7 +376,7 @@ impl ChaCha20Poly1305 {
+@@ -602,6 +298,7 @@ impl ChaCha20Poly1305 {
+ 
+         self.ctx
+             .encrypt_into(py, data_bytes, aad, Some(nonce_bytes), buf.as_mut_bytes())?;
++        buf.commit(py, expected_len)?;
+         Ok(expected_len)
+     }
+ 
+@@ -668,6 +365,7 @@ impl ChaCha20Poly1305 {
+         self.ctx
+             .decrypt_into(py, data_bytes, aad, Some(nonce_bytes), buf.as_mut_bytes())?;
+ 
++        buf.commit(py, expected_len)?;
+         Ok(expected_len)
+     }
+ }
+@@ -680,7 +378,7 @@ impl ChaCha20Poly1305 {
  )]
  // NO-COVERAGE-END
  pub(crate) struct AesGcm {
@@ -3939,7 +5383,7 @@ index 2289d1c..c64aff6 100644
  }
  
  #[pyo3::pymethods]
-@@ -692,9 +388,9 @@ impl AesGcm {
+@@ -692,9 +390,9 @@ impl AesGcm {
      ) -> CryptographyResult<AesGcm> {
          let key_buf = key.extract::<CffiBuf<'_>>(py)?;
          let cipher = match key_buf.as_bytes().len() {
@@ -3952,7 +5396,7 @@ index 2289d1c..c64aff6 100644
              _ => {
                  return Err(CryptographyError::from(
                      pyo3::exceptions::PyValueError::new_err(
-@@ -705,15 +401,7 @@ impl AesGcm {
+@@ -705,15 +403,7 @@ impl AesGcm {
          };
  
          Ok(AesGcm {
@@ -3969,7 +5413,23 @@ index 2289d1c..c64aff6 100644
          })
      }
  
-@@ -869,7 +557,7 @@ impl AesGcm {
+@@ -786,6 +476,7 @@ impl AesGcm {
+ 
+         self.ctx
+             .encrypt_into(py, data_bytes, aad, Some(nonce_bytes), buf.as_mut_bytes())?;
++        buf.commit(py, expected_len)?;
+         Ok(expected_len)
+     }
+ 
+@@ -857,6 +548,7 @@ impl AesGcm {
+         self.ctx
+             .decrypt_into(py, data_bytes, aad, Some(nonce_bytes), buf.as_mut_bytes())?;
+ 
++        buf.commit(py, expected_len)?;
+         Ok(expected_len)
+     }
+ }
+@@ -869,7 +561,7 @@ impl AesGcm {
  )]
  // NO-COVERAGE-END
  struct AesCcm {
@@ -3978,7 +5438,7 @@ index 2289d1c..c64aff6 100644
      tag_length: usize,
  }
  
-@@ -896,9 +584,9 @@ impl AesCcm {
+@@ -896,9 +588,9 @@ impl AesCcm {
              } else {
                  let key_buf = key.extract::<CffiBuf<'_>>(py)?;
                  let cipher = match key_buf.as_bytes().len() {
@@ -3991,7 +5451,7 @@ index 2289d1c..c64aff6 100644
                      _ => {
                          return Err(CryptographyError::from(
                              pyo3::exceptions::PyValueError::new_err(
-@@ -915,14 +603,12 @@ impl AesCcm {
+@@ -915,14 +607,12 @@ impl AesCcm {
                  }
  
                  Ok(AesCcm {
@@ -4008,7 +5468,23 @@ index 2289d1c..c64aff6 100644
                      )?,
                      tag_length
                  })
-@@ -1104,7 +790,7 @@ impl AesCcm {
+@@ -1010,6 +700,7 @@ impl AesCcm {
+ 
+         self.ctx
+             .encrypt_into(py, data_bytes, aad, Some(nonce_bytes), buf.as_mut_bytes())?;
++        buf.commit(py, expected_len)?;
+         Ok(expected_len)
+     }
+ 
+@@ -1092,6 +783,7 @@ impl AesCcm {
+         self.ctx
+             .decrypt_into(py, data_bytes, aad, Some(nonce_bytes), buf.as_mut_bytes())?;
+ 
++        buf.commit(py, expected_len)?;
+         Ok(expected_len)
+     }
+ }
+@@ -1104,7 +796,7 @@ impl AesCcm {
  )]
  // NO-COVERAGE-END
  struct AesSiv {
@@ -4017,7 +5493,7 @@ index 2289d1c..c64aff6 100644
  }
  
  #[pyo3::pymethods]
-@@ -1127,7 +813,7 @@ impl AesSiv {
+@@ -1127,7 +819,7 @@ impl AesSiv {
  
          cfg_if::cfg_if! {
              if #[cfg(not(any(CRYPTOGRAPHY_IS_LIBRESSL, CRYPTOGRAPHY_IS_BORINGSSL, CRYPTOGRAPHY_IS_AWSLC)))] {
@@ -4026,7 +5502,7 @@ index 2289d1c..c64aff6 100644
                      return Err(CryptographyError::from(
                          exceptions::UnsupportedAlgorithm::new_err((
                              "AES-SIV is not supported by this version of OpenSSL",
-@@ -1136,16 +822,14 @@ impl AesSiv {
+@@ -1136,16 +828,14 @@ impl AesSiv {
                      ));
                  }
  
@@ -4046,7 +5522,23 @@ index 2289d1c..c64aff6 100644
                      )?,
                  })
              } else {
-@@ -1293,7 +977,7 @@ impl AesSiv {
+@@ -1228,6 +918,7 @@ impl AesSiv {
+         self.ctx
+             .encrypt_into(py, data_bytes, aad, None, buf.as_mut_bytes())?;
+ 
++        buf.commit(py, expected_len)?;
+         Ok(expected_len)
+     }
+ 
+@@ -1281,6 +972,7 @@ impl AesSiv {
+         self.ctx
+             .decrypt_into(py, data_bytes, aad, None, buf.as_mut_bytes())?;
+ 
++        buf.commit(py, expected_len)?;
+         Ok(expected_len)
+     }
+ }
+@@ -1293,7 +985,7 @@ impl AesSiv {
  )]
  // NO-COVERAGE-END
  struct AesOcb3 {
@@ -4055,7 +5547,7 @@ index 2289d1c..c64aff6 100644
  }
  
  #[pyo3::pymethods]
-@@ -1313,7 +997,7 @@ impl AesOcb3 {
+@@ -1313,7 +1005,7 @@ impl AesOcb3 {
                      )),
                  ))
              } else {
@@ -4064,7 +5556,7 @@ index 2289d1c..c64aff6 100644
                      return Err(CryptographyError::from(
                          exceptions::UnsupportedAlgorithm::new_err((
                              "AES-OCB3 is not supported by this version of OpenSSL",
-@@ -1323,9 +1007,9 @@ impl AesOcb3 {
+@@ -1323,9 +1015,9 @@ impl AesOcb3 {
                  }
  
                  let cipher = match key_buf.as_bytes().len() {
@@ -4077,7 +5569,7 @@ index 2289d1c..c64aff6 100644
                      _ => {
                          return Err(CryptographyError::from(
                              pyo3::exceptions::PyValueError::new_err(
-@@ -1336,14 +1020,12 @@ impl AesOcb3 {
+@@ -1336,14 +1028,12 @@ impl AesOcb3 {
                  };
  
                  Ok(AesOcb3 {
@@ -4094,7 +5586,23 @@ index 2289d1c..c64aff6 100644
                      )?,
                  })
              }
-@@ -1502,10 +1184,7 @@ impl AesOcb3 {
+@@ -1419,6 +1109,7 @@ impl AesOcb3 {
+ 
+         self.ctx
+             .encrypt_into(py, data_bytes, aad, Some(nonce_bytes), buf.as_mut_bytes())?;
++        buf.commit(py, expected_len)?;
+         Ok(expected_len)
+     }
+ 
+@@ -1490,6 +1181,7 @@ impl AesOcb3 {
+         self.ctx
+             .decrypt_into(py, data_bytes, aad, Some(nonce_bytes), buf.as_mut_bytes())?;
+ 
++        buf.commit(py, expected_len)?;
+         Ok(expected_len)
+     }
+ }
+@@ -1502,10 +1194,7 @@ impl AesOcb3 {
  )]
  // NO-COVERAGE-END
  struct AesGcmSiv {
@@ -4106,7 +5614,7 @@ index 2289d1c..c64aff6 100644
  }
  
  #[pyo3::pymethods]
-@@ -1530,8 +1209,8 @@ impl AesGcmSiv {
+@@ -1530,8 +1219,8 @@ impl AesGcmSiv {
              if #[cfg(any(CRYPTOGRAPHY_IS_BORINGSSL, CRYPTOGRAPHY_IS_AWSLC))] {
                  let _ = cipher_name;
                  let aead_type = match key_buf.as_bytes().len() {
@@ -4117,7 +5625,7 @@ index 2289d1c..c64aff6 100644
                      _ => return Err(CryptographyError::from(
                          exceptions::UnsupportedAlgorithm::new_err((
                              "Only 128-bit and 256-bit keys are supported for AES-GCM-SIV with AWS-LC or BoringSSL",
-@@ -1540,7 +1219,7 @@ impl AesGcmSiv {
+@@ -1540,7 +1229,7 @@ impl AesGcmSiv {
                      ))
                  };
                  Ok(AesGcmSiv {
@@ -4126,7 +5634,7 @@ index 2289d1c..c64aff6 100644
                  })
              } else if #[cfg(not(CRYPTOGRAPHY_OPENSSL_320_OR_GREATER))] {
                  let _ = cipher_name;
-@@ -1551,7 +1230,7 @@ impl AesGcmSiv {
+@@ -1551,7 +1240,7 @@ impl AesGcmSiv {
                      )),
                  ))
              } else {
@@ -4135,7 +5643,7 @@ index 2289d1c..c64aff6 100644
                      return Err(CryptographyError::from(
                          exceptions::UnsupportedAlgorithm::new_err((
                              "AES-GCM-SIV is not supported by this version of OpenSSL",
-@@ -1559,16 +1238,14 @@ impl AesGcmSiv {
+@@ -1559,16 +1248,14 @@ impl AesGcmSiv {
                          )),
                      ));
                  }
@@ -4155,6 +5663,22 @@ index 2289d1c..c64aff6 100644
                      )?,
                  })
              }
+@@ -1654,6 +1341,7 @@ impl AesGcmSiv {
+ 
+         self.ctx
+             .encrypt_into(py, data_bytes, aad, Some(nonce_bytes), buf.as_mut_bytes())?;
++        buf.commit(py, expected_len)?;
+         Ok(expected_len)
+     }
+ 
+@@ -1725,6 +1413,7 @@ impl AesGcmSiv {
+         self.ctx
+             .decrypt_into(py, data_bytes, aad, Some(nonce_bytes), buf.as_mut_bytes())?;
+ 
++        buf.commit(py, expected_len)?;
+         Ok(expected_len)
+     }
+ }
 diff --git a/src/rust/src/backend/cipher_registry.rs b/src/rust/src/backend/cipher_registry.rs
 index 2a2e5ed..fdad399 100644
 --- a/src/rust/src/backend/cipher_registry.rs
@@ -4498,7 +6022,7 @@ index 2a2e5ed..fdad399 100644
 +    Ok(registry.get(&key))
  }
 diff --git a/src/rust/src/backend/ciphers.rs b/src/rust/src/backend/ciphers.rs
-index 073bee3..6eeba5c 100644
+index 073bee3..c87d20c 100644
 --- a/src/rust/src/backend/ciphers.rs
 +++ b/src/rust/src/backend/ciphers.rs
 @@ -10,12 +10,21 @@ use crate::buf::{CffiBuf, CffiMutBuf};
@@ -4895,7 +6419,29 @@ index 073bee3..6eeba5c 100644
      }
  }
  
-@@ -451,10 +477,7 @@ impl PyAEADEncryptionContext {
+@@ -371,7 +397,9 @@ impl PyCipherContext {
+     ) -> CryptographyResult<usize> {
+         let data = data.as_bytes();
+         self.decrement_bytes_remaining(data.len())?;
+-        get_mut_ctx(self.ctx.as_mut())?.update_into(py, data, buf.as_mut_bytes())
++        let written = get_mut_ctx(self.ctx.as_mut())?.update_into(py, data, buf.as_mut_bytes())?;
++        buf.commit(py, written)?;
++        Ok(written)
+     }
+ 
+     fn finalize<'p>(
+@@ -418,7 +446,9 @@ impl PyAEADEncryptionContext {
+             .ok_or_else(|| {
+                 pyo3::exceptions::PyValueError::new_err("Exceeded maximum encrypted byte limit")
+             })?;
+-        get_mut_ctx(self.ctx.as_mut())?.update_into(py, data, buf.as_mut_bytes())
++        let written = get_mut_ctx(self.ctx.as_mut())?.update_into(py, data, buf.as_mut_bytes())?;
++        buf.commit(py, written)?;
++        Ok(written)
+     }
+ 
+     fn authenticate_additional_data(
+@@ -451,10 +481,7 @@ impl PyAEADEncryptionContext {
          let result = ctx.finalize(py)?;
  
          // XXX: do not hard code 16
@@ -4907,7 +6453,18 @@ index 073bee3..6eeba5c 100644
          self.tag = Some(tag.unbind());
          self.ctx = None;
  
-@@ -602,7 +625,7 @@ impl PyAEADDecryptionContext {
+@@ -513,7 +540,9 @@ impl PyAEADDecryptionContext {
+             .ok_or_else(|| {
+                 pyo3::exceptions::PyValueError::new_err("Exceeded maximum encrypted byte limit")
+             })?;
+-        get_mut_ctx(self.ctx.as_mut())?.update_into(py, data, buf.as_mut_bytes())
++        let written = get_mut_ctx(self.ctx.as_mut())?.update_into(py, data, buf.as_mut_bytes())?;
++        buf.commit(py, written)?;
++        Ok(written)
+     }
+ 
+     fn authenticate_additional_data(
+@@ -602,7 +631,7 @@ impl PyAEADDecryptionContext {
              ));
          }
  
@@ -4916,7 +6473,7 @@ index 073bee3..6eeba5c 100644
          let result = ctx.finalize(py)?;
          self.ctx = None;
          Ok(result)
-@@ -620,7 +643,12 @@ fn create_encryption_ctx<'p>(
+@@ -620,7 +649,12 @@ fn create_encryption_ctx<'p>(
      mode: pyo3::Bound<'_, pyo3::PyAny>,
  ) -> CryptographyResult<pyo3::Bound<'p, pyo3::PyAny>> {
      let bytes_remaining = chacha20_initial_byte_limit(py, &algorithm)?;
@@ -4930,7 +6487,7 @@ index 073bee3..6eeba5c 100644
  
      if mode.is_instance(&types::MODE_WITH_AUTHENTICATION_TAG.get(py)?)? {
          Ok(PyAEADEncryptionContext {
-@@ -653,14 +681,19 @@ fn create_decryption_ctx<'p>(
+@@ -653,14 +687,19 @@ fn create_decryption_ctx<'p>(
      mode: pyo3::Bound<'_, pyo3::PyAny>,
  ) -> CryptographyResult<pyo3::Bound<'p, pyo3::PyAny>> {
      let bytes_remaining = chacha20_initial_byte_limit(py, &algorithm)?;
@@ -7103,7 +8660,7 @@ index d8055d3..71073c4 100644
          labeled_ikm.extend_from_slice(HPKE_VERSION);
          labeled_ikm.extend_from_slice(&self.hpke_suite_id);
 diff --git a/src/rust/src/backend/kdf.rs b/src/rust/src/backend/kdf.rs
-index ee4829c..45e2ee5 100644
+index ee4829c..7514eb0 100644
 --- a/src/rust/src/backend/kdf.rs
 +++ b/src/rust/src/backend/kdf.rs
 @@ -23,9 +23,9 @@ use crate::{exceptions, types};
@@ -7143,7 +8700,18 @@ index ee4829c..45e2ee5 100644
  
          Ok(Pbkdf2Hmac {
              md,
-@@ -175,7 +182,7 @@ impl Scrypt {
+@@ -97,7 +104,9 @@ impl Pbkdf2Hmac {
+         key_material: CffiBuf<'_>,
+         mut buf: CffiMutBuf<'_>,
+     ) -> CryptographyResult<usize> {
+-        self.derive_into_buffer(py, key_material.as_bytes(), buf.as_mut_bytes())
++        let written = self.derive_into_buffer(py, key_material.as_bytes(), buf.as_mut_bytes())?;
++        buf.commit(py, written)?;
++        Ok(written)
+     }
+ 
+     fn derive<'p>(
+@@ -175,7 +184,7 @@ impl Scrypt {
          let r = self.r;
          let p = self.p;
          py.detach(|| {
@@ -7152,7 +8720,7 @@ index ee4829c..45e2ee5 100644
                  key_material,
                  salt,
                  n,
-@@ -226,7 +233,7 @@ impl Scrypt {
+@@ -226,7 +235,7 @@ impl Scrypt {
                      ),
                  ))
              } else {
@@ -7161,7 +8729,18 @@ index ee4829c..45e2ee5 100644
                      return Err(CryptographyError::from(
                          exceptions::UnsupportedAlgorithm::new_err(
                              "This version of OpenSSL does not support scrypt"
-@@ -361,41 +368,33 @@ impl BaseArgon2 {
+@@ -275,7 +284,9 @@ impl Scrypt {
+         key_material: CffiBuf<'_>,
+         mut buf: CffiMutBuf<'_>,
+     ) -> CryptographyResult<usize> {
+-        self.derive_into_buffer(py, key_material.as_bytes(), buf.as_mut_bytes())
++        let written = self.derive_into_buffer(py, key_material.as_bytes(), buf.as_mut_bytes())?;
++        buf.commit(py, written)?;
++        Ok(written)
+     }
+ 
+     #[cfg(not(CRYPTOGRAPHY_IS_LIBRESSL))]
+@@ -361,41 +372,33 @@ impl BaseArgon2 {
              ));
          }
  
@@ -7223,7 +8802,7 @@ index ee4829c..45e2ee5 100644
  
          Ok(self.length)
      }
-@@ -428,7 +427,7 @@ impl BaseArgon2 {
+@@ -428,7 +431,7 @@ impl BaseArgon2 {
                      ),
                  ))
              } else {
@@ -7232,7 +8811,58 @@ index ee4829c..45e2ee5 100644
                      return Err(CryptographyError::from(
                          exceptions::UnsupportedAlgorithm::new_err(
                              "This version of OpenSSL does not support argon2"
-@@ -985,7 +984,7 @@ pub(crate) fn hkdf_extract(
+@@ -722,12 +725,14 @@ impl Argon2d {
+         key_material: CffiBuf<'_>,
+         mut buf: CffiMutBuf<'_>,
+     ) -> CryptographyResult<usize> {
+-        self._base.derive_into_buffer(
++        let written = self._base.derive_into_buffer(
+             py,
+             &Argon2Variant::Argon2d,
+             key_material.as_bytes(),
+             buf.as_mut_bytes(),
+-        )
++        )?;
++        buf.commit(py, written)?;
++        Ok(written)
+     }
+ 
+     #[cfg(CRYPTOGRAPHY_OPENSSL_320_OR_GREATER)]
+@@ -818,12 +823,14 @@ impl Argon2i {
+         key_material: CffiBuf<'_>,
+         mut buf: CffiMutBuf<'_>,
+     ) -> CryptographyResult<usize> {
+-        self._base.derive_into_buffer(
++        let written = self._base.derive_into_buffer(
+             py,
+             &Argon2Variant::Argon2i,
+             key_material.as_bytes(),
+             buf.as_mut_bytes(),
+-        )
++        )?;
++        buf.commit(py, written)?;
++        Ok(written)
+     }
+ 
+     #[cfg(CRYPTOGRAPHY_OPENSSL_320_OR_GREATER)]
+@@ -913,12 +920,14 @@ impl Argon2id {
+         key_material: CffiBuf<'_>,
+         mut buf: CffiMutBuf<'_>,
+     ) -> CryptographyResult<usize> {
+-        self._base.derive_into_buffer(
++        let written = self._base.derive_into_buffer(
+             py,
+             &Argon2Variant::Argon2id,
+             key_material.as_bytes(),
+             buf.as_mut_bytes(),
+-        )
++        )?;
++        buf.commit(py, written)?;
++        Ok(written)
+     }
+ 
+     #[cfg(CRYPTOGRAPHY_OPENSSL_320_OR_GREATER)]
+@@ -985,7 +994,7 @@ pub(crate) fn hkdf_extract(
      algorithm: &pyo3::Py<pyo3::PyAny>,
      salt: Option<&[u8]>,
      key_material: &CffiBuf<'_>,
@@ -7241,7 +8871,62 @@ index ee4829c..45e2ee5 100644
      let algorithm_bound = algorithm.bind(py);
      let digest_size = algorithm_bound
          .getattr(pyo3::intern!(py, "digest_size"))?
-@@ -1860,7 +1859,7 @@ fn kbkdf_derive_into_buffer<F>(
+@@ -1109,7 +1118,9 @@ impl Hkdf {
+         key_material: CffiBuf<'_>,
+         mut buf: CffiMutBuf<'_>,
+     ) -> CryptographyResult<usize> {
+-        self.derive_into_buffer(py, key_material.as_bytes(), buf.as_mut_bytes())
++        let written = self.derive_into_buffer(py, key_material.as_bytes(), buf.as_mut_bytes())?;
++        buf.commit(py, written)?;
++        Ok(written)
+     }
+ 
+     fn derive<'p>(
+@@ -1259,7 +1270,9 @@ impl HkdfExpand {
+         key_material: CffiBuf<'_>,
+         mut buf: CffiMutBuf<'_>,
+     ) -> CryptographyResult<usize> {
+-        self.derive_into_buffer(py, key_material.as_bytes(), buf.as_mut_bytes())
++        let written = self.derive_into_buffer(py, key_material.as_bytes(), buf.as_mut_bytes())?;
++        buf.commit(py, written)?;
++        Ok(written)
+     }
+ 
+     pub(crate) fn derive<'p>(
+@@ -1397,7 +1410,9 @@ impl X963Kdf {
+         key_material: CffiBuf<'_>,
+         mut buf: CffiMutBuf<'_>,
+     ) -> CryptographyResult<usize> {
+-        self.derive_into_buffer(py, key_material.as_bytes(), buf.as_mut_bytes())
++        let written = self.derive_into_buffer(py, key_material.as_bytes(), buf.as_mut_bytes())?;
++        buf.commit(py, written)?;
++        Ok(written)
+     }
+ 
+     fn derive<'p>(
+@@ -1534,7 +1549,9 @@ impl ConcatKdfHash {
+         key_material: CffiBuf<'_>,
+         mut buf: CffiMutBuf<'_>,
+     ) -> CryptographyResult<usize> {
+-        self.derive_into_buffer(py, key_material.as_bytes(), buf.as_mut_bytes())
++        let written = self.derive_into_buffer(py, key_material.as_bytes(), buf.as_mut_bytes())?;
++        buf.commit(py, written)?;
++        Ok(written)
+     }
+ 
+     fn derive<'p>(
+@@ -1694,7 +1711,9 @@ impl ConcatKdfHmac {
+         key_material: CffiBuf<'_>,
+         mut buf: CffiMutBuf<'_>,
+     ) -> CryptographyResult<usize> {
+-        self.derive_into_buffer(py, key_material.as_bytes(), buf.as_mut_bytes())
++        let written = self.derive_into_buffer(py, key_material.as_bytes(), buf.as_mut_bytes())?;
++        buf.commit(py, written)?;
++        Ok(written)
+     }
+ 
+     fn derive<'p>(
+@@ -1860,7 +1879,7 @@ fn kbkdf_derive_into_buffer<F>(
      mut prf_fn: F,
  ) -> CryptographyResult<usize>
  where
@@ -7250,7 +8935,7 @@ index ee4829c..45e2ee5 100644
  {
      if output.len() != length {
          return Err(CryptographyError::from(
-@@ -1970,7 +1969,7 @@ impl KbkdfHmac {
+@@ -1970,7 +1989,7 @@ impl KbkdfHmac {
          )?;
  
          let algorithm_bound = algorithm.bind(py);
@@ -7259,6 +8944,46 @@ index ee4829c..45e2ee5 100644
          let digest_size = algorithm_bound
              .getattr(pyo3::intern!(py, "digest_size"))?
              .extract::<usize>()?;
+@@ -2013,7 +2032,7 @@ impl KbkdfHmac {
+         }
+         self.used = true;
+         let hmac_base = Hmac::new_bytes(py, key_material.as_bytes(), self.algorithm.bind(py))?;
+-        kbkdf_derive_into_buffer(
++        let written = kbkdf_derive_into_buffer(
+             py,
+             self.length,
+             self.digest_size,
+@@ -2024,7 +2043,9 @@ impl KbkdfHmac {
+                 hmac.update_bytes(py, data)?;
+                 hmac.finalize_bytes()
+             },
+-        )
++        )?;
++        buf.commit(py, written)?;
++        Ok(written)
+     }
+ 
+     fn verify(
+@@ -2150,7 +2171,7 @@ impl KbkdfCmac {
+         self.used = true;
+         let alg = self.algorithm.bind(py).call1((key_material.as_bytes(),))?;
+         let cmac_base = cmac::Cmac::new_with_algorithm(py, &alg)?;
+-        kbkdf_derive_into_buffer(
++        let written = kbkdf_derive_into_buffer(
+             py,
+             self.length,
+             self.prf_output_size,
+@@ -2161,7 +2182,9 @@ impl KbkdfCmac {
+                 cmac.update_bytes(data)?;
+                 cmac.finalize_bytes()
+             },
+-        )
++        )?;
++        buf.commit(py, written)?;
++        Ok(written)
+     }
+ 
+     fn verify(
 diff --git a/src/rust/src/backend/keys.rs b/src/rust/src/backend/keys.rs
 index 37b8dd7..2567339 100644
 --- a/src/rust/src/backend/keys.rs
@@ -9189,6 +10914,19 @@ index 42195db..bde2394 100644
 +        Ok(cryptography_key_parsing::PublicKeyRef::MlKem(&self.key))
 +    }
 +}
+diff --git a/src/rust/src/backend/mod.rs b/src/rust/src/backend/mod.rs
+index 20c5f40..98fa75d 100644
+--- a/src/rust/src/backend/mod.rs
++++ b/src/rust/src/backend/mod.rs
+@@ -2,6 +2,8 @@
+ // 2.0, and the BSD License. See the LICENSE file in the root of this repository
+ // for complete details.
+ 
++#![forbid(unsafe_code)]
++
+ // Minimum input size before hash/HMAC/cipher operations detach from the
+ // interpreter (release the GIL) so other threads can run. Detaching and
+ // re-attaching has a fixed cost, so it is a net loss for small inputs.
 diff --git a/src/rust/src/backend/poly1305.rs b/src/rust/src/backend/poly1305.rs
 index 9e9aa61..70cd0fc 100644
 --- a/src/rust/src/backend/poly1305.rs
@@ -10876,8 +12614,335 @@ index 9374d87..7d8afcc 100644
      }
  
      fn __copy__(slf: pyo3::PyRef<'_, Self>) -> pyo3::PyRef<'_, Self> {
+diff --git a/src/rust/src/buf.rs b/src/rust/src/buf.rs
+index 79cfcc7..a8f6da4 100644
+--- a/src/rust/src/buf.rs
++++ b/src/rust/src/buf.rs
+@@ -2,14 +2,15 @@
+ // 2.0, and the BSD License. See the LICENSE file in the root of this repository
+ // for complete details.
+ 
+-use std::slice;
++// Rust slices never borrow Python's mutable buffer storage. Python's buffer
++// protocol performs the snapshot and publication; native operations only see
++// immutable bytes or exclusive Rust storage, including while the GIL is released.
++#![forbid(unsafe_code)]
+ 
+-use pyo3::types::PyAnyMethods;
++use openssl_bridge::secret::SecretBytes;
++use pyo3::pybacked::PyBackedBytes;
++use pyo3::types::{PyAnyMethods, PyBytes, PyMemoryView, PySlice};
+ 
+-#[cfg(not(Py_3_11))]
+-use crate::types;
+-
+-// Common error message generation
+ fn generate_non_convertible_buffer_error_msg(
+     pyobj: &pyo3::Borrowed<'_, '_, pyo3::PyAny>,
+ ) -> String {
+@@ -26,167 +27,182 @@ fn generate_non_convertible_buffer_error_msg(
+     }
+ }
+ 
+-#[cfg(Py_3_11)]
+-fn _extract_buffer_length(
+-    pyobj: &pyo3::Borrowed<'_, '_, pyo3::PyAny>,
+-    mutable: bool,
+-) -> pyo3::PyResult<(Option<pyo3::buffer::PyBuffer<u8>>, usize, usize)> {
+-    let buf = pyo3::buffer::PyBuffer::<u8>::get(pyobj).map_err(|_| {
+-        let errmsg = generate_non_convertible_buffer_error_msg(pyobj);
+-        pyo3::exceptions::PyTypeError::new_err(errmsg)
++fn memory_view<'p>(
++    pyobj: &pyo3::Borrowed<'_, 'p, pyo3::PyAny>,
++    writable: bool,
++) -> pyo3::PyResult<pyo3::Bound<'p, PyMemoryView>> {
++    let view = PyMemoryView::from(pyobj).map_err(|_| {
++        pyo3::exceptions::PyTypeError::new_err(generate_non_convertible_buffer_error_msg(pyobj))
+     })?;
+-    if mutable && buf.readonly() {
++    if writable && view.getattr("readonly")?.extract::<bool>()? {
+         return Err(pyo3::exceptions::PyTypeError::new_err(
+             "Buffer is not writable.",
+         ));
+-    };
+-    if !buf.is_c_contiguous() {
++    }
++    if !view.getattr("c_contiguous")?.extract::<bool>()? {
+         return Err(pyo3::exceptions::PyBufferError::new_err(
+             "Buffer is not contiguous.",
+         ));
+     }
+-    let ptr = buf.buf_ptr() as usize;
+-    let len = buf.len_bytes();
+-    Ok((Some(buf), ptr, len))
++    Ok(view)
+ }
+ 
+-#[cfg(not(Py_3_11))]
+-fn _extract_buffer_length<'p>(
+-    pyobj: &pyo3::Borrowed<'_, 'p, pyo3::PyAny>,
+-    mutable: bool,
+-) -> pyo3::PyResult<(pyo3::Bound<'p, pyo3::PyAny>, usize, usize)> {
+-    let py = pyobj.py();
+-    let bufobj = if mutable {
+-        let kwargs = [(pyo3::intern!(py, "require_writable"), true)];
+-        let kwargs = pyo3::types::IntoPyDict::into_py_dict(kwargs, py)?;
+-        types::FFI_FROM_BUFFER
+-            .get(py)?
+-            .call((pyobj,), Some(&kwargs))
+-    } else {
+-        types::FFI_FROM_BUFFER.get(py)?.call1((pyobj,))
+-    }
+-    .map_err(|_| {
+-        let errmsg = generate_non_convertible_buffer_error_msg(pyobj);
+-        pyo3::exceptions::PyTypeError::new_err(errmsg)
+-    })?;
+-    let ptrval = types::FFI_CAST
+-        .get(py)?
+-        .call1((pyo3::intern!(py, "uintptr_t"), bufobj.clone()))?
+-        .call_method0(pyo3::intern!(py, "__int__"))?
+-        .extract::<usize>()?;
+-    let len = bufobj.len()?;
+-    Ok((bufobj, ptrval, len))
++enum Input<'p> {
++    Borrowed(&'p [u8]),
++    Python(PyBackedBytes),
+ }
+ 
+-// Contains no GIL-bound references, so it is sound to use while the GIL
+-// is released, as long as it's kept alive.
+ pub(crate) struct CffiBuf<'p> {
+     pyobj: pyo3::Py<pyo3::PyAny>,
+-    #[cfg(not(Py_3_11))]
+-    _bufobj: pyo3::Py<pyo3::PyAny>,
+-    #[cfg(Py_3_11)]
+-    _bufobj: Option<pyo3::buffer::PyBuffer<u8>>,
+-    buf: &'p [u8],
++    input: Input<'p>,
+ }
+-
+-impl<'a> CffiBuf<'a> {
+-    pub(crate) fn from_bytes(py: pyo3::Python<'a>, buf: &'a [u8]) -> Self {
+-        CffiBuf {
++impl<'p> CffiBuf<'p> {
++    pub(crate) fn from_bytes(py: pyo3::Python<'p>, bytes: &'p [u8]) -> Self {
++        Self {
+             pyobj: py.None(),
+-            #[cfg(Py_3_11)]
+-            _bufobj: None,
+-            #[cfg(not(Py_3_11))]
+-            _bufobj: py.None(),
+-            buf,
++            input: Input::Borrowed(bytes),
+         }
+     }
+-
+     pub(crate) fn as_bytes(&self) -> &[u8] {
+-        self.buf
++        match &self.input {
++            Input::Borrowed(bytes) => bytes,
++            Input::Python(bytes) => bytes.as_ref(),
++        }
+     }
+-
+-    pub(crate) fn into_pyobj(self, py: pyo3::Python<'a>) -> pyo3::Bound<'a, pyo3::PyAny> {
++    pub(crate) fn into_pyobj(self, py: pyo3::Python<'p>) -> pyo3::Bound<'p, pyo3::PyAny> {
+         self.pyobj.into_bound(py)
+     }
+ }
+-
+ impl<'p> pyo3::conversion::FromPyObject<'_, 'p> for CffiBuf<'p> {
+     type Error = pyo3::PyErr;
+-
+     fn extract(pyobj: pyo3::Borrowed<'_, 'p, pyo3::PyAny>) -> pyo3::PyResult<Self> {
+-        let (bufobj, ptrval, len) = _extract_buffer_length(&pyobj, false)?;
+-        let buf = if len == 0 {
+-            &[]
++        let bytes = if let Ok(bytes) = pyobj.cast::<PyBytes>() {
++            bytes.to_owned()
+         } else {
+-            // SAFETY: _extract_buffer_length ensures that we have a valid ptr
+-            // and length (and we ensure we meet slice's requirements for
+-            // 0-length slices above), we're keeping pyobj alive which ensures
+-            // the buffer is valid. But! There is no actually guarantee
+-            // against concurrent mutation. See
+-            // https://alexgaynor.net/2022/oct/23/buffers-on-the-edge/
+-            // for details. This is the same as our cffi status quo ante, so
+-            // we're doing an unsound thing and living with it.
+-            unsafe { slice::from_raw_parts(ptrval as *const u8, len) }
++            // Even a readonly memoryview can refer to mutable underlying storage.
++            // The interpreter performs the copy before Rust borrows its bytes.
++            memory_view(&pyobj, false)?
++                .call_method0("tobytes")?
++                .cast_into::<PyBytes>()?
+         };
+-        Ok(CffiBuf {
++        Ok(Self {
+             pyobj: pyobj.to_owned().unbind(),
+-            #[cfg(Py_3_11)]
+-            _bufobj: bufobj,
+-            #[cfg(not(Py_3_11))]
+-            _bufobj: bufobj.unbind(),
+-            buf,
++            input: Input::Python(bytes.into()),
+         })
+     }
+ }
+ 
+-pub(crate) struct CffiMutBuf<'p> {
+-    _pyobj: pyo3::Bound<'p, pyo3::PyAny>,
+-    #[cfg(not(Py_3_11))]
+-    _bufobj: pyo3::Bound<'p, pyo3::PyAny>,
+-    #[cfg(Py_3_11)]
+-    _bufobj: Option<pyo3::buffer::PyBuffer<u8>>,
+-    buf: &'p mut [u8],
++enum Output<'p> {
++    Borrowed(&'p mut [u8]),
++    Python {
++        view: pyo3::Bound<'p, pyo3::PyAny>,
++        bytes: SecretBytes,
++    },
+ }
+ 
+-impl<'a> CffiMutBuf<'a> {
+-    pub(crate) fn from_bytes(py: pyo3::Python<'a>, buf: &'a mut [u8]) -> Self {
+-        CffiMutBuf {
+-            _pyobj: py.None().into_bound(py),
+-            #[cfg(Py_3_11)]
+-            _bufobj: None,
+-            #[cfg(not(Py_3_11))]
+-            _bufobj: py.None().into_bound(py),
+-            buf,
++pub(crate) struct CffiMutBuf<'p> {
++    output: Output<'p>,
++}
++impl<'p> CffiMutBuf<'p> {
++    pub(crate) fn from_bytes(_py: pyo3::Python<'p>, bytes: &'p mut [u8]) -> Self {
++        Self {
++            output: Output::Borrowed(bytes),
+         }
+     }
+-
+     pub(crate) fn as_mut_bytes(&mut self) -> &mut [u8] {
+-        self.buf
++        match &mut self.output {
++            Output::Borrowed(bytes) => bytes,
++            Output::Python { bytes, .. } => bytes.as_mut(),
++        }
++    }
++    /// Publish only bytes successfully produced by the operation. Callers use
++    /// this after success, including authentication for one-shot AEAD. Failure
++    /// leaves the Python destination unchanged and drops the erased staging area.
++    pub(crate) fn commit(&self, py: pyo3::Python<'_>, count: usize) -> pyo3::PyResult<()> {
++        match &self.output {
++            Output::Borrowed(bytes) => {
++                if count > bytes.len() {
++                    return Err(pyo3::exceptions::PyRuntimeError::new_err(
++                        "invalid output length",
++                    ));
++                }
++            }
++            Output::Python { view, bytes } => {
++                let result = bytes.as_ref().get(..count).ok_or_else(|| {
++                    pyo3::exceptions::PyRuntimeError::new_err("invalid output length")
++                })?;
++                // The memoryview retains the export, preventing resize. No Rust
++                // reference ever points at its storage. Tail bytes are untouched.
++                view.set_item(
++                    PySlice::new(py, 0, count as isize, 1),
++                    PyBytes::new(py, result),
++                )?;
++            }
++        }
++        Ok(())
+     }
+ }
+-
+ impl<'p> pyo3::conversion::FromPyObject<'_, 'p> for CffiMutBuf<'p> {
+     type Error = pyo3::PyErr;
+-
+     fn extract(pyobj: pyo3::Borrowed<'_, 'p, pyo3::PyAny>) -> pyo3::PyResult<Self> {
+-        let (bufobj, ptrval, len) = _extract_buffer_length(&pyobj, true)?;
+-        let buf = if len == 0 {
+-            &mut []
+-        } else {
+-            // SAFETY: _extract_buffer_length ensures that we have a valid ptr
+-            // and length (and we ensure we meet slice's requirements for
+-            // 0-length slices above), we're keeping pyobj alive which ensures
+-            // the buffer is valid. But! There is no actually guarantee
+-            // against concurrent mutation. See
+-            // https://alexgaynor.net/2022/oct/23/buffers-on-the-edge/
+-            // for details. This is the same as our cffi status quo ante, so
+-            // we're doing an unsound thing and living with it.
+-            unsafe { slice::from_raw_parts_mut(ptrval as *mut u8, len) }
+-        };
+-        Ok(CffiMutBuf {
+-            _pyobj: pyobj.to_owned(),
+-            _bufobj: bufobj,
+-            buf,
++        let view = memory_view(&pyobj, true)?.call_method1("cast", ("B",))?;
++        let bytes = SecretBytes::from(vec![0; view.len()?]);
++        Ok(Self {
++            output: Output::Python { view, bytes },
++        })
++    }
++}
++
++#[cfg(test)]
++mod tests {
++    use super::*;
++    use pyo3::types::{PyByteArray, PyByteArrayMethods};
++
++    #[test]
++    fn mutable_and_readonly_views_are_snapshotted() {
++        pyo3::Python::initialize();
++        pyo3::Python::attach(|py| -> pyo3::PyResult<()> {
++            let original = PyByteArray::new(py, b"abc");
++            let direct = original.extract::<CffiBuf<'_>>()?;
++            let view = PyMemoryView::from(original.as_any())?.call_method0("toreadonly")?;
++            let readonly = view.extract::<CffiBuf<'_>>()?;
++            original.set_item(0, b'z')?;
++            assert_eq!(direct.as_bytes(), b"abc");
++            assert_eq!(readonly.as_bytes(), b"abc");
++            Ok(())
++        })
++        .unwrap();
++    }
++
++    #[test]
++    fn output_is_private_until_commit_and_can_overlap_input() {
++        pyo3::Python::initialize();
++        pyo3::Python::attach(|py| -> pyo3::PyResult<()> {
++            let original = PyByteArray::new(py, b"abcdef");
++            let input = original.extract::<CffiBuf<'_>>()?;
++            let mut output = original.extract::<CffiMutBuf<'_>>()?;
++            output.as_mut_bytes()[..3].copy_from_slice(b"xyz");
++            assert_eq!(original.to_vec(), b"abcdef");
++            output.commit(py, 3)?;
++            assert_eq!(original.to_vec(), b"xyzdef");
++            assert_eq!(input.as_bytes(), b"abcdef");
++            Ok(())
++        })
++        .unwrap();
++    }
++
++    #[test]
++    fn abandoning_output_does_not_publish_partial_results() {
++        pyo3::Python::initialize();
++        pyo3::Python::attach(|py| -> pyo3::PyResult<()> {
++            let original = PyByteArray::new(py, b"sentinel");
++            {
++                let mut output = original.extract::<CffiMutBuf<'_>>()?;
++                output.as_mut_bytes().fill(42);
++            }
++            assert_eq!(original.to_vec(), b"sentinel");
++            Ok(())
+         })
++        .unwrap();
+     }
+ }
 diff --git a/src/rust/src/cobblestone.rs b/src/rust/src/cobblestone.rs
-index 24fc6a6..2a80ec8 100644
+index 24fc6a6..fbcc11e 100644
 --- a/src/rust/src/cobblestone.rs
 +++ b/src/rust/src/cobblestone.rs
 @@ -224,7 +224,7 @@ impl ChunkedEncryptor {
@@ -10889,6 +12954,62 @@ index 24fc6a6..2a80ec8 100644
          let keys = derive_keys(py, params, key, &salt, context)?;
          let cipher = ChunkCipher::new(py, params, &keys)?;
          let mut header = [0; HEADER_LEN];
+@@ -586,8 +586,11 @@ impl Cobblestone128Encryptor {
+         data: CffiBuf<'_>,
+         mut buf: CffiMutBuf<'_>,
+     ) -> CryptographyResult<usize> {
+-        self.inner
+-            .update_into(py, data.as_bytes(), buf.as_mut_bytes())
++        let written = self
++            .inner
++            .update_into(py, data.as_bytes(), buf.as_mut_bytes())?;
++        buf.commit(py, written)?;
++        Ok(written)
+     }
+ 
+     fn finalize<'p>(
+@@ -626,8 +629,11 @@ impl Cobblestone128Decryptor {
+         data: CffiBuf<'_>,
+         mut buf: CffiMutBuf<'_>,
+     ) -> CryptographyResult<usize> {
+-        self.inner
+-            .update_into(py, data.as_bytes(), buf.as_mut_bytes())
++        let written = self
++            .inner
++            .update_into(py, data.as_bytes(), buf.as_mut_bytes())?;
++        buf.commit(py, written)?;
++        Ok(written)
+     }
+ 
+     fn finalize<'p>(
+@@ -677,8 +683,11 @@ impl Cobblestone256Encryptor {
+         data: CffiBuf<'_>,
+         mut buf: CffiMutBuf<'_>,
+     ) -> CryptographyResult<usize> {
+-        self.inner
+-            .update_into(py, data.as_bytes(), buf.as_mut_bytes())
++        let written = self
++            .inner
++            .update_into(py, data.as_bytes(), buf.as_mut_bytes())?;
++        buf.commit(py, written)?;
++        Ok(written)
+     }
+ 
+     fn finalize<'p>(
+@@ -717,8 +726,11 @@ impl Cobblestone256Decryptor {
+         data: CffiBuf<'_>,
+         mut buf: CffiMutBuf<'_>,
+     ) -> CryptographyResult<usize> {
+-        self.inner
+-            .update_into(py, data.as_bytes(), buf.as_mut_bytes())
++        let written = self
++            .inner
++            .update_into(py, data.as_bytes(), buf.as_mut_bytes())?;
++        buf.commit(py, written)?;
++        Ok(written)
+     }
+ 
+     fn finalize<'p>(
 diff --git a/src/rust/src/error.rs b/src/rust/src/error.rs
 index cd7c850..a168b0e 100644
 --- a/src/rust/src/error.rs
@@ -11677,10 +13798,29 @@ index 4dc9759..919310f 100644
  
      Ok(())
 diff --git a/src/rust/src/types.rs b/src/rust/src/types.rs
-index d0fff8b..f8c5f4f 100644
+index d0fff8b..6305b7f 100644
 --- a/src/rust/src/types.rs
 +++ b/src/rust/src/types.rs
-@@ -594,6 +594,7 @@ pub static CTR: LazyPyImport =
+@@ -491,18 +491,6 @@ pub static DSA_PUBLIC_KEY: LazyPyImport = LazyPyImport::new(
+     &["_DSAPublicKey"],
+ );
+ 
+-#[cfg(not(Py_3_11))]
+-pub static FFI_FROM_BUFFER: LazyPyImport = LazyPyImport::new(
+-    "cryptography.hazmat.bindings._rust",
+-    &["_openssl", "ffi", "from_buffer"],
+-);
+-
+-#[cfg(not(Py_3_11))]
+-pub static FFI_CAST: LazyPyImport = LazyPyImport::new(
+-    "cryptography.hazmat.bindings._rust",
+-    &["_openssl", "ffi", "cast"],
+-);
+-
+ pub static BLOCK_CIPHER_ALGORITHM: LazyPyImport = LazyPyImport::new(
+     "cryptography.hazmat.primitives.ciphers",
+     &["BlockCipherAlgorithm"],
+@@ -594,6 +582,7 @@ pub static CTR: LazyPyImport =
      LazyPyImport::new("cryptography.hazmat.primitives.ciphers.modes", &["CTR"]);
  pub static GCM: LazyPyImport =
      LazyPyImport::new("cryptography.hazmat.primitives.ciphers.modes", &["GCM"]);
@@ -11688,6 +13828,22 @@ index d0fff8b..f8c5f4f 100644
  pub static XTS: LazyPyImport =
      LazyPyImport::new("cryptography.hazmat.primitives.ciphers.modes", &["XTS"]);
  
+diff --git a/tests/hazmat/primitives/test_aead.py b/tests/hazmat/primitives/test_aead.py
+index 12148d5..b880b67 100644
+--- a/tests/hazmat/primitives/test_aead.py
++++ b/tests/hazmat/primitives/test_aead.py
+@@ -749,9 +749,10 @@ class TestAESGCM:
+         # Corrupt the ciphertext
+         corrupted_ct = bytearray(ct)
+         corrupted_ct[0] ^= 1
+-        buf = bytearray(len(pt))
++        buf = bytearray(b"!" * len(pt))
+         with pytest.raises(InvalidTag):
+             aesgcm.decrypt_into(nonce, bytes(corrupted_ct), ad, buf)
++        assert buf == b"!" * len(pt)
+ 
+ 
+ @pytest.mark.skipif(
 diff --git a/tests/hazmat/primitives/test_aes.py b/tests/hazmat/primitives/test_aes.py
 index 10484b9..1384852 100644
 --- a/tests/hazmat/primitives/test_aes.py
@@ -11710,3 +13866,27 @@ index 10484b9..1384852 100644
      def test_xts_unsupported_with_aes128_aes256_classes(self):
          with pytest.raises(TypeError):
              base.Cipher(algorithms.AES128(b"0" * 16), modes.XTS(b"\x00" * 16))
+diff --git a/tests/hazmat/primitives/test_ciphers.py b/tests/hazmat/primitives/test_ciphers.py
+index f25965e..bbfe2e3 100644
+--- a/tests/hazmat/primitives/test_ciphers.py
++++ b/tests/hazmat/primitives/test_ciphers.py
+@@ -125,6 +125,19 @@ class TestCipherUpdateInto:
+         assert res == len(pt)
+         assert bytes(buf)[:res] == ct
+ 
++    def test_update_into_overlapping_views(self):
++        cipher = ciphers.Cipher(AES(bytes(16)), modes.CTR(bytes(16)))
++        plaintext = bytes(range(32))
++        reference = cipher.encryptor()
++        expected = reference.update(plaintext) + reference.finalize()
++        storage = bytearray(plaintext + b"tail untouched!")
++        context = cipher.encryptor()
++        written = context.update_into(memoryview(storage)[:32], storage)
++        assert written == 32
++        assert storage[:written] == expected
++        assert storage[written:] == b"tail untouched!"
++        assert context.finalize() == b""
++
+     def test_update_into_gcm(self):
+         key = binascii.unhexlify(b"e98b72a9881a84ca6b76e0f43e68647a")
+         iv = binascii.unhexlify(b"8b23299fde174053f3d652ba")

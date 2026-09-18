@@ -118,3 +118,12 @@ unload handle or global FIPS property setter is exposed. FIPS configuration
 moves to process startup, with a corresponding cryptography CI configuration
 patch. Full canonical system/OpenSSL 4 checks are in progress. Python buffer
 aliasing and the final backend/version/configuration matrix remain mandatory.
+
+## Python buffer boundary under validation
+
+The Python crypto backend and buffer adapter forbid unsafe Rust. Immutable
+bytes can be borrowed; all other inputs are snapshotted through the interpreter.
+Output methods use erased Rust staging buffers and explicitly publish only the
+successful output prefix. Tests cover mutable/readonly snapshots, overlap,
+abandoned output, and failed authenticated decryption leaving output unchanged.
+The full suite and cross-backend/configuration matrix remain in progress.

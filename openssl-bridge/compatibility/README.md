@@ -15,7 +15,14 @@ crate only for backend build metadata and continues to forbid unsafe code.
 The integration now removes the `openssl`, `openssl-sys`, and
 `cryptography-openssl` Rust dependencies. Container decoding, Argon2, provider
 loading, runtime information, and error records also use the new layer.
-**Validation and the Python buffer-boundary audit are still in progress.**
+The Python crypto backend and buffer adapter now forbid unsafe Rust code.
+Mutable inputs are copied through Python's buffer protocol into immutable bytes;
+outputs use independent Rust storage and publish only the successfully produced
+prefix. Readonly views are also copied because their underlying owner may be
+mutable. This permits overlap without aliased Rust references. Python buffer
+exporters remain responsible for their own protocol and synchronization rules;
+a copy is not a promise of an atomic snapshot under external mutation.
+**The full backend matrix and final safety review are still in progress.**
 The CFFI/TLS layer is retained for the subsequent pyOpenSSL stage; its build
 metadata comes from the new sys crate.
 
