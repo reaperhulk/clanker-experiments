@@ -107,6 +107,8 @@ coverage. The whole-library success criteria remain open until stage 8 passes.
 
 Draft PR: https://github.com/reaperhulk/clanker-experiments/pull/1. The first
 implementation iteration covers 37 functions (brands and planes); the second
-adds 28 color/HDR functions. All 65 remain partial, with 400 functions missing.
+adds 28 color/HDR functions. The context/handle iteration adds 38 functions,
+including ownership/reload behavior, metadata, thumbnail and color queries.
+All 103 remain partial, with 362 functions missing.
 The full header contract, finite behavioral reports, known differences and
 performance evidence are retained in `compat/` and `docs/results/`.

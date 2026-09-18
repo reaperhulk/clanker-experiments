@@ -4,7 +4,7 @@
   "native_matches": 5,
   "default_output_matches": 4,
   "reference_sha256": "5d70927cded8be6d1b4da912971aed75d426ba079c84d0b8462785ec5b9c92f7",
-  "candidate_sha256": "0630521fea19e84d2e54a8a2bad5d55102720f185e4e4da4e40400a4183ea23d",
+  "candidate_sha256": "2d85f0b6131efcc689114d7c11eaab8a528fc591047a9e44a2cd2172fe45cbf4",
   "fixtures": [
     {
       "fixture": "examples/example.heic",

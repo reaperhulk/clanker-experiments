@@ -1,5 +1,5 @@
 {
-  "scope": "five deliberate defects; not comprehensive mutation coverage",
+  "scope": "seven deliberate defects; not comprehensive mutation coverage",
   "mutations": [
     {
       "mutation": "filetype_enum",
@@ -7,7 +7,7 @@
       "source": "src/brands.rs",
       "before": "Supported = 1,",
       "after": "Supported = 7,",
-      "candidate_sha256": "161c47d9e5384427a134ca6f42bfdb6ac36a8352c2108ae3d21cd50e3c12832b",
+      "candidate_sha256": "8a2def31076d8948fdffdd2feeff463416e41b9462ba435793a3ab09f1eda02a",
       "mismatches": 533,
       "detected": true
     },
@@ -17,7 +17,7 @@
       "source": "src/error.rs",
       "before": "Self::new(5, 2001, c\"NULL argument passed\")",
       "after": "Self::new(2, 2001, c\"NULL argument passed\")",
-      "candidate_sha256": "69c17793521c237a1f6ad263251abf6fccb5f9808d582c240681191e897c1807",
+      "candidate_sha256": "3da6ae74b1d11e7fabffeae8f21d4eccb0f05e47867a3b734a6519a0adf4eeff",
       "mismatches": 17126,
       "detected": true
     },
@@ -27,7 +27,7 @@
       "source": "src/image.rs",
       "before": "storage.resize(allocation, 0);",
       "after": "storage.resize(allocation, 0);\n        storage[..16].fill(1);",
-      "candidate_sha256": "700ba45b0b71293a1bf652f66f5a18701d8e97f98754521fc8d55039e4c6e8ee",
+      "candidate_sha256": "110ee23bbc5e2d14730c7405789b6f775a4d5e642666397d8dd9620524a73f27",
       "mismatches": 612,
       "detected": true
     },
@@ -37,8 +37,28 @@
       "source": "src/color.rs",
       "before": "color_primary_red_x: rx,",
       "after": "color_primary_red_x: rx + 0.0001,",
-      "candidate_sha256": "58dddd32f28d632762b18bde82f361392a43290c0a7c964c4074de95c289e7df",
+      "candidate_sha256": "d29751eab11f5575a99a9be7db034787941cac51ce5a8ac2ceaecee1c1567473",
       "mismatches": 776,
+      "detected": true
+    },
+    {
+      "mutation": "primary_id",
+      "suite": "context",
+      "source": "crates/capi/src/context.rs",
+      "before": "out.write(doc.primary)",
+      "after": "out.write(doc.primary.wrapping_add(1))",
+      "candidate_sha256": "b0e05f5ab85d89caf37c56405a1d72c1773d5aec9a9c668652211fe710a3b3e8",
+      "mismatches": 868,
+      "detected": true
+    },
+    {
+      "mutation": "alpha_reload_state",
+      "suite": "context",
+      "source": "crates/capi/src/context.rs",
+      "before": ".is_some_and(|i| i.has_alpha)",
+      "after": ".is_some_and(|_| handle.image().has_alpha)",
+      "candidate_sha256": "326fac9ab8abed9df4d1c88972496715e24b8fa752f5e5b55f60537e86b071c6",
+      "mismatches": 166,
       "detected": true
     },
     {
@@ -47,7 +67,7 @@
       "source": "crates/capi/src/lib.rs",
       "before": "pub code: c_int,\n    pub subcode: c_int,",
       "after": "pub subcode: c_int,\n    pub code: c_int,",
-      "candidate_sha256": "1b215d382a770333542fead2595f50179410b413a1fb43186a2cb8fb1fb8296f",
+      "candidate_sha256": "b1df2423cffe399975937eee71f86e2be269589210fb445fbd53b1d0300d5829",
       "detected": true
     }
   ],

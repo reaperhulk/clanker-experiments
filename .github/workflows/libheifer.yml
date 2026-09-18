@@ -48,6 +48,8 @@ jobs:
       - run: python tools/test_brands.py --reference-build .build/reference
       - run: python tools/test_images.py --reference-build .build/reference
       - run: python tools/test_color.py --reference-build .build/reference
+      - run: python tools/test_context.py --reference-build .build/reference
+      - run: python tools/test_context.py --reference-build .build/reference --sanitize --output .build/context-sanitized-report.json
       - run: python tools/test_hevc.py --reference-build .build/reference
       - run: python tools/test_mutations.py --reference-build .build/reference
       - run: python tools/check_coverage.py --reference .build/reference/libheif/libheif.so --development

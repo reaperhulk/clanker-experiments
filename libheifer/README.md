@@ -48,6 +48,8 @@ cargo build --release --features hevc --example hevc_probe
 python tools/test_brands.py --reference-build .build/reference
 python tools/test_images.py --reference-build .build/reference
 python tools/test_color.py --reference-build .build/reference
+python tools/test_context.py --reference-build .build/reference
+python tools/test_context.py --reference-build .build/reference --sanitize --output .build/context-sanitized-report.json
 python tools/test_hevc.py --reference-build .build/reference
 python tools/test_mutations.py --reference-build .build/reference
 python tools/check_coverage.py --reference .build/reference/libheif/libheif.so
@@ -75,3 +77,11 @@ The benchmark command builds its probe and timing client together in an isolated
 Cargo target, verifies fresh exact native-plane output, and records source and
 binary hashes. It rejects input/source changes during timing. An earlier passing
 report is never accepted as evidence for a changed decoder.
+
+The context/handle subset supports copied and borrowed memory, direct HEVC item
+queries, metadata, thumbnails and color profiles. Its independent tests cover
+malformed properties, reload failures, output sentinels and handles that outlive
+the caller's context. Other image types, compressed metadata, file/reader callbacks,
+configurable resource budgets and the C decoding entry points remain unfinished.
+`--sanitize` instruments the C test clients, not the Rust or reference libraries;
+use `--no-leak-check` only where LeakSanitizer cannot run (for example under ptrace).

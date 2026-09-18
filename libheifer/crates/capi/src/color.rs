@@ -14,7 +14,7 @@ const ANONYMOUS_SUCCESS: HeifError = HeifError {
     message: c"Unknown error".as_ptr(),
 };
 
-fn allocate<T>(value: T) -> *mut T {
+pub(super) fn allocate<T>(value: T) -> *mut T {
     // All callers use sized, nonzero structs. Matching releases use Box<T>.
     let allocation = unsafe { alloc(Layout::new::<T>()) }.cast::<T>();
     if !allocation.is_null() {

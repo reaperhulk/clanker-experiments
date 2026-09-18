@@ -82,6 +82,15 @@ impl<'a> Reader<'a> {
     fn fullbox(&mut self) -> Result<(u8, u32)> {
         Ok((self.number(1)? as u8, self.number(3)? as u32))
     }
+    fn string(&mut self) -> Result<Vec<u8>> {
+        let end = self
+            .0
+            .iter()
+            .position(|b| *b == 0)
+            .ok_or(ParseError::Truncated)?;
+        let bytes = self.take(end + 1)?;
+        Ok(bytes[..end].to_vec())
+    }
     fn id(&mut self, wide: bool) -> Result<u32> {
         Ok(self.number(if wide { 4 } else { 2 })? as u32)
     }
@@ -92,6 +101,10 @@ pub struct Item {
     pub id: u32,
     pub kind: [u8; 4],
     pub hidden: bool,
+    pub name: Vec<u8>,
+    pub content_type: Vec<u8>,
+    pub content_encoding: Vec<u8>,
+    pub uri_type: Vec<u8>,
     properties: Vec<usize>,
     extents: Vec<(bool, Range<usize>)>,
     pub references: BTreeMap<[u8; 4], Vec<u32>>,
@@ -117,7 +130,12 @@ impl<'a> Container<'a> {
             .iter()
             .find(|b| b.kind == *b"meta")
             .ok_or(ParseError::MissingItem)?;
-        let mut reader = Reader(meta.data);
+        Self::parse_meta(data, meta.data)
+    }
+
+    /// Parse the metadata independently of the availability of media payloads.
+    pub(crate) fn parse_meta(data: &'a [u8], meta: &'a [u8]) -> Result<Self> {
+        let mut reader = Reader(meta);
         if reader.fullbox()?.0 != 0 {
             return Err(ParseError::Unsupported);
         }
@@ -165,9 +183,22 @@ impl<'a> Container<'a> {
                 return Err(ParseError::Unsupported);
             }
             let kind = r.fourcc()?;
-            if !r.0.contains(&0) {
-                return Err(ParseError::Truncated);
-            }
+            let name = r.string()?;
+            let content_type = if kind == *b"mime" {
+                r.string()?
+            } else {
+                Vec::new()
+            };
+            let content_encoding = if kind == *b"mime" && !r.0.is_empty() {
+                r.string()?
+            } else {
+                Vec::new()
+            };
+            let uri_type = if kind == *b"uri " {
+                r.string()?
+            } else {
+                Vec::new()
+            };
             if result
                 .items
                 .insert(
@@ -176,6 +207,10 @@ impl<'a> Container<'a> {
                         id,
                         kind,
                         hidden: flags & 1 != 0,
+                        name,
+                        content_type,
+                        content_encoding,
+                        uri_type,
                         properties: Vec::new(),
                         extents: Vec::new(),
                         references: BTreeMap::new(),
@@ -185,9 +220,6 @@ impl<'a> Container<'a> {
             {
                 return Err(ParseError::InvalidField);
             }
-        }
-        if !result.items.contains_key(&result.primary) {
-            return Err(ParseError::MissingItem);
         }
         result.parse_locations(child(*b"iloc")?)?;
         if let Ok(properties) = child(*b"iprp") {
@@ -265,12 +297,8 @@ impl<'a> Container<'a> {
                 let end = start.checked_add(length).ok_or(ParseError::InvalidSize)?;
                 let start = usize::try_from(start).map_err(|_| ParseError::InvalidSize)?;
                 let end = usize::try_from(end).map_err(|_| ParseError::InvalidSize)?;
-                let bytes = if construction == 1 {
-                    self.idat.ok_or(ParseError::MissingItem)?
-                } else {
-                    self.data
-                };
-                bytes.get(start..end).ok_or(ParseError::Truncated)?;
+                // Extents are checked on access, not on file load. Upstream
+                // permits querying handles before compressed payloads arrive.
                 item.extents.push((construction == 1, start..end));
             }
         }
@@ -337,6 +365,13 @@ impl<'a> Container<'a> {
             .find(|p| p.kind == kind)
             .map(|p| p.data)
             .ok_or(ParseError::MissingProperty)
+    }
+    pub fn properties(&self, id: u32) -> Result<impl Iterator<Item = ([u8; 4], &'a [u8])> + '_> {
+        let item = self.items.get(&id).ok_or(ParseError::MissingItem)?;
+        Ok(item.properties.iter().map(|i| {
+            let p = self.properties[*i];
+            (p.kind, p.data)
+        }))
     }
     pub fn dimensions(&self, id: u32) -> Result<(u32, u32)> {
         let mut r = Reader(self.property(id, *b"ispe")?);

@@ -12,6 +12,7 @@ use std::ffi::{c_char, c_int};
 use std::ptr;
 
 mod color;
+mod context;
 mod image;
 
 #[repr(C)]
