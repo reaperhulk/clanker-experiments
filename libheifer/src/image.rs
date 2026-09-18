@@ -133,6 +133,8 @@ impl From<crate::context::ContextError> for DecodingWarning {
 
 #[derive(Debug)]
 pub struct Image {
+    pub sensor: crate::sensor::SensorMetadata,
+    pub component_ids: crate::sensor::ComponentIds,
     pub budget: Option<std::sync::Arc<crate::security::Budget>>,
     pub last_error: std::sync::Mutex<std::ffi::CString>,
     pub color: crate::color::ColorMetadata,
@@ -177,6 +179,8 @@ impl Image {
             chroma = 3;
         }
         Ok(Self {
+            sensor: crate::sensor::SensorMetadata::default(),
+            component_ids: crate::sensor::ComponentIds::default(),
             budget: None,
             last_error: std::sync::Mutex::new(std::ffi::CString::default()),
             width,
@@ -218,6 +222,7 @@ impl Image {
             components,
             self.budget.as_ref(),
         )?);
+        self.component_ids.plane(channel, self.chroma);
         Ok(())
     }
     pub fn plane(&self, channel: i32) -> Option<&Plane> {
@@ -237,6 +242,7 @@ impl Image {
             .ok_or(Error::new(5, 2001, c"No such channel"))?;
         self.planes.try_reserve(1).map_err(|_| Error::ALLOCATION)?;
         let mut plane = source.planes.remove(index);
+        self.component_ids.plane(plane.channel, source.chroma);
         plane.channel = to;
         self.planes.push(plane);
         Ok(())
@@ -372,6 +378,7 @@ impl Image {
         let mut out = Self::new(width, height, self.colorspace, self.chroma)?
             .with_budget(self.budget.clone());
         out.color = self.color.try_clone()?;
+        out.sensor = self.sensor.clone();
         out.pixel_aspect_ratio = self.pixel_aspect_ratio;
         out.premultiplied_alpha = self.premultiplied_alpha;
         for p in &self.planes {
@@ -453,6 +460,7 @@ impl Image {
         .with_budget(self.budget.clone());
         out.warnings = self.warnings.clone();
         out.color = self.color.try_clone()?;
+        out.sensor = self.sensor.clone();
         out.pixel_aspect_ratio = self.pixel_aspect_ratio;
         out.premultiplied_alpha = self.premultiplied_alpha;
         for source in &self.planes {
@@ -496,6 +504,7 @@ impl Image {
             .with_budget(self.budget.clone());
         out.warnings = self.warnings.clone();
         out.color = self.color.try_clone()?;
+        out.sensor = self.sensor.clone();
         out.pixel_aspect_ratio = self.pixel_aspect_ratio;
         out.premultiplied_alpha = self.premultiplied_alpha;
         for source in &self.planes {
@@ -524,6 +533,9 @@ impl Image {
                         .copy_from_slice(&source.data()[from..from + bytes]);
                 }
             }
+        }
+        if quarters == 0 {
+            out.component_ids = self.component_ids.clone();
         }
         Ok(out)
     }

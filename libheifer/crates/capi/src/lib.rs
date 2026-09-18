@@ -20,6 +20,7 @@ mod decoding;
 mod image;
 mod properties;
 mod security;
+mod sensor;
 pub use decoding::DecodingOptions;
 pub use properties::UserDescription;
 pub use security::SecurityLimits;

@@ -101,6 +101,13 @@ fn public_structs_match_original_header_layouts() {
         principal_point_y,
         skew
     );
+    layout!(
+        heif_bayer_pattern_pixel,
+        libheifer::sensor::BayerPixel,
+        component_id,
+        component_gain
+    );
+    layout!(heif_bad_pixel, libheifer::sensor::BadPixel, row, column);
     layout!(heif_error, heifer::HeifError, code, subcode, message);
     layout!(
         heif_decoding_options,

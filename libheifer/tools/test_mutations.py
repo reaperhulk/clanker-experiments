@@ -35,6 +35,9 @@ MUTATIONS = [
     ("property_crop_origin", "crates/capi/src/properties.rs", "l as c_int,", "(l + 1) as c_int,", "properties"),
     ("camera_focal_scale", "src/camera.rs", "focal_length_x: fx * f64::from(width as i32),", "focal_length_x: fx * f64::from(width as i32) * 2.0,", "camera"),
     ("camera_quaternion", "src/camera.rs", "quaternion[3] = (1.0 - sum).sqrt();", "quaternion[3] = (1.0 - sum).sqrt() * 0.5;", "camera"),
+    ("polarization_match_order", "src/sensor.rs", ".position(|p|", ".rposition(|p|", "sensor"),
+    ("polarization_nan_bits", "crates/capi/src/sensor.rs", "value.to_bits() == u32::MAX", "value.to_bits() == u32::MAX - 1", "sensor"),
+    ("component_id_sequence", "src/sensor.rs", "self.next.wrapping_add(1)", "self.next.wrapping_add(2)", "sensor"),
     ("coded_size_limit", "src/decoding.rs", ".max(65536)", ".max(65535)", "hevc_limits"),
     ("error_field_order", "crates/capi/src/lib.rs", "pub code: c_int,\n    pub subcode: c_int,", "pub subcode: c_int,\n    pub code: c_int,", "abi"),
 ]

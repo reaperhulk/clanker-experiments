@@ -465,6 +465,7 @@ pub fn convert(
         )?;
         out.warnings = image.warnings.clone();
         out.color = image.color.try_clone()?;
+        out.sensor = image.sensor.clone();
         out.color.nclx = Some(node.state.nclx);
         out.pixel_aspect_ratio = image.pixel_aspect_ratio;
         out.premultiplied_alpha = image.premultiplied_alpha;
