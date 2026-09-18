@@ -113,6 +113,10 @@ fn streaming_gcm_checks_order_bounds_and_authentication() {
     for tag in [
         tag.to_vec(),
         tag[..8].to_vec(),
+        tag[..4].to_vec(),
+        tag[..3].to_vec(),
+        tag[..2].to_vec(),
+        tag[..1].to_vec(),
         vec![0; 16],
         vec![],
         vec![0; 17],
@@ -122,7 +126,7 @@ fn streaming_gcm_checks_order_bounds_and_authentication() {
         dec.update_unverified_into(&expected, &mut output[..47])
             .unwrap();
         assert_eq!(&output[..47], &plaintext);
-        let valid = tag.len() == 8 || (tag.len() == 16 && tag.iter().any(|&b| b != 0));
+        let valid = matches!(tag.len(), 4 | 8) || (tag.len() == 16 && tag.iter().any(|&b| b != 0));
         assert_eq!(dec.finish(&tag).is_ok(), valid);
     }
 }

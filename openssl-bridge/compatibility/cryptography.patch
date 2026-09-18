@@ -423,7 +423,7 @@ index 9f7d181..81091f9 100644
 -checksum = "accd4ea62f7bb7a82fe23066fb0957d48ef677f6eeb8215f372f52e48bb32426"
 +checksum = "f0805222e57f7521d6a62e36fa9163bc891acd422f971defe97d64e70d0a4fe5"
 diff --git a/Cargo.toml b/Cargo.toml
-index c9783a4..6414920 100644
+index c9783a4..7849b42 100644
 --- a/Cargo.toml
 +++ b/Cargo.toml
 @@ -6,7 +6,6 @@ members = [
@@ -478,10 +478,10 @@ index 878a23d..a2b0c9d 100644
  pyo3.workspace = true
  self_cell.workspace = true
 diff --git a/src/rust/build.rs b/src/rust/build.rs
-index 807f7af..b5b6934 100644
+index 807f7af..4e76a67 100644
 --- a/src/rust/build.rs
 +++ b/src/rust/build.rs
-@@ -10,13 +10,13 @@ fn main() {
+@@ -10,7 +10,7 @@ fn main() {
      // recompiles the crate) whenever any mtime in the package changes,
      // which defeats CI build caching. Everything below depends only on
      // this file, the environment variables it reads, and metadata from
@@ -490,41 +490,6 @@ index 807f7af..b5b6934 100644
      println!("cargo:rerun-if-changed=build.rs");
      println!("cargo:rerun-if-env-changed=CRYPTOGRAPHY_BUILD_OPENSSL_NO_LEGACY");
  
-     pyo3_build_config::use_pyo3_cfgs();
- 
--    if let Ok(version) = env::var("DEP_OPENSSL_VERSION_NUMBER") {
-+    if let Ok(version) = env::var("DEP_OPENSSL_BRIDGE_VERSION_NUMBER") {
-         let version = u64::from_str_radix(&version, 16).unwrap();
- 
-         if version >= 0x3_00_09_00_0 {
-@@ -33,15 +33,15 @@ fn main() {
-         }
-     }
- 
--    if env::var("DEP_OPENSSL_LIBRESSL_VERSION_NUMBER").is_ok() {
-+    if env::var("DEP_OPENSSL_BRIDGE_LIBRESSL_VERSION_NUMBER").is_ok() {
-         println!("cargo:rustc-cfg=CRYPTOGRAPHY_IS_LIBRESSL");
-     }
- 
--    if env::var("DEP_OPENSSL_BORINGSSL").is_ok() {
-+    if env::var("DEP_OPENSSL_BRIDGE_BORINGSSL").is_ok() {
-         println!("cargo:rustc-cfg=CRYPTOGRAPHY_IS_BORINGSSL");
-     }
- 
--    if env::var("DEP_OPENSSL_AWSLC").is_ok() {
-+    if env::var("DEP_OPENSSL_BRIDGE_AWSLC").is_ok() {
-         println!("cargo:rustc-cfg=CRYPTOGRAPHY_IS_AWSLC");
-     }
- 
-@@ -49,7 +49,7 @@ fn main() {
-         println!("cargo:rustc-cfg=CRYPTOGRAPHY_BUILD_OPENSSL_NO_LEGACY");
-     }
- 
--    if let Ok(vars) = env::var("DEP_OPENSSL_CONF") {
-+    if let Ok(vars) = env::var("DEP_OPENSSL_BRIDGE_CONF") {
-         for var in vars.split(',') {
-             println!("cargo:rustc-cfg=CRYPTOGRAPHY_OSSLCONF=\"{var}\"");
-         }
 diff --git a/src/rust/cryptography-cffi/Cargo.toml b/src/rust/cryptography-cffi/Cargo.toml
 index 44d479b..d2a8209 100644
 --- a/src/rust/cryptography-cffi/Cargo.toml
@@ -539,7 +504,7 @@ index 44d479b..d2a8209 100644
  [build-dependencies]
  cc.workspace = true
 diff --git a/src/rust/cryptography-cffi/build.rs b/src/rust/cryptography-cffi/build.rs
-index 0d34248..1f4ec4e 100644
+index 0d34248..82377a5 100644
 --- a/src/rust/cryptography-cffi/build.rs
 +++ b/src/rust/cryptography-cffi/build.rs
 @@ -102,7 +102,9 @@ fn main() {
@@ -548,7 +513,7 @@ index 0d34248..1f4ec4e 100644
          .file(openssl_c)
 -        .includes(std::env::var_os("DEP_OPENSSL_INCLUDE"))
 +        .includes(std::env::split_paths(
-+            &std::env::var_os("DEP_OPENSSL_BRIDGE_INCLUDE").expect("native include paths"),
++            &std::env::var_os("DEP_OPENSSL_INCLUDE").expect("native include paths"),
 +        ))
          .flag_if_supported("-Wconversion")
          .flag_if_supported("-Wno-error=sign-conversion")
@@ -873,10 +838,10 @@ index 7b80143..3512a8c 100644
  
  [lints.rust]
 diff --git a/src/rust/cryptography-key-parsing/build.rs b/src/rust/cryptography-key-parsing/build.rs
-index e26add8..16298a5 100644
+index e26add8..d418908 100644
 --- a/src/rust/cryptography-key-parsing/build.rs
 +++ b/src/rust/cryptography-key-parsing/build.rs
-@@ -9,30 +9,30 @@ fn main() {
+@@ -9,7 +9,7 @@ fn main() {
      // Without any rerun-if directives cargo reruns the build script (and
      // recompiles the crate) whenever any mtime in the package changes,
      // which defeats CI build caching. Everything below depends only on
@@ -885,34 +850,6 @@ index e26add8..16298a5 100644
      // dependency on its own).
      println!("cargo:rerun-if-changed=build.rs");
  
--    if env::var("DEP_OPENSSL_LIBRESSL_VERSION_NUMBER").is_ok() {
-+    if env::var("DEP_OPENSSL_BRIDGE_LIBRESSL_VERSION_NUMBER").is_ok() {
-         println!("cargo:rustc-cfg=CRYPTOGRAPHY_IS_LIBRESSL");
-     }
- 
--    if env::var("DEP_OPENSSL_BORINGSSL").is_ok() {
-+    if env::var("DEP_OPENSSL_BRIDGE_BORINGSSL").is_ok() {
-         println!("cargo:rustc-cfg=CRYPTOGRAPHY_IS_BORINGSSL");
-     }
- 
--    if env::var("DEP_OPENSSL_AWSLC").is_ok() {
-+    if env::var("DEP_OPENSSL_BRIDGE_AWSLC").is_ok() {
-         println!("cargo:rustc-cfg=CRYPTOGRAPHY_IS_AWSLC");
-     }
- 
--    if let Ok(version) = env::var("DEP_OPENSSL_VERSION_NUMBER") {
-+    if let Ok(version) = env::var("DEP_OPENSSL_BRIDGE_VERSION_NUMBER") {
-         let version = u64::from_str_radix(&version, 16).unwrap();
-         if version >= 0x3_05_00_00_0 {
-             println!("cargo:rustc-cfg=CRYPTOGRAPHY_OPENSSL_350_OR_GREATER");
-         }
-     }
- 
--    if let Ok(vars) = env::var("DEP_OPENSSL_CONF") {
-+    if let Ok(vars) = env::var("DEP_OPENSSL_BRIDGE_CONF") {
-         for var in vars.split(',') {
-             println!("cargo:rustc-cfg=CRYPTOGRAPHY_OSSLCONF=\"{var}\"");
-         }
 diff --git a/src/rust/cryptography-key-parsing/src/dsa.rs b/src/rust/cryptography-key-parsing/src/dsa.rs
 index 4bd3549..b9f51bf 100644
 --- a/src/rust/cryptography-key-parsing/src/dsa.rs

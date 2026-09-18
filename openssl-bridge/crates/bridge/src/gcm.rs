@@ -409,11 +409,12 @@ impl UnverifiedGcmDecrypt {
         self.0.update(input, output)
     }
     /// Truncated tags are for existing protocols only; use 16 bytes for new ones.
+    /// Tags shorter than four bytes are rejected before native verification.
     pub fn finish(mut self, tag: &[u8]) -> Result<()> {
         self.0.ready()?;
-        if !(1..=16).contains(&tag.len()) {
+        if !(4..=16).contains(&tag.len()) {
             return Err(Error::InvalidInput(
-                "GCM tag must contain 1 through 16 bytes",
+                "GCM tag must contain 4 through 16 bytes",
             ));
         }
         let mut copy = [0; 16];

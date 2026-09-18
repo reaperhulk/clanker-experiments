@@ -121,6 +121,11 @@ an expected tag. Authentication failure cannot revoke bytes already observed by
 a streaming caller. The one-shot `AesGcm::open` interface withholds plaintext
 and erases it on authentication failure.
 
+Streaming GCM requires at least a four-byte tag, matching the existing Python
+API. One-to-three-byte tags are rejected before native verification even when
+their bytes match the authentic tag prefix. New protocols should use the full
+16-byte tag returned by encryption; truncation exists for legacy compatibility.
+
 OpenSSL cipher descriptors own a fetched reference and remain alive with the
 context. Fork descriptors are immutable static objects. Context `Sync` is sound
 because metadata is cached in Rust and shared native access is limited to
@@ -305,3 +310,13 @@ AEAD's Python payload and associated-data extractors inspect the actual buffer
 export byte count before copying. Oversized inputs receive the existing
 OverflowError without materializing a large mapping. Rust-to-Rust callers retain
 the operation's length checks. This does not relax the ownership boundary.
+
+## Native link identity
+
+The sys crate reserves Cargo's `links = "openssl"` identity, shared by the
+original openssl-sys crate. Cargo therefore rejects a graph containing both
+bindings before linking. Their unprefixed native symbols must not select
+conflicting implementations or layouts. This is a dependency conflict check,
+not an attempt to provide interoperability with the old Rust wrapper. Metadata
+for direct dependents uses the corresponding `DEP_OPENSSL_*` namespace. See
+[Cargo's links contract](https://doc.rust-lang.org/cargo/reference/build-scripts.html#the-links-manifest-key).
