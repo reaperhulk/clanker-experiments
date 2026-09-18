@@ -10,6 +10,8 @@ pub mod hash;
 pub mod kdf;
 pub mod mac;
 pub mod rand;
+pub mod rsa;
+pub mod secret;
 
 /// Compare equal-length byte strings without data-dependent early exit.
 pub fn constant_time_eq(a: &[u8], b: &[u8]) -> bool {

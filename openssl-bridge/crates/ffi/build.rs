@@ -118,10 +118,25 @@ fn main() {
             macros["OPENSSL_VERSION_NUMBER"]
         );
     }
-    let disabled: Vec<_> = macros
-        .keys()
-        .filter(|k| k.starts_with("OPENSSL_NO_"))
-        .cloned()
+    // Headers may define and then undefine compatibility switches. Probe their
+    // final state with the target C preprocessor instead of trusting a callback
+    // which observes historical definitions (including empty macro definitions).
+    let mut probe = String::from("#include \"wrapper.h\"\n");
+    for name in macros.keys().filter(|name| name.starts_with("OPENSSL_NO_")) {
+        probe.push_str(&format!("#ifdef {name}\nOB_CONF_{name}\n#endif\n"));
+    }
+    let probe_path = PathBuf::from(env::var_os("OUT_DIR").unwrap()).join("configuration.c");
+    std::fs::write(&probe_path, probe).expect("write configuration probe");
+    let expanded = cc::Build::new()
+        .file(&probe_path)
+        .include(env::var_os("CARGO_MANIFEST_DIR").unwrap())
+        .includes(&includes)
+        .warnings(false)
+        .expand();
+    let expanded = String::from_utf8(expanded).expect("C preprocessor output is UTF-8");
+    let disabled: Vec<_> = expanded
+        .lines()
+        .filter_map(|line| line.trim().strip_prefix("OB_CONF_"))
         .collect();
     println!("cargo:conf={}", disabled.join(","));
     cc::Build::new()

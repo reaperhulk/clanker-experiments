@@ -1,6 +1,8 @@
 use crate::{error::check, ffi, hash::Algorithm, Error, Result};
 use std::num::NonZeroU32;
 
+// Lengths/counts use signed int on OpenSSL/LibreSSL, but size_t/u32 on forks.
+#[allow(clippy::useless_conversion)]
 pub fn pbkdf2_hmac(
     algorithm: Algorithm,
     password: &[u8],

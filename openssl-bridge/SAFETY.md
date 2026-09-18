@@ -66,3 +66,31 @@ honoring its documented pointer, ownership, and length contracts.
 Known-answer vectors, wrong signatures/tags, split updates, boundary checks,
 compile-fail lifecycle examples, and the upstream integration suites provide
 different kinds of evidence. Passing one category does not substitute for another.
+
+## RSA construction and decryption
+
+Private RSA imports own every component separately until each successful native
+set0 transfer. Constructors always require complete positive components, bounded
+bit lengths, valid ranges, odd private factors, and n = p * q. Full validation
+also invokes the native mathematical key check. Explicit structural validation
+omits primality and exponent consistency checks, preserving cryptography's
+existing validation-skip option without allowing incomplete native objects.
+Public imports preserve cryptography's permissive modulus handling; native
+operations can reject mathematically unsuitable public parameters.
+
+Signature and encryption padding have distinct types. Automatic PSS salt
+recovery is available only for verification. OAEP label ownership is transferred
+only after successful native configuration; empty labels use NULL because
+LibreSSL does not retain a zero-length allocation. Private exports and decrypted
+plaintext erase their owned initialized bytes when dropped.
+
+The caller-buffer decryption method validates capacity, erases failed native
+output, and erases unused output bytes before returning. Cryptography retains
+its allocation step for both successful and failed PKCS1 v1.5 decryption.
+This is not a claim of constant-time PKCS1 v1.5 decryption or padding-oracle
+resistance on backends without native mitigations.
+
+Configuration discovery checks final preprocessor state, including macros that
+were defined empty or later undefined. Clippy exceptions for bindgen bitfield
+patterns are confined to generated bindings. ABI-dependent integer conversions
+remain checked even on forks where the source and destination types coincide.

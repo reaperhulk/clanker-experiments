@@ -10,8 +10,11 @@ with the incremental patch must not be described as a full openssl replacement.
 - Python hash/HMAC paths and their dependent HKDF, KBKDF, HPKE paths now use them.
 - CMAC, PBKDF2, scrypt, private random generation, and constant-time comparison.
 - The `cryptography-crypto` helper crate no longer depends on rust-openssl.
-- Ed25519/X25519 operations use algorithm-specific key types. Their serialization
-  boundary temporarily converts raw keys to the original PKey layer.
+- Ed25519/X25519 and RSA operations use algorithm-specific key types. Their
+  serialization boundary temporarily converts keys to the original PKey layer.
+- RSA padding is operation-specific, recovery is restricted to PKCS1 v1.5, and
+  checked decryption buffers are erased on failure. The structural validation
+  mode preserves cryptography's explicit mathematical-validation opt-out.
 
 ## Implemented, not yet integrated
 
@@ -27,7 +30,7 @@ with the incremental patch must not be described as a full openssl replacement.
 3. Implement CCM, OCB, SIV, GCM-SIV, ChaCha20-Poly1305 and backend-specific AEAD,
    with correct order of configuration, tag handling, buffer bounds, and context
    copying. Replace the raw `CipherCtx` usage in cryptography completely.
-4. Replace asymmetric key operations: RSA (OAEP, PSS, PKCS1), DSA, EC/ECDSA/ECDH,
+4. Replace remaining asymmetric key operations: DSA, EC/ECDSA/ECDH,
    DH, Ed448/X448, ML-DSA, and ML-KEM. Constructors and operations must maintain
    native invariants and explicit algorithm/key-role distinctions.
 5. Replace key component handling, PKCS8/SPKI/PEM serialization, PKCS12, PKCS7,
