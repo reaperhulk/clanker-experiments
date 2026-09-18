@@ -1,7 +1,5 @@
 name: libheifer development and completion gates
 on:
-  push:
-    branches: [libheifer]
   pull_request:
     paths: ['libheifer/**', '.github/workflows/libheifer.yml', '.gitmodules']
   workflow_dispatch:

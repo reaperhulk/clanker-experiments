@@ -68,6 +68,10 @@ completion step is intentionally red while the contract remains incomplete.
 For interleaved native-sample decode timing (not an end-to-end library claim):
 
 ```sh
-cargo build --release --features hevc --example bench_hevc
 python tools/bench_hevc.py --reference-build .build/reference
 ```
+
+The benchmark command builds its probe and timing client together in an isolated
+Cargo target, verifies fresh exact native-plane output, and records source and
+binary hashes. It rejects input/source changes during timing. An earlier passing
+report is never accepted as evidence for a changed decoder.

@@ -27,8 +27,8 @@ Local validation: 17,126 brand/version, 6,553 image and 198,932 color/HDR
 transcripts match;
 5/5 HEIC fixtures match native Y/Cb/Cr output. One default-color-output mismatch
 and a malformed-box brand mismatch remain recorded. Unit/ABI tests, formatting
-and Clippy pass on Linux x86_64. The initial CI run passed Rust builds on Linux,
-macOS and Windows and all Linux development checks; its sole failing step was
+and Clippy pass on Linux x86_64. The color/HDR CI run passed Rust builds on Linux,
+macOS and Windows and all Linux development checks, including mutation tests; its sole failing step was
 the strict full-API gate. Cross-platform ABI, fuzzing and memory-safety validation
 remain open.
 

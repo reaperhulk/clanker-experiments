@@ -34,7 +34,7 @@ behavior gap is explicitly retained. There is no claim of a compatible library.
 | HEVC native output | 5/5 fixtures match exactly | Y/Cb/Cr data, image IDs/order, dimensions, depths and strides; transformations disabled, native NCLX passthrough; **alpha not compared** |
 | HEVC default output | 4/5 tested color-plane outputs match | Example image differs because default NCLX conversion is not implemented |
 | Dependency guard | Pass | Two reviewed codec crates; no native build scripts or codec link dependencies in the resolved candidate graph |
-| Rust checks | Unit tests, ABI test, formatting and Clippy pass | Linux, macOS and Windows Rust build jobs passed for the foundation; full sanitizer, fuzzing and cross-platform ABI validation remain open |
+| Rust checks | Unit tests, ABI test, formatting and Clippy pass | Linux, macOS and Windows Rust build jobs passed for the color/HDR iteration; full sanitizer, fuzzing and cross-platform ABI validation remain open |
 | Completeness gate | **Fail**, as required | Missing API and unvalidated entries prevent a success claim |
 
 The separately retained `known-differences.json` records malformed non-ftyp box
@@ -44,10 +44,10 @@ not HEVC conformance or full container compatibility. The decoder experiment has
 not established safe resource-budget behavior on hostile inputs.
 
 A Valgrind attempt could not execute the client in this environment (permission
-denied). No memory-safety or leak-test pass is claimed. The first remote CI run passed Rust builds on Linux, macOS and Windows and
-all Linux development checks. Its only failing step was the intentionally red
-full-completion gate. The color/HDR iteration adds its differential and mutation
-checks to that workflow; see the PR for current run status.
+denied). No memory-safety or leak-test pass is claimed. The [color/HDR CI run](https://github.com/reaperhulk/clanker-experiments/actions/runs/35313115635)
+passed Rust builds on Linux, macOS and Windows and all Linux development checks,
+including the color differential and mutation tests. Its only failing step was
+the full-completion gate. A job summary is retained in `results/ci-color-report.json`.
 
 ## Initial performance evidence
 
@@ -76,6 +76,12 @@ Raw samples, exact binary/corpus hashes, environment details and the profiler
 output are in [results](results/). The initial benchmark and profile used the
 foundation source at commit `4210217dacc0dd411fc5e874d31579dea765432c`; they
 precede the color/HDR storage APIs. No performance optimization is claimed yet.
+
+The subsequent benchmark harness rebuilds the probe and timing client together
+and requires fresh output equality, with source/binary/input hashes checked before
+and after measurement. `benchmark-guard-smoke.json` records a three-pair, one-iteration
+pipeline check (also slower in this run), not an optimization experiment or a
+stable speed estimate.
 
 ## Next implementation work
 
