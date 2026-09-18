@@ -51,7 +51,11 @@ pub unsafe extern "C" fn heif_image_add_plane(
     if img.is_null() {
         return Error::NULL.into();
     }
-    match unsafe { &mut *img }.add_plane(channel, width as u32, height as u32, depth) {
+    let img = unsafe { &mut *img };
+    let budget = img.budget.take();
+    let outcome = img.add_plane(channel, width as u32, height as u32, depth);
+    img.budget = budget;
+    match outcome {
         Ok(()) => SUCCESS,
         Err(e) => e.into(),
     }
@@ -206,12 +210,15 @@ pub unsafe extern "C" fn heif_image_crop(
     {
         return Error::new(5, 2006, c"Invalid crop margins").into();
     }
-    match image.crop(
+    let budget = image.budget.take();
+    let outcome = image.crop(
         left as u32,
         image.width - 1 - right as u32,
         top as u32,
         image.height - 1 - bottom as u32,
-    ) {
+    );
+    image.budget = budget;
+    match outcome {
         Ok(out) => {
             *image = out;
             SUCCESS
@@ -230,7 +237,7 @@ pub unsafe extern "C" fn heif_image_scale_image(
     if input.is_null() || output.is_null() {
         return Error::NULL.into();
     }
-    match unsafe { &*input }.scale(width as u32, height as u32) {
+    match unsafe { &*input }.scale_with_budget(width as u32, height as u32, None) {
         Ok(image) => {
             let image = super::color::allocate(image);
             if image.is_null() {
@@ -291,4 +298,37 @@ pub unsafe extern "C" fn heif_image_get_decoding_warnings(
         count += 1;
     }
     count as c_int
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn heif_image_add_plane_safe(
+    image: *mut Image,
+    channel: c_int,
+    width: c_int,
+    height: c_int,
+    depth: c_int,
+    limits: *const super::SecurityLimits,
+) -> HeifError {
+    let Some(image) = (unsafe { image.as_mut() }) else {
+        return Error::NULL.into();
+    };
+    let prior = image.budget.take();
+    image.budget = unsafe { super::security::allocation_budget(limits) };
+    let result = image.add_plane(channel, width as u32, height as u32, depth);
+    image.budget = prior;
+    match result {
+        Ok(()) => SUCCESS,
+        Err(error) => {
+            let mut text = image
+                .last_error
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            *text = error.message.into_owned();
+            HeifError {
+                code: error.code,
+                subcode: error.subcode,
+                message: text.as_ptr(),
+            }
+        }
+    }
 }

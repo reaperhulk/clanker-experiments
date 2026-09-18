@@ -20,7 +20,31 @@ impl std::fmt::Display for DecodeError {
 impl std::error::Error for DecodeError {}
 
 pub fn decode_item(container: &Container<'_>, id: u32) -> Result<Image, DecodeError> {
+    decode_item_with_budget(container, id, None)
+}
+pub fn decode_item_with_budget(
+    container: &Container<'_>,
+    id: u32,
+    budget: Option<std::sync::Arc<crate::security::Budget>>,
+) -> Result<Image, DecodeError> {
     let nals = container.hevc_nals(id).map_err(DecodeError::Container)?;
+    decode_nals(nals, budget)
+}
+pub fn decode_item_from_payload(
+    container: &Container<'_>,
+    id: u32,
+    payload: &[u8],
+    budget: Option<std::sync::Arc<crate::security::Budget>>,
+) -> Result<Image, DecodeError> {
+    let nals = container
+        .hevc_nals_from_payload(id, payload)
+        .map_err(DecodeError::Container)?;
+    decode_nals(nals, budget)
+}
+fn decode_nals(
+    nals: Vec<Vec<u8>>,
+    budget: Option<std::sync::Arc<crate::security::Budget>>,
+) -> Result<Image, DecodeError> {
     let mut decoder = rusty_h265::Decoder::new();
     let mut nclx = crate::color::Nclx {
         primaries: 2,
@@ -54,6 +78,7 @@ pub fn decode_item(container: &Container<'_>, id: u32) -> Result<Image, DecodeEr
     let height = u32::try_from(frame.height).map_err(|_| DecodeError::Geometry)?;
     let mut image = Image::new(width, height, if chroma == 0 { 2 } else { 0 }, chroma)
         .map_err(DecodeError::Image)?;
+    image.budget = budget;
     image.color.nclx = Some(nclx);
     let (left, top, crop_width, crop_height) = picture.crop;
     if crop_width != frame.width || crop_height != frame.height {

@@ -10,17 +10,34 @@ use std::{
     sync::{Arc, Mutex, MutexGuard},
 };
 
+pub(super) struct SharedContext {
+    state: Mutex<Context>,
+    pub limits: super::security::ForeignLimits,
+}
+impl Default for SharedContext {
+    fn default() -> Self {
+        Self {
+            state: Mutex::new(Context::default()),
+            limits: super::security::ForeignLimits::default(),
+        }
+    }
+}
+impl Drop for SharedContext {
+    fn drop(&mut self) {
+        super::security::unregister(self);
+    }
+}
 pub struct HeifContext {
-    pub(super) shared: Arc<Mutex<Context>>,
+    pub(super) shared: Arc<SharedContext>,
 }
 pub struct HeifHandle {
-    pub(super) shared: Arc<Mutex<Context>>,
-    pub(super) document: Arc<Document>,
+    pub(super) shared: Arc<SharedContext>,
+    images: std::collections::BTreeMap<u32, Arc<ImageInfo>>,
     pub(super) id: u32,
 }
 impl HeifHandle {
     fn image(&self) -> &ImageInfo {
-        &self.document.images[&self.id]
+        &self.images[&self.id]
     }
     fn metadata(&self, id: u32) -> Option<&Metadata> {
         self.image()
@@ -30,10 +47,16 @@ impl HeifHandle {
             .map(AsRef::as_ref)
     }
 }
-pub(super) fn lock(shared: &Mutex<Context>) -> MutexGuard<'_, Context> {
-    shared
+pub(super) fn lock(shared: &SharedContext) -> MutexGuard<'_, Context> {
+    let guard = shared
+        .state
         .lock()
-        .unwrap_or_else(std::sync::PoisonError::into_inner)
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    *guard
+        .limits
+        .write()
+        .unwrap_or_else(std::sync::PoisonError::into_inner) = shared.limits.snapshot();
+    guard
 }
 pub(super) fn report(context: &mut Context, error: ContextError) -> HeifError {
     context.last_error =
@@ -44,7 +67,7 @@ pub(super) fn report(context: &mut Context, error: ContextError) -> HeifError {
         message: context.last_error.as_ptr(),
     }
 }
-fn invalid_id(shared: &Mutex<Context>) -> HeifError {
+fn invalid_id(shared: &SharedContext) -> HeifError {
     report(
         &mut lock(shared),
         ContextError::new(5, 2000, "Usage error: Non-existing item ID referenced"),
@@ -83,9 +106,9 @@ impl Input for BorrowedInput {
 }
 #[unsafe(no_mangle)]
 pub extern "C" fn heif_context_alloc() -> *mut HeifContext {
-    super::color::allocate(HeifContext {
-        shared: Arc::new(Mutex::new(Context::default())),
-    })
+    let shared = Arc::new(SharedContext::default());
+    super::security::register(&shared);
+    super::color::allocate(HeifContext { shared })
 }
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn heif_context_free(context: *mut HeifContext) {
@@ -230,7 +253,7 @@ pub unsafe extern "C" fn heif_context_get_primary_image_ID(
     SUCCESS
 }
 unsafe fn create_handle(
-    shared: &Arc<Mutex<Context>>,
+    shared: &Arc<SharedContext>,
     doc: Arc<Document>,
     id: u32,
     out: *mut *mut HeifHandle,
@@ -238,9 +261,31 @@ unsafe fn create_handle(
     if let Some(e) = &doc.images[&id].error {
         return report(&mut lock(shared), e.clone());
     }
+    unsafe { create_handle_images(shared, &doc.images, id, out) }
+}
+unsafe fn create_handle_images(
+    shared: &Arc<SharedContext>,
+    source: &std::collections::BTreeMap<u32, Arc<ImageInfo>>,
+    id: u32,
+    out: *mut *mut HeifHandle,
+) -> HeifError {
+    if let Some(e) = &source[&id].error {
+        return report(&mut lock(shared), e.clone());
+    }
+    let mut images = std::collections::BTreeMap::new();
+    let mut pending = vec![id];
+    while let Some(child) = pending.pop() {
+        if images.contains_key(&child) {
+            continue;
+        }
+        if let Some(image) = source.get(&child) {
+            pending.extend(&image.related_images);
+            images.insert(child, image.clone());
+        }
+    }
     let handle = super::color::allocate(HeifHandle {
         shared: shared.clone(),
-        document: doc,
+        images,
         id,
     });
     if handle.is_null() {
@@ -338,16 +383,31 @@ query!(
     0,
     |i: &ImageInfo| i.ispe.1 as c_int
 );
-query!(
-    heif_image_handle_get_luma_bits_per_pixel,
-    -1,
-    |i: &ImageInfo| i.luma_bits
-);
-query!(
-    heif_image_handle_get_chroma_bits_per_pixel,
-    -1,
-    |i: &ImageInfo| i.chroma_bits
-);
+fn query_depth(handle: &HeifHandle, chroma: bool) -> c_int {
+    let context = lock(&handle.shared);
+    let image = handle.image();
+    let coded = if matches!(&image.kind, b"iden" | b"grid" | b"iovl") {
+        context
+            .document
+            .as_ref()
+            .and_then(|d| d.first_coded_image(handle.id).ok())
+    } else {
+        Some(image)
+    };
+    coded.map_or(-1, |i| if chroma { i.chroma_bits } else { i.luma_bits })
+}
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn heif_image_handle_get_luma_bits_per_pixel(
+    handle: *const HeifHandle,
+) -> c_int {
+    unsafe { handle.as_ref() }.map_or(-1, |h| query_depth(h, false))
+}
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn heif_image_handle_get_chroma_bits_per_pixel(
+    handle: *const HeifHandle,
+) -> c_int {
+    unsafe { handle.as_ref() }.map_or(-1, |h| query_depth(h, true))
+}
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn heif_image_handle_has_alpha_channel(handle: *const HeifHandle) -> c_int {
     let Some(handle) = (unsafe { handle.as_ref() }) else {
@@ -385,12 +445,12 @@ pub unsafe extern "C" fn heif_image_handle_get_preferred_decoding_colorspace(
     let Some(handle) = (unsafe { handle.as_ref() }) else {
         return Error::NULL.into();
     };
-    let image = handle.image();
+    let mut context = lock(&handle.shared);
+    let document = context.document.as_ref().expect("handle owns its context");
     let (preferred_colorspace, preferred_chroma) =
-        if image.colorspace == 0 && image.color.nclx.is_some_and(|p| p.matrix == 0) {
-            (1, 3)
-        } else {
-            (image.colorspace, image.chroma)
+        match document.preferred_colorspace(handle.image()) {
+            Ok(value) => value,
+            Err(error) => return report(&mut context, error),
         };
     if !colorspace.is_null() {
         unsafe { colorspace.write(preferred_colorspace) };
@@ -444,10 +504,10 @@ pub unsafe extern "C" fn heif_image_handle_get_thumbnail(
     if !handle.image().thumbnails.contains(&id) {
         return invalid_id(&handle.shared);
     }
-    if handle.document.images[&id].error.is_some() {
+    if handle.images[&id].error.is_some() {
         unsafe { out.write(ptr::null_mut()) };
     }
-    unsafe { create_handle(&handle.shared, handle.document.clone(), id, out) }
+    unsafe { create_handle_images(&handle.shared, &handle.images, id, out) }
 }
 unsafe fn filter<'a>(value: *const c_char) -> Option<&'a CStr> {
     if value.is_null() {

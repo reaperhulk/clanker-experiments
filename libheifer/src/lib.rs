@@ -7,7 +7,6 @@ pub mod color;
 pub mod container;
 pub mod context;
 pub mod conversion;
-#[cfg(feature = "hevc")]
 pub mod decoding;
 pub mod derived;
 pub mod error;
@@ -16,6 +15,9 @@ pub mod geometry;
 #[cfg(feature = "hevc")]
 pub mod hevc;
 pub mod image;
+pub mod mask;
+pub mod overlay;
+pub mod security;
 
 /// The API contract version, not the completeness of this implementation.
 pub const COMPATIBILITY_VERSION: (u8, u8, u8) = (1, 23, 4);

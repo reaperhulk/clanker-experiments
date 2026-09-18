@@ -5,7 +5,19 @@ use crate::{
     context::{ContextError, Document},
     image::Image,
 };
-use std::collections::BTreeSet;
+use std::{
+    collections::BTreeSet,
+    sync::{
+        Arc,
+        atomic::{AtomicU32, Ordering},
+    },
+};
+
+#[derive(Clone)]
+pub(crate) struct DecodeState {
+    pub ids: BTreeSet<u32>,
+    count: Arc<AtomicU32>,
+}
 
 pub trait DecodeCallbacks: Sync {
     fn start(&self, step: i32, maximum: i32);
@@ -60,7 +72,10 @@ pub fn decode(
     options: DecodeOptions,
 ) -> Result<Image, ContextError> {
     verify_references(document, id)?;
-    let mut visiting = BTreeSet::new();
+    let mut visiting = DecodeState {
+        ids: BTreeSet::new(),
+        count: Arc::new(AtomicU32::new(0)),
+    };
     let image = decode_native(document, id, &options, &mut visiting)?;
     let target_cs = if colorspace == 99 {
         image.colorspace
@@ -68,28 +83,33 @@ pub fn decode(
         colorspace
     };
     let target_chroma = if chroma == 99 { image.chroma } else { chroma };
-    let requested = options.output_nclx.or({
-        if options.profile_passthrough {
-            image.color.nclx
-        } else {
-            Some(Nclx {
-                primaries: 1,
-                transfer: 13,
-                matrix: 6,
-                full_range: true,
-            })
-        }
+    let defaults = Nclx {
+        primaries: 1,
+        transfer: 13,
+        matrix: 6,
+        full_range: true,
+    };
+    let source_profile = image
+        .color
+        .nclx
+        .filter(|n| n.is_defined())
+        .unwrap_or(defaults);
+    let passthrough = options.output_nclx.is_none() && options.profile_passthrough;
+    let requested = options.output_nclx.unwrap_or(if passthrough {
+        source_profile
+    } else {
+        defaults
     });
     if target_cs != image.colorspace
         || target_chroma != image.chroma
         || (options.convert_hdr_to_8bit && image.plane(0).is_some_and(|p| p.bit_depth > 8))
-        || requested.zip(image.color.nclx).is_some_and(|(a, b)| a != b)
+        || (!passthrough && requested != source_profile)
     {
         return crate::conversion::convert(
             image,
             target_cs,
             target_chroma,
-            requested.unwrap(),
+            requested,
             if options.convert_hdr_to_8bit { 8 } else { 0 },
             options.color_conversion,
         )
@@ -206,16 +226,26 @@ fn verify_references(document: &Document, root: u32) -> Result<(), ContextError>
     Ok(())
 }
 
-fn decode_native(
+pub(crate) fn decode_native(
     document: &Document,
     id: u32,
     options: &DecodeOptions,
-    visiting: &mut BTreeSet<u32>,
+    visiting: &mut DecodeState,
 ) -> Result<Image, ContextError> {
-    if !visiting.insert(id) {
+    if !visiting.ids.insert(id) {
         return Err(ContextError::invalid(
             0,
             "Unspecified: 'iref' has cyclic references",
+        ));
+    }
+    let limits = document.current_limits();
+    let budget = u64::from(limits.max_items)
+        .saturating_mul(2)
+        .min(u64::from(u32::MAX)) as u32;
+    if budget != 0 && visiting.count.fetch_add(1, Ordering::Relaxed) >= budget {
+        return Err(ContextError::invalid(
+            1000,
+            "Security limit exceeded: Too many derived-image decode operations (possible reference amplification)",
         ));
     }
     let info = document
@@ -225,9 +255,18 @@ fn decode_native(
     if let Some(error) = &info.error {
         return Err(error.clone());
     }
+    let _item_lock = info
+        .decode_mutex
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    if info.ispe.0 != 0 && info.ispe.1 != 0 {
+        limits.check_image_size(info.ispe.0, info.ispe.1)?;
+    }
     let container = document.container()?;
     let mut image = match &container.items[&id].kind {
+        b"mski" => crate::mask::decode(&container, id, Some(document.budget.clone()))?,
         b"grid" => decode_grid(document, id, options, visiting)?,
+        b"iovl" => crate::overlay::decode(document, id, options, visiting)?,
         b"iden" => {
             if !container.has_references {
                 return Err(ContextError::invalid(
@@ -266,7 +305,14 @@ fn decode_native(
             }
             decode_native(document, child, options, visiting)?
         }
-        _ => {
+        #[cfg(feature = "hevc")]
+        b"hvc1" => {
+            // Each decode replaces the decoder's input extent. The buffer remains
+            // owned by the image item between calls, but is reread on the next call.
+            *info
+                .decoder_input
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner) = None;
             if options.decoder_id.is_some_and(|id| id != b"rusty_h265") {
                 return Err(ContextError::new(
                     11,
@@ -274,7 +320,36 @@ fn decode_native(
                     "Error while loading plugin: Unspecified: No decoder with that ID found.",
                 ));
             }
-            crate::hevc::decode_item(&container, id).map_err(|e| match e {
+            let data = {
+                let mut cached = info
+                    .decoder_input
+                    .lock()
+                    .unwrap_or_else(std::sync::PoisonError::into_inner);
+                if cached.as_ref().is_none_or(|input| input.data.is_empty()) {
+                    let data = container.payload(id)?;
+                    let reservation = document
+                        .budget
+                        .reserve(data.len() as u64, "decoder input buffer (iloc)")?;
+                    *cached = Some(crate::context::DecoderInput {
+                        data: std::sync::Arc::new(data),
+                        _reservation: reservation,
+                    });
+                }
+                cached.as_ref().unwrap().data.clone()
+            };
+            if data.is_empty() {
+                return Err(ContextError::invalid(
+                    0,
+                    "Unspecified: Input with empty data extent.",
+                ));
+            }
+            crate::hevc::decode_item_from_payload(
+                &container,
+                id,
+                &data,
+                Some(document.budget.clone()),
+            )
+            .map_err(|e| match e {
                 crate::hevc::DecodeError::Container(e) => e.into(),
                 crate::hevc::DecodeError::Image(e) => e.into(),
                 e => ContextError::new(
@@ -284,7 +359,20 @@ fn decode_native(
                 ),
             })?
         }
+        _ => {
+            return Err(ContextError::new(
+                4,
+                3000,
+                "Unsupported feature: Unsupported codec",
+            ));
+        }
     };
+    if info.ispe.0 != 0 && info.ispe.1 != 0 && (image.width, image.height) != info.ispe {
+        return Err(ContextError::invalid(
+            129,
+            "Invalid image size: Decoded image does not have the size signaled in the file.",
+        ));
+    }
     if !options.ignore_transformations {
         for (kind, p) in container.properties(id)? {
             match &kind {
@@ -351,7 +439,7 @@ fn decode_native(
     }
     image.pixel_aspect_ratio = info.pixel_aspect.unwrap_or((1, 1));
     image.premultiplied_alpha = info.premultiplied_alpha;
-    visiting.remove(&id);
+    visiting.ids.remove(&id);
     Ok(image)
 }
 
@@ -359,10 +447,13 @@ fn decode_grid(
     document: &Document,
     id: u32,
     options: &DecodeOptions<'_>,
-    visiting: &BTreeSet<u32>,
+    visiting: &DecodeState,
 ) -> Result<Image, ContextError> {
     let container = document.container()?;
-    let grid = crate::derived::Grid::load(&container, id)?;
+    let grid = document.images[&id]
+        .grid
+        .as_ref()
+        .expect("loaded grid header");
     let refs = &container.items[&id].references[b"dimg"];
     for child in refs {
         if !document.images.contains_key(child) {
@@ -373,22 +464,7 @@ fn decode_grid(
         }
     }
     let (w, h) = (grid.width, grid.height);
-    if w > i32::MAX as u32 || h > i32::MAX as u32 || u64::from(w) * u64::from(h) > 1_073_741_824 {
-        return Err(ContextError::new(
-            6,
-            1000,
-            format!(
-                "Memory allocation error: Security limit exceeded: Image size {w}x{h} exceeds the maximum image size 1073741824\n"
-            ),
-        ));
-    }
-    if w == 0 || h == 0 {
-        return Err(ContextError::new(
-            6,
-            129,
-            "Memory allocation error: Invalid image size: zero width or height",
-        ));
-    }
+    document.current_limits().check_image_size(w, h)?;
     if let Some(c) = options.callbacks {
         c.start(0, refs.len() as i32);
         c.progress(0, 0);

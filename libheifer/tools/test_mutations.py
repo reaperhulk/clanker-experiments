@@ -23,6 +23,10 @@ MUTATIONS = [
     ("alpha_reload_state", "crates/capi/src/context.rs", ".is_some_and(|i| i.has_alpha)", ".is_some_and(|_| handle.image().has_alpha)", "context"),
     ("grid_worker_callbacks", "src/decoding.rs", "if options.max_decoding_threads > 0 {", "if false {", "decode_derived"),
     ("warning_text", "crates/capi/src/image.rs", "libheifer::error_text::message(error.code, error.subcode)", 'String::from("wrong warning text")', "warnings"),
+    ("mask_samples", "src/mask.rs", ".copy_from_slice(&data[y * row_bytes..(y + 1) * row_bytes]);", ".copy_from_slice(&data[y * row_bytes..(y + 1) * row_bytes]);\n        plane.data_mut()[target] ^= 1;", "decode_mask"),
+    ("overlay_alpha", "src/overlay.rs", "((src * a + dst * (255 - a)) / 255)", "((src * a + dst * (255 - a)) / 256)", "decode_graphs"),
+    ("derived_operation_budget", "src/decoding.rs", ".saturating_mul(2)", ".saturating_mul(3)", "decode_graphs"),
+    ("live_memory_budget", "src/security.rs", ".checked_add(amount)", ".checked_add(0)", "security"),
     ("error_field_order", "crates/capi/src/lib.rs", "pub code: c_int,\n    pub subcode: c_int,", "pub subcode: c_int,\n    pub code: c_int,", "abi"),
 ]
 
@@ -45,8 +49,8 @@ def main():
     reference = str(Path(args.reference_build).resolve())
     candidate = str(Path(args.candidate).resolve())
     # Baselines must pass on this tree before a rejected mutant is meaningful.
-    for suite in ("brands", "images", "color", "context", "warnings", "decode_derived"):
-        run = execute([sys.executable, f"tools/test_{suite}.py", "--reference-build", reference, "--candidate", candidate, *(["--work", str(evidence / "decode")] if suite == "decode_derived" else []), "--output", str(evidence / f"baseline-{suite}.json")], root, os.environ, evidence / f"baseline-{suite}.log")
+    for suite in ("brands", "images", "color", "context", "warnings", "decode_derived", "decode_mask", "decode_graphs", "security"):
+        run = execute([sys.executable, f"tools/test_{suite}.py", "--reference-build", reference, "--candidate", candidate, *(["--work", str(evidence / "decode")] if suite.startswith("decode_") else []), "--output", str(evidence / f"baseline-{suite}.json")], root, os.environ, evidence / f"baseline-{suite}.log")
         if run.returncode:
             raise SystemExit(f"Baseline {suite} failed; see {evidence}")
     run = execute(["cargo", "test", "--locked", "-p", "libheifer-capi", "--test", "abi"], root, os.environ, evidence / "baseline-abi.log")
@@ -80,7 +84,7 @@ def main():
                 else:
                     report_path = evidence / f"{name}.json"
                     report_path.unlink(missing_ok=True)
-                    run = execute([sys.executable, f"tools/test_{suite}.py", "--reference-build", reference, "--candidate", str(library), *(["--work", str(evidence / "decode")] if suite == "decode_derived" else []), "--output", str(report_path)], root, os.environ, evidence / f"{name}.log")
+                    run = execute([sys.executable, f"tools/test_{suite}.py", "--reference-build", reference, "--candidate", str(library), *(["--work", str(evidence / "decode")] if suite.startswith("decode_") else []), "--output", str(report_path)], root, os.environ, evidence / f"{name}.log")
                     report = json.loads(report_path.read_text()) if report_path.exists() else {}
                     record["mismatches"] = report.get("mismatches", 0)
                     record["detected"] = run.returncode == 1 and record["mismatches"] > 0
@@ -88,7 +92,7 @@ def main():
                 print(json.dumps(record), flush=True)
             finally:
                 path.write_text(original)
-    report = {"scope": "nine deliberate defects; not comprehensive mutation coverage", "mutations": results, "all_detected": all(r["detected"] for r in results)}
+    report = {"scope": f"{len(MUTATIONS)} deliberate defects; not comprehensive mutation coverage", "mutations": results, "all_detected": all(r["detected"] for r in results)}
     Path(args.output).parent.mkdir(parents=True, exist_ok=True)
     Path(args.output).write_text(json.dumps(report, indent=2) + "\n")
     if not report["all_detected"]:

@@ -165,10 +165,8 @@ pub unsafe extern "C" fn heif_decode_image(
     let Some(document) = document else {
         return Error::new(2, 2000, c"Invalid input: Non-existing item ID referenced").into();
     };
-    #[cfg(feature = "hevc")]
     let callbacks = Callbacks(&options);
     let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        #[cfg(feature = "hevc")]
         {
             let output_nclx = unsafe { options.output_image_nclx_profile.as_ref() }.map(|p| {
                 libheifer::color::Nclx {
@@ -201,15 +199,6 @@ pub unsafe extern "C" fn heif_decode_image(
                 },
             )
         }
-        #[cfg(not(feature = "hevc"))]
-        {
-            let _ = (&document, colorspace, chroma, max_decoding_threads);
-            Err::<libheifer::image::Image, _>(ContextError::new(
-                4,
-                3000,
-                "Unsupported feature: Unsupported codec",
-            ))
-        }
     }));
     match result {
         Ok(Ok(image)) => {
@@ -234,14 +223,11 @@ pub unsafe extern "C" fn heif_decode_image(
     }
 }
 
-#[cfg(feature = "hevc")]
 struct Callbacks<'a>(&'a DecodingOptions);
 // SAFETY: libheif progress callbacks can run on decoding workers. The caller's
 // C contract keeps options and callback userdata alive and synchronized through
 // heif_decode_image; scoped workers join before returning to that caller.
-#[cfg(feature = "hevc")]
 unsafe impl Sync for Callbacks<'_> {}
-#[cfg(feature = "hevc")]
 impl libheifer::decoding::DecodeCallbacks for Callbacks<'_> {
     fn start(&self, step: i32, maximum: i32) {
         if let Some(f) = self.0.start_progress {

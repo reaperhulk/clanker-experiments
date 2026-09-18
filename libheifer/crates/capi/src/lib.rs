@@ -15,7 +15,9 @@ mod color;
 mod context;
 mod decoding;
 mod image;
+mod security;
 pub use decoding::DecodingOptions;
+pub use security::SecurityLimits;
 
 #[repr(C)]
 #[derive(Clone, Copy, Debug)]
@@ -25,12 +27,23 @@ pub struct HeifError {
     pub message: *const c_char,
 }
 
+// Object-bound errors use their owning context/image's buffer. This fallback
+// retains diagnostics from operations which have no owning object.
+thread_local! {
+    static LAST_ERROR: std::cell::RefCell<std::ffi::CString> = std::cell::RefCell::new(std::ffi::CString::default());
+}
 impl From<Error> for HeifError {
     fn from(e: Error) -> Self {
         Self {
             code: e.code,
             subcode: e.subcode,
-            message: e.message.as_ptr(),
+            message: match e.message {
+                std::borrow::Cow::Borrowed(message) => message.as_ptr(),
+                std::borrow::Cow::Owned(message) => LAST_ERROR.with(|slot| {
+                    *slot.borrow_mut() = message;
+                    slot.borrow().as_ptr()
+                }),
+            },
         }
     }
 }

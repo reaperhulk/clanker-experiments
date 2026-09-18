@@ -2,9 +2,9 @@
   "scope": "Exact original-header decode comparisons, including metadata, alpha and callbacks.",
   "cases": 115,
   "mismatches": 0,
-  "client_sha256": "a5ceb1ec767eaf12f1c2b383e8810e83ac17830a795084db61d6c2cc3e7c6d59",
+  "client_sha256": "d4ad345b1922864871807371faca3c529db0479520662cfec15b4de5541fe460",
   "reference_sha256": "5d70927cded8be6d1b4da912971aed75d426ba079c84d0b8462785ec5b9c92f7",
-  "candidate_sha256": "b30e9d3a6a474337ce4efad5bef15ce99589d209340a739f5ad7900b4bf0a1bf",
+  "candidate_sha256": "dd576f58c7edfcca706f96e0a23d2a2bd5032a2d13b9c8797248e844932f6bdf",
   "results": [
     {
       "fixture": "examples/example.heic",

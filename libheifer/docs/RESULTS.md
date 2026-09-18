@@ -4,12 +4,12 @@ Reference: libheif 1.23.4, commit `4e14f5942c1732ace9611b9522cc991501445463`.
 HEVC reference backend: libde265 1.0.16, commit
 `7ba65889d3d6d8a0d99b5360b028243ba843be3a`. Candidate uses only Rust code;
 the HEVC feature uses rusty_h265/rusty_h265-accel 0.6.0. The former is vendored
-with a VUI unspecified-color fix; its Apache-2.0 notices are retained.
+with VUI unspecified-color and monochrome-decoding fixes; its Apache-2.0 notices are retained.
 
 ## Implemented scope
 
-113 of 465 public functions are exported, plus `heif_error_success`.
-352 functions are missing. Even the exported functions are marked **partial**:
+119 of 465 public functions are exported, plus `heif_error_success`.
+346 functions are missing. Even the exported functions are marked **partial**:
 coverage is finite, platform coverage is incomplete, and one malformed-box
 behavior gap is explicitly retained. There is no claim of a compatible library.
 
@@ -22,8 +22,10 @@ behavior gap is explicitly retained. There is no claim of a compatible library.
 - Rust-only bounded item-container parsing and experimental direct HEVC native
   YUV decoding, now exposed through the C API with alpha attachment, rotations,
   mirroring, clean apertures, versioned options and profile conversion. Crop/scale also export C APIs.
+  Grids, identity images, overlays and 8/16-bit raw masks use Rust composition and decoding;
+  mask and derived decoding also work with all optional codec features disabled.
 - Context allocation and memory reads; shared image handles, primary/top-level IDs,
-  direct HEVC descriptions, thumbnails, uncompressed metadata and color queries.
+  HEVC/derived/mask descriptions, thumbnails, uncompressed metadata and color queries.
   Handles retain their images after context release/reload; alpha lookup follows
   the context's current image table, matching the pinned reference.
 
@@ -37,41 +39,54 @@ behavior gap is explicitly retained. There is no claim of a compatible library.
 | Color/HDR differential | 198,932 transcripts, 0 mismatches | All uint16 NCLX setter inputs, all uint8 option-version pairs, all chromaticity coordinates, exact floating-point bits, ICC ownership, HDR boundaries and output sentinels; no image-handle APIs or color transforms |
 | Context/handle differential | 1,786 transcripts, 0 mismatches | Copied/borrowed input, destroyed input copies, aliases, handles after free/reload, early and late read failures, primary/hidden/boundary IDs, metadata bytes/filters, thumbnails, alpha references, color profiles, rotations, every synthetic-file/property truncation; no C decoding |
 | C client sanitizers | ASan/UBSan clients pass the context corpus | Libraries are not sanitizer-instrumented; local LeakSanitizer could not run under ptrace, so leak detection was explicitly disabled |
-| ABI | Nine structs match original-header size, alignment and every field offset; struct-return and data-symbol clients pass | Linux x86_64 only |
-| Mutation checks | Nine deliberately wrong implementations rejected | Wrong filetype enum, error code, plane samples, primary coordinate, primary item ID, alpha reload state, worker callbacks, warning text and ABI field order; isolated builds, successful baselines, compiler/crash failures do not count |
+| ABI | Ten structs match original-header size, alignment and every field offset; struct-return and data-symbol clients pass | Linux x86_64 only |
+| Mutation checks | Thirteen deliberately wrong implementations rejected | Wrong filetype enum, error code, plane samples, primary coordinate, primary item ID, alpha reload state, worker callbacks, warning text, mask samples, overlay alpha, decode-operation/total-memory budgets and ABI field order; isolated builds, successful baselines, compiler/crash failures do not count |
 | HEVC native output | 5/5 fixtures match exactly | Y/Cb/Cr data, image IDs/order, dimensions, depths and strides; transformations disabled, native NCLX passthrough; **alpha not compared** |
 | HEVC default output | 5/5 tested color-plane outputs match | Separate default-converted Rust and reference output; no longer compares native data to default output |
 | C decoding | 115 cases, 0 mismatches | Five direct HEVC fixtures x 23 modes; native/default/planar/interleaved output including alpha, profiles, both 16-bit byte orders, sampling restrictions, callbacks and errors; not codec conformance |
 | Geometry/monochrome HEVC | 688 cases, 0 mismatches | Ordered rotations/mirrors/clean apertures, truncated fractions and integer boundaries, conformance-window cropping and real monochrome alpha; includes four additional upstream images |
 | Grid/identity decoding | 640 cases, 0 mismatches | Generated valid/malformed tile graphs, wide fields, MIAF, cycles, strict/permissive errors, missing configurations, warning contents, callback arguments and worker thread placement; unknown-decoder cases use one worker to fix error ordering |
+| Overlay decoding | 824 cases, 0 mismatches | Backgrounds, signed 16/32-bit offsets, clipping quirks, all header truncations, input counts and invalid references |
+| Raw masks | 1,246 cases, 0 mismatches | 8/16-bit sample bytes, all data prefixes, depths and configuration versions, missing properties, conversion paths; also passes without the HEVC feature |
+| Adversarial graphs | 47 cases, 0 mismatches | Nested overlays and identities, MIAF constraints, shared-grid amplification limit, alpha blending and mixed-reference cycles |
+| Derived/mask handles | 606 transcripts, 0 mismatches | The same 303 generated files, copied/borrowed input, old handles after partial reloads, cyclic/missing references and query error outputs; also passes C-client ASan/UBSan with local leak checking disabled |
 | Warning/thread controls | 1,249 cases, 0 mismatches | Every declared error/suberror pair, ignored caller message, pagination and sentinels, crop/scale warning propagation and thread-setting boundaries; C clients also pass ASan/UBSan with local leak checking disabled |
+| Security limits | 2,927 transcripts, 0 mismatches | All uint8 versions and old prefixes, aliases/direct mutation, context and parent limits, safe plane allocation, exact per-block/total errors, allocation release and mask/HEVC/derived decoding; C clients also pass ASan/UBSan with local leak checking disabled |
+| Resource lifetimes | 276 transcripts, 0 mismatches | Repeated decodes, replaced decoder input extents, limits changed after decode, metadata, context reload and one/two surviving handles; unrelated images release their budget independently |
 | Decoding options | 65,549 cases, 0 mismatches | All byte-valued version pairs, old short prefixes and alias copies; also passes C-client ASan/UBSan with local leak checks disabled |
 | Crop/scale | 12,240 cases, 0 mismatches | Odd geometry, 8/10/12/16-bit layouts, alpha and metadata, invalid margins, nonstandard planes; wider/custom component formats remain open |
 | Dependency guard | Pass | Two reviewed codec crates; no native build scripts or codec link dependencies in the resolved candidate graph |
-| Rust checks | Unit tests, ABI test, formatting and Clippy pass | Linux, macOS and Windows Rust build jobs passed for the color/HDR iteration; full sanitizer, fuzzing and cross-platform ABI validation remain open |
+| Rust checks | Unit tests, ABI test, formatting and Clippy pass | Linux, macOS and Windows Rust build jobs passed for the grid/warning iteration; full sanitizer, fuzzing and cross-platform ABI validation remain open |
 | Completeness gate | **Fail**, as required | Missing API and unvalidated entries prevent a success claim |
 
 The separately retained `known-differences.json` records malformed non-ftyp box
 behavior that the broad brand corpus did not cover. This is not suppressed or
 treated as matching. The five HEIC fixtures are smoke coverage for direct items,
-not HEVC conformance or full container compatibility. The decoder experiment has
-not established safe resource-budget behavior on hostile inputs.
+not HEVC conformance or full container compatibility. The resource-budget comparisons cover the implemented paths, but do not establish
+complete safe allocation behavior across hostile codec inputs or unimplemented formats.
 
 A previous Valgrind attempt could not execute the client in this environment
 (permission denied). The context C clients now pass ASan/UBSan; the libraries
 are not instrumented, and no full-library memory-safety or local leak-test pass
-is claimed. The [color/HDR CI run](https://github.com/reaperhulk/clanker-experiments/actions/runs/35313115635)
+is claimed. The [grid/warning CI run](https://github.com/reaperhulk/clanker-experiments/actions/runs/35378061976)
 passed Rust builds on Linux, macOS and Windows and all Linux development checks,
-including the color differential and mutation tests. Its only failing step was
-the full-completion gate. A job summary is retained in `results/ci-color-report.json`.
+including the client sanitizer tests with leak checking and all nine mutations
+present at that revision. Its only failing step was the full-completion gate.
+The job summary and exact commit are in `results/ci-grid-report.json`; the report
+precedes this overlay/mask/security iteration.
 
 The context corpus is a finite tested subset, not full parser equivalence. It
 includes five real HEIC fixtures and generated containers. All 38 added exports
 remain partial. Unsupported image types, compressed metadata, duplicate-box and
-essential-property behavior, complete clean-aperture coverage, configurable budgets,
+essential-property behavior, complete clean-aperture coverage, budgets for remaining formats,
 file/reader callbacks and complete decoding orchestration remain open. `context-report.json` records
 exact binary, client and corpus hashes. `context-sanitized-report.json` records
 the limited sanitizer scope; mutation evidence rejects wrong reload semantics.
+
+The overlay implementation preserves the pinned reference's byte-based blending and
+negative-offset behavior. These are observable compatibility quirks, not corrected
+rendering rules. Conversion graph ordering also retains otherwise unreachable states
+because they affect equal-cost path selection and therefore sample values.
 
 The grid decoder uses scoped Rust workers to honor callback execution and error
 semantics. This is compatibility work, not an optimization claim. In an independent
@@ -79,6 +94,12 @@ semantics. This is compatibility work, not an optimization claim. In an independ
 identity tile raced unavailable-decoder failures. Exact error-order tests therefore
 use one worker; the other grid modes retain the default four workers. Broader
 concurrent trace equivalence remains open.
+
+Six added entry points expose versioned context limits and safe plane allocation.
+The Rust accounting follows libheif allocation lifetimes, including retained decoder
+input and metadata. A context reload releases unrelated images while existing
+handles retain their own objects and auxiliary images. Limits for codecs/formats
+not yet implemented, and complete allocator-failure behavior, remain open.
 
 ## Initial performance evidence
 

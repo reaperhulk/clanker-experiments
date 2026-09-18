@@ -86,6 +86,8 @@ def corpus(source):
                 cases.append((f'color-{rotation}-{cp}-{aspect}', synthetic(extra=extra)))
     return cases
 
+SCOPE = "Context and handle queries, color/metadata/thumbnails, copied and borrowed memory, context aliases and lifetimes; no decoding or reader callbacks"
+
 def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--reference-build', required=True)
@@ -108,6 +110,8 @@ def main():
     payload = b''.join((struct.pack('=I', len(data)) + data for _, data in cases))
     results = {}
     libraries = {'reference': reference / 'libheif/libheif.so', 'candidate': Path(args.candidate).resolve()}
+    hashes = {name: hashlib.sha256(lib.read_bytes()).hexdigest() for name, lib in libraries.items()}
+    client_hash = hashlib.sha256(Path('tests/context.c').read_bytes()).hexdigest()
     sanitizer_flags = ['-fsanitize=address,undefined', '-fno-omit-frame-pointer'] if args.sanitize else []
     env = dict(os.environ)
     if args.sanitize:
@@ -125,8 +129,10 @@ def main():
         results[name] = run.stdout.splitlines()
         if len(results[name]) != 2 * len(cases):
             raise SystemExit(f'Incomplete {name} transcript')
+    if any(hashlib.sha256(lib.read_bytes()).hexdigest() != hashes[name] for name, lib in libraries.items()) or hashlib.sha256(Path('tests/context.c').read_bytes()).hexdigest() != client_hash:
+        raise SystemExit('Library or client changed during the run; refusing mixed evidence')
     mismatches = [{'case': i, 'name': cases[i // 2][0], 'reference': a.decode(), 'candidate': b.decode()} for i, (a, b) in enumerate(zip(results['reference'], results['candidate'], strict=True)) if a != b]
-    report = {'scope': 'HEVC context and handle queries, color/metadata/thumbnails, copied and borrowed memory, context aliases and lifetimes; no decoding or reader callbacks', 'client_sanitizers': args.sanitize, 'leak_check': args.sanitize and not args.no_leak_check, 'cases': 2 * len(cases), 'mismatches': len(mismatches), 'corpus_sha256': hashlib.sha256(payload).hexdigest(), 'client_sha256': hashlib.sha256(Path('tests/context.c').read_bytes()).hexdigest(), 'reference_sha256': hashlib.sha256(libraries['reference'].read_bytes()).hexdigest(), 'candidate_sha256': hashlib.sha256(libraries['candidate'].read_bytes()).hexdigest(), 'examples': mismatches[:20]}
+    report = {'scope': SCOPE, 'client_sanitizers': args.sanitize, 'leak_check': args.sanitize and not args.no_leak_check, 'cases': 2 * len(cases), 'mismatches': len(mismatches), 'corpus_sha256': hashlib.sha256(payload).hexdigest(), 'client_sha256': hashlib.sha256(Path('tests/context.c').read_bytes()).hexdigest(), 'reference_sha256': hashlib.sha256(libraries['reference'].read_bytes()).hexdigest(), 'candidate_sha256': hashlib.sha256(libraries['candidate'].read_bytes()).hexdigest(), 'examples': mismatches[:20]}
     Path(args.output).parent.mkdir(parents=True, exist_ok=True)
     Path(args.output).write_text(json.dumps(report, indent=2) + '\n')
     print(json.dumps({k: v for k, v in report.items() if k != 'examples'}, indent=2))

@@ -43,6 +43,29 @@ fn public_structs_match_original_header_layouts() {
             expected.push('\n');
         }};
     }
+    layout!(
+        heif_security_limits,
+        heifer::SecurityLimits,
+        version,
+        max_image_size_pixels,
+        max_number_of_tiles,
+        max_bayer_pattern_pixels,
+        max_items,
+        max_color_profile_size,
+        max_memory_block_size,
+        max_components,
+        max_iloc_extents_per_item,
+        max_size_entity_group,
+        max_children_per_box,
+        max_total_memory,
+        max_sample_description_box_entries,
+        max_sample_group_description_box_entries,
+        max_sequence_frames,
+        max_number_of_file_brands,
+        max_bad_pixels,
+        max_iso23001_17_pixel_size_bytes,
+        parent
+    );
     layout!(heif_error, heifer::HeifError, code, subcode, message);
     layout!(
         heif_decoding_options,

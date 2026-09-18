@@ -7,11 +7,11 @@
 #include <threads.h>
 static FILE* output;
 static unsigned starts,progresses,ends,cancels,event_count;
-static uint32_t events[8192][4];
+static uint32_t events[32768][4];
 static thrd_t caller_thread;
 static unsigned callback_cookie;
 static void event(uint32_t kind,int step,int value,void* p){
-  if(p!=&callback_cookie || event_count>=8192)abort();
+  if(p!=&callback_cookie || event_count>=32768)abort();
   events[event_count][0]=kind;events[event_count][1]=(uint32_t)step;events[event_count][2]=(uint32_t)value;events[event_count++][3]=!thrd_equal(caller_thread,thrd_current());
 }
 static void start(heif_progress_step step,int n,void* p){event(0,step,n,p);starts++;}
@@ -30,7 +30,7 @@ static void decode(const heif_image_handle* handle,int mode){
   options->start_progress=start;options->on_progress=progress;options->end_progress=end;options->progress_user_data=&callback_cookie;
   if(mode==9)options->cancel_decoding=cancel;
   if(mode==10)options->decoder_id="unavailable-decoder";
-  if(mode==11)options->strict_decoding=1;
+  if(mode==11 || mode==25)options->strict_decoding=1;
   heif_colorspace cs=heif_colorspace_undefined;heif_chroma ch=heif_chroma_undefined;
   if(mode==3){cs=heif_colorspace_RGB;ch=heif_chroma_interleaved_RGB;}
   if(mode==4){cs=heif_colorspace_RGB;ch=heif_chroma_interleaved_RGBA;}
@@ -88,7 +88,7 @@ int main(int argc,char** argv){
   heif_context* ctx=heif_context_alloc();/* Mixed failing tiles return whichever warning wins the worker race. Use one
      worker for exact decoder-error ordering; other modes retain four workers. */
   if(mode==10)heif_context_set_max_decoding_threads(ctx,1);
-  if(mode==23 || mode==24)heif_context_set_max_decoding_threads(ctx,mode==23?0:-1);heif_error e=heif_context_read_from_memory(ctx,bytes,size,NULL);free(bytes);error(e);
+  if(mode==23 || mode==24 || mode==25)heif_context_set_max_decoding_threads(ctx,mode==24?-1:0);heif_error e=heif_context_read_from_memory(ctx,bytes,size,NULL);free(bytes);error(e);
   if(!e.code){uint32_t ids[100];int count=heif_context_get_list_of_top_level_image_IDs(ctx,ids,100);number(count);
     for(int i=0;i<count;i++){number(ids[i]);heif_image_handle* h=NULL;e=heif_context_get_image_handle(ctx,ids[i],&h);error(e);if(!e.code){decode(h,mode);heif_image_handle_release(h);}}
   }

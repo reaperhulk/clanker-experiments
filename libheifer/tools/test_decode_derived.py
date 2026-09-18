@@ -8,10 +8,10 @@ from test_context import box, full
 from test_decode_geometry import children
 
 
-def fixture(config,payload,rows=2,columns=2,width=127,height=125,kind=b'grid',references=None,iref=True,version=0,truncate=None,nested=False,cycle=False,miaf=False,wide=False,tile_sizes=None,tile_rotations=None,bad_identity=None,missing_config=None):
-    grid=bytes([version,int(wide),rows-1,columns-1])+struct.pack('>II' if wide else '>HH',width,height)
+def fixture(config,payload,rows=2,columns=2,width=127,height=125,kind=b'grid',references=None,iref=True,version=0,truncate=None,nested=False,cycle=False,miaf=False,wide=False,tile_sizes=None,tile_rotations=None,bad_identity=None,missing_config=None,root_data=None,tile_count=None,omit_dimg=False):
+    grid=root_data if root_data is not None else bytes([version,int(wide),rows-1,columns-1])+struct.pack('>II' if wide else '>HH',width,height)
     if truncate is not None:grid=grid[:truncate]
-    tile_ids=list(range(10,10+(rows*columns if kind==b'grid' and references is None else 1)))
+    tile_ids=list(range(10,10+(tile_count if tile_count is not None else rows*columns if kind==b'grid' and references is None else 1)))
     items=[(1,kind,grid,(width,height),False)]+[(i,b'iden' if i==bad_identity else b'hvc1',payload,(tile_sizes or {}).get(i,(64,64)),True) for i in tile_ids]
     if nested:items.append((2,b'iden',b'',(width,height),True))
     props=[box(b'hvcC',config)]
@@ -31,6 +31,7 @@ def fixture(config,payload,rows=2,columns=2,width=127,height=125,kind=b'grid',re
     if cycle:refs=[1]
     refs_data=box(b'dimg',struct.pack('>HH',1,len(refs))+b''.join(struct.pack('>H',r) for r in refs))
     if nested:refs_data+=box(b'dimg',struct.pack('>HHH',2,1,1 if cycle else 10))
+    if omit_dimg:refs_data=b''
     hdlr=full(b'hdlr',bytes(4)+b'pict'+bytes(12)+b'\0')
     meta=hdlr+full(b'pitm',struct.pack('>H',1))+full(b'iinf',struct.pack('>H',len(items))+b''.join(entries))
     meta+=full(b'iloc',struct.pack('>BBH',68,0,len(items))+locations,1)

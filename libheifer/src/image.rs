@@ -12,6 +12,7 @@ pub struct Plane {
     pub stride: usize,
     storage: Vec<u8>,
     offset: usize,
+    _reservation: Option<crate::security::Reservation>,
 }
 
 impl Plane {
@@ -21,6 +22,7 @@ impl Plane {
         height: u32,
         depth: i32,
         components: usize,
+        budget: Option<&std::sync::Arc<crate::security::Budget>>,
     ) -> Result<Self, Error> {
         if !(1..=128).contains(&depth) {
             return Err(Error::new(
@@ -61,6 +63,25 @@ impl Plane {
                 1000,
                 c"Memory allocation error: Security limit exceeded: Image allocation size overflow",
             ))?;
+        if let Some(budget) = budget {
+            let maximum = budget
+                .limits
+                .read()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .max_image_size_pixels;
+            if maximum != 0 && u64::from(width) * u64::from(height) > maximum {
+                return Err(Error::owned(
+                    6,
+                    1000,
+                    format!(
+                        "Memory allocation error: Security limit exceeded: Allocating an image of size {width}x{height} exceeds the security limit of {maximum} pixels"
+                    ),
+                ));
+            }
+        }
+        let reservation = budget
+            .map(|b| b.reserve(allocation as u64, "image data"))
+            .transpose()?;
         let mut storage = Vec::new();
         storage
             .try_reserve_exact(allocation)
@@ -68,6 +89,7 @@ impl Plane {
         storage.resize(allocation, 0);
         let offset = (16 - (storage.as_ptr() as usize & 15)) & 15;
         Ok(Self {
+            _reservation: reservation,
             channel,
             width,
             height,
@@ -111,6 +133,8 @@ impl From<crate::context::ContextError> for DecodingWarning {
 
 #[derive(Debug)]
 pub struct Image {
+    pub budget: Option<std::sync::Arc<crate::security::Budget>>,
+    pub last_error: std::sync::Mutex<std::ffi::CString>,
     pub color: crate::color::ColorMetadata,
     pub warnings: Vec<DecodingWarning>,
     pub width: u32,
@@ -123,6 +147,10 @@ pub struct Image {
 }
 
 impl Image {
+    pub fn with_budget(mut self, budget: Option<std::sync::Arc<crate::security::Budget>>) -> Self {
+        self.budget = budget;
+        self
+    }
     pub fn new(
         width: u32,
         height: u32,
@@ -149,6 +177,8 @@ impl Image {
             chroma = 3;
         }
         Ok(Self {
+            budget: None,
+            last_error: std::sync::Mutex::new(std::ffi::CString::default()),
             width,
             height,
             colorspace,
@@ -180,8 +210,14 @@ impl Image {
             _ => 1,
         };
         self.planes.try_reserve(1).map_err(|_| Error::ALLOCATION)?;
-        self.planes
-            .push(Plane::new(channel, width, height, bit_depth, components)?);
+        self.planes.push(Plane::new(
+            channel,
+            width,
+            height,
+            bit_depth,
+            components,
+            self.budget.as_ref(),
+        )?);
         Ok(())
     }
     pub fn plane(&self, channel: i32) -> Option<&Plane> {
@@ -223,10 +259,18 @@ impl Image {
         })
     }
     pub fn scale(&self, width: u32, height: u32) -> Result<Self, Error> {
+        self.scale_with_budget(width, height, self.budget.clone())
+    }
+    pub fn scale_with_budget(
+        &self,
+        width: u32,
+        height: u32,
+        budget: Option<std::sync::Arc<crate::security::Budget>>,
+    ) -> Result<Self, Error> {
         if !self.standard_planes() {
             return Err(Error::new(4,0,c"Unsupported feature: Unspecified: Scaling an image with non-standard plane sizes is not supported"));
         }
-        let mut out = Self::new(width, height, self.colorspace, self.chroma)?;
+        let mut out = Self::new(width, height, self.colorspace, self.chroma)?.with_budget(budget);
         let mut channels = if self.plane(10).is_some() {
             vec![10]
         } else {
@@ -325,7 +369,8 @@ impl Image {
     }
     /// Allocate a grid canvas using this image's plane layout and metadata.
     pub fn empty_canvas(&self, width: u32, height: u32) -> Result<Self, Error> {
-        let mut out = Self::new(width, height, self.colorspace, self.chroma)?;
+        let mut out = Self::new(width, height, self.colorspace, self.chroma)?
+            .with_budget(self.budget.clone());
         out.color = self.color.try_clone()?;
         out.pixel_aspect_ratio = self.pixel_aspect_ratio;
         out.premultiplied_alpha = self.premultiplied_alpha;
@@ -404,7 +449,8 @@ impl Image {
             bottom - top + 1,
             self.colorspace,
             self.chroma,
-        )?;
+        )?
+        .with_budget(self.budget.clone());
         out.warnings = self.warnings.clone();
         out.color = self.color.try_clone()?;
         out.pixel_aspect_ratio = self.pixel_aspect_ratio;
@@ -446,7 +492,8 @@ impl Image {
         let odd = quarters & 1 != 0;
         let width = if odd { self.height } else { self.width };
         let height = if odd { self.width } else { self.height };
-        let mut out = Self::new(width, height, self.colorspace, self.chroma)?;
+        let mut out = Self::new(width, height, self.colorspace, self.chroma)?
+            .with_budget(self.budget.clone());
         out.warnings = self.warnings.clone();
         out.color = self.color.try_clone()?;
         out.pixel_aspect_ratio = self.pixel_aspect_ratio;

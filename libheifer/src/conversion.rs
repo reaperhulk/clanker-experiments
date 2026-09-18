@@ -103,6 +103,7 @@ fn next(s: State, t: State, o: ColorConversionOptions) -> Vec<(State, Op, u32)> 
         add(
             State {
                 ch: 3,
+                alpha: if t.alpha > 0 { 8 } else { 0 },
                 nclx: UNDEFINED,
                 ..s
             },
@@ -286,7 +287,8 @@ fn next(s: State, t: State, o: ColorConversionOptions) -> Vec<(State, Op, u32)> 
         } else {
             3
         };
-        if (1..=3).contains(&ch) {
+        // Preserve even dead-end states: swap-removal makes them affect equal-cost path selection.
+        {
             add(
                 State {
                     cs: 0,
@@ -560,7 +562,7 @@ fn clip(f: f32, max: i32) -> i32 {
 }
 fn apply(image: &Image, s: State, t: State, op: Op) -> Result<Image, Error> {
     let (w, h) = (image.width, image.height);
-    let mut out = Image::new(w, h, t.cs, t.ch)?;
+    let mut out = Image::new(w, h, t.cs, t.ch)?.with_budget(image.budget.clone());
     match op {
         Op::Pack16 | Op::YuvPacked16 => {
             out.add_plane(10, w, h, t.depth.into())?;
@@ -703,7 +705,7 @@ fn apply(image: &Image, s: State, t: State, op: Op) -> Result<Image, Error> {
         Op::Unpack => {
             let p = image.plane(10).unwrap();
             let n = if s.ch == 11 { 4 } else { 3 };
-            for c in 0..n {
+            for c in 0..if t.alpha > 0 { 4 } else { 3 } {
                 let ch = if c == 3 { 6 } else { 3 + c as i32 };
                 out.add_plane(ch, w, h, 8)?;
                 let q = out.plane_mut(ch).unwrap();
@@ -713,7 +715,11 @@ fn apply(image: &Image, s: State, t: State, op: Op) -> Result<Image, Error> {
                             q,
                             x,
                             y,
-                            p.data()[y as usize * p.stride + x as usize * n + c] as i32,
+                            if c == 3 && n == 3 {
+                                255
+                            } else {
+                                p.data()[y as usize * p.stride + x as usize * n + c] as i32
+                            },
                         );
                     }
                 }

@@ -4,7 +4,7 @@ This starts a pure Rust libheif replacement with an optional compatible C ABI.
 The reference contract is libheif 1.23.4. Native code is used only by independent
 test oracles; the candidate's resolved implementation dependencies are Rust.
 
-The PR is **not complete** and must remain draft. It implements 113 of 465
+The PR is **not complete** and must remain draft. It implements 119 of 465
 functions, plus the public success object. The strict completion check fails on
 missing and unvalidated APIs. Unsupported-operation stubs and libheif forwarding
 are not used to inflate coverage.
@@ -19,9 +19,13 @@ Changes:
   conversion and packing, crop/scale, and versioned decoding options.
 - Add grid/identity decoding, cycle and MIAF validation, scoped tile workers,
   callback thread/argument checks, warning APIs and context thread controls.
+- Add overlay composition, 8/16-bit masks, shared-graph operation budgets and
+  dynamic derived-handle queries after partial context reloads.
+- Add versioned security limits, safe plane allocation and context-wide accounting
+  for image data, decoder input and metadata, including release/reload semantics.
 - Add context/handle ownership, reload state, metadata, thumbnails and color queries.
-- Validate nine public struct layouts and reject nine deliberately mutated
-  implementations (enums, errors, pixels, coordinates, item IDs, reload state, worker callbacks, warning text and field order).
+- Validate ten public struct layouts and reject thirteen deliberately mutated
+  implementations (enums, errors, pixels, coordinates, item IDs, reload state, worker callbacks, warning text, mask samples, overlay alpha, resource budgets and field order).
 - Add dependency auditing, ABI checks, CI development checks, and an intentionally
   failing full-completion gate.
 - Record raw interleaved performance samples and a codec stage profile.
@@ -36,10 +40,13 @@ alpha, default conversion, explicit profiles and 16-bit byte order. 65,549 decod
 option cases and 12,240 crop/scale cases match. Another 688 geometry/monochrome
 HEVC cases check transform order, fractions, conformance-window cropping and alpha. Short option allocations also pass
 C-client ASan/UBSan. Another 640 grid/identity and 1,249 warning/thread-control
-cases match; callback values and worker placement are checked. Unknown-decoder
+cases match. Another 824 overlay, 1,246 mask, 47 adversarial graph and 606
+derived/mask handle comparisons match, with C-client sanitizer coverage for the
+new handle corpus. Another 2,927 security-limit and 276 resource-lifetime
+comparisons match; the security C client also passes ASan/UBSan. Mask comparisons also pass with optional codecs disabled. Callback values and worker placement are checked. Unknown-decoder
 error-order cases use one worker because upstream races can select different
 errors. A malformed-box brand mismatch remains recorded. Unit/ABI tests, formatting
-and Clippy pass on Linux x86_64. The color/HDR CI run passed Rust builds on Linux,
+and Clippy pass on Linux x86_64. The preceding grid/warning CI run passed Rust builds on Linux,
 macOS and Windows and all Linux development checks, including mutation tests; its sole failing step was
 the strict full-API gate. Cross-platform ABI, fuzzing and memory-safety validation
 remain open.

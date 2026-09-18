@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 //! Bounded, borrowed ISO BMFF item parsing. This is an initial subset, not the
 //! complete libheif parser; unsupported construction methods fail explicitly.
+use crate::security::Limits;
 use std::collections::BTreeMap;
 use std::ops::Range;
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ParseError {
     Truncated,
     InvalidSize,
@@ -15,6 +16,7 @@ pub enum ParseError {
     MissingProperty,
     EmptyReferences,
     DoubleReferences,
+    Security { invalid: bool, message: String },
 }
 impl std::fmt::Display for ParseError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -115,6 +117,7 @@ pub struct Item {
 /// All slices refer to the original input, whose lifetime is enforced by Rust.
 #[derive(Debug)]
 pub struct Container<'a> {
+    pub limits: Limits,
     data: &'a [u8],
     idat: Option<&'a [u8]>,
     pub primary: u32,
@@ -138,11 +141,18 @@ impl<'a> Container<'a> {
 
     /// Parse the metadata independently of the availability of media payloads.
     pub(crate) fn parse_meta(data: &'a [u8], meta: &'a [u8]) -> Result<Self> {
+        Self::parse_meta_with_limits(data, meta, Limits::default())
+    }
+    pub(crate) fn parse_meta_with_limits(
+        data: &'a [u8],
+        meta: &'a [u8],
+        limits: Limits,
+    ) -> Result<Self> {
         let mut reader = Reader(meta);
         if reader.fullbox()?.0 != 0 {
             return Err(ParseError::Unsupported);
         }
-        let children = boxes(reader.0, 100)?;
+        let children = boxes(reader.0, usize::MAX)?;
         let child = |kind| {
             children
                 .iter()
@@ -156,6 +166,7 @@ impl<'a> Container<'a> {
             return Err(ParseError::Unsupported);
         }
         let mut result = Self {
+            limits,
             data,
             idat: children.iter().find(|b| b.kind == *b"idat").map(|b| b.data),
             primary: primary.id(version == 1)?,
@@ -166,10 +177,16 @@ impl<'a> Container<'a> {
         let mut info = Reader(child(*b"iinf")?);
         let (version, _) = info.fullbox()?;
         let count = info.number(if version == 0 { 2 } else { 4 })? as usize;
-        if count > 1000 {
-            return Err(ParseError::Limit);
+        if limits.max_items != 0 && count as u64 > u64::from(limits.max_items) {
+            return Err(ParseError::Security {
+                invalid: false,
+                message: format!(
+                    "iinf box contains {count} items, which exceeds the security limit of {} items.",
+                    limits.max_items
+                ),
+            });
         }
-        let entries = boxes(info.0, 1000)?;
+        let entries = boxes(info.0, usize::MAX)?;
         if entries.len() != count {
             return Err(ParseError::InvalidField);
         }
@@ -227,12 +244,12 @@ impl<'a> Container<'a> {
         }
         result.parse_locations(child(*b"iloc")?)?;
         if let Ok(properties) = child(*b"iprp") {
-            let children = boxes(properties, 100)?;
+            let children = boxes(properties, usize::MAX)?;
             let ipco = children
                 .iter()
                 .find(|b| b.kind == *b"ipco")
                 .ok_or(ParseError::MissingProperty)?;
-            result.properties = boxes(ipco.data, 1000)?;
+            result.properties = boxes(ipco.data, usize::MAX)?;
             for entry in children.iter().filter(|b| b.kind == *b"ipma") {
                 result.parse_associations(entry.data)?;
             }
@@ -243,15 +260,30 @@ impl<'a> Container<'a> {
             if version > 1 {
                 return Err(ParseError::Unsupported);
             }
-            for reference in boxes(r.0, 1000)? {
+            for (index, reference) in boxes(r.0, usize::MAX)?.into_iter().enumerate() {
+                if limits.max_items != 0 && index as u64 >= u64::from(limits.max_items) {
+                    return Err(ParseError::Security {
+                        invalid: true,
+                        message: format!(
+                            "'iref' box contains more than {} reference entries, which exceeds the security limit.",
+                            limits.max_items
+                        ),
+                    });
+                }
                 let mut r = Reader(reference.data);
                 let from = r.id(version == 1)?;
                 let count = r.number(2)? as usize;
                 if count == 0 {
                     return Err(ParseError::EmptyReferences);
                 }
-                if count > 1000 {
-                    return Err(ParseError::Limit);
+                if limits.max_items != 0 && count as u64 > u64::from(limits.max_items) {
+                    return Err(ParseError::Security {
+                        invalid: true,
+                        message: format!(
+                            "Number of references in iref box ({count}) exceeds the security limits of {} references.",
+                            limits.max_items
+                        ),
+                    });
                 }
                 let item = result.items.get_mut(&from).ok_or(ParseError::MissingItem)?;
                 let refs = item.references.entry(reference.kind).or_default();
@@ -285,8 +317,14 @@ impl<'a> Container<'a> {
             return Err(ParseError::InvalidField);
         }
         let count = r.number(if version < 2 { 2 } else { 4 })? as usize;
-        if count > 1000 {
-            return Err(ParseError::Limit);
+        if self.limits.max_items != 0 && count as u64 > u64::from(self.limits.max_items) {
+            return Err(ParseError::Security {
+                invalid: false,
+                message: format!(
+                    "iloc box contains {count} items, which exceeds the security limit of {} items.",
+                    self.limits.max_items
+                ),
+            });
         }
         for _ in 0..count {
             let id = r.id(version == 2)?;
@@ -296,8 +334,16 @@ impl<'a> Container<'a> {
             }
             let base = r.number(base_size)?;
             let count = r.number(2)? as usize;
-            if count > 32 {
-                return Err(ParseError::Limit);
+            if self.limits.max_iloc_extents_per_item != 0
+                && count as u64 > u64::from(self.limits.max_iloc_extents_per_item)
+            {
+                return Err(ParseError::Security {
+                    invalid: false,
+                    message: format!(
+                        "Number of extents in iloc box ({count}) exceeds security limit ({})\n",
+                        self.limits.max_iloc_extents_per_item
+                    ),
+                });
             }
             let item = self.items.get_mut(&id).ok_or(ParseError::MissingItem)?;
             for _ in 0..count {
@@ -324,8 +370,14 @@ impl<'a> Container<'a> {
             return Err(ParseError::Unsupported);
         }
         let count = r.number(4)? as usize;
-        if count > 1000 {
-            return Err(ParseError::Limit);
+        if self.limits.max_items != 0 && count as u64 > u64::from(self.limits.max_items) {
+            return Err(ParseError::Security {
+                invalid: true,
+                message: format!(
+                    "ipma box wants to define properties for {count} items, but the security limit has been set to {} items",
+                    self.limits.max_items
+                ),
+            });
         }
         for _ in 0..count {
             let id = r.id(version == 1)?;
@@ -392,27 +444,35 @@ impl<'a> Container<'a> {
     }
     pub fn payload(&self, id: u32) -> Result<Vec<u8>> {
         let item = self.items.get(&id).ok_or(ParseError::MissingItem)?;
-        let len = item.extents.iter().try_fold(0_usize, |sum, (_, r)| {
-            sum.checked_add(r.len()).ok_or(ParseError::Limit)
-        })?;
-        // Initial local cap; it is not yet the configurable libheif resource policy.
-        if len > 256 * 1024 * 1024 {
-            return Err(ParseError::Limit);
-        }
         let mut bytes = Vec::new();
-        bytes
-            .try_reserve_exact(len)
-            .map_err(|_| ParseError::Limit)?;
         for (idat, range) in &item.extents {
-            bytes.extend_from_slice(
-                if *idat {
-                    self.idat.ok_or(ParseError::MissingItem)?
-                } else {
-                    self.data
-                }
-                .get(range.clone())
-                .ok_or(ParseError::Truncated)?,
-            );
+            let limit = self.limits.max_memory_block_size;
+            let data = if *idat {
+                self.idat.ok_or(ParseError::MissingItem)?
+            } else {
+                self.data
+            };
+            // File extents check availability before their memory guard. The
+            // idat reader checks its budget before its source-range bounds.
+            if !idat && data.get(range.clone()).is_none() {
+                return Err(ParseError::Truncated);
+            }
+            if limit != 0 && (bytes.len() as u64).saturating_add(range.len() as u64) > limit {
+                return Err(ParseError::Security {
+                    invalid: false,
+                    message: format!(
+                        "{} box contained {} bytes, total memory size would be {} bytes, exceeding the security limit of {limit} bytes",
+                        if *idat { "idat" } else { "iloc" },
+                        range.len(),
+                        bytes.len() + range.len()
+                    ),
+                });
+            }
+            let slice = data.get(range.clone()).ok_or(ParseError::Truncated)?;
+            bytes
+                .try_reserve_exact(slice.len())
+                .map_err(|_| ParseError::Limit)?;
+            bytes.extend_from_slice(slice);
         }
         Ok(bytes)
     }
@@ -420,6 +480,10 @@ impl<'a> Container<'a> {
     /// Return parameter-set and picture NAL units for one direct HEVC item.
     /// Grids/transforms/auxiliary composition are separate operations, not silently ignored.
     pub fn hevc_nals(&self, id: u32) -> Result<Vec<Vec<u8>>> {
+        let payload = self.payload(id)?;
+        self.hevc_nals_from_payload(id, &payload)
+    }
+    pub fn hevc_nals_from_payload(&self, id: u32, payload: &[u8]) -> Result<Vec<Vec<u8>>> {
         if self.items.get(&id).ok_or(ParseError::MissingItem)?.kind != *b"hvc1" {
             return Err(ParseError::Unsupported);
         }
@@ -441,8 +505,7 @@ impl<'a> Container<'a> {
                 nals.push(config.take(size)?.to_vec());
             }
         }
-        let payload = self.payload(id)?;
-        let mut r = Reader(&payload);
+        let mut r = Reader(payload);
         while !r.0.is_empty() {
             let size = r.number(length_size)? as usize;
             if nals.len() >= 65536 {

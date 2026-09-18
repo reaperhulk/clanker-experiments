@@ -8,7 +8,7 @@ use crate::{
 use std::{
     collections::{BTreeMap, BTreeSet},
     ffi::CString,
-    sync::Arc,
+    sync::{Arc, RwLock},
 };
 
 #[derive(Clone, Debug)]
@@ -42,6 +42,18 @@ impl From<ParseError> for ContextError {
     fn from(e: ParseError) -> Self {
         match e {
             ParseError::Truncated => Self::truncated(),
+            ParseError::Security { invalid, message } => Self::new(
+                if invalid { 2 } else { 6 },
+                1000,
+                format!(
+                    "{}: Security limit exceeded: {message}",
+                    if invalid {
+                        "Invalid input"
+                    } else {
+                        "Memory allocation error"
+                    }
+                ),
+            ),
             ParseError::Limit => {
                 Self::new(6, 1000, "Memory allocation error: Security limit exceeded")
             }
@@ -132,9 +144,6 @@ fn body(data: &[u8], h: Header) -> Result<&[u8]> {
 fn children(mut data: &[u8]) -> Result<Vec<([u8; 4], &[u8])>> {
     let mut out = Vec::new();
     while !data.is_empty() {
-        if out.len() >= 1000 {
-            return Err(ParseError::Limit.into());
-        }
         let h = header(data)?;
         let b = body(data, h)?;
         out.push((h.kind, b));
@@ -162,6 +171,7 @@ fn has_images(boxes: &[([u8; 4], &[u8])]) -> bool {
 }
 fn validate_property(kind: [u8; 4], p: &[u8]) -> Result<()> {
     match &kind {
+        b"mskC" if p.len() < 5 => return Err(ContextError::truncated()),
         b"ispe" if p.len() < 12 => return Err(ContextError::truncated()),
         b"clap" => {
             crate::geometry::CleanAperture::parse(p)?;
@@ -195,9 +205,61 @@ fn validate_property(kind: [u8; 4], p: &[u8]) -> Result<()> {
     Ok(())
 }
 
+fn validate_limit_boxes(
+    mut data: &[u8],
+    parent: [u8; 4],
+    limits: &crate::security::Limits,
+) -> Result<()> {
+    let mut count = 0usize;
+    while !data.is_empty() {
+        let h = header(data)?;
+        let p = body(data, h)?;
+        match &h.kind {
+            b"iprp" | b"ipco" => validate_limit_boxes(p, h.kind, limits)?,
+            b"iinf" if p.len() >= 6 => {
+                let n = if p[0] == 0 {
+                    u32::from(u16::from_be_bytes([p[4], p[5]]))
+                } else if p.len() >= 8 {
+                    u32::from_be_bytes(p[4..8].try_into().unwrap())
+                } else {
+                    0
+                };
+                if limits.max_items != 0 && n > limits.max_items {
+                    return Err(ParseError::Security { invalid: false, message: format!("iinf box contains {n} items, which exceeds the security limit of {} items.", limits.max_items) }.into());
+                }
+            }
+            b"colr" if matches!(p.get(..4), Some(b"prof" | b"rICC")) => {
+                if limits.max_color_profile_size != 0
+                    && p.len() - 4 > limits.max_color_profile_size as usize
+                {
+                    return Err(ContextError::invalid(
+                        1000,
+                        "Security limit exceeded: Color profile exceeds maximum supported size",
+                    ));
+                }
+            }
+            _ => {}
+        }
+        if limits.max_children_per_box != 0 && count > limits.max_children_per_box as usize {
+            return Err(ParseError::Security {
+                invalid: false,
+                message: format!(
+                    "Maximum number of child boxes ({}) in '{}' box exceeded.",
+                    limits.max_children_per_box,
+                    String::from_utf8_lossy(&parent)
+                ),
+            }
+            .into());
+        }
+        count += 1;
+        data = &data[h.header + p.len()..];
+    }
+    Ok(())
+}
+
 /// Match the layout reader's lazy scanning: media boxes are skipped by size,
 /// and a partial trailing header is accepted once metadata has been read.
-fn metadata(data: &[u8]) -> Result<&[u8]> {
+fn metadata<'a>(data: &'a [u8], limits: &crate::security::Limits) -> Result<&'a [u8]> {
     if data.len() < 32 {
         return Err(ContextError::invalid(
             0,
@@ -230,7 +292,9 @@ fn metadata(data: &[u8]) -> Result<&[u8]> {
             "Invalid box size: ftyp box too small (less than 8 bytes)",
         ));
     }
-    if (ftyp.len() - 8) / 4 > 1000 {
+    if limits.max_number_of_file_brands != 0
+        && (ftyp.len() - 8) / 4 > limits.max_number_of_file_brands as usize
+    {
         return Err(ContextError::new(
             6,
             1000,
@@ -302,6 +366,7 @@ fn metadata(data: &[u8]) -> Result<&[u8]> {
     if meta.len() < 4 {
         return Err(ContextError::truncated());
     }
+    validate_limit_boxes(&meta[4..], *b"meta", limits)?;
     let boxes = children(&meta[4..])?;
     required(&boxes, *b"iinf", 111)?;
     if has_images(&boxes) {
@@ -317,13 +382,26 @@ fn metadata(data: &[u8]) -> Result<&[u8]> {
 }
 
 pub struct Metadata {
+    _reservation: crate::security::Reservation,
     pub id: u32,
     pub kind: CString,
     pub content_type: CString,
     pub uri_type: CString,
     pub data: Vec<u8>,
 }
+#[cfg(feature = "hevc")]
+pub(crate) struct DecoderInput {
+    pub data: Arc<Vec<u8>>,
+    pub _reservation: crate::security::Reservation,
+}
 pub struct ImageInfo {
+    pub(crate) decode_mutex: std::sync::Mutex<()>,
+    pub related_images: Vec<u32>,
+    #[cfg(feature = "hevc")]
+    pub(crate) decoder_input: std::sync::Mutex<Option<DecoderInput>>,
+    pub kind: [u8; 4],
+    pub grid: Option<crate::derived::Grid>,
+    pub overlay: Option<crate::overlay::Overlay>,
     pub id: u32,
     pub primary: bool,
     pub width: u32,
@@ -342,17 +420,89 @@ pub struct ImageInfo {
     pub error: Option<ContextError>,
 }
 pub struct Document {
+    pub budget: Arc<crate::security::Budget>,
+    read_limits: crate::security::Limits,
+    pub limits: Arc<RwLock<crate::security::Limits>>,
     pub input: Arc<dyn Input>,
-    pub images: BTreeMap<u32, ImageInfo>,
+    pub images: BTreeMap<u32, Arc<ImageInfo>>,
     pub primary: u32,
     pub top_level: Vec<u32>,
 }
 impl Document {
+    pub fn current_limits(&self) -> crate::security::Limits {
+        *self
+            .limits
+            .read()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+    }
+
+    /// Resolve descriptions at query time, including after a partial context reload.
+    pub fn first_coded_image(&self, mut id: u32) -> Result<&ImageInfo> {
+        let container = self.container()?;
+        let mut visited = BTreeSet::new();
+        loop {
+            if !visited.insert(id) {
+                return Err(ContextError::invalid(
+                    117,
+                    "Item has no data: Derived image references form a cycle",
+                ));
+            }
+            if let Some(item) = container.items.get(&id)
+                && matches!(&item.kind, b"grid" | b"iden" | b"iovl")
+            {
+                id = *item.references.get(b"dimg").and_then(|ids| ids.first()).ok_or_else(|| {
+                    ContextError::invalid(117, "Item has no data: Derived image does not reference any other image items")
+                })?;
+            } else {
+                return self.images.get(&id).map(AsRef::as_ref).ok_or_else(|| ContextError::invalid(
+                    2000, &format!("Non-existing item ID referenced: Image item {id} referenced, but it does not exist\n"),
+                ));
+            }
+        }
+    }
+
+    pub fn preferred_colorspace(&self, image: &ImageInfo) -> Result<(i32, i32)> {
+        let mut color = &image.color;
+        let coded = match &image.kind {
+            b"iovl" => return Ok((1, 3)),
+            b"iden" => {
+                let child = self.first_coded_image(image.id)?;
+                color = &child.color;
+                child
+            }
+            b"grid" => {
+                let child = self.first_coded_image(image.id)?;
+                if let Some(error) = &child.error {
+                    return Err(error.clone());
+                }
+                child
+            }
+            _ => image,
+        };
+        if coded.kind == *b"mski" || coded.error.is_some() {
+            return Err(ContextError::new(
+                4,
+                6003,
+                "Unsupported feature: Support for this compression format has not been built in: No decoder for this image format",
+            ));
+        }
+        Ok(
+            if coded.colorspace == 0 && color.nclx.is_some_and(|p| p.matrix == 0) {
+                (1, 3)
+            } else {
+                (coded.colorspace, coded.chroma)
+            },
+        )
+    }
+
     pub fn container(&self) -> Result<Container<'_>> {
-        Ok(Container::parse_meta(
+        let mut container = Container::parse_meta_with_limits(
             self.input.bytes(),
-            metadata(self.input.bytes())?,
-        )?)
+            metadata(self.input.bytes(), &self.read_limits)?,
+            self.read_limits,
+        )?;
+        container.limits = self.current_limits();
+        Ok(container)
     }
     pub fn parse(input: Arc<dyn Input>) -> Result<Self> {
         let mut context = Context::default();
@@ -374,11 +524,19 @@ impl Document {
                     | b"j2k1"
                     | b"vvc1"
                     | b"avc1"
+                    | b"mski"
             ) {
                 continue;
             }
             let ispe = container.dimensions(item.id).unwrap_or((0, 0));
             let mut image = ImageInfo {
+                decode_mutex: std::sync::Mutex::new(()),
+                related_images: Vec::new(),
+                #[cfg(feature = "hevc")]
+                decoder_input: std::sync::Mutex::new(None),
+                kind: item.kind,
+                grid: None,
+                overlay: None,
                 id: item.id,
                 primary: item.id == container.primary && !item.hidden,
                 width: 0,
@@ -408,8 +566,25 @@ impl Document {
                 } else {
                     image.error = Some(ContextError::invalid(106, "No 'hvcC' box"));
                 }
+            } else if item.kind == *b"mski" {
+                image.luma_bits = container
+                    .property(item.id, *b"mskC")
+                    .ok()
+                    .and_then(|p| p.get(4))
+                    .map_or(-1, |v| i32::from(*v));
+                image.chroma_bits = 0;
             } else if item.kind == *b"grid" {
-                image.error = crate::derived::Grid::load(container, item.id).err();
+                match crate::derived::Grid::load(container, item.id) {
+                    Ok(grid) => image.grid = Some(grid),
+                    Err(error) => image.error = Some(error),
+                }
+            } else if item.kind == *b"iovl" {
+                match crate::overlay::Overlay::load(container, item.id) {
+                    Ok(overlay) => image.overlay = Some(overlay),
+                    Err(error) => image.error = Some(error),
+                }
+                image.colorspace = 1;
+                image.chroma = 3;
             } else if item.kind == *b"iden" {
                 // Identity images are resolved when decoded or queried.
             } else {
@@ -421,7 +596,7 @@ impl Document {
                     "Unsupported feature: Unsupported image type",
                 ));
             }
-            images.insert(item.id, image);
+            images.insert(item.id, Arc::new(image));
             if !item.hidden {
                 self.top_level.push(item.id);
                 if item.id == container.primary {
@@ -436,7 +611,7 @@ impl Document {
             ));
         }
         for item in container.items.values() {
-            let Some(image) = images.get_mut(&item.id) else {
+            let Some(image) = images.get_mut(&item.id).and_then(Arc::get_mut) else {
                 continue;
             };
             if image.error.is_some() {
@@ -518,7 +693,7 @@ impl Document {
                 for target in targets {
                     if kind == b"thmb" {
                         thumbnails.insert(item.id);
-                        let Some(master) = images.get_mut(target) else {
+                        let Some(master) = images.get_mut(target).and_then(Arc::get_mut) else {
                             return Err(ContextError::invalid(
                                 2000,
                                 "Non-existing item ID referenced: Thumbnail references a non-existing image",
@@ -531,6 +706,7 @@ impl Document {
                             ));
                         }
                         master.thumbnails.push(item.id);
+                        master.related_images.push(item.id);
                         self.top_level.retain(|id| *id != item.id);
                     } else if kind == b"auxl" {
                         let p=container.property(item.id,*b"auxC").map_err(|_|ContextError::invalid(123,&format!("Type of auxiliary image unspecified: No auxC property for image {}",item.id)))?;
@@ -544,7 +720,7 @@ impl Document {
                                 | b"urn:mpeg:hevc:2015:auxid:1"
                                 | b"urn:mpeg:mpegB:cicp:systems:auxiliary:alpha"
                         ) {
-                            if let Some(master) = images.get_mut(target) {
+                            if let Some(master) = images.get_mut(target).and_then(Arc::get_mut) {
                                 if item.id == *target {
                                     return Err(ContextError::invalid(
                                         2000,
@@ -559,7 +735,8 @@ impl Document {
                                 ));
                             }
                         }
-                        if images.contains_key(target) {
+                        if let Some(master) = images.get_mut(target).and_then(Arc::get_mut) {
+                            master.related_images.push(item.id);
                             if item.id == *target {
                                 return Err(ContextError::invalid(
                                     2000,
@@ -582,7 +759,7 @@ impl Document {
         for item in container
             .items
             .values()
-            .filter(|i| matches!(&i.kind, b"grid" | b"iden"))
+            .filter(|i| matches!(&i.kind, b"grid" | b"iden" | b"iovl"))
         {
             let mut id = item.id;
             let mut visited = BTreeSet::new();
@@ -605,11 +782,13 @@ impl Document {
                 }
             };
             if let Some((l, c, cs, ch)) = description {
-                if let Some(i) = images.get_mut(&item.id) {
+                if let Some(i) = images.get_mut(&item.id).and_then(Arc::get_mut) {
                     i.luma_bits = l;
                     i.chroma_bits = c;
-                    i.colorspace = cs;
-                    i.chroma = ch;
+                    if item.kind != *b"iovl" {
+                        i.colorspace = cs;
+                        i.chroma = ch;
+                    }
                 }
             }
             if item.kind == *b"grid" {
@@ -626,7 +805,7 @@ impl Document {
                     r.iter()
                         .any(|id| images.get(id).is_some_and(|i| i.has_alpha))
                 });
-                if let Some(i) = images.get_mut(&item.id) {
+                if let Some(i) = images.get_mut(&item.id).and_then(Arc::get_mut) {
                     i.has_alpha |= alpha;
                     if let Some(color) = color {
                         if i.color.nclx.is_none() {
@@ -651,6 +830,9 @@ impl Document {
             } // compressed metadata remains an explicit coverage gap
             let data = container.payload(item.id)?;
             let metadata = Arc::new(Metadata {
+                _reservation: self
+                    .budget
+                    .reserve(data.len() as u64, "decompressed item metadata")?,
                 id: item.id,
                 kind: CString::new(item.kind.to_vec()).map_err(|_| ParseError::InvalidField)?,
                 content_type: CString::new(item.content_type.clone()).unwrap(),
@@ -658,7 +840,7 @@ impl Document {
                 data,
             });
             for target in &item.references[b"cdsc"] {
-                if let Some(image) = images.get_mut(target) {
+                if let Some(image) = images.get_mut(target).and_then(Arc::get_mut) {
                     image.metadata.push(metadata.clone());
                 } else if !container.items.contains_key(target) {
                     return Err(ContextError::invalid(
@@ -672,15 +854,20 @@ impl Document {
     }
 }
 pub struct Context {
+    pub budget: Arc<crate::security::Budget>,
+    pub limits: Arc<RwLock<crate::security::Limits>>,
     pub max_decoding_threads: i32,
     pub document: Option<Arc<Document>>,
     pub last_error: CString,
 }
 impl Default for Context {
     fn default() -> Self {
+        let limits = Arc::new(RwLock::new(crate::security::Limits::default()));
         Self {
+            budget: Arc::new(crate::security::Budget::new(limits.clone())),
             document: None,
             last_error: CString::default(),
+            limits,
             max_decoding_threads: 4,
         }
     }
@@ -689,10 +876,20 @@ impl Context {
     pub fn read(&mut self, input: Arc<dyn Input>) -> Result<()> {
         // File parsing failures preserve the previous image model. Once image
         // interpretation begins, even a failed load exposes its partial model.
-        let meta = metadata(input.bytes())?;
+        let read_limits = *self
+            .limits
+            .read()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let meta = metadata(input.bytes(), &read_limits)?;
         if !has_images(&children(&meta[4..])?) {
             if self.document.is_none() {
                 self.document = Some(Arc::new(Document {
+                    budget: self.budget.clone(),
+                    read_limits: *self
+                        .limits
+                        .read()
+                        .unwrap_or_else(std::sync::PoisonError::into_inner),
+                    limits: self.limits.clone(),
                     input,
                     images: BTreeMap::new(),
                     primary: 0,
@@ -701,13 +898,22 @@ impl Context {
             }
             return Ok(());
         }
-        let container = Container::parse_meta(input.bytes(), meta)?;
+        let container = Container::parse_meta_with_limits(input.bytes(), meta, read_limits)?;
         let mut document = Document {
+            budget: self.budget.clone(),
+            read_limits: *self
+                .limits
+                .read()
+                .unwrap_or_else(std::sync::PoisonError::into_inner),
+            limits: self.limits.clone(),
             input: input.clone(),
             images: BTreeMap::new(),
             primary: 0,
             top_level: Vec::new(),
         };
+        // Interpretation replaces the context's ownership immediately. Old
+        // handles retain only their own objects and referenced auxiliary images.
+        self.document = None;
         let outcome = document.interpret(&container);
         self.document = Some(Arc::new(document));
         outcome

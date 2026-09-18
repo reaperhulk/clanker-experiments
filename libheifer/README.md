@@ -55,6 +55,12 @@ python tools/test_transforms.py --reference-build .build/reference
 python tools/test_decode.py --reference-build .build/reference
 python tools/test_decode_geometry.py --reference-build .build/reference
 python tools/test_decode_derived.py --reference-build .build/reference
+python tools/test_decode_overlay.py --reference-build .build/reference
+python tools/test_decode_mask.py --reference-build .build/reference
+python tools/test_decode_graphs.py --reference-build .build/reference
+python tools/test_derived_handles.py --reference-build .build/reference
+python tools/test_security.py --reference-build .build/reference
+python tools/test_security_lifetimes.py --reference-build .build/reference
 python tools/test_warnings.py --reference-build .build/reference
 python tools/test_hevc.py --reference-build .build/reference --require-default-output
 python tools/test_mutations.py --reference-build .build/reference
@@ -66,13 +72,13 @@ It is never linked into libheifer. The Rust `hevc` feature enables direct-item
 HEVC decoding; the separate C ABI package enables it by default. The decoder is
 vendored with a documented VUI default-value fix, retaining its Apache-2.0 license.
 The C API also handles native alpha, rotation/mirroring, YCbCr/RGB conversion,
-8/16-bit RGB packing, image crop/scale, grid and identity derivations, decoding
+8/16-bit RGB packing, image crop/scale, grid, overlay and identity derivations, raw masks, decoding
 warnings, context thread controls and versioned decoding options.
 
 The current decode differential checks 23 modes on five fixtures, including all
 visible alpha samples, profiles and error outputs. Generated crop/scale cases
 cover odd sizes and 8/10/12/16-bit planes. These finite checks do not establish
-whole-library compatibility: overlays, complete derived-image and transform coverage, all conversion
+whole-library compatibility: complete derived-image and transform coverage, all conversion
 operators, codec conformance, resource budgets and other codecs remain unfinished.
 CI's final completion step remains red until the full contract is validated.
 
@@ -91,6 +97,8 @@ The context/handle subset supports copied and borrowed memory, direct HEVC item
 queries, metadata, thumbnails and color profiles. Its independent tests cover
 malformed properties, reload failures, output sentinels and handles that outlive
 the caller's context. Other image types, compressed metadata, file/reader callbacks,
-configurable resource budgets and full decoding orchestration remain unfinished.
+budgets for remaining formats and full decoding orchestration remain unfinished.
+Versioned security-limit APIs and safe plane allocation now track image/decoder/metadata
+memory, including old handles across context reloads.
 `--sanitize` instruments the C test clients, not the Rust or reference libraries;
 use `--no-leak-check` only where LeakSanitizer cannot run (for example under ptrace).
