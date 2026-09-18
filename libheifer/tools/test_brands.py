@@ -3,6 +3,7 @@
 import argparse
 import hashlib
 import json
+import os
 from pathlib import Path
 import random
 import struct
@@ -40,31 +41,47 @@ def corpus():
     return list(dict.fromkeys(cases))
 
 
-def main():
+def main(*, scope="version and brand APIs only; not whole-library compatibility", work="brands", seed="0x4e14f594"):
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--source", default="tests/upstream")
     p.add_argument("--reference-build", required=True)
     p.add_argument("--candidate", default="target/release/libheifer.so")
     p.add_argument("--output", default=".build/brands-report.json")
+    p.add_argument("--sanitize", action="store_true")
+    p.add_argument("--no-leak-check", action="store_true")
     args = p.parse_args()
-    build = Path(".build/brands").resolve()
+    if args.no_leak_check and not args.sanitize:
+        p.error("--no-leak-check requires --sanitize")
+    output = Path(args.output)
+    output.unlink(missing_ok=True)
+    build = Path(".build") / (work + ("-sanitized" if args.sanitize else ""))
+    build = build.resolve()
     build.mkdir(parents=True, exist_ok=True)
     source = Path(args.source).resolve()
     reference = Path(args.reference_build).resolve()
     include = build / "include/libheif"
     include.mkdir(parents=True, exist_ok=True)
     (include / "heif_version.h").write_bytes((reference / "libheif/heif_version.h").read_bytes())
-    compile_common = ["cc", "-O2", "-std=c11", "-Werror", "-Wno-deprecated-declarations", f"-I{source / 'libheif/api'}", f"-I{include.parent}", "tests/brands.c"]
+    client = Path("tests/brands.c")
+    client_hash = hashlib.sha256(client.read_bytes()).hexdigest()
+    compile_common = ["cc", "-O2", "-std=c11", "-Werror", "-Wno-deprecated-declarations", *(["-fsanitize=address,undefined", "-fno-omit-frame-pointer"] if args.sanitize else []), f"-I{source / 'libheif/api'}", f"-I{include.parent}", str(client)]
     libraries = {"reference": reference / "libheif/libheif.so", "candidate": Path(args.candidate).resolve()}
+    hashes = {name: hashlib.sha256(path.read_bytes()).hexdigest() for name, path in libraries.items()}
+    env = dict(os.environ)
+    if args.sanitize:
+        env["UBSAN_OPTIONS"] = "halt_on_error=1"
+    if args.no_leak_check:
+        env["ASAN_OPTIONS"] = "detect_leaks=0"
     cases = corpus()
     payload = b"".join(struct.pack("=I", len(data)) + data for data in cases)
     results = {}
     for name, library in libraries.items():
         binary = build / name
         subprocess.run(compile_common + [str(library), f"-Wl,-rpath,{library.parent}", "-o", str(binary)], check=True)
-        run = subprocess.run([str(binary)], input=payload, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=120, check=True)
-        if run.stderr:
-            (build / f"{name}.stderr").write_bytes(run.stderr)
+        run = subprocess.run([str(binary)], input=payload, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=120, env=env)
+        (build / f"{name}.stderr").write_bytes(run.stderr)
+        if run.returncode:
+            raise SystemExit(f"{name} exited {run.returncode}: {run.stderr.decode(errors='replace')[:3000]}")
         results[name] = run.stdout.splitlines()
         (build / f"{name}.txt").write_bytes(run.stdout)
         if len(results[name]) != len(cases) + 1:
@@ -73,9 +90,11 @@ def main():
     for index, (a, b) in enumerate(zip(results["reference"], results["candidate"], strict=True)):
         if a != b:
             mismatches.append({"case": index - 1, "input": cases[index - 1].hex() if index else "version", "reference": a.decode(), "candidate": b.decode()})
-    report = {"scope": "version and brand APIs only; not whole-library compatibility", "cases": len(cases), "seed": "0x4e14f594", "corpus_sha256": hashlib.sha256(payload).hexdigest(), "reference": "1.23.4", "reference_sha256": hashlib.sha256(libraries["reference"].read_bytes()).hexdigest(), "candidate_sha256": hashlib.sha256(libraries["candidate"].read_bytes()).hexdigest(), "mismatches": len(mismatches), "examples": mismatches[:20]}
-    Path(args.output).parent.mkdir(parents=True, exist_ok=True)
-    Path(args.output).write_text(json.dumps(report, indent=2) + "\n")
+    if hashes != {name: hashlib.sha256(path.read_bytes()).hexdigest() for name, path in libraries.items()} or client_hash != hashlib.sha256(client.read_bytes()).hexdigest():
+        raise SystemExit("Binaries/client changed during comparison")
+    report = {"scope": scope, "cases": len(cases), "seed": seed, "corpus_sha256": hashlib.sha256(payload).hexdigest(), "reference": "1.23.4", **{name + "_sha256": value for name, value in hashes.items()}, "client_sha256": client_hash, "client_sanitizers": args.sanitize, "leak_check": args.sanitize and not args.no_leak_check, "mismatches": len(mismatches), "examples": mismatches[:20]}
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(json.dumps(report, indent=2) + "\n")
     print(json.dumps({k: v for k, v in report.items() if k != "examples"}, indent=2))
     if mismatches:
         print(json.dumps(mismatches[:3], indent=2))

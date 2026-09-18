@@ -36,6 +36,7 @@ behavior gap is explicitly retained. There is no claim of a compatible library.
 | Check | Outcome | Scope/limits |
 |---|---|---|
 | Header inventory | 465 functions, 1 exported variable, 37 structs, 38 enums, 108 macros; hashes for 29 headers | Three unexported plugin convenience variables retained separately; C++ wrappers tracked by header hash |
+| First-box brand parsing | 93,398 cases, 0 mismatches | 26 types and camera UUIDs; three deliberate defects rejected (64,902 / 1,090 / 9 mismatches); C-client ASan/UBSan also passes |
 | Brand/version differential | 17,126 cases, 0 mismatches in this corpus | Original-header C clients in separate processes; header truncation, malformed lengths, extended sizes, duplicate brands, NULs, signatures, error messages, out-argument preservation |
 | Image differential | 6,553 transcripts, 0 mismatches | Color/chroma combinations, dimensions, bit-depth boundaries, alignment/stride, zeroed storage, duplicate planes, pointer identity, flags; excludes transforms and resource budgets |
 | Color/HDR differential | 198,932 transcripts, 0 mismatches | All uint16 NCLX setter inputs, all uint8 option-version pairs, all chromaticity coordinates, exact floating-point bits, ICC ownership, HDR boundaries and output sentinels; no image-handle APIs or color transforms |
@@ -77,9 +78,12 @@ behavior gap is explicitly retained. There is no claim of a compatible library.
 | Rust checks | Unit tests, ABI test, formatting and Clippy pass | Linux, macOS and Windows Rust build jobs passed for the grid/warning iteration; full sanitizer, fuzzing and cross-platform ABI validation remain open |
 | Completeness gate | **Fail**, as required | Missing API and unvalidated entries prevent a success claim |
 
-The separately retained `known-differences.json` records malformed non-ftyp box
-behavior that the broad brand corpus did not cover. This is not suppressed or
-treated as matching. The five HEIC fixtures are smoke coverage for direct items,
+The separately retained `known-differences.json` records the malformed non-ftyp
+regression now fixed by structural first-box parsing. The expanded suite compares
+93,398 inputs over 26 box types and camera UUID aliases, including nested optional
+errors, physical-stream versus parent boundaries, count/version validation and
+truncations. All match, including under C-client ASan/UBSan. Other box classes and
+allocation-failure behavior remain open. The five HEIC fixtures are smoke coverage for direct items,
 not HEVC conformance or full container compatibility. The resource-budget comparisons cover the implemented paths, but do not establish
 complete safe allocation behavior across hostile codec inputs or unimplemented formats.
 
@@ -261,3 +265,10 @@ The prior decoded-component CI at `e357110` passed all development steps, all
 28 mutations and Linux/macOS/Windows Rust builds. Only the full-completion gate
 failed (`results/ci-components-report.json`). Existing context (1,786), auxiliary
 (512) and C decode (115) regressions pass against the new handle candidate.
+
+The handle-component CI at `4c6e110` passed all development checks, all 32
+mutations and the three-platform Rust builds. Only full completion failed
+(`results/ci-component-handles-report.json`). The brand-box increment adds three
+mutation checks for error classification, optional children and parent boundaries.
+The default set now contains 35 defects. The original 17,126-case brand corpus
+also passes against the same candidate.

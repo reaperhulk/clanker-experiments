@@ -46,6 +46,7 @@ cargo test --workspace --all-features
 cargo build --release -p libheifer-capi
 cargo build --release --features hevc --example hevc_probe
 python tools/test_brands.py --reference-build .build/reference
+python tools/test_brand_boxes.py --reference-build .build/reference
 python tools/test_images.py --reference-build .build/reference
 python tools/test_color.py --reference-build .build/reference
 python tools/test_context.py --reference-build .build/reference

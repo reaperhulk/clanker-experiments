@@ -374,11 +374,12 @@
     ]
   },
   "heif_has_compatible_brand": {
-    "notes": "Differential corpus passes; exhaustive malformed non-ftyp box behavior still depends on the full container parser.",
+    "notes": "Brand and 93,398 first-box transcripts pass, including 26 box types, camera UUID aliases and nested error precedence. The remaining box factory and allocation-failure behavior remain open.",
     "status": "partial",
     "tests": [
       "tests/brands.c",
-      "tools/test_brands.py"
+      "tools/test_brands.py",
+      "tools/test_brand_boxes.py"
     ]
   },
   "heif_has_compatible_filetype": {

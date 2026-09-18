@@ -186,32 +186,11 @@ pub fn has_compatible_brand(data: &[u8], brand: [u8; 4]) -> i32 {
     // Unlike list_compatible_brands, this entry point asks Box::read to read
     // *any* box before testing whether it was ftyp. Preserve that error order.
     if data.len() >= 8 && &data[4..8] != b"ftyp" {
-        let short = u32::from_be_bytes(data[..4].try_into().unwrap());
-        let (size, mut header) = if short == 1 {
-            if data.len() < 16 {
-                return -1;
-            }
-            let size = u64::from_be_bytes(data[8..16].try_into().unwrap());
-            if size > 0x0fff_ffff_ffff_ffff {
-                return -2;
-            }
-            (size, 16)
+        return if crate::box_probe::first_box_truncated(data) {
+            -1
         } else {
-            (u64::from(short), 8)
+            -2
         };
-        if &data[4..8] == b"uuid" {
-            header += 16;
-            if data.len() < header {
-                return -1;
-            }
-        }
-        if size != 0 && size < header as u64 {
-            return -2;
-        }
-        if size > data.len() as u64 {
-            return -1;
-        }
-        return -2;
     }
     match CompatibleBrands::parse(data) {
         Ok(brands) => i32::from(brands.contains(fourcc(brand))),

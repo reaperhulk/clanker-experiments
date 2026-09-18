@@ -47,6 +47,8 @@ jobs:
       - run: cargo build --locked --release -p libheifer-capi
       - run: cargo build --locked --release --features hevc --example hevc_probe
       - run: python tools/test_brands.py --reference-build .build/reference
+      - run: python tools/test_brand_boxes.py --reference-build .build/reference
+      - run: python tools/test_brand_boxes.py --reference-build .build/reference --sanitize --output .build/brand-boxes-sanitized-report.json
       - run: python tools/test_images.py --reference-build .build/reference
       - run: python tools/test_color.py --reference-build .build/reference
       - run: python tools/test_context.py --reference-build .build/reference

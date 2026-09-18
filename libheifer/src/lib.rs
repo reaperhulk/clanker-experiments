@@ -3,6 +3,7 @@
 #![forbid(unsafe_code)]
 
 pub mod auxiliary;
+mod box_probe;
 pub mod brands;
 pub mod camera;
 pub mod color;

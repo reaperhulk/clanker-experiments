@@ -22,7 +22,13 @@ The current implementation includes:
 - Versioned security limits, allocation accounting and ownership across reloads,
   malformed SPS rejection, and image-owned error-message buffers.
 
-Recent validation adds 791 handle/decoded-component transcripts, covering
+Recent validation fixes the recorded malformed-brand mismatch, with 93,398
+first-box transcripts covering nested errors, optional children, counts,
+versions and parent/stream boundaries across 26 box types and camera UUIDs.
+Other box classes remain open. The suite also
+passes C-client ASan/UBSan. Three new mutations bring the default set to 35.
+
+The preceding increment adds 791 handle/decoded-component transcripts, covering
 HEVC and JPEG header descriptions, item parse order, derived alpha bit depths,
 component IDs after decoding/conversion, and retained descriptions after context
 reload/free. Five HEVC fixtures and generated mask/derived files are included.
@@ -31,7 +37,7 @@ The preceding component suite compares 67,329 transcripts and seventeen public
 struct layouts match the original headers on Linux x86_64. All 39 component
 export names are present; remaining codec paths and serialized content IDs
 still prevent full compatibility. Four new deliberate defects are rejected;
-the default mutation set now contains 32 defects.
+that increment brought the mutation set to 32 defects.
 
 These tests supplement the existing brand, image, color, context, decode,
 geometry, derived-image, auxiliary, error-lifetime and security suites. Exact
@@ -39,8 +45,8 @@ binary/client/corpus hashes and per-case evidence are in `docs/results/`;
 `docs/RESULTS.md` records the scope and known gaps. Local sanitizer coverage is
 limited to C clients, with leak checking disabled where ptrace prevents it.
 
-The preceding component commit (`e357110`) passed all development CI steps,
-all 28 then-present mutation tests and Rust builds on Linux, macOS and Windows.
+The preceding handle-component commit (`4c6e110`) passed all development CI steps,
+all 32 then-present mutation tests and Rust builds on Linux, macOS and Windows.
 Only the full-API completion gate failed. Cross-platform ABI, fuzzing, full codec
 conformance, remaining APIs and whole-library memory-safety validation remain open.
 

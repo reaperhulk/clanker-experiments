@@ -189,7 +189,7 @@ fn has_images(boxes: &[([u8; 4], &[u8])]) -> bool {
         .find(|(k, _)| k == b"hdlr")
         .is_some_and(|(_, b)| b.get(8..12) == Some(b"pict"))
 }
-fn validate_property(kind: [u8; 4], p: &[u8]) -> Result<()> {
+pub(crate) fn validate_property(kind: [u8; 4], p: &[u8]) -> Result<()> {
     match &kind {
         b"auxC" => {
             if p.len() < 4 {

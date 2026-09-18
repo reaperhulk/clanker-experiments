@@ -3,10 +3,12 @@
     "entrypoint": "heif_has_compatible_brand",
     "input_hex": "000000086d657461",
     "brand": "avif",
+    "status": "resolved-in-brand-boxes-increment",
     "results": {
       "reference": -1,
-      "candidate": -2
+      "candidate_before": -2,
+      "candidate_after": -1
     },
-    "explanation": "Upstream parses the malformed non-ftyp meta box before checking its type; candidate only validates the outer header. Full box-specific malformed-input behavior is incomplete."
+    "explanation": "Resolved by parsing supported non-ftyp box bodies before checking the type. The original input is retained in the 93,398-case first-box suite. Remaining box-factory classes still need implementation; this does not establish exhaustive brand-probe parity."
   }
 ]
