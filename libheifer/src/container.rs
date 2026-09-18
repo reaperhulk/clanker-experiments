@@ -13,6 +13,8 @@ pub enum ParseError {
     Unsupported,
     MissingItem,
     MissingProperty,
+    EmptyReferences,
+    DoubleReferences,
 }
 impl std::fmt::Display for ParseError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -116,6 +118,7 @@ pub struct Container<'a> {
     data: &'a [u8],
     idat: Option<&'a [u8]>,
     pub primary: u32,
+    pub has_references: bool,
     pub items: BTreeMap<u32, Item>,
     properties: Vec<BoxView<'a>>,
 }
@@ -156,6 +159,7 @@ impl<'a> Container<'a> {
             data,
             idat: children.iter().find(|b| b.kind == *b"idat").map(|b| b.data),
             primary: primary.id(version == 1)?,
+            has_references: children.iter().any(|b| b.kind == *b"iref"),
             items: BTreeMap::new(),
             properties: Vec::new(),
         };
@@ -243,13 +247,21 @@ impl<'a> Container<'a> {
                 let mut r = Reader(reference.data);
                 let from = r.id(version == 1)?;
                 let count = r.number(2)? as usize;
+                if count == 0 {
+                    return Err(ParseError::EmptyReferences);
+                }
                 if count > 1000 {
                     return Err(ParseError::Limit);
                 }
                 let item = result.items.get_mut(&from).ok_or(ParseError::MissingItem)?;
                 let refs = item.references.entry(reference.kind).or_default();
+                let mut targets = std::collections::BTreeSet::new();
                 for _ in 0..count {
-                    refs.push(r.id(version == 1)?);
+                    let target = r.id(version == 1)?;
+                    if !targets.insert(target) {
+                        return Err(ParseError::DoubleReferences);
+                    }
+                    refs.push(target);
                 }
             }
         }

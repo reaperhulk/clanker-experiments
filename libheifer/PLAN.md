@@ -111,7 +111,8 @@ adds 28 color/HDR functions. The context/handle iteration adds 38 functions,
 including ownership/reload behavior, metadata, thumbnail and color queries.
 The decoding iteration adds six exports for C decoding/options and crop/scale,
 with ordered color conversion, alpha attachment, transforms and 16-bit packing.
-All 109 remain partial, with 356 functions missing. Compatibility work comes first;
+The derived-image iteration adds grids/identity, cycle/MIAF checks, scoped tile
+workers and four warning/thread-control exports. All 113 remain partial, with 352 functions missing. Compatibility work comes first;
 performance optimization is deferred until the complete compatibility gate passes.
 The full header contract, finite behavioral reports, known differences and
 performance evidence are retained in `compat/` and `docs/results/`.

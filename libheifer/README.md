@@ -54,6 +54,8 @@ python tools/test_decoding_options.py --reference-build .build/reference
 python tools/test_transforms.py --reference-build .build/reference
 python tools/test_decode.py --reference-build .build/reference
 python tools/test_decode_geometry.py --reference-build .build/reference
+python tools/test_decode_derived.py --reference-build .build/reference
+python tools/test_warnings.py --reference-build .build/reference
 python tools/test_hevc.py --reference-build .build/reference --require-default-output
 python tools/test_mutations.py --reference-build .build/reference
 python tools/check_coverage.py --reference .build/reference/libheif/libheif.so
@@ -64,12 +66,13 @@ It is never linked into libheifer. The Rust `hevc` feature enables direct-item
 HEVC decoding; the separate C ABI package enables it by default. The decoder is
 vendored with a documented VUI default-value fix, retaining its Apache-2.0 license.
 The C API also handles native alpha, rotation/mirroring, YCbCr/RGB conversion,
-8/16-bit RGB packing, image crop/scale and versioned decoding options.
+8/16-bit RGB packing, image crop/scale, grid and identity derivations, decoding
+warnings, context thread controls and versioned decoding options.
 
 The current decode differential checks 23 modes on five fixtures, including all
 visible alpha samples, profiles and error outputs. Generated crop/scale cases
 cover odd sizes and 8/10/12/16-bit planes. These finite checks do not establish
-whole-library compatibility: grids/overlays, complete transform coverage, all conversion
+whole-library compatibility: overlays, complete derived-image and transform coverage, all conversion
 operators, codec conformance, resource budgets and other codecs remain unfinished.
 CI's final completion step remains red until the full contract is validated.
 

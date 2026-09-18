@@ -13,7 +13,7 @@
     {
       "name": "rusty_h265",
       "version": "0.6.0",
-      "source": "registry+https://github.com/rust-lang/crates.io-index"
+      "source": null
     },
     {
       "name": "rusty_h265-accel",

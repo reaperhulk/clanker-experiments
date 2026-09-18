@@ -244,3 +244,51 @@ pub unsafe extern "C" fn heif_image_scale_image(
         Err(e) => e.into(),
     }
 }
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn heif_image_add_decoding_warning(image: *mut Image, error: HeifError) {
+    if let Some(image) = unsafe { image.as_mut() } {
+        image.warnings.push(
+            libheifer::context::ContextError::new(
+                error.code,
+                error.subcode,
+                libheifer::error_text::message(error.code, error.subcode),
+            )
+            .into(),
+        );
+    }
+}
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn heif_image_get_decoding_warnings(
+    image: *mut Image,
+    first: c_int,
+    output: *mut HeifError,
+    capacity: c_int,
+) -> c_int {
+    let Some(image) = (unsafe { image.as_ref() }) else {
+        return 0;
+    };
+    if capacity == 0 {
+        return image.warnings.len() as c_int;
+    }
+    if capacity < 0 || first < 0 || output.is_null() {
+        return 0;
+    }
+    let mut count = 0;
+    for warning in image
+        .warnings
+        .iter()
+        .skip(first as usize)
+        .take(capacity as usize)
+    {
+        unsafe {
+            output.add(count).write(HeifError {
+                code: warning.code,
+                subcode: warning.subcode,
+                message: warning.message.as_ptr(),
+            });
+        }
+        count += 1;
+    }
+    count as c_int
+}

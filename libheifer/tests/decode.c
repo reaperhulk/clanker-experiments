@@ -4,19 +4,30 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <threads.h>
 static FILE* output;
-static unsigned starts,progresses,ends,cancels;
-static void start(heif_progress_step step,int n,void* p){(void)step;(void)n;(void)p;starts++;}
-static void progress(heif_progress_step step,int n,void* p){(void)step;(void)n;(void)p;progresses++;}
-static void end(heif_progress_step step,void* p){(void)step;(void)p;ends++;}
-static int cancel(void* p){(void)p;cancels++;return 1;}
+static unsigned starts,progresses,ends,cancels,event_count;
+static uint32_t events[8192][4];
+static thrd_t caller_thread;
+static unsigned callback_cookie;
+static void event(uint32_t kind,int step,int value,void* p){
+  if(p!=&callback_cookie || event_count>=8192)abort();
+  events[event_count][0]=kind;events[event_count][1]=(uint32_t)step;events[event_count][2]=(uint32_t)value;events[event_count++][3]=!thrd_equal(caller_thread,thrd_current());
+}
+static void start(heif_progress_step step,int n,void* p){event(0,step,n,p);starts++;}
+static void progress(heif_progress_step step,int n,void* p){event(1,step,n,p);progresses++;}
+static void end(heif_progress_step step,void* p){event(2,step,0,p);ends++;}
+/* Cancellation checks and worker progress may interleave upstream. Record the
+   deterministic progress sequence separately from the cancel-check count. */
+static int cancel(void* p){if(p!=&callback_cookie)abort();cancels++;return 1;}
 static void number(uint32_t n){for(int i=0;i<4;i++){fputc(n&255,output);n>>=8;}}
 static void error(heif_error e){number(e.code);number(e.subcode);size_t n=e.message?strlen(e.message):0;number(n);if(n)fwrite(e.message,1,n,output);}
 static void decode(const heif_image_handle* handle,int mode){
+  caller_thread=thrd_current();
   heif_decoding_options* options=heif_decoding_options_alloc();
   options->output_image_nclx_profile_passthrough=mode!=0;
   options->ignore_transformations=mode==1;
-  options->start_progress=start;options->on_progress=progress;options->end_progress=end;
+  options->start_progress=start;options->on_progress=progress;options->end_progress=end;options->progress_user_data=&callback_cookie;
   if(mode==9)options->cancel_decoding=cancel;
   if(mode==10)options->decoder_id="unavailable-decoder";
   if(mode==11)options->strict_decoding=1;
@@ -39,11 +50,14 @@ static void decode(const heif_image_handle* handle,int mode){
     if(mode>=21){cs=heif_colorspace_RGB;ch=heif_chroma_interleaved_RGB;}
   }
   heif_image* image=(void*)(uintptr_t)0x1234;
-  starts=progresses=ends=cancels=0;
+  starts=progresses=ends=cancels=event_count=0;
   heif_error e=heif_decode_image(handle,&image,cs,ch,options);error(e);
   number(image==NULL);number(image==(void*)(uintptr_t)0x1234);
   number(starts);number(progresses);number(ends);number(cancels);
+  number(event_count);for(unsigned i=0;i<event_count;i++)for(unsigned j=0;j<4;j++)number(events[i][j]);
   if(!e.code){
+    int warning_count=heif_image_get_decoding_warnings(image,0,NULL,0);number(warning_count);
+    for(int i=0;i<warning_count;i++){heif_error w;number(heif_image_get_decoding_warnings(image,i,&w,1));error(w);}
     number(heif_image_get_primary_width(image));number(heif_image_get_primary_height(image));
     number(heif_image_get_colorspace(image));number(heif_image_get_chroma_format(image));
     number(heif_image_is_premultiplied_alpha(image));
@@ -71,7 +85,10 @@ int main(int argc,char** argv){
   if(fseek(input,0,SEEK_END))return 3;long size=ftell(input);rewind(input);if(size<0)return 4;
   void* bytes=malloc((size_t)size+1);if(fread(bytes,1,size,input)!=(size_t)size)return 5;fclose(input);
   output=fopen(argv[2],"wb");if(!output)return 6;
-  heif_context* ctx=heif_context_alloc();heif_error e=heif_context_read_from_memory(ctx,bytes,size,NULL);free(bytes);error(e);
+  heif_context* ctx=heif_context_alloc();/* Mixed failing tiles return whichever warning wins the worker race. Use one
+     worker for exact decoder-error ordering; other modes retain four workers. */
+  if(mode==10)heif_context_set_max_decoding_threads(ctx,1);
+  if(mode==23 || mode==24)heif_context_set_max_decoding_threads(ctx,mode==23?0:-1);heif_error e=heif_context_read_from_memory(ctx,bytes,size,NULL);free(bytes);error(e);
   if(!e.code){uint32_t ids[100];int count=heif_context_get_list_of_top_level_image_IDs(ctx,ids,100);number(count);
     for(int i=0;i<count;i++){number(ids[i]);heif_image_handle* h=NULL;e=heif_context_get_image_handle(ctx,ids[i],&h);error(e);if(!e.code){decode(h,mode);heif_image_handle_release(h);}}
   }

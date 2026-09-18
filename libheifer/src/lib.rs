@@ -9,7 +9,9 @@ pub mod context;
 pub mod conversion;
 #[cfg(feature = "hevc")]
 pub mod decoding;
+pub mod derived;
 pub mod error;
+pub mod error_text;
 pub mod geometry;
 #[cfg(feature = "hevc")]
 pub mod hevc;

@@ -158,20 +158,15 @@ pub unsafe extern "C" fn heif_decode_image(
     unsafe {
         heif_decoding_options_copy(&mut options, input_options);
     }
-    if !options.decoder_id.is_null()
-        && unsafe { std::ffi::CStr::from_ptr(options.decoder_id) }.to_bytes() != b"rusty_h265"
-    {
-        return Error::new(
-            11,
-            0,
-            c"Error while loading plugin: Unspecified: No decoder with that ID found.",
-        )
-        .into();
-    }
-    let document = super::context::lock(&handle.shared).document.clone();
+    let (document, max_decoding_threads) = {
+        let context = super::context::lock(&handle.shared);
+        (context.document.clone(), context.max_decoding_threads)
+    };
     let Some(document) = document else {
         return Error::new(2, 2000, c"Invalid input: Non-existing item ID referenced").into();
     };
+    #[cfg(feature = "hevc")]
+    let callbacks = Callbacks(&options);
     let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         #[cfg(feature = "hevc")]
         {
@@ -190,6 +185,13 @@ pub unsafe extern "C" fn heif_decode_image(
                 colorspace,
                 chroma,
                 libheifer::decoding::DecodeOptions {
+                    callbacks: Some(&callbacks),
+                    max_decoding_threads,
+                    decoder_id: if options.decoder_id.is_null() {
+                        None
+                    } else {
+                        Some(unsafe { std::ffi::CStr::from_ptr(options.decoder_id) }.to_bytes())
+                    },
                     ignore_transformations: options.ignore_transformations != 0,
                     strict: options.strict_decoding != 0,
                     output_nclx,
@@ -201,7 +203,7 @@ pub unsafe extern "C" fn heif_decode_image(
         }
         #[cfg(not(feature = "hevc"))]
         {
-            let _ = (&document, colorspace, chroma);
+            let _ = (&document, colorspace, chroma, max_decoding_threads);
             Err::<libheifer::image::Image, _>(ContextError::new(
                 4,
                 3000,
@@ -230,4 +232,59 @@ pub unsafe extern "C" fn heif_decode_image(
             ),
         ),
     }
+}
+
+#[cfg(feature = "hevc")]
+struct Callbacks<'a>(&'a DecodingOptions);
+// SAFETY: libheif progress callbacks can run on decoding workers. The caller's
+// C contract keeps options and callback userdata alive and synchronized through
+// heif_decode_image; scoped workers join before returning to that caller.
+#[cfg(feature = "hevc")]
+unsafe impl Sync for Callbacks<'_> {}
+#[cfg(feature = "hevc")]
+impl libheifer::decoding::DecodeCallbacks for Callbacks<'_> {
+    fn start(&self, step: i32, maximum: i32) {
+        if let Some(f) = self.0.start_progress {
+            unsafe {
+                f(step, maximum, self.0.progress_user_data);
+            }
+        }
+    }
+    fn progress(&self, step: i32, value: i32) {
+        if let Some(f) = self.0.on_progress {
+            unsafe {
+                f(step, value, self.0.progress_user_data);
+            }
+        }
+    }
+    fn end(&self, step: i32) {
+        if let Some(f) = self.0.end_progress {
+            unsafe {
+                f(step, self.0.progress_user_data);
+            }
+        }
+    }
+    fn canceled(&self) -> bool {
+        self.0
+            .cancel_decoding
+            .is_some_and(|f| unsafe { f(self.0.progress_user_data) != 0 })
+    }
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn heif_context_set_max_decoding_threads(
+    context: *mut super::context::HeifContext,
+    threads: c_int,
+) {
+    if let Some(context) = unsafe { context.as_ref() } {
+        super::context::lock(&context.shared).max_decoding_threads = threads;
+    }
+}
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn heif_context_get_max_decoding_threads(
+    context: *const super::context::HeifContext,
+) -> c_int {
+    unsafe { context.as_ref() }.map_or(4, |context| {
+        super::context::lock(&context.shared).max_decoding_threads
+    })
 }

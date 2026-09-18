@@ -461,6 +461,7 @@ pub fn convert(
             node.state,
             node.op.unwrap(),
         )?;
+        out.warnings = image.warnings.clone();
         out.color = image.color.try_clone()?;
         out.color.nclx = Some(node.state.nclx);
         out.pixel_aspect_ratio = image.pixel_aspect_ratio;

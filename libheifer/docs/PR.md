@@ -4,7 +4,7 @@ This starts a pure Rust libheif replacement with an optional compatible C ABI.
 The reference contract is libheif 1.23.4. Native code is used only by independent
 test oracles; the candidate's resolved implementation dependencies are Rust.
 
-The PR is **not complete** and must remain draft. It implements 109 of 465
+The PR is **not complete** and must remain draft. It implements 113 of 465
 functions, plus the public success object. The strict completion check fails on
 missing and unvalidated APIs. Unsupported-operation stubs and libheif forwarding
 are not used to inflate coverage.
@@ -17,9 +17,11 @@ Changes:
   independently linked reference/candidate processes, including errors and outputs.
 - Add pure Rust direct-item HEVC C decoding, alpha attachment, ordered YCbCr/RGB
   conversion and packing, crop/scale, and versioned decoding options.
+- Add grid/identity decoding, cycle and MIAF validation, scoped tile workers,
+  callback thread/argument checks, warning APIs and context thread controls.
 - Add context/handle ownership, reload state, metadata, thumbnails and color queries.
-- Validate nine public struct layouts and reject seven deliberately mutated
-  implementations (enums, errors, pixels, coordinates, item IDs, reload state and field order).
+- Validate nine public struct layouts and reject nine deliberately mutated
+  implementations (enums, errors, pixels, coordinates, item IDs, reload state, worker callbacks, warning text and field order).
 - Add dependency auditing, ABI checks, CI development checks, and an intentionally
   failing full-completion gate.
 - Record raw interleaved performance samples and a codec stage profile.
@@ -33,7 +35,10 @@ checking was disabled because LeakSanitizer cannot run under ptrace).
 alpha, default conversion, explicit profiles and 16-bit byte order. 65,549 decoding
 option cases and 12,240 crop/scale cases match. Another 688 geometry/monochrome
 HEVC cases check transform order, fractions, conformance-window cropping and alpha. Short option allocations also pass
-C-client ASan/UBSan. A malformed-box brand mismatch remains recorded. Unit/ABI tests, formatting
+C-client ASan/UBSan. Another 640 grid/identity and 1,249 warning/thread-control
+cases match; callback values and worker placement are checked. Unknown-decoder
+error-order cases use one worker because upstream races can select different
+errors. A malformed-box brand mismatch remains recorded. Unit/ABI tests, formatting
 and Clippy pass on Linux x86_64. The color/HDR CI run passed Rust builds on Linux,
 macOS and Windows and all Linux development checks, including mutation tests; its sole failing step was
 the strict full-API gate. Cross-platform ABI, fuzzing and memory-safety validation

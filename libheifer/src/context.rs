@@ -48,6 +48,13 @@ impl From<ParseError> for ContextError {
             ParseError::Unsupported => {
                 Self::new(4, 3000, "Unsupported feature: Unsupported data version")
             }
+            ParseError::EmptyReferences => Self::invalid(
+                0,
+                "Unspecified: Input file has an 'iref' box with no references.",
+            ),
+            ParseError::DoubleReferences => {
+                Self::invalid(0, "Unspecified: 'iref' has double references")
+            }
             ParseError::InvalidSize => Self::invalid(101, "Invalid box size"),
             _ => Self::invalid(0, "Unspecified"),
         }
@@ -401,6 +408,10 @@ impl Document {
                 } else {
                     image.error = Some(ContextError::invalid(106, "No 'hvcC' box"));
                 }
+            } else if item.kind == *b"grid" {
+                image.error = crate::derived::Grid::load(container, item.id).err();
+            } else if item.kind == *b"iden" {
+                // Identity images are resolved when decoded or queried.
             } else {
                 // The file and its image ID are still visible, but this initial
                 // implementation cannot yet construct other codec/derived handles.
@@ -566,6 +577,68 @@ impl Document {
                 }
             }
         }
+        // Derived descriptions follow the first coded descendant; cycles and
+        // unavailable children retain the reference's unknown-query values.
+        for item in container
+            .items
+            .values()
+            .filter(|i| matches!(&i.kind, b"grid" | b"iden"))
+        {
+            let mut id = item.id;
+            let mut visited = BTreeSet::new();
+            let description = loop {
+                if !visited.insert(id) {
+                    break None;
+                }
+                let Some(child) = container.items.get(&id) else {
+                    break None;
+                };
+                if matches!(&child.kind, b"grid" | b"iden" | b"iovl") {
+                    let Some(next) = child.references.get(b"dimg").and_then(|r| r.first()) else {
+                        break None;
+                    };
+                    id = *next;
+                } else {
+                    break images
+                        .get(&id)
+                        .map(|i| (i.luma_bits, i.chroma_bits, i.colorspace, i.chroma));
+                }
+            };
+            if let Some((l, c, cs, ch)) = description {
+                if let Some(i) = images.get_mut(&item.id) {
+                    i.luma_bits = l;
+                    i.chroma_bits = c;
+                    i.colorspace = cs;
+                    i.chroma = ch;
+                }
+            }
+            if item.kind == *b"grid" {
+                let child = item
+                    .references
+                    .get(b"dimg")
+                    .and_then(|r| r.first())
+                    .and_then(|id| images.get(id));
+                let color = child
+                    .map(|i| i.color.try_clone())
+                    .transpose()
+                    .map_err(|_| ParseError::Limit)?;
+                let alpha = item.references.get(b"dimg").is_some_and(|r| {
+                    r.iter()
+                        .any(|id| images.get(id).is_some_and(|i| i.has_alpha))
+                });
+                if let Some(i) = images.get_mut(&item.id) {
+                    i.has_alpha |= alpha;
+                    if let Some(color) = color {
+                        if i.color.nclx.is_none() {
+                            i.color.nclx = color.nclx;
+                        }
+                        if i.color.raw.is_none() {
+                            i.color.raw = color.raw;
+                        }
+                    }
+                }
+            }
+        }
         for item in container.items.values() {
             if images.contains_key(&item.id)
                 || item.kind == *b"rgan"
@@ -598,10 +671,19 @@ impl Document {
         Ok(())
     }
 }
-#[derive(Default)]
 pub struct Context {
+    pub max_decoding_threads: i32,
     pub document: Option<Arc<Document>>,
     pub last_error: CString,
+}
+impl Default for Context {
+    fn default() -> Self {
+        Self {
+            document: None,
+            last_error: CString::default(),
+            max_decoding_threads: 4,
+        }
+    }
 }
 impl Context {
     pub fn read(&mut self, input: Arc<dyn Input>) -> Result<()> {

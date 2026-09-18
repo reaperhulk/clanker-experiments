@@ -13,17 +13,20 @@ def main():
     p.add_argument('--reference-build', required=True)
     p.add_argument('--source', default='tests/upstream')
     p.add_argument('--candidate', default='target/release/libheifer.so')
+    p.add_argument('--work', default='.build/decode')
     p.add_argument('--output', default='.build/decode-report.json')
     p.add_argument('--modes', default=','.join(map(str, range(23))))
     args = p.parse_args()
     Path(args.output).unlink(missing_ok=True)
     source = Path(args.source).resolve()
     reference = Path(args.reference_build).resolve()
-    work = Path('.build/decode').resolve()
+    work = Path(args.work).resolve()
     include = work / 'include/libheif'
     include.mkdir(parents=True, exist_ok=True)
     (include/'heif_version.h').write_bytes((reference/'libheif/heif_version.h').read_bytes())
     libraries = {'reference': reference/'libheif/libheif.so', 'candidate': Path(args.candidate).resolve()}
+    binary_hashes={name:hashlib.sha256(path.read_bytes()).hexdigest() for name,path in libraries.items()}
+    client_hash=hashlib.sha256(Path('tests/decode.c').read_bytes()).hexdigest()
     for name, library in libraries.items():
         subprocess.run(['cc','-std=c11','-O2','-Werror',f'-I{source/"libheif/api"}',f'-I{include.parent}',
                         'tests/decode.c',str(library),f'-Wl,-rpath,{library.parent}','-o',str(work/name)],check=True)
@@ -44,9 +47,11 @@ def main():
                 record.update(offset=at,reference=data['reference'][max(0,at-16):at+80].hex(),candidate=data['candidate'][max(0,at-16):at+80].hex())
             results.append(record)
             print(f'{fixture} mode={mode}: {"match" if match else "DIFFERENT"}',flush=True)
+    if binary_hashes != {name:hashlib.sha256(path.read_bytes()).hexdigest() for name,path in libraries.items()} or client_hash != hashlib.sha256(Path('tests/decode.c').read_bytes()).hexdigest():
+        raise SystemExit('Decode binaries or client changed during comparison; no report accepted')
     report={'scope':__doc__,'cases':len(results),'mismatches':sum(not r['match'] for r in results),
-            'client_sha256':hashlib.sha256(Path('tests/decode.c').read_bytes()).hexdigest(),
-            **{name+'_sha256':hashlib.sha256(path.read_bytes()).hexdigest() for name,path in libraries.items()},'results':results}
+            'client_sha256':client_hash,
+            **{name+'_sha256':value for name,value in binary_hashes.items()},'results':results}
     Path(args.output).write_text(json.dumps(report,indent=2)+'\n')
     print(json.dumps({k:v for k,v in report.items() if k!='results'},indent=2))
     if report['mismatches']:raise SystemExit(1)

@@ -24,120 +24,142 @@
     ]
   },
   "heif_color_conversion_options_ext_alloc": {
+    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open.",
     "status": "partial",
     "tests": [
       "tests/color.c",
       "tools/test_color.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open."
+    ]
   },
   "heif_color_conversion_options_ext_copy": {
+    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open.",
     "status": "partial",
     "tests": [
       "tests/color.c",
       "tools/test_color.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open."
+    ]
   },
   "heif_color_conversion_options_ext_free": {
+    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open.",
     "status": "partial",
     "tests": [
       "tests/color.c",
       "tools/test_color.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open."
+    ]
   },
   "heif_color_conversion_options_set_defaults": {
+    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open.",
     "status": "partial",
     "tests": [
       "tests/color.c",
       "tools/test_color.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open."
+    ]
   },
   "heif_context_alloc": {
+    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/context.c",
       "tools/test_context.py"
-    ],
-    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open."
+    ]
   },
   "heif_context_free": {
+    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/context.c",
       "tools/test_context.py"
-    ],
-    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open."
+    ]
   },
   "heif_context_get_image_handle": {
+    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/context.c",
       "tools/test_context.py"
-    ],
-    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open."
+    ]
   },
   "heif_context_get_list_of_top_level_image_IDs": {
+    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/context.c",
       "tools/test_context.py"
-    ],
-    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open."
+    ]
+  },
+  "heif_context_get_max_decoding_threads": {
+    "notes": "Original-header independent diagnostics, warning pagination/copy, context thread values, grid worker callbacks and serial tile validation. Arbitrary concurrent clients, allocation failure and other codecs remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/warnings.c",
+      "tools/test_warnings.py",
+      "tests/decode.c",
+      "tools/test_decode_derived.py"
+    ]
   },
   "heif_context_get_number_of_top_level_images": {
+    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/context.c",
       "tools/test_context.py"
-    ],
-    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open."
+    ]
   },
   "heif_context_get_primary_image_ID": {
+    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/context.c",
       "tools/test_context.py"
-    ],
-    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open."
+    ]
   },
   "heif_context_get_primary_image_handle": {
+    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/context.c",
       "tools/test_context.py"
-    ],
-    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open."
+    ]
   },
   "heif_context_is_top_level_image_ID": {
+    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/context.c",
       "tools/test_context.py"
-    ],
-    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open."
+    ]
   },
   "heif_context_read_from_memory": {
+    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/context.c",
-      "tools/test_context.py"
-    ],
-    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open."
+      "tools/test_context.py",
+      "tools/test_decode_derived.py"
+    ]
   },
   "heif_context_read_from_memory_without_copy": {
+    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/context.c",
-      "tools/test_context.py"
-    ],
-    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open."
+      "tools/test_context.py",
+      "tools/test_decode_derived.py"
+    ]
+  },
+  "heif_context_set_max_decoding_threads": {
+    "notes": "Original-header independent diagnostics, warning pagination/copy, context thread values, grid worker callbacks and serial tile validation. Arbitrary concurrent clients, allocation failure and other codecs remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/warnings.c",
+      "tools/test_warnings.py",
+      "tests/decode.c",
+      "tools/test_decode_derived.py"
+    ]
   },
   "heif_decode_image": {
     "notes": "Five direct HEVC fixtures in 23 modes plus 688 generated/real geometry cases: exact visible pixels including monochrome HEVC alpha, crop/rotate/mirror order, fractional boundaries, metadata, errors and output writes. Full codec conformance, derived images, callback orchestration, resource limits, every conversion operator and other codecs remain open.",
@@ -145,7 +167,8 @@
     "tests": [
       "tests/decode.c",
       "tools/test_decode.py",
-      "tools/test_decode_geometry.py"
+      "tools/test_decode_geometry.py",
+      "tools/test_decode_derived.py"
     ]
   },
   "heif_decoding_options_alloc": {
@@ -262,6 +285,16 @@
       "tools/test_brands.py"
     ]
   },
+  "heif_image_add_decoding_warning": {
+    "notes": "Original-header independent diagnostics, warning pagination/copy, context thread values, grid worker callbacks and serial tile validation. Arbitrary concurrent clients, allocation failure and other codecs remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/warnings.c",
+      "tools/test_warnings.py",
+      "tests/decode.c",
+      "tools/test_decode_derived.py"
+    ]
+  },
   "heif_image_add_plane": {
     "notes": "6553 differential cases on Linux x86_64; other architectures, allocation failure, transforms and codec integration remain open.",
     "status": "partial",
@@ -287,13 +320,13 @@
     ]
   },
   "heif_image_get_ambient_viewing_environment": {
+    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open.",
     "status": "partial",
     "tests": [
       "tests/color.c",
       "tools/test_color.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open."
+    ]
   },
   "heif_image_get_bits_per_pixel": {
     "notes": "6553 differential cases on Linux x86_64; other architectures, allocation failure, transforms and codec integration remain open.",
@@ -320,13 +353,13 @@
     ]
   },
   "heif_image_get_color_profile_type": {
+    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open.",
     "status": "partial",
     "tests": [
       "tests/color.c",
       "tools/test_color.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open."
+    ]
   },
   "heif_image_get_colorspace": {
     "notes": "6553 differential cases on Linux x86_64; other architectures, allocation failure, transforms and codec integration remain open.",
@@ -337,13 +370,23 @@
     ]
   },
   "heif_image_get_content_light_level": {
+    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open.",
     "status": "partial",
     "tests": [
       "tests/color.c",
       "tools/test_color.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open."
+    ]
+  },
+  "heif_image_get_decoding_warnings": {
+    "notes": "Original-header independent diagnostics, warning pagination/copy, context thread values, grid worker callbacks and serial tile validation. Arbitrary concurrent clients, allocation failure and other codecs remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/warnings.c",
+      "tools/test_warnings.py",
+      "tests/decode.c",
+      "tools/test_decode_derived.py"
+    ]
   },
   "heif_image_get_height": {
     "notes": "6553 differential cases on Linux x86_64; other architectures, allocation failure, transforms and codec integration remain open.",
@@ -354,31 +397,31 @@
     ]
   },
   "heif_image_get_mastering_display_colour_volume": {
+    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open.",
     "status": "partial",
     "tests": [
       "tests/color.c",
       "tools/test_color.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open."
+    ]
   },
   "heif_image_get_nclx_color_profile": {
+    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open.",
     "status": "partial",
     "tests": [
       "tests/color.c",
       "tools/test_color.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open."
+    ]
   },
   "heif_image_get_nominal_diffuse_white_luminance": {
+    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open.",
     "status": "partial",
     "tests": [
       "tests/color.c",
       "tools/test_color.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open."
+    ]
   },
   "heif_image_get_pixel_aspect_ratio": {
     "notes": "6553 differential cases on Linux x86_64; other architectures, allocation failure, transforms and codec integration remain open.",
@@ -437,22 +480,22 @@
     ]
   },
   "heif_image_get_raw_color_profile": {
+    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open.",
     "status": "partial",
     "tests": [
       "tests/color.c",
       "tools/test_color.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open."
+    ]
   },
   "heif_image_get_raw_color_profile_size": {
+    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open.",
     "status": "partial",
     "tests": [
       "tests/color.c",
       "tools/test_color.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open."
+    ]
   },
   "heif_image_get_width": {
     "notes": "6553 differential cases on Linux x86_64; other architectures, allocation failure, transforms and codec integration remain open.",
@@ -463,237 +506,237 @@
     ]
   },
   "heif_image_handle_get_chroma_bits_per_pixel": {
+    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/context.c",
       "tools/test_context.py"
-    ],
-    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open."
+    ]
   },
   "heif_image_handle_get_color_profile_type": {
+    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/context.c",
       "tools/test_context.py"
-    ],
-    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open."
+    ]
   },
   "heif_image_handle_get_context": {
+    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/context.c",
       "tools/test_context.py"
-    ],
-    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open."
+    ]
   },
   "heif_image_handle_get_height": {
+    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/context.c",
       "tools/test_context.py"
-    ],
-    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open."
+    ]
   },
   "heif_image_handle_get_ispe_height": {
+    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/context.c",
       "tools/test_context.py"
-    ],
-    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open."
+    ]
   },
   "heif_image_handle_get_ispe_width": {
+    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/context.c",
       "tools/test_context.py"
-    ],
-    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open."
+    ]
   },
   "heif_image_handle_get_item_id": {
+    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/context.c",
       "tools/test_context.py"
-    ],
-    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open."
+    ]
   },
   "heif_image_handle_get_list_of_metadata_block_IDs": {
+    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/context.c",
       "tools/test_context.py"
-    ],
-    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open."
+    ]
   },
   "heif_image_handle_get_list_of_thumbnail_IDs": {
+    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/context.c",
       "tools/test_context.py"
-    ],
-    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open."
+    ]
   },
   "heif_image_handle_get_luma_bits_per_pixel": {
+    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/context.c",
       "tools/test_context.py"
-    ],
-    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open."
+    ]
   },
   "heif_image_handle_get_metadata": {
+    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/context.c",
       "tools/test_context.py"
-    ],
-    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open."
+    ]
   },
   "heif_image_handle_get_metadata_content_type": {
+    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/context.c",
       "tools/test_context.py"
-    ],
-    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open."
+    ]
   },
   "heif_image_handle_get_metadata_item_uri_type": {
+    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/context.c",
       "tools/test_context.py"
-    ],
-    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open."
+    ]
   },
   "heif_image_handle_get_metadata_size": {
+    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/context.c",
       "tools/test_context.py"
-    ],
-    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open."
+    ]
   },
   "heif_image_handle_get_metadata_type": {
+    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/context.c",
       "tools/test_context.py"
-    ],
-    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open."
+    ]
   },
   "heif_image_handle_get_nclx_color_profile": {
+    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/context.c",
       "tools/test_context.py"
-    ],
-    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open."
+    ]
   },
   "heif_image_handle_get_number_of_metadata_blocks": {
+    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/context.c",
       "tools/test_context.py"
-    ],
-    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open."
+    ]
   },
   "heif_image_handle_get_number_of_thumbnails": {
+    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/context.c",
       "tools/test_context.py"
-    ],
-    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open."
+    ]
   },
   "heif_image_handle_get_pixel_aspect_ratio": {
+    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/context.c",
       "tools/test_context.py"
-    ],
-    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open."
+    ]
   },
   "heif_image_handle_get_preferred_decoding_colorspace": {
+    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/context.c",
       "tools/test_context.py"
-    ],
-    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open."
+    ]
   },
   "heif_image_handle_get_raw_color_profile": {
+    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/context.c",
       "tools/test_context.py"
-    ],
-    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open."
+    ]
   },
   "heif_image_handle_get_raw_color_profile_size": {
+    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/context.c",
       "tools/test_context.py"
-    ],
-    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open."
+    ]
   },
   "heif_image_handle_get_thumbnail": {
+    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/context.c",
       "tools/test_context.py"
-    ],
-    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open."
+    ]
   },
   "heif_image_handle_get_width": {
+    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/context.c",
       "tools/test_context.py"
-    ],
-    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open."
+    ]
   },
   "heif_image_handle_has_alpha_channel": {
+    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/context.c",
       "tools/test_context.py"
-    ],
-    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open."
+    ]
   },
   "heif_image_handle_is_premultiplied_alpha": {
+    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/context.c",
       "tools/test_context.py"
-    ],
-    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open."
+    ]
   },
   "heif_image_handle_is_primary_image": {
+    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/context.c",
       "tools/test_context.py"
-    ],
-    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open."
+    ]
   },
   "heif_image_handle_release": {
+    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/context.c",
       "tools/test_context.py"
-    ],
-    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open."
+    ]
   },
   "heif_image_has_ambient_viewing_environment": {
+    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open.",
     "status": "partial",
     "tests": [
       "tests/color.c",
       "tools/test_color.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open."
+    ]
   },
   "heif_image_has_channel": {
     "notes": "6553 differential cases on Linux x86_64; other architectures, allocation failure, transforms and codec integration remain open.",
@@ -704,31 +747,31 @@
     ]
   },
   "heif_image_has_content_light_level": {
+    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open.",
     "status": "partial",
     "tests": [
       "tests/color.c",
       "tools/test_color.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open."
+    ]
   },
   "heif_image_has_mastering_display_colour_volume": {
+    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open.",
     "status": "partial",
     "tests": [
       "tests/color.c",
       "tools/test_color.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open."
+    ]
   },
   "heif_image_has_nominal_diffuse_white_luminance": {
+    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open.",
     "status": "partial",
     "tests": [
       "tests/color.c",
       "tools/test_color.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open."
+    ]
   },
   "heif_image_is_premultiplied_alpha": {
     "notes": "6553 differential cases on Linux x86_64; other architectures, allocation failure, transforms and codec integration remain open.",
@@ -755,49 +798,49 @@
     ]
   },
   "heif_image_set_ambient_viewing_environment": {
+    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open.",
     "status": "partial",
     "tests": [
       "tests/color.c",
       "tools/test_color.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open."
+    ]
   },
   "heif_image_set_content_light_level": {
+    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open.",
     "status": "partial",
     "tests": [
       "tests/color.c",
       "tools/test_color.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open."
+    ]
   },
   "heif_image_set_mastering_display_colour_volume": {
+    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open.",
     "status": "partial",
     "tests": [
       "tests/color.c",
       "tools/test_color.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open."
+    ]
   },
   "heif_image_set_nclx_color_profile": {
+    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open.",
     "status": "partial",
     "tests": [
       "tests/color.c",
       "tools/test_color.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open."
+    ]
   },
   "heif_image_set_nominal_diffuse_white_luminance": {
+    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open.",
     "status": "partial",
     "tests": [
       "tests/color.c",
       "tools/test_color.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open."
+    ]
   },
   "heif_image_set_pixel_aspect_ratio": {
     "notes": "6553 differential cases on Linux x86_64; other architectures, allocation failure, transforms and codec integration remain open.",
@@ -816,13 +859,13 @@
     ]
   },
   "heif_image_set_raw_color_profile": {
+    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open.",
     "status": "partial",
     "tests": [
       "tests/color.c",
       "tools/test_color.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open."
+    ]
   },
   "heif_list_compatible_brands": {
     "notes": "Tested on Linux x86_64; cross-platform ABI and exhaustive input coverage pending.",
@@ -841,58 +884,58 @@
     ]
   },
   "heif_mastering_display_colour_volume_decode": {
+    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open.",
     "status": "partial",
     "tests": [
       "tests/color.c",
       "tools/test_color.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open."
+    ]
   },
   "heif_nclx_color_profile_alloc": {
+    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open.",
     "status": "partial",
     "tests": [
       "tests/color.c",
       "tools/test_color.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open."
+    ]
   },
   "heif_nclx_color_profile_free": {
+    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open.",
     "status": "partial",
     "tests": [
       "tests/color.c",
       "tools/test_color.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open."
+    ]
   },
   "heif_nclx_color_profile_set_color_primaries": {
+    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open.",
     "status": "partial",
     "tests": [
       "tests/color.c",
       "tools/test_color.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open."
+    ]
   },
   "heif_nclx_color_profile_set_matrix_coefficients": {
+    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open.",
     "status": "partial",
     "tests": [
       "tests/color.c",
       "tools/test_color.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open."
+    ]
   },
   "heif_nclx_color_profile_set_transfer_characteristics": {
+    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open.",
     "status": "partial",
     "tests": [
       "tests/color.c",
       "tools/test_color.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open."
+    ]
   },
   "heif_read_main_brand": {
     "notes": "Tested on Linux x86_64; cross-platform ABI and exhaustive input coverage pending.",

@@ -8,8 +8,8 @@ with a VUI unspecified-color fix; its Apache-2.0 notices are retained.
 
 ## Implemented scope
 
-109 of 465 public functions are exported, plus `heif_error_success`.
-356 functions are missing. Even the exported functions are marked **partial**:
+113 of 465 public functions are exported, plus `heif_error_success`.
+352 functions are missing. Even the exported functions are marked **partial**:
 coverage is finite, platform coverage is incomplete, and one malformed-box
 behavior gap is explicitly retained. There is no claim of a compatible library.
 
@@ -38,11 +38,13 @@ behavior gap is explicitly retained. There is no claim of a compatible library.
 | Context/handle differential | 1,786 transcripts, 0 mismatches | Copied/borrowed input, destroyed input copies, aliases, handles after free/reload, early and late read failures, primary/hidden/boundary IDs, metadata bytes/filters, thumbnails, alpha references, color profiles, rotations, every synthetic-file/property truncation; no C decoding |
 | C client sanitizers | ASan/UBSan clients pass the context corpus | Libraries are not sanitizer-instrumented; local LeakSanitizer could not run under ptrace, so leak detection was explicitly disabled |
 | ABI | Nine structs match original-header size, alignment and every field offset; struct-return and data-symbol clients pass | Linux x86_64 only |
-| Mutation checks | Seven deliberately wrong implementations rejected | Wrong filetype enum, error code, plane samples, primary coordinate, primary item ID, alpha reload state and ABI field order; isolated builds, successful baselines, compiler/crash failures do not count |
+| Mutation checks | Nine deliberately wrong implementations rejected | Wrong filetype enum, error code, plane samples, primary coordinate, primary item ID, alpha reload state, worker callbacks, warning text and ABI field order; isolated builds, successful baselines, compiler/crash failures do not count |
 | HEVC native output | 5/5 fixtures match exactly | Y/Cb/Cr data, image IDs/order, dimensions, depths and strides; transformations disabled, native NCLX passthrough; **alpha not compared** |
 | HEVC default output | 5/5 tested color-plane outputs match | Separate default-converted Rust and reference output; no longer compares native data to default output |
 | C decoding | 115 cases, 0 mismatches | Five direct HEVC fixtures x 23 modes; native/default/planar/interleaved output including alpha, profiles, both 16-bit byte orders, sampling restrictions, callbacks and errors; not codec conformance |
 | Geometry/monochrome HEVC | 688 cases, 0 mismatches | Ordered rotations/mirrors/clean apertures, truncated fractions and integer boundaries, conformance-window cropping and real monochrome alpha; includes four additional upstream images |
+| Grid/identity decoding | 640 cases, 0 mismatches | Generated valid/malformed tile graphs, wide fields, MIAF, cycles, strict/permissive errors, missing configurations, warning contents, callback arguments and worker thread placement; unknown-decoder cases use one worker to fix error ordering |
+| Warning/thread controls | 1,249 cases, 0 mismatches | Every declared error/suberror pair, ignored caller message, pagination and sentinels, crop/scale warning propagation and thread-setting boundaries; C clients also pass ASan/UBSan with local leak checking disabled |
 | Decoding options | 65,549 cases, 0 mismatches | All byte-valued version pairs, old short prefixes and alias copies; also passes C-client ASan/UBSan with local leak checks disabled |
 | Crop/scale | 12,240 cases, 0 mismatches | Odd geometry, 8/10/12/16-bit layouts, alpha and metadata, invalid margins, nonstandard planes; wider/custom component formats remain open |
 | Dependency guard | Pass | Two reviewed codec crates; no native build scripts or codec link dependencies in the resolved candidate graph |
@@ -70,6 +72,13 @@ essential-property behavior, complete clean-aperture coverage, configurable budg
 file/reader callbacks and complete decoding orchestration remain open. `context-report.json` records
 exact binary, client and corpus hashes. `context-sanitized-report.json` records
 the limited sanitizer scope; mutation evidence rejects wrong reload semantics.
+
+The grid decoder uses scoped Rust workers to honor callback execution and error
+semantics. This is compatibility work, not an optimization claim. In an independent
+40-run probe per fixture, libheif returned both possible errors when an invalid
+identity tile raced unavailable-decoder failures. Exact error-order tests therefore
+use one worker; the other grid modes retain the default four workers. Broader
+concurrent trace equivalence remains open.
 
 ## Initial performance evidence
 

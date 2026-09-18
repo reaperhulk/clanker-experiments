@@ -1,5 +1,5 @@
 {
-  "scope": "seven deliberate defects; not comprehensive mutation coverage",
+  "scope": "nine deliberate defects; not comprehensive mutation coverage",
   "mutations": [
     {
       "mutation": "filetype_enum",
@@ -7,7 +7,7 @@
       "source": "src/brands.rs",
       "before": "Supported = 1,",
       "after": "Supported = 7,",
-      "candidate_sha256": "e4039d976efd40ba4d228ec0039366a1cf6146cae2effcc473a074d8accca153",
+      "candidate_sha256": "8dae5bdc1ac46a65a1ce3551331b3ce359f202c5ba40a2d8f6a10c2fa225fd62",
       "mismatches": 533,
       "detected": true
     },
@@ -17,7 +17,7 @@
       "source": "src/error.rs",
       "before": "Self::new(5, 2001, c\"NULL argument passed\")",
       "after": "Self::new(2, 2001, c\"NULL argument passed\")",
-      "candidate_sha256": "4c676235baf1790ee0bb6b54ad4a5e5c351aff28a42f47c702b4d280eb7dcc84",
+      "candidate_sha256": "f985229191ce2c09995fa86bf6be8503920cd465576418cc01180ba6258786ba",
       "mismatches": 17126,
       "detected": true
     },
@@ -27,7 +27,7 @@
       "source": "src/image.rs",
       "before": "storage.resize(allocation, 0);",
       "after": "storage.resize(allocation, 0);\n        storage[..16].fill(1);",
-      "candidate_sha256": "435d331d559452c61f41860c1b61aa7802e802299d18ec918401e086fc630a15",
+      "candidate_sha256": "122b59371e4328f4b7bb34fc0dffd61b5c12443f755f025609536297ca3d0d09",
       "mismatches": 612,
       "detected": true
     },
@@ -37,7 +37,7 @@
       "source": "src/color.rs",
       "before": "color_primary_red_x: rx,",
       "after": "color_primary_red_x: rx + 0.0001,",
-      "candidate_sha256": "496c3deae576f423989c3a49a1ae260ff26a4cf7d55f65ad54749f5300b5038a",
+      "candidate_sha256": "92fecf3fdd3ea74b873a317e9bde2324a0e7be26ceae444fefc72896b6046ed4",
       "mismatches": 776,
       "detected": true
     },
@@ -47,7 +47,7 @@
       "source": "crates/capi/src/context.rs",
       "before": "out.write(doc.primary)",
       "after": "out.write(doc.primary.wrapping_add(1))",
-      "candidate_sha256": "ac275e2ddc71841f1a6197072b45541f7c5513b291d996c5cef7b213b03943f6",
+      "candidate_sha256": "e9c9a2bea3d9433f2b20491a15847e15692645d82588cca24709f67824d27629",
       "mismatches": 868,
       "detected": true
     },
@@ -57,8 +57,28 @@
       "source": "crates/capi/src/context.rs",
       "before": ".is_some_and(|i| i.has_alpha)",
       "after": ".is_some_and(|_| handle.image().has_alpha)",
-      "candidate_sha256": "931db4fad6414069d2ddeaf9498d6a94290894d53b4c9962257dd97e5df9a16b",
+      "candidate_sha256": "fb73bfa2cc3c247da2fbbe7db5b128d56f20c0413f1b1a300ef45b7c38217e5a",
       "mismatches": 166,
+      "detected": true
+    },
+    {
+      "mutation": "grid_worker_callbacks",
+      "suite": "decode_derived",
+      "source": "src/decoding.rs",
+      "before": "if options.max_decoding_threads > 0 {",
+      "after": "if false {",
+      "candidate_sha256": "abbb556176f8919ddc3cc26d8d55608063fef767e724bc9421035f7f4c157613",
+      "mismatches": 184,
+      "detected": true
+    },
+    {
+      "mutation": "warning_text",
+      "suite": "warnings",
+      "source": "crates/capi/src/image.rs",
+      "before": "libheifer::error_text::message(error.code, error.subcode)",
+      "after": "String::from(\"wrong warning text\")",
+      "candidate_sha256": "0b7138b23fb224d00e563bca554c4ecae0eb4d586fcd6f26740b0212123ad109",
+      "mismatches": 1176,
       "detected": true
     },
     {
@@ -67,7 +87,7 @@
       "source": "crates/capi/src/lib.rs",
       "before": "pub code: c_int,\n    pub subcode: c_int,",
       "after": "pub subcode: c_int,\n    pub code: c_int,",
-      "candidate_sha256": "b9cfb0e564b2349cd370846c66226412fedf1a459d9d995788862f27b925ab2b",
+      "candidate_sha256": "6097a2b26d6fbb6ad7300be11aaa3f81d5e0eaacb9f30f59c01491e83ca81c40",
       "detected": true
     }
   ],

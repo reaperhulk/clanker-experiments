@@ -92,9 +92,27 @@ impl Plane {
     }
 }
 
+#[derive(Clone, Debug)]
+pub struct DecodingWarning {
+    pub code: i32,
+    pub subcode: i32,
+    pub message: std::ffi::CString,
+}
+impl From<crate::context::ContextError> for DecodingWarning {
+    fn from(error: crate::context::ContextError) -> Self {
+        let text = error.message.split('\0').next().unwrap_or_default();
+        Self {
+            code: error.code,
+            subcode: error.subcode,
+            message: std::ffi::CString::new(text).unwrap(),
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct Image {
     pub color: crate::color::ColorMetadata,
+    pub warnings: Vec<DecodingWarning>,
     pub width: u32,
     pub height: u32,
     pub colorspace: i32,
@@ -136,6 +154,7 @@ impl Image {
             colorspace,
             chroma,
             color: crate::color::ColorMetadata::default(),
+            warnings: Vec::new(),
             premultiplied_alpha: false,
             pixel_aspect_ratio: (1, 1),
             planes: Vec::new(),
@@ -304,6 +323,66 @@ impl Image {
             crate::color::ColorConversionOptions::default(),
         )
     }
+    /// Allocate a grid canvas using this image's plane layout and metadata.
+    pub fn empty_canvas(&self, width: u32, height: u32) -> Result<Self, Error> {
+        let mut out = Self::new(width, height, self.colorspace, self.chroma)?;
+        out.color = self.color.try_clone()?;
+        out.pixel_aspect_ratio = self.pixel_aspect_ratio;
+        out.premultiplied_alpha = self.premultiplied_alpha;
+        for p in &self.planes {
+            let (sx, sy) = self.subsampling(p.channel);
+            out.add_plane(
+                p.channel,
+                width.div_ceil(sx),
+                height.div_ceil(sy),
+                p.bit_depth.into(),
+            )?;
+            if p.channel == 6 {
+                let dest = out.plane_mut(6).unwrap();
+                let max = (1u32 << p.bit_depth.min(16)) - 1;
+                for y in 0..dest.height as usize {
+                    for x in 0..dest.width as usize {
+                        let at = y * dest.stride + x * dest.bytes_per_pixel;
+                        if p.bit_depth <= 8 {
+                            dest.data_mut()[at] = max as u8;
+                        } else {
+                            dest.data_mut()[at..at + 2]
+                                .copy_from_slice(&(max as u16).to_ne_bytes());
+                        }
+                    }
+                }
+            }
+        }
+        Ok(out)
+    }
+    pub fn paste(&mut self, source: &Self, x: u32, y: u32) -> Result<(), Error> {
+        for p in &source.planes {
+            let (sx, sy) = self.subsampling(p.channel);
+            let (x, y) = (x / sx, y / sy);
+            let Some(dest) = self.plane_mut(p.channel) else {
+                continue;
+            };
+            if dest.bytes_per_pixel != p.bytes_per_pixel {
+                return Err(Error::new(
+                    4,
+                    3003,
+                    c"Unsupported feature: Unsupported color conversion",
+                ));
+            }
+            if x >= dest.width || y >= dest.height {
+                continue;
+            }
+            let width = p.width.min(dest.width - x);
+            let height = p.height.min(dest.height - y);
+            for row in 0..height as usize {
+                let from = row * p.stride;
+                let to = (y as usize + row) * dest.stride + x as usize * p.bytes_per_pixel;
+                let len = width as usize * p.bytes_per_pixel;
+                dest.data_mut()[to..to + len].copy_from_slice(&p.data()[from..from + len]);
+            }
+        }
+        Ok(())
+    }
     pub fn crop(&self, left: u32, right: u32, top: u32, bottom: u32) -> Result<Self, Error> {
         if right < left || bottom < top || right >= self.width || bottom >= self.height {
             return Err(Error::new(
@@ -326,6 +405,7 @@ impl Image {
             self.colorspace,
             self.chroma,
         )?;
+        out.warnings = self.warnings.clone();
         out.color = self.color.try_clone()?;
         out.pixel_aspect_ratio = self.pixel_aspect_ratio;
         out.premultiplied_alpha = self.premultiplied_alpha;
@@ -367,6 +447,7 @@ impl Image {
         let width = if odd { self.height } else { self.width };
         let height = if odd { self.width } else { self.height };
         let mut out = Self::new(width, height, self.colorspace, self.chroma)?;
+        out.warnings = self.warnings.clone();
         out.color = self.color.try_clone()?;
         out.pixel_aspect_ratio = self.pixel_aspect_ratio;
         out.premultiplied_alpha = self.premultiplied_alpha;
