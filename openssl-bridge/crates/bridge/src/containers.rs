@@ -81,6 +81,8 @@ pub fn parse_pkcs12(
     password: Option<&CStr>,
 ) -> std::result::Result<ParsedPkcs12, Pkcs12Error> {
     crate::initialize().map_err(Pkcs12Error::Encoding)?;
+    // The d2i length is long on OpenSSL, but size_t on BoringSSL.
+    #[allow(clippy::useless_conversion)]
     let length = data
         .len()
         .try_into()

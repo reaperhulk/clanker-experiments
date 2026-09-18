@@ -1,11 +1,53 @@
+diff --git a/.github/bin/build_openssl.sh b/.github/bin/build_openssl.sh
+index 006a2e1..ca58192 100755
+--- a/.github/bin/build_openssl.sh
++++ b/.github/bin/build_openssl.sh
+@@ -27,16 +27,27 @@ if [[ "${TYPE}" == "openssl" ]]; then
+   make install_sw install_ssldirs
+   # delete binaries we don't need
+   rm -rf "${OSSL_PATH}/bin"
+-  # For OpenSSL 3.0.0 set up the FIPS config. This does not activate it by
+-  # default, but allows programmatic activation at runtime
++  # Select FIPS algorithms during native initialization, before any operations.
++  # Runtime mutation of default properties is not thread safe.
+   if [[ "${CONFIG_FLAGS}" =~ enable-fips ]]; then
+       # As of alpha16 we have to install it separately and enable it in the config flags
+       make -j"$(nproc)" install_fips
+       pushd "${OSSL_PATH}"
+-      # include the conf file generated as part of install_fips
+-      sed -i "s:# .include fipsmodule.cnf:.include $(pwd)/ssl/fipsmodule.cnf:" ssl/openssl.cnf
+-      # uncomment the FIPS section
+-      sed -i 's:# fips = fips_sect:fips = fips_sect:' ssl/openssl.cnf
++      cat > ssl/openssl.cnf <<EOF
++config_diagnostics = 1
++openssl_conf = openssl_init
++.include ${OSSL_PATH}/ssl/fipsmodule.cnf
++[openssl_init]
++providers = provider_sect
++alg_section = algorithm_sect
++[provider_sect]
++fips = fips_sect
++base = base_sect
++[base_sect]
++activate = 1
++[algorithm_sect]
++default_properties = fips=yes
++EOF
+       popd
+   fi
+   popd
 diff --git a/CHANGELOG.rst b/CHANGELOG.rst
-index 025e676..4d28d34 100644
+index 025e676..95e67a7 100644
 --- a/CHANGELOG.rst
 +++ b/CHANGELOG.rst
-@@ -8,6 +8,10 @@ Changelog
+@@ -8,6 +8,14 @@ Changelog
  
  .. note:: This version is not yet released and is under active development.
  
++* FIPS mode must be configured before process startup using OpenSSL configuration.
++  The private activation hook now checks configuration without changing global
++  properties while other libraries may be using OpenSSL.
++
 +* XTS data units must be supplied in a single non-empty ``update()`` or
 +  ``update_into()`` call. XTS consistently rejects identical key halves on all
 +  supported backends.
@@ -14,7 +56,7 @@ index 025e676..4d28d34 100644
    and :func:`~cryptography.hazmat.primitives.serialization.load_pem_private_key`
    now accept :rfc:`5958` ``OneAsymmetricKey`` (PKCS8 version 2).
 diff --git a/Cargo.lock b/Cargo.lock
-index 9f7d181..cce5b38 100644
+index 9f7d181..81091f9 100644
 --- a/Cargo.lock
 +++ b/Cargo.lock
 @@ -2,6 +2,15 @@
@@ -78,7 +120,7 @@ index 9f7d181..cce5b38 100644
  ]
  
  [[package]]
-@@ -51,6 +89,17 @@ version = "1.0.5"
+@@ -51,12 +89,23 @@ version = "1.0.5"
  source = "registry+https://github.com/rust-lang/crates.io-index"
  checksum = "4e7648175b45a9a48536d676f68d918270699102aa8dab5496df06904c914600"
  
@@ -96,6 +138,13 @@ index 9f7d181..cce5b38 100644
  [[package]]
  name = "cryptography-cffi"
  version = "0.51.0-dev1"
+ dependencies = [
+  "cc",
+- "openssl-sys",
++ "openssl-bridge-sys",
+  "pyo3",
+  "pyo3-build-config",
+ ]
 @@ -65,7 +114,7 @@ dependencies = [
  name = "cryptography-crypto"
  version = "0.51.0-dev1"
@@ -105,7 +154,7 @@ index 9f7d181..cce5b38 100644
  ]
  
  [[package]]
-@@ -82,10 +131,9 @@ dependencies = [
+@@ -82,24 +131,12 @@ dependencies = [
   "asn1",
   "cfg-if",
   "cryptography-crypto",
@@ -118,40 +167,71 @@ index 9f7d181..cce5b38 100644
   "pem",
  ]
  
-@@ -116,6 +164,7 @@ dependencies = [
+-[[package]]
+-name = "cryptography-openssl"
+-version = "0.51.0-dev1"
+-dependencies = [
+- "cfg-if",
+- "foreign-types",
+- "foreign-types-shared",
+- "openssl",
+- "openssl-sys",
+-]
+-
+ [[package]]
+ name = "cryptography-rust"
+ version = "0.51.0-dev1"
+@@ -111,12 +148,10 @@ dependencies = [
+  "cryptography-crypto",
+  "cryptography-keepalive",
+  "cryptography-key-parsing",
+- "cryptography-openssl",
+  "cryptography-x509",
   "cryptography-x509-verification",
-  "foreign-types-shared",
-  "openssl",
+- "foreign-types-shared",
+- "openssl",
+- "openssl-sys",
 + "openssl-bridge",
-  "openssl-sys",
++ "openssl-bridge-sys",
   "pem",
   "pyo3",
-@@ -139,6 +188,12 @@ dependencies = [
-  "pem",
+  "pyo3-build-config",
+@@ -140,25 +175,22 @@ dependencies = [
  ]
  
-+[[package]]
+ [[package]]
+-name = "find-msvc-tools"
+-version = "0.1.12"
 +name = "either"
 +version = "1.18.0"
-+source = "registry+https://github.com/rust-lang/crates.io-index"
-+checksum = "252afb9ae5eaa683babdc6a068b3f5726eb19e05070c731f9b2a23a7c3e8ed34"
-+
- [[package]]
- name = "find-msvc-tools"
- version = "0.1.12"
-@@ -160,12 +215,27 @@ version = "0.1.1"
  source = "registry+https://github.com/rust-lang/crates.io-index"
- checksum = "00b0228411908ca8685dba7fc2cdd70ec9990a6e753e89b6ac91a84c40fbaf4b"
+-checksum = "3e0f1c7c3a72c66fd80abe965175f7523475c0489a87d3ff9d6e8c87d87a9d2d"
++checksum = "252afb9ae5eaa683babdc6a068b3f5726eb19e05070c731f9b2a23a7c3e8ed34"
  
-+[[package]]
+ [[package]]
+-name = "foreign-types"
+-version = "0.3.2"
++name = "find-msvc-tools"
++version = "0.1.12"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "f6f339eb8adc052cd2ca78910fda869aefa38d22d5cb648e6485e4d3fc06f3b1"
+-dependencies = [
+- "foreign-types-shared",
+-]
++checksum = "3e0f1c7c3a72c66fd80abe965175f7523475c0489a87d3ff9d6e8c87d87a9d2d"
+ 
+ [[package]]
+-name = "foreign-types-shared"
+-version = "0.1.1"
 +name = "glob"
 +version = "0.3.4"
-+source = "registry+https://github.com/rust-lang/crates.io-index"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "00b0228411908ca8685dba7fc2cdd70ec9990a6e753e89b6ac91a84c40fbaf4b"
 +checksum = "e4eba85ea1d0a966a983acd07deee566e67395d2d96b6fb39e62b5a833f1eb0b"
-+
+ 
  [[package]]
  name = "heck"
- version = "0.5.0"
+@@ -166,6 +198,15 @@ version = "0.5.0"
  source = "registry+https://github.com/rust-lang/crates.io-index"
  checksum = "2304e00983f87ffb38b55b444b5e3b60a884b5d30c0fca7d82fe33449bbe55ea"
  
@@ -167,24 +247,29 @@ index 9f7d181..cce5b38 100644
  [[package]]
  name = "itoa"
  version = "1.0.18"
-@@ -178,6 +248,44 @@ version = "0.2.189"
- source = "registry+https://github.com/rust-lang/crates.io-index"
+@@ -179,46 +220,63 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
  checksum = "3eaf3ede3fee6db1a4c2ee091bf8a8b4dccdc6d17f656fb07896ee72867612f2"
  
-+[[package]]
+ [[package]]
+-name = "once_cell"
+-version = "1.21.4"
 +name = "libloading"
 +version = "0.8.9"
-+source = "registry+https://github.com/rust-lang/crates.io-index"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "9f7c3e4beb33f85d45ae3e3a1792185706c8e16d043238c593331cc7cd313b50"
 +checksum = "d7c4b02199fee7c5d21a5ae7d8cfa79a6ef5bb2fc834d6e9058e89c825efdc55"
 +dependencies = [
 + "cfg-if",
 + "windows-link",
 +]
-+
-+[[package]]
+ 
+ [[package]]
+-name = "openssl"
+-version = "0.10.81"
 +name = "log"
 +version = "0.4.34"
-+source = "registry+https://github.com/rust-lang/crates.io-index"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "77823a27f0babb03091cb9ed9ef80af3b39dbc82f97e8fa530374b7dafd87a45"
 +checksum = "f9f8bd3e56ce4dfc153cf470fffbfa98c7620958b312ca5c3a4b8d5181fd13c6"
 +
 +[[package]]
@@ -204,38 +289,53 @@ index 9f7d181..cce5b38 100644
 +version = "7.1.3"
 +source = "registry+https://github.com/rust-lang/crates.io-index"
 +checksum = "d273983c5a657a70a3e8f2a01329822f3b8c8172b73826411a55751e404a0a4a"
-+dependencies = [
+ dependencies = [
+- "bitflags",
+- "cfg-if",
+- "foreign-types",
+- "libc",
+- "openssl-macros",
+- "openssl-sys",
 + "memchr",
 + "minimal-lexical",
-+]
-+
- [[package]]
- name = "once_cell"
- version = "1.21.4"
-@@ -198,6 +306,22 @@ dependencies = [
-  "openssl-sys",
  ]
  
+ [[package]]
+-name = "openssl-macros"
+-version = "0.1.1"
++name = "once_cell"
++version = "1.21.4"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "a948666b637a0f465e8564c73e89d4dde00d72d4d473cc972f390fc3dcee7d9c"
++checksum = "9f7c3e4beb33f85d45ae3e3a1792185706c8e16d043238c593331cc7cd313b50"
++
 +[[package]]
 +name = "openssl-bridge"
 +version = "0.1.0"
-+dependencies = [
+ dependencies = [
+- "proc-macro2",
+- "quote",
+- "syn",
 + "openssl-bridge-sys",
-+]
-+
-+[[package]]
+ ]
+ 
+ [[package]]
+-name = "openssl-sys"
+-version = "0.9.117"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "b47e7e6bb2c38cd930d25a23b40fa52e068c10e85f3e03a7f5ba5aaca5713695"
 +name = "openssl-bridge-sys"
 +version = "0.1.0"
-+dependencies = [
+ dependencies = [
 + "bindgen",
-+ "cc",
-+ "pkg-config",
-+]
-+
+  "cc",
+- "libc",
+  "pkg-config",
+- "vcpkg",
+ ]
+ 
  [[package]]
- name = "openssl-macros"
- version = "0.1.1"
-@@ -242,6 +366,16 @@ version = "1.15.0"
+@@ -242,6 +300,16 @@ version = "1.15.0"
  source = "registry+https://github.com/rust-lang/crates.io-index"
  checksum = "05c8b63e8d9609db387f0324918f81d68fe27748f084ef092fb35954d0539a85"
  
@@ -252,7 +352,7 @@ index 9f7d181..cce5b38 100644
  [[package]]
  name = "proc-macro2"
  version = "1.0.107"
-@@ -317,12 +451,53 @@ dependencies = [
+@@ -317,12 +385,53 @@ dependencies = [
   "proc-macro2",
  ]
  
@@ -306,21 +406,30 @@ index 9f7d181..cce5b38 100644
  [[package]]
  name = "shlex"
  version = "2.0.1"
-@@ -357,3 +532,9 @@ name = "vcpkg"
- version = "0.2.15"
- source = "registry+https://github.com/rust-lang/crates.io-index"
- checksum = "accd4ea62f7bb7a82fe23066fb0957d48ef677f6eeb8215f372f52e48bb32426"
-+
-+[[package]]
+@@ -353,7 +462,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "d245f478577f809a851594d02313b640fb437e0bb33866753cff937863096954"
+ 
+ [[package]]
+-name = "vcpkg"
+-version = "0.2.15"
 +name = "windows-link"
 +version = "0.2.1"
-+source = "registry+https://github.com/rust-lang/crates.io-index"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "accd4ea62f7bb7a82fe23066fb0957d48ef677f6eeb8215f372f52e48bb32426"
 +checksum = "f0805222e57f7521d6a62e36fa9163bc891acd422f971defe97d64e70d0a4fe5"
 diff --git a/Cargo.toml b/Cargo.toml
-index c9783a4..a6e24ce 100644
+index c9783a4..5a2db6d 100644
 --- a/Cargo.toml
 +++ b/Cargo.toml
-@@ -21,6 +21,8 @@ rust-version = "1.83.0"
+@@ -6,7 +6,6 @@ members = [
+     "src/rust/cryptography-crypto",
+     "src/rust/cryptography-keepalive",
+     "src/rust/cryptography-key-parsing",
+-    "src/rust/cryptography-openssl",
+     "src/rust/cryptography-x509",
+     "src/rust/cryptography-x509-verification",
+ ]
+@@ -21,14 +20,12 @@ rust-version = "1.83.0"
  license = "Apache-2.0 OR BSD-3-Clause"
  
  [workspace.dependencies]
@@ -329,18 +438,134 @@ index c9783a4..a6e24ce 100644
  asn1 = { version = "0.24.1", default-features = false }
  base64 = "0.23"
  cc = "1.2.63"
+ cfg-if = "1"
+-foreign-types = "0.3"
+-foreign-types-shared = "0.1"
+-openssl = "0.10.80"
+-openssl-sys = "0.9.116"
+ pem = { version = "4", default-features = false }
+ pyo3 = { version = "0.29", features = ["abi3", "abi3t"] }
+ pyo3-build-config = { version = "0.29" }
 diff --git a/src/rust/Cargo.toml b/src/rust/Cargo.toml
-index 878a23d..e72306c 100644
+index 878a23d..a2b0c9d 100644
 --- a/src/rust/Cargo.toml
 +++ b/src/rust/Cargo.toml
-@@ -8,6 +8,7 @@ rust-version.workspace = true
+@@ -8,6 +8,8 @@ rust-version.workspace = true
  license.workspace = true
  
  [dependencies]
 +openssl-bridge.workspace = true
++openssl-bridge-sys.workspace = true
  asn1.workspace = true
  base64.workspace = true
  cfg-if.workspace = true
+@@ -15,12 +17,8 @@ cryptography-cffi = { path = "cryptography-cffi" }
+ cryptography-crypto = { path = "cryptography-crypto" }
+ cryptography-keepalive = { path = "cryptography-keepalive" }
+ cryptography-key-parsing = { path = "cryptography-key-parsing" }
+-cryptography-openssl = { path = "cryptography-openssl" }
+ cryptography-x509 = { path = "cryptography-x509" }
+ cryptography-x509-verification = { path = "cryptography-x509-verification" }
+-foreign-types-shared.workspace = true
+-openssl.workspace = true
+-openssl-sys.workspace = true
+ pem.workspace = true
+ pyo3.workspace = true
+ self_cell.workspace = true
+diff --git a/src/rust/build.rs b/src/rust/build.rs
+index 807f7af..b5b6934 100644
+--- a/src/rust/build.rs
++++ b/src/rust/build.rs
+@@ -10,13 +10,13 @@ fn main() {
+     // recompiles the crate) whenever any mtime in the package changes,
+     // which defeats CI build caching. Everything below depends only on
+     // this file, the environment variables it reads, and metadata from
+-    // openssl-sys (which cargo tracks as a dependency on its own).
++    // openssl-bridge-sys (which cargo tracks as a dependency on its own).
+     println!("cargo:rerun-if-changed=build.rs");
+     println!("cargo:rerun-if-env-changed=CRYPTOGRAPHY_BUILD_OPENSSL_NO_LEGACY");
+ 
+     pyo3_build_config::use_pyo3_cfgs();
+ 
+-    if let Ok(version) = env::var("DEP_OPENSSL_VERSION_NUMBER") {
++    if let Ok(version) = env::var("DEP_OPENSSL_BRIDGE_VERSION_NUMBER") {
+         let version = u64::from_str_radix(&version, 16).unwrap();
+ 
+         if version >= 0x3_00_09_00_0 {
+@@ -33,15 +33,15 @@ fn main() {
+         }
+     }
+ 
+-    if env::var("DEP_OPENSSL_LIBRESSL_VERSION_NUMBER").is_ok() {
++    if env::var("DEP_OPENSSL_BRIDGE_LIBRESSL_VERSION_NUMBER").is_ok() {
+         println!("cargo:rustc-cfg=CRYPTOGRAPHY_IS_LIBRESSL");
+     }
+ 
+-    if env::var("DEP_OPENSSL_BORINGSSL").is_ok() {
++    if env::var("DEP_OPENSSL_BRIDGE_BORINGSSL").is_ok() {
+         println!("cargo:rustc-cfg=CRYPTOGRAPHY_IS_BORINGSSL");
+     }
+ 
+-    if env::var("DEP_OPENSSL_AWSLC").is_ok() {
++    if env::var("DEP_OPENSSL_BRIDGE_AWSLC").is_ok() {
+         println!("cargo:rustc-cfg=CRYPTOGRAPHY_IS_AWSLC");
+     }
+ 
+@@ -49,7 +49,7 @@ fn main() {
+         println!("cargo:rustc-cfg=CRYPTOGRAPHY_BUILD_OPENSSL_NO_LEGACY");
+     }
+ 
+-    if let Ok(vars) = env::var("DEP_OPENSSL_CONF") {
++    if let Ok(vars) = env::var("DEP_OPENSSL_BRIDGE_CONF") {
+         for var in vars.split(',') {
+             println!("cargo:rustc-cfg=CRYPTOGRAPHY_OSSLCONF=\"{var}\"");
+         }
+diff --git a/src/rust/cryptography-cffi/Cargo.toml b/src/rust/cryptography-cffi/Cargo.toml
+index 44d479b..d2a8209 100644
+--- a/src/rust/cryptography-cffi/Cargo.toml
++++ b/src/rust/cryptography-cffi/Cargo.toml
+@@ -9,7 +9,7 @@ license.workspace = true
+ 
+ [dependencies]
+ pyo3.workspace = true
+-openssl-sys.workspace = true
++openssl-bridge-sys.workspace = true
+ 
+ [build-dependencies]
+ cc.workspace = true
+diff --git a/src/rust/cryptography-cffi/build.rs b/src/rust/cryptography-cffi/build.rs
+index 0d34248..1f4ec4e 100644
+--- a/src/rust/cryptography-cffi/build.rs
++++ b/src/rust/cryptography-cffi/build.rs
+@@ -102,7 +102,9 @@ fn main() {
+     let mut build = cc::Build::new();
+     build
+         .file(openssl_c)
+-        .includes(std::env::var_os("DEP_OPENSSL_INCLUDE"))
++        .includes(std::env::split_paths(
++            &std::env::var_os("DEP_OPENSSL_BRIDGE_INCLUDE").expect("native include paths"),
++        ))
+         .flag_if_supported("-Wconversion")
+         .flag_if_supported("-Wno-error=sign-conversion")
+         .flag_if_supported("-Wno-unused-parameter");
+diff --git a/src/rust/cryptography-cffi/src/lib.rs b/src/rust/cryptography-cffi/src/lib.rs
+index ca32a7b..2f55f05 100644
+--- a/src/rust/cryptography-cffi/src/lib.rs
++++ b/src/rust/cryptography-cffi/src/lib.rs
+@@ -4,10 +4,10 @@
+ 
+ #![deny(rust_2018_idioms, clippy::undocumented_unsafe_blocks)]
+ 
+-// Not called directly, but `build.rs` needs `DEP_OPENSSL_INCLUDE`, which
+-// Cargo only exposes to immediate dependents of `openssl-sys`. This `use`
++// Not called directly, but `build.rs` needs `DEP_OPENSSL_BRIDGE_INCLUDE`, which
++// Cargo only exposes to immediate dependents of `openssl-bridge-sys`. This `use`
+ // keeps `cargo::unused_dependencies` from flagging it.
+-use openssl_sys as _;
++use openssl_bridge_sys as _;
+ 
+ #[cfg(python_implementation = "PyPy")]
+ extern "C" {
 diff --git a/src/rust/cryptography-crypto/Cargo.toml b/src/rust/cryptography-crypto/Cargo.toml
 index 979931e..698d2e7 100644
 --- a/src/rust/cryptography-crypto/Cargo.toml
@@ -3137,7 +3362,7 @@ index 920abfb..736b294 100644
 +    out.into()
  }
 diff --git a/src/rust/src/backend/aead.rs b/src/rust/src/backend/aead.rs
-index 2289d1c..06a0b13 100644
+index 2289d1c..c64aff6 100644
 --- a/src/rust/src/backend/aead.rs
 +++ b/src/rust/src/backend/aead.rs
 @@ -46,11 +46,13 @@ fn extract_aad(aad: Option<Aad<'_>>) -> CryptographyResult<(ExtractedAad<'_>, us
@@ -3669,6 +3894,15 @@ index 2289d1c..06a0b13 100644
  }
  
  #[pyo3::pymethods]
+@@ -506,7 +204,7 @@ impl ChaCha20Poly1305 {
+                 pyo3::exceptions::PyValueError::new_err("ChaCha20Poly1305 key must be 32 bytes."),
+             ));
+         }
+-        if cryptography_openssl::fips::is_enabled() {
++        if openssl_bridge::runtime::is_fips_enabled() {
+             return Err(CryptographyError::from(
+                 exceptions::UnsupportedAlgorithm::new_err((
+                     "ChaCha20Poly1305 is not supported by this version of OpenSSL",
 @@ -518,22 +216,20 @@ impl ChaCha20Poly1305 {
          cfg_if::cfg_if! {
              if #[cfg(any(CRYPTOGRAPHY_IS_BORINGSSL, CRYPTOGRAPHY_IS_AWSLC))] {
@@ -3783,6 +4017,15 @@ index 2289d1c..06a0b13 100644
  }
  
  #[pyo3::pymethods]
+@@ -1127,7 +813,7 @@ impl AesSiv {
+ 
+         cfg_if::cfg_if! {
+             if #[cfg(not(any(CRYPTOGRAPHY_IS_LIBRESSL, CRYPTOGRAPHY_IS_BORINGSSL, CRYPTOGRAPHY_IS_AWSLC)))] {
+-                if cryptography_openssl::fips::is_enabled() {
++                if openssl_bridge::runtime::is_fips_enabled() {
+                     return Err(CryptographyError::from(
+                         exceptions::UnsupportedAlgorithm::new_err((
+                             "AES-SIV is not supported by this version of OpenSSL",
 @@ -1136,16 +822,14 @@ impl AesSiv {
                      ));
                  }
@@ -3812,6 +4055,15 @@ index 2289d1c..06a0b13 100644
  }
  
  #[pyo3::pymethods]
+@@ -1313,7 +997,7 @@ impl AesOcb3 {
+                     )),
+                 ))
+             } else {
+-                if cryptography_openssl::fips::is_enabled() {
++                if openssl_bridge::runtime::is_fips_enabled() {
+                     return Err(CryptographyError::from(
+                         exceptions::UnsupportedAlgorithm::new_err((
+                             "AES-OCB3 is not supported by this version of OpenSSL",
 @@ -1323,9 +1007,9 @@ impl AesOcb3 {
                  }
  
@@ -3874,6 +4126,15 @@ index 2289d1c..06a0b13 100644
                  })
              } else if #[cfg(not(CRYPTOGRAPHY_OPENSSL_320_OR_GREATER))] {
                  let _ = cipher_name;
+@@ -1551,7 +1230,7 @@ impl AesGcmSiv {
+                     )),
+                 ))
+             } else {
+-                if cryptography_openssl::fips::is_enabled() {
++                if openssl_bridge::runtime::is_fips_enabled() {
+                     return Err(CryptographyError::from(
+                         exceptions::UnsupportedAlgorithm::new_err((
+                             "AES-GCM-SIV is not supported by this version of OpenSSL",
 @@ -1559,16 +1238,14 @@ impl AesGcmSiv {
                          )),
                      ));
@@ -6528,7 +6789,7 @@ index f5a31ff..e819a14 100644
  
      fn __copy__(slf: pyo3::PyRef<'_, Self>) -> pyo3::PyRef<'_, Self> {
 diff --git a/src/rust/src/backend/hashes.rs b/src/rust/src/backend/hashes.rs
-index fa3b924..656cdff 100644
+index fa3b924..eeafb50 100644
 --- a/src/rust/src/backend/hashes.rs
 +++ b/src/rust/src/backend/hashes.rs
 @@ -2,8 +2,6 @@
@@ -6562,7 +6823,7 @@ index fa3b924..656cdff 100644
          if let Some(ctx) = self.ctx.as_mut() {
              return Ok(ctx);
          }
-@@ -33,42 +31,60 @@ impl Hash {
+@@ -33,42 +31,46 @@ impl Hash {
      }
  }
  
@@ -6609,20 +6870,6 @@ index fa3b924..656cdff 100644
      }
  }
  
-+pub(crate) fn message_digest_from_algorithm(
-+    py: pyo3::Python<'_>,
-+    algorithm: &pyo3::Bound<'_, pyo3::PyAny>,
-+) -> CryptographyResult<openssl::hash::MessageDigest> {
-+    let name = algorithm_name(py, algorithm)?;
-+    openssl::hash::MessageDigest::from_name(&name).ok_or_else(|| {
-+        exceptions::UnsupportedAlgorithm::new_err((
-+            format!("{name} is not a supported hash on this backend"),
-+            exceptions::Reasons::UNSUPPORTED_HASH,
-+        ))
-+        .into()
-+    })
-+}
-+
 +pub(crate) fn bridge_digest_from_algorithm(
 +    py: pyo3::Python<'_>,
 +    algorithm: &pyo3::Bound<'_, pyo3::PyAny>,
@@ -6644,7 +6891,7 @@ index fa3b924..656cdff 100644
  }
  
  impl Hash {
-@@ -94,8 +110,8 @@ impl Hash {
+@@ -94,8 +96,8 @@ impl Hash {
      ) -> CryptographyResult<Hash> {
          let _ = backend;
  
@@ -6655,7 +6902,7 @@ index fa3b924..656cdff 100644
  
          Ok(Hash {
              algorithm: algorithm.clone().unbind(),
-@@ -116,12 +132,15 @@ impl Hash {
+@@ -116,12 +118,15 @@ impl Hash {
              let algorithm = self.algorithm.clone_ref(py);
              let algorithm = algorithm.bind(py);
              if algorithm.is_instance(&types::EXTENDABLE_OUTPUT_FUNCTION.get(py)?)? {
@@ -6673,7 +6920,7 @@ index fa3b924..656cdff 100644
                      Ok(())
                  })?;
                  self.ctx = None;
-@@ -129,7 +148,11 @@ impl Hash {
+@@ -129,7 +134,11 @@ impl Hash {
              }
          }
  
@@ -6686,7 +6933,7 @@ index fa3b924..656cdff 100644
          self.ctx = None;
          Ok(pyo3::types::PyBytes::new(py, &data))
      }
-@@ -137,7 +160,7 @@ impl Hash {
+@@ -137,7 +146,7 @@ impl Hash {
      fn copy(&self, py: pyo3::Python<'_>) -> CryptographyResult<Hash> {
          Ok(Hash {
              algorithm: self.algorithm.clone_ref(py),
@@ -6695,7 +6942,7 @@ index fa3b924..656cdff 100644
          })
      }
  
-@@ -147,7 +170,7 @@ impl Hash {
+@@ -147,7 +156,7 @@ impl Hash {
          algorithm: &pyo3::Bound<'_, pyo3::PyAny>,
          data: CffiBuf<'_>,
      ) -> CryptographyResult<pyo3::Bound<'p, pyo3::types::PyBytes>> {
@@ -6704,7 +6951,7 @@ index fa3b924..656cdff 100644
  
          #[cfg(not(any(CRYPTOGRAPHY_IS_LIBRESSL, CRYPTOGRAPHY_IS_BORINGSSL)))]
          {
-@@ -156,7 +179,7 @@ impl Hash {
+@@ -156,7 +165,7 @@ impl Hash {
                      .getattr(pyo3::intern!(py, "digest_size"))?
                      .extract::<usize>()?;
                  let result = pyo3::types::PyBytes::new_with(py, digest_size, |b| {
@@ -6713,7 +6960,7 @@ index fa3b924..656cdff 100644
                          .map_err(CryptographyError::from)?;
                      Ok(())
                  })?;
-@@ -166,7 +189,7 @@ impl Hash {
+@@ -166,7 +175,7 @@ impl Hash {
  
          let data = data.as_bytes();
          let digest = crate::backend::run_with_gil_detached(py, data.len(), || {
@@ -6722,7 +6969,7 @@ index fa3b924..656cdff 100644
          })?;
          Ok(pyo3::types::PyBytes::new(py, &digest))
      }
-@@ -176,7 +199,7 @@ impl Hash {
+@@ -176,7 +185,7 @@ impl Hash {
  pub(crate) struct XOFHash {
      #[pyo3(get)]
      algorithm: pyo3::Py<pyo3::PyAny>,
@@ -6731,7 +6978,7 @@ index fa3b924..656cdff 100644
      bytes_remaining: u64,
      squeezed: bool,
  }
-@@ -221,8 +244,8 @@ impl XOFHash {
+@@ -221,8 +230,8 @@ impl XOFHash {
                          ),
                      ));
                  }
@@ -6742,7 +6989,7 @@ index fa3b924..656cdff 100644
                  // We treat digest_size as the maximum total output for this API
                  let bytes_remaining = algorithm
                      .getattr(pyo3::intern!(py, "digest_size"))?
-@@ -263,7 +286,7 @@ impl XOFHash {
+@@ -263,7 +272,7 @@ impl XOFHash {
                  )
              })?;
          let result = pyo3::types::PyBytes::new_with(py, length, |b| {
@@ -6751,7 +6998,7 @@ index fa3b924..656cdff 100644
              Ok(())
          })?;
          Ok(result)
-@@ -272,7 +295,7 @@ impl XOFHash {
+@@ -272,7 +281,7 @@ impl XOFHash {
      fn copy(&self, py: pyo3::Python<'_>) -> CryptographyResult<XOFHash> {
          Ok(XOFHash {
              algorithm: self.algorithm.clone_ref(py),
@@ -6856,7 +7103,7 @@ index d8055d3..71073c4 100644
          labeled_ikm.extend_from_slice(HPKE_VERSION);
          labeled_ikm.extend_from_slice(&self.hpke_suite_id);
 diff --git a/src/rust/src/backend/kdf.rs b/src/rust/src/backend/kdf.rs
-index ee4829c..7b8081d 100644
+index ee4829c..45e2ee5 100644
 --- a/src/rust/src/backend/kdf.rs
 +++ b/src/rust/src/backend/kdf.rs
 @@ -23,9 +23,9 @@ use crate::{exceptions, types};
@@ -6905,7 +7152,87 @@ index ee4829c..7b8081d 100644
                  key_material,
                  salt,
                  n,
-@@ -985,7 +992,7 @@ pub(crate) fn hkdf_extract(
+@@ -226,7 +233,7 @@ impl Scrypt {
+                     ),
+                 ))
+             } else {
+-                if cryptography_openssl::fips::is_enabled() {
++                if openssl_bridge::runtime::is_fips_enabled() {
+                     return Err(CryptographyError::from(
+                         exceptions::UnsupportedAlgorithm::new_err(
+                             "This version of OpenSSL does not support scrypt"
+@@ -361,41 +368,33 @@ impl BaseArgon2 {
+             ));
+         }
+ 
+-        let derive_fn = match &variant {
+-            Argon2Variant::Argon2d => openssl::kdf::argon2d,
+-            Argon2Variant::Argon2i => openssl::kdf::argon2i,
+-            Argon2Variant::Argon2id => openssl::kdf::argon2id,
++        let variant = match variant {
++            Argon2Variant::Argon2d => openssl_bridge::argon2::Variant::D,
++            Argon2Variant::Argon2i => openssl_bridge::argon2::Variant::I,
++            Argon2Variant::Argon2id => openssl_bridge::argon2::Variant::Id,
+         };
+-
+         let salt = self.salt.as_bytes(py);
+         let ad = self.ad.as_ref().map(|ad| ad.as_bytes(py));
+         let secret = self.secret.as_ref().map(|secret| secret.as_bytes(py));
+         let iterations = self.iterations;
+         let lanes = self.lanes;
+         let memory_cost = self.memory_cost;
+-        py.detach(|| {
+-            (derive_fn)(
+-                None,
+-                key_material,
+-                salt,
+-                ad,
+-                secret,
+-                iterations,
+-                lanes,
+-                memory_cost,
+-                output,
+-            )
+-        })
+-        .map_err(|_| {
+-            // In theory other init issues (e.g. PROV_R_INVALID_THREAD_POOL_SIZE
+-            // on builds without thread-pool support) can also occur here, but
+-            // in practice failures from OpenSSL's argon2 provider at this point
+-            // are memory-allocation failures, so we strictly map to MemoryError.
+-            CryptographyError::from(pyo3::exceptions::PyMemoryError::new_err(format!(
+-                "Not enough memory to derive key. These parameters require {}KiB of memory.",
+-                self.memory_cost
+-            )))
+-        })?;
++        let parameters = openssl_bridge::argon2::Parameters::new(
++            std::num::NonZeroU32::new(iterations).unwrap(),
++            std::num::NonZeroU32::new(lanes).unwrap(),
++            memory_cost,
++        )?;
++        py.detach(|| parameters.derive_into(variant, key_material, salt, ad, secret, output))
++            .map_err(|_| {
++                // In theory other init issues (e.g. PROV_R_INVALID_THREAD_POOL_SIZE
++                // on builds without thread-pool support) can also occur here, but
++                // in practice failures from OpenSSL's argon2 provider at this point
++                // are memory-allocation failures, so we strictly map to MemoryError.
++                CryptographyError::from(pyo3::exceptions::PyMemoryError::new_err(format!(
++                    "Not enough memory to derive key. These parameters require {}KiB of memory.",
++                    self.memory_cost
++                )))
++            })?;
+ 
+         Ok(self.length)
+     }
+@@ -428,7 +427,7 @@ impl BaseArgon2 {
+                     ),
+                 ))
+             } else {
+-                if cryptography_openssl::fips::is_enabled() {
++                if openssl_bridge::runtime::is_fips_enabled() {
+                     return Err(CryptographyError::from(
+                         exceptions::UnsupportedAlgorithm::new_err(
+                             "This version of OpenSSL does not support argon2"
+@@ -985,7 +984,7 @@ pub(crate) fn hkdf_extract(
      algorithm: &pyo3::Py<pyo3::PyAny>,
      salt: Option<&[u8]>,
      key_material: &CffiBuf<'_>,
@@ -6914,7 +7241,7 @@ index ee4829c..7b8081d 100644
      let algorithm_bound = algorithm.bind(py);
      let digest_size = algorithm_bound
          .getattr(pyo3::intern!(py, "digest_size"))?
-@@ -1860,7 +1867,7 @@ fn kbkdf_derive_into_buffer<F>(
+@@ -1860,7 +1859,7 @@ fn kbkdf_derive_into_buffer<F>(
      mut prf_fn: F,
  ) -> CryptographyResult<usize>
  where
@@ -6923,6 +7250,15 @@ index ee4829c..7b8081d 100644
  {
      if output.len() != length {
          return Err(CryptographyError::from(
+@@ -1970,7 +1969,7 @@ impl KbkdfHmac {
+         )?;
+ 
+         let algorithm_bound = algorithm.bind(py);
+-        let _md = hashes::message_digest_from_algorithm(py, algorithm_bound)?;
++        let _md = hashes::bridge_digest_from_algorithm(py, algorithm_bound)?;
+         let digest_size = algorithm_bound
+             .getattr(pyo3::intern!(py, "digest_size"))?
+             .extract::<usize>()?;
 diff --git a/src/rust/src/backend/keys.rs b/src/rust/src/backend/keys.rs
 index 37b8dd7..2567339 100644
 --- a/src/rust/src/backend/keys.rs
@@ -8854,7 +9190,7 @@ index 42195db..bde2394 100644
 +    }
 +}
 diff --git a/src/rust/src/backend/poly1305.rs b/src/rust/src/backend/poly1305.rs
-index 9e9aa61..ba6bb03 100644
+index 9e9aa61..70cd0fc 100644
 --- a/src/rust/src/backend/poly1305.rs
 +++ b/src/rust/src/backend/poly1305.rs
 @@ -9,138 +9,33 @@ use crate::buf::CffiBuf;
@@ -8994,7 +9330,7 @@ index 9e9aa61..ba6bb03 100644
 -        return Ok(Poly1305 {
 -            inner: Some(Poly1305Open::new(key)?),
 -        });
-+        if cryptography_openssl::fips::is_enabled() {
++        if openssl_bridge::runtime::is_fips_enabled() {
 +            return Err(exceptions::UnsupportedAlgorithm::new_err((
 +                "poly1305 is not supported by this version of OpenSSL.",
 +                exceptions::Reasons::UNSUPPORTED_MAC,
@@ -9971,7 +10307,7 @@ index 86bc1a0..ce4f305 100644
  
      fn __eq__(
 diff --git a/src/rust/src/backend/utils.rs b/src/rust/src/backend/utils.rs
-index f8a6369..2e0faa4 100644
+index f8a6369..803d90f 100644
 --- a/src/rust/src/backend/utils.rs
 +++ b/src/rust/src/backend/utils.rs
 @@ -9,40 +9,11 @@ use crate::error::{CryptographyError, CryptographyResult};
@@ -10049,7 +10385,15 @@ index f8a6369..2e0faa4 100644
              )
          };
  
-@@ -125,8 +94,8 @@ pub(crate) fn pkey_private_bytes<'p>(
+@@ -118,15 +87,15 @@ pub(crate) fn pkey_private_bytes<'p>(
+     }
+ 
+     if format == PrivateFormat::TraditionalOpenSSL {
+-        if cryptography_openssl::fips::is_enabled() && !password.is_empty() {
++        if openssl_bridge::runtime::is_fips_enabled() && !password.is_empty() {
+             return Err(CryptographyError::from(
+                 pyo3::exceptions::PyValueError::new_err(
+                     "Encrypted traditional OpenSSL format is not supported in FIPS mode",
                  ),
              ));
          }
@@ -10546,13 +10890,25 @@ index 24fc6a6..2a80ec8 100644
          let cipher = ChunkCipher::new(py, params, &keys)?;
          let mut header = [0; HEADER_LEN];
 diff --git a/src/rust/src/error.rs b/src/rust/src/error.rs
-index cd7c850..1b08d76 100644
+index cd7c850..a168b0e 100644
 --- a/src/rust/src/error.rs
 +++ b/src/rust/src/error.rs
-@@ -58,6 +58,50 @@ impl From<openssl::error::ErrorStack> for CryptographyError {
+@@ -13,7 +13,7 @@ pub enum CryptographyError {
+     Asn1Write(asn1::WriteError),
+     KeyParsing(asn1::ParseError),
+     Py(pyo3::PyErr),
+-    OpenSSL(openssl::error::ErrorStack),
++    OpenSSL(openssl_bridge::Error),
+ }
+ 
+ impl From<asn1::ParseError> for CryptographyError {
+@@ -52,9 +52,24 @@ impl From<pyo3::pyclass::PyClassGuardError<'_, '_>> for CryptographyError {
      }
  }
  
+-impl From<openssl::error::ErrorStack> for CryptographyError {
+-    fn from(e: openssl::error::ErrorStack) -> CryptographyError {
+-        CryptographyError::OpenSSL(e)
 +impl From<openssl_bridge::Error> for CryptographyError {
 +    fn from(error: openssl_bridge::Error) -> Self {
 +        let message = error.to_string();
@@ -10561,7 +10917,7 @@ index cd7c850..1b08d76 100644
 +                let errors = pyo3::types::PyList::empty(py);
 +                if let openssl_bridge::Error::Native(native) = error {
 +                    for e in native {
-+                        errors.append(pyo3::Bound::new(py, BridgeOpenSSLError { e })?)?;
++                        errors.append(pyo3::Bound::new(py, OpenSSLError { e })?)?;
 +                    }
 +                }
 +                Ok::<_, pyo3::PyErr>(exceptions::InternalError::new_err((
@@ -10571,36 +10927,10 @@ index cd7c850..1b08d76 100644
 +            })
 +            .unwrap_or_else(|error| error),
 +        )
-+    }
-+}
-+
-+#[pyo3::pyclass(frozen, module = "cryptography.hazmat.bindings._rust.openssl")]
-+struct BridgeOpenSSLError {
-+    e: openssl_bridge::error::NativeError,
-+}
-+
-+#[pyo3::pymethods]
-+impl BridgeOpenSSLError {
-+    #[getter]
-+    fn lib(&self) -> i32 {
-+        self.e.library
-+    }
-+
-+    #[getter]
-+    fn reason(&self) -> i32 {
-+        self.e.reason
-+    }
-+
-+    #[getter]
-+    fn reason_text(&self) -> &[u8] {
-+        self.e.reason_text.as_bytes()
-+    }
-+}
-+
- impl From<pem::PemError> for CryptographyError {
-     fn from(e: pem::PemError) -> CryptographyError {
-         CryptographyError::Py(pyo3::exceptions::PyValueError::new_err(format!(
-@@ -70,7 +114,10 @@ impl From<cryptography_key_parsing::KeyParsingError> for CryptographyError {
+     }
+ }
+ 
+@@ -70,7 +85,10 @@ impl From<cryptography_key_parsing::KeyParsingError> for CryptographyError {
      fn from(e: cryptography_key_parsing::KeyParsingError) -> CryptographyError {
          match e {
              cryptography_key_parsing::KeyParsingError::Parse(e) => CryptographyError::KeyParsing(e),
@@ -10612,7 +10942,7 @@ index cd7c850..1b08d76 100644
              cryptography_key_parsing::KeyParsingError::InvalidKey => {
                  CryptographyError::Py(pyo3::exceptions::PyValueError::new_err("Invalid key"))
              }
-@@ -155,13 +202,24 @@ impl From<cryptography_key_parsing::KeySerializationError> for CryptographyError
+@@ -155,27 +173,22 @@ impl From<cryptography_key_parsing::KeySerializationError> for CryptographyError
              cryptography_key_parsing::KeySerializationError::Write(e) => {
                  CryptographyError::Asn1Write(e)
              }
@@ -10624,23 +10954,116 @@ index cd7c850..1b08d76 100644
      }
  }
  
+-pub(crate) fn list_from_openssl_error<'p>(
 +pub(crate) fn list_from_bridge_error<'p>(
-+    py: pyo3::Python<'p>,
+     py: pyo3::Python<'p>,
+-    error_stack: &openssl::error::ErrorStack,
+-) -> pyo3::Bound<'p, pyo3::types::PyList> {
 +    error: &openssl_bridge::Error,
 +) -> pyo3::PyResult<pyo3::Bound<'p, pyo3::types::PyList>> {
-+    let errors = pyo3::types::PyList::empty(py);
+     let errors = pyo3::types::PyList::empty(py);
+-    for e in error_stack.errors() {
+-        errors
+-            .append(
+-                pyo3::Bound::new(py, OpenSSLError { e: e.clone() })
+-                    .expect("Failed to create OpenSSLError"),
+-            )
+-            .expect("Failed to append to list");
 +    if let openssl_bridge::Error::Native(native) = error {
 +        for e in native {
-+            errors.append(pyo3::Bound::new(py, BridgeOpenSSLError { e: e.clone() })?)?;
++            errors.append(pyo3::Bound::new(py, OpenSSLError { e: e.clone() })?)?;
 +        }
-+    }
+     }
+-    errors
 +    Ok(errors)
-+}
-+
- pub(crate) fn list_from_openssl_error<'p>(
-     py: pyo3::Python<'p>,
-     error_stack: &openssl::error::ErrorStack,
-@@ -377,11 +435,11 @@ mod tests {
+ }
+ 
+ impl fmt::Display for CryptographyError {
+@@ -232,10 +245,14 @@ impl From<CryptographyError> for pyo3::PyErr {
+                 pyo3::exceptions::PyValueError::new_err(e.to_string())
+             }
+             CryptographyError::Py(py_error) => py_error,
+-            CryptographyError::OpenSSL(ref error_stack) => pyo3::Python::attach(|py| {
+-                let errors = list_from_openssl_error(py, error_stack);
+-                exceptions::InternalError::new_err((e.to_string(), errors.unbind()))
+-            }),
++            CryptographyError::OpenSSL(ref error_stack) => {
++                pyo3::Python::attach(|py| match list_from_bridge_error(py, error_stack) {
++                    Ok(errors) => {
++                        exceptions::InternalError::new_err((e.to_string(), errors.unbind()))
++                    }
++                    Err(error) => error,
++                })
++            }
+         }
+     }
+ }
+@@ -274,29 +291,31 @@ pub(crate) type CryptographyResult<T> = Result<T, CryptographyError>;
+ 
+ #[pyo3::pyfunction]
+ pub(crate) fn raise_openssl_error() -> crate::error::CryptographyResult<()> {
+-    Err(openssl::error::ErrorStack::get().into())
++    Err(CryptographyError::OpenSSL(openssl_bridge::Error::Native(
++        openssl_bridge::error::take_error_queue(),
++    )))
+ }
+ 
+ #[pyo3::pyclass(frozen, module = "cryptography.hazmat.bindings._rust.openssl")]
+ pub(crate) struct OpenSSLError {
+-    e: openssl::error::Error,
++    e: openssl_bridge::error::NativeError,
+ }
+ 
+ #[pyo3::pymethods]
+ impl OpenSSLError {
+     #[getter]
+     fn lib(&self) -> i32 {
+-        self.e.library_code()
++        self.e.library
+     }
+ 
+     #[getter]
+     fn reason(&self) -> i32 {
+-        self.e.reason_code()
++        self.e.reason
+     }
+ 
+     #[getter]
+     fn reason_text(&self) -> &[u8] {
+-        self.e.reason().unwrap_or("").as_bytes()
++        self.e.reason_text.as_bytes()
+     }
+ 
+     fn __repr__<'py>(
+@@ -307,10 +326,7 @@ impl OpenSSLError {
+             py,
+             format_args!(
+                 "<OpenSSLError(code={}, lib={}, reason={}, reason_text={})>",
+-                self.e.code(),
+-                self.e.library_code(),
+-                self.e.reason_code(),
+-                self.e.reason().unwrap_or("")
++                self.e.code, self.e.library, self.e.reason, self.e.reason_text
+             ),
+         )
+     }
+@@ -320,11 +336,10 @@ impl OpenSSLError {
+ pub(crate) fn capture_error_stack(
+     py: pyo3::Python<'_>,
+ ) -> pyo3::PyResult<pyo3::Bound<'_, pyo3::types::PyList>> {
+-    let errs = pyo3::types::PyList::empty(py);
+-    for e in openssl::error::ErrorStack::get().errors() {
+-        errs.append(pyo3::Bound::new(py, OpenSSLError { e: e.clone() })?)?;
+-    }
+-    Ok(errs)
++    list_from_bridge_error(
++        py,
++        &openssl_bridge::Error::Native(openssl_bridge::error::take_error_queue()),
++    )
+ }
+ 
+ #[cfg(test)]
+@@ -377,11 +392,11 @@ mod tests {
              .into();
              assert!(matches!(e, CryptographyError::Py(_)));
  
@@ -10655,7 +11078,7 @@ index cd7c850..1b08d76 100644
  
              let e = pyo3::CastIntoError::new(
                  py.None().into_bound(py),
-@@ -410,12 +468,13 @@ mod tests {
+@@ -410,12 +425,13 @@ mod tests {
              CryptographyError::Asn1Write(asn1::WriteError::AllocationError)
          ));
  
@@ -10672,6 +11095,18 @@ index cd7c850..1b08d76 100644
          ));
      }
  
+@@ -428,8 +444,9 @@ mod tests {
+         CryptographyError::Asn1Write(asn1_write_err)
+             .add_location(asn1::ParseLocation::Field("meh"));
+ 
+-        let openssl_error = openssl::error::ErrorStack::get();
+-        CryptographyError::from(openssl_error).add_location(asn1::ParseLocation::Field("meh"));
++        let openssl_error =
++            openssl_bridge::Error::Native(openssl_bridge::error::take_error_queue());
++        CryptographyError::OpenSSL(openssl_error).add_location(asn1::ParseLocation::Field("meh"));
+ 
+         let asn1_parse_error = asn1::ParseError::new(asn1::ParseErrorKind::InvalidValue);
+         CryptographyError::KeyParsing(asn1_parse_error)
 diff --git a/src/rust/src/fernet.rs b/src/rust/src/fernet.rs
 index 4900e44..d613795 100644
 --- a/src/rust/src/fernet.rs
@@ -10787,10 +11222,99 @@ index 4900e44..d613795 100644
              .get()
              .encrypt_from_parts(py, &plaintext, timestamp, &iv)?;
 diff --git a/src/rust/src/lib.rs b/src/rust/src/lib.rs
-index 94ace30..ed1a2df 100644
+index 94ace30..bc1f605 100644
 --- a/src/rust/src/lib.rs
 +++ b/src/rust/src/lib.rs
-@@ -298,6 +298,7 @@ mod _rust {
+@@ -12,12 +12,6 @@
+ )))]
+ use std::env;
+ 
+-#[cfg(not(any(
+-    CRYPTOGRAPHY_IS_LIBRESSL,
+-    CRYPTOGRAPHY_IS_BORINGSSL,
+-    CRYPTOGRAPHY_IS_AWSLC
+-)))]
+-use openssl::provider;
+ #[cfg(not(any(
+     CRYPTOGRAPHY_IS_LIBRESSL,
+     CRYPTOGRAPHY_IS_BORINGSSL,
+@@ -55,25 +49,22 @@ mod x509;
+ )))]
+ #[pyo3::pyclass(module = "cryptography.hazmat.bindings._rust")]
+ struct LoadedProviders {
+-    legacy: Option<provider::Provider>,
+-    _default: provider::Provider,
+-
+-    fips: Option<provider::Provider>,
++    legacy: bool,
+ }
+ 
+ #[pyo3::pyfunction]
+ fn openssl_version() -> i64 {
+-    openssl::version::number()
++    openssl_bridge::runtime::version_number() as i64
+ }
+ 
+ #[pyo3::pyfunction]
+-fn openssl_version_text() -> &'static str {
+-    openssl::version::version()
++fn openssl_version_text() -> String {
++    openssl_bridge::runtime::version_text()
+ }
+ 
+ #[pyo3::pyfunction]
+ fn is_fips_enabled() -> bool {
+-    cryptography_openssl::fips::is_enabled()
++    openssl_bridge::runtime::is_fips_enabled()
+ }
+ 
+ #[cfg(not(any(
+@@ -92,25 +83,22 @@ fn _initialize_providers(py: pyo3::Python<'_>) -> CryptographyResult<LoadedProvi
+         && !env::var("CRYPTOGRAPHY_OPENSSL_NO_LEGACY").is_ok_and(|v| !v.is_empty() && v != "0");
+ 
+     let legacy = if load_legacy {
+-        let legacy_result = provider::Provider::load(None, "legacy");
++        let legacy_result = openssl_bridge::runtime::load_legacy_provider();
+         if legacy_result.is_err() {
+             let message = c"OpenSSL 3's legacy provider failed to load. Legacy algorithms will not be available. If you need those algorithms, check your OpenSSL configuration.";
+             let warning_cls = pyo3::exceptions::PyWarning::type_object(py);
+             pyo3::PyErr::warn(py, &warning_cls, message, 1)?;
+ 
+-            None
++            false
+         } else {
+-            Some(legacy_result?)
++            legacy_result?;
++            true
+         }
+     } else {
+-        None
++        false
+     };
+-    let _default = provider::Provider::load(None, "default")?;
+-    Ok(LoadedProviders {
+-        legacy,
+-        _default,
+-        fips: None,
+-    })
++    openssl_bridge::runtime::load_default_provider()?;
++    Ok(LoadedProviders { legacy })
+ }
+ 
+ #[cfg(not(any(
+@@ -121,9 +109,8 @@ fn _initialize_providers(py: pyo3::Python<'_>) -> CryptographyResult<LoadedProvi
+ // NO-COVERAGE-START
+ #[pyo3::pyfunction]
+ // NO-COVERAGE-END
+-fn enable_fips(providers: &mut LoadedProviders) -> CryptographyResult<()> {
+-    providers.fips = Some(provider::Provider::load(None, "fips")?);
+-    cryptography_openssl::fips::enable()?;
++fn enable_fips(_providers: &LoadedProviders) -> CryptographyResult<()> {
++    openssl_bridge::runtime::require_fips_enabled()?;
+     Ok(())
+ }
+ 
+@@ -298,10 +285,11 @@ mod _rust {
  
          #[pymodule_init]
          fn init(openssl_mod: &pyo3::Bound<'_, pyo3::types::PyModule>) -> pyo3::PyResult<()> {
@@ -10798,6 +11322,32 @@ index 94ace30..ed1a2df 100644
              cfg_if::cfg_if! {
                  if #[cfg(not(any(CRYPTOGRAPHY_IS_LIBRESSL, CRYPTOGRAPHY_IS_BORINGSSL, CRYPTOGRAPHY_IS_AWSLC)))] {
                      let providers = super::super::_initialize_providers(openssl_mod.py())?;
+-                    if providers.legacy.is_some() {
++                    if providers.legacy {
+                         openssl_mod.add("_legacy_provider_loaded", true)?;
+                     } else {
+                         openssl_mod.add("_legacy_provider_loaded", false)?;
+@@ -312,20 +300,6 @@ mod _rust {
+                     openssl_mod.add("_legacy_provider_loaded", false)?;
+                 }
+             }
+-            cfg_if::cfg_if! {
+-                if #[cfg(CRYPTOGRAPHY_OPENSSL_320_OR_GREATER)] {
+-                    use std::ptr;
+-                    use std::cmp::max;
+-
+-                    let available = std::thread::available_parallelism().map_or(0, |v| v.get() as u64);
+-                    // SAFETY: This sets a libctx provider limit, but we always use the same libctx by passing NULL.
+-                    unsafe {
+-                        let current = openssl_sys::OSSL_get_max_threads(ptr::null_mut());
+-                        // Set the thread limit to the max of available parallelism or current limit.
+-                        openssl_sys::OSSL_set_max_threads(ptr::null_mut(), max(available, current));
+-                    }
+-                }
+-            }
+ 
+             Ok(())
+         }
 diff --git a/src/rust/src/pkcs12.rs b/src/rust/src/pkcs12.rs
 index 48c190c..c6c004c 100644
 --- a/src/rust/src/pkcs12.rs
@@ -10985,7 +11535,7 @@ index 48c190c..c6c004c 100644
  
              let p12_cert = PKCS12Certificate::new(pyo3::Py::new(py, cert)?, alias);
 diff --git a/src/rust/src/pkcs7.rs b/src/rust/src/pkcs7.rs
-index 6ac87c1..7cc46cb 100644
+index 6ac87c1..ba32373 100644
 --- a/src/rust/src/pkcs7.rs
 +++ b/src/rust/src/pkcs7.rs
 @@ -16,7 +16,7 @@ use cryptography_x509::csr::Attribute;
@@ -10997,6 +11547,15 @@ index 6ac87c1..7cc46cb 100644
  use pyo3::types::{PyAnyMethods, PyBytesMethods, PyListMethods};
  #[cfg(not(any(CRYPTOGRAPHY_IS_BORINGSSL, CRYPTOGRAPHY_IS_AWSLC)))]
  use pyo3::PyTypeInfo;
+@@ -377,7 +377,7 @@ fn check_decrypt_parameters<'p>(
+     options: &pyo3::Bound<'p, pyo3::types::PyList>,
+ ) -> Result<(), CryptographyError> {
+     // Check if RSA encryption with PKCS1 v1.5 padding is supported (dependent of FIPS mode)
+-    if cryptography_openssl::fips::is_enabled() {
++    if openssl_bridge::runtime::is_fips_enabled() {
+         return Err(CryptographyError::from(
+             exceptions::UnsupportedAlgorithm::new_err((
+                 "RSA with PKCS1 v1.5 padding is not supported by this version of OpenSSL.",
 @@ -446,8 +446,12 @@ pub(crate) fn symmetric_decrypt(
          .getattr(pyo3::intern!(py, "block_size"))?
          .extract()?;

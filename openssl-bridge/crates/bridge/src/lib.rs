@@ -4,6 +4,8 @@
 //! operations require exclusive access. Failed operations poison their context;
 //! finalization consumes it. Fallible allocation and cloning return errors.
 pub mod aead;
+#[cfg(openssl_320)]
+pub mod argon2;
 pub mod cipher;
 pub mod containers;
 pub mod curve25519;
@@ -28,6 +30,7 @@ pub mod poly1305;
 mod pq;
 pub mod rand;
 pub mod rsa;
+pub mod runtime;
 pub mod secret;
 
 /// Compare equal-length byte strings without data-dependent early exit.

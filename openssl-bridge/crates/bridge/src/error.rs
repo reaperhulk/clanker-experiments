@@ -3,6 +3,15 @@ use std::{ffi::CStr, fmt};
 
 pub type Result<T> = std::result::Result<T, Error>;
 
+/// Drain the calling thread's native diagnostic queue into owned records.
+/// This is diagnostic state, not an indication that an operation succeeded.
+pub fn take_error_queue() -> Vec<NativeError> {
+    match Error::capture() {
+        Error::Native(errors) => errors,
+        _ => unreachable!(),
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct NativeError {
     pub code: u64,

@@ -108,3 +108,13 @@ failure. The PKCS#7 test verifier uses a narrow operation with explicit trust
 anchors. Full integration and cross-backend wrapper checks are in progress.
 Provider/FIPS initialization, Argon2, error queues, dependency removal, and the
 Python buffer boundary remain before the primary acceptance matrix.
+
+## Runtime integration under validation
+
+The integration removes both old OpenSSL crates and cryptography-openssl.
+Argon2 validates explicit work parameters, uses one worker, and passes RFC 9106
+known-answer tests on OpenSSL 4. Provider references live for the process; no
+unload handle or global FIPS property setter is exposed. FIPS configuration
+moves to process startup, with a corresponding cryptography CI configuration
+patch. Full canonical system/OpenSSL 4 checks are in progress. Python buffer
+aliasing and the final backend/version/configuration matrix remain mandatory.

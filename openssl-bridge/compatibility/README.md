@@ -12,15 +12,24 @@ depend solely on the new abstraction. Key parsing and serialization now use algo
 serialization views. Their PKCS#1, SEC1, SPKI, PKCS#8, and PEM code no longer
 uses native PKey/BigNum adapters. The key-parsing crate depends on the new sys
 crate only for backend build metadata and continues to forbid unsafe code.
-**The overall integration still retains the original openssl and openssl-sys
-dependencies for provider/FIPS controls, Argon2, native container compatibility,
-and error handling.** The full replacement is not yet complete.
+The integration now removes the `openssl`, `openssl-sys`, and
+`cryptography-openssl` Rust dependencies. Container decoding, Argon2, provider
+loading, runtime information, and error records also use the new layer.
+**Validation and the Python buffer-boundary audit are still in progress.**
+The CFFI/TLS layer is retained for the subsequent pyOpenSSL stage; its build
+metadata comes from the new sys crate.
 
 Use cryptography's canonical `nox -e local` session. Supply both
-`--wycheproof-root` and `--x509-limbo-root` pointing at the revisions recorded in
-`sources.json`. Set `OPENSSL_DIR` and `OPENSSL_STATIC` consistently for both
-binding layers. BoringSSL and AWS-LC also require `bindgen` on PATH while the
-original openssl-sys dependency remains. libclang must be discoverable.
+`--wycheproof-root` and `--x509-limbo-root` at the revisions in `sources.json`.
+Set `OPENSSL_DIR` and `OPENSSL_STATIC` for the selected native build. libclang
+must be discoverable; a separate bindgen executable is no longer required.
+
+OpenSSL FIPS properties must be configured before process startup using its
+configuration file. The integration's private activation hook now verifies this
+configuration instead of calling OpenSSL's non-thread-safe property setter.
+The cryptography patch also updates the upstream FIPS CI build configuration.
+Argon2 uses one worker, preserving the specified lane count and derived key,
+without changing the default context's global thread-pool limit.
 
 Use a separate checkout, nox environment, and Cargo target directory per
 backend. This prevents an extension built against one fork from being imported
