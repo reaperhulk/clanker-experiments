@@ -383,7 +383,11 @@ impl Stream {
                 ptr::null(),
                 ptr::null_mut(),
                 key.as_ptr(),
-                iv.as_ptr(),
+                if iv.is_empty() {
+                    ptr::null()
+                } else {
+                    iv.as_ptr()
+                },
                 encrypt,
             )
         })?;

@@ -15,7 +15,14 @@ int OB_md_is_xof(const EVP_MD *md) {
 int OB_err_lib(unsigned long code) { return ERR_GET_LIB(code); }
 int OB_err_reason(unsigned long code) { return ERR_GET_REASON(code); }
 int OB_cipher_key_size(const EVP_CIPHER *cipher) { return EVP_CIPHER_key_length(cipher); }
-int OB_cipher_iv_size(const EVP_CIPHER *cipher) { return EVP_CIPHER_iv_length(cipher); }
+int OB_cipher_iv_size(const EVP_CIPHER *cipher) {
+#if OB_BACKEND_CODE == 3
+    /* AWS-LC's legacy Blowfish ECB descriptor reports an eight-byte IV,
+     * although ECB does not use one. Pass NULL to native initialization. */
+    if (cipher == EVP_bf_ecb()) return 0;
+#endif
+    return EVP_CIPHER_iv_length(cipher);
+}
 int OB_cipher_block_size(const EVP_CIPHER *cipher) { return EVP_CIPHER_block_size(cipher); }
 int OB_signature_md(EVP_PKEY_CTX *ctx, const EVP_MD *md) { return EVP_PKEY_CTX_set_signature_md(ctx, md); }
 int OB_rsa_padding(EVP_PKEY_CTX *ctx, int padding) { return EVP_PKEY_CTX_set_rsa_padding(ctx, padding); }

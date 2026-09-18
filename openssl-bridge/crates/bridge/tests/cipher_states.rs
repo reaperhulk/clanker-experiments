@@ -155,3 +155,19 @@ fn xts_requires_one_complete_data_unit_and_distinct_keys() {
         .crypt_into(&[0; 15], &mut [0; 15])
         .is_err());
 }
+
+#[test]
+fn blowfish_ecb_has_no_iv() {
+    if !Cipher::BlowfishEcb.is_available() {
+        return;
+    }
+    let mut ctx =
+        Stream::new(Cipher::BlowfishEcb, Direction::Encrypt, &[0; 8], &[], false).unwrap();
+    let mut output = [0; 16];
+    let n = ctx.update_into(&[0; 8], &mut output).unwrap();
+    assert_eq!(
+        &output[..n],
+        &[0x4e, 0xf9, 0x97, 0x45, 0x61, 0x98, 0xdd, 0x78]
+    );
+    assert!(ctx.finish().unwrap().is_empty());
+}
