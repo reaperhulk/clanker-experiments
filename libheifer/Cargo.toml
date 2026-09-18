@@ -1,5 +1,6 @@
 [workspace]
 members = ["crates/capi"]
+exclude = ["vendor/rusty_h265"]
 resolver = "3"
 
 [package]
@@ -35,3 +36,6 @@ required-features = ["hevc"]
 [[example]]
 name = "profile_hevc"
 required-features = ["hevc-profile"]
+
+[patch.crates-io]
+rusty_h265 = { path = "vendor/rusty_h265" }

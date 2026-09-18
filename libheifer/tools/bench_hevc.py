@@ -18,7 +18,7 @@ def sha(path):
 
 def inputs():
     files = [Path("Cargo.toml"), Path("Cargo.lock")]
-    for directory in ("src", "crates", "examples"):
+    for directory in ("src", "crates", "examples", "vendor"):
         files.extend(Path(directory).rglob("*.rs"))
         files.extend(Path(directory).rglob("Cargo.toml"))
     files += [Path(p) for p in ("tools/bench_hevc.py", "tools/test_hevc.py", "tests/hevc_reference.c", "tests/bench_hevc.c")]

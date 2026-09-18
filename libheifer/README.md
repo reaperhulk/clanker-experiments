@@ -50,22 +50,27 @@ python tools/test_images.py --reference-build .build/reference
 python tools/test_color.py --reference-build .build/reference
 python tools/test_context.py --reference-build .build/reference
 python tools/test_context.py --reference-build .build/reference --sanitize --output .build/context-sanitized-report.json
-python tools/test_hevc.py --reference-build .build/reference
+python tools/test_decoding_options.py --reference-build .build/reference
+python tools/test_transforms.py --reference-build .build/reference
+python tools/test_decode.py --reference-build .build/reference
+python tools/test_hevc.py --reference-build .build/reference --require-default-output
 python tools/test_mutations.py --reference-build .build/reference
 python tools/check_coverage.py --reference .build/reference/libheif/libheif.so
 ```
 
 The native reference build is test-only and requires a C/C++ toolchain and CMake.
-It is never linked into libheifer. The Rust `hevc` feature enables an experimental
-**direct-item, native YUV decoder**. It does not yet implement libheif default
-color conversion, grids, transforms, alpha composition, all HEVC profiles or the
-C decoding API. Do not use the experiment with untrusted images: codec resource
-budgets and malformed-bitstream safety have not passed the final gate.
+It is never linked into libheifer. The Rust `hevc` feature enables direct-item
+HEVC decoding; the separate C ABI package enables it by default. The decoder is
+vendored with a documented VUI default-value fix, retaining its Apache-2.0 license.
+The C API also handles native alpha, rotation/mirroring, YCbCr/RGB conversion,
+8/16-bit RGB packing, image crop/scale and versioned decoding options.
 
-`test_hevc.py` reports both native-plane equality and the default-output gap.
-`--require-default-output` makes that gap a hard failure. Neither native-plane
-success nor a green Rust build is whole-library compatibility. CI's final
-completion step is intentionally red while the contract remains incomplete.
+The current decode differential checks 23 modes on five fixtures, including all
+visible alpha samples, profiles and error outputs. Generated crop/scale cases
+cover odd sizes and 8/10/12/16-bit planes. These finite checks do not establish
+whole-library compatibility: grids/overlays, clean apertures, all conversion
+operators, codec conformance, resource budgets and other codecs remain unfinished.
+CI's final completion step remains red until the full contract is validated.
 
 For interleaved native-sample decode timing (not an end-to-end library claim):
 
@@ -82,6 +87,6 @@ The context/handle subset supports copied and borrowed memory, direct HEVC item
 queries, metadata, thumbnails and color profiles. Its independent tests cover
 malformed properties, reload failures, output sentinels and handles that outlive
 the caller's context. Other image types, compressed metadata, file/reader callbacks,
-configurable resource budgets and the C decoding entry points remain unfinished.
+configurable resource budgets and full decoding orchestration remain unfinished.
 `--sanitize` instruments the C test clients, not the Rust or reference libraries;
 use `--no-leak-check` only where LeakSanitizer cannot run (for example under ptrace).

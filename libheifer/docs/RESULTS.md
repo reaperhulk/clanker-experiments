@@ -3,12 +3,13 @@
 Reference: libheif 1.23.4, commit `4e14f5942c1732ace9611b9522cc991501445463`.
 HEVC reference backend: libde265 1.0.16, commit
 `7ba65889d3d6d8a0d99b5360b028243ba843be3a`. Candidate uses only Rust code;
-the optional experimental HEVC feature uses rusty_h265/rusty_h265-accel 0.6.0.
+the HEVC feature uses rusty_h265/rusty_h265-accel 0.6.0. The former is vendored
+with a VUI unspecified-color fix; its Apache-2.0 notices are retained.
 
 ## Implemented scope
 
-103 of 465 public functions are exported, plus `heif_error_success`.
-362 functions are missing. Even the exported functions are marked **partial**:
+109 of 465 public functions are exported, plus `heif_error_success`.
+356 functions are missing. Even the exported functions are marked **partial**:
 coverage is finite, platform coverage is incomplete, and one malformed-box
 behavior gap is explicitly retained. There is no claim of a compatible library.
 
@@ -17,9 +18,10 @@ behavior gap is explicitly retained. There is no claim of a compatible library.
   plane access, alpha-premultiplication flag and pixel aspect ratio.
 - Color-conversion option defaults/copy, ICC and NCLX profile storage/queries,
   HDR content light, mastering display, ambient viewing and diffuse white metadata.
-  Profile storage does not yet perform color conversion during decoding.
+  Ordered minimum-cost YCbCr/RGB conversion, chroma sampling and 8/16-bit packing.
 - Rust-only bounded item-container parsing and experimental direct HEVC native
-  YUV decoding. The C decoding entry points remain unimplemented.
+  YUV decoding, now exposed through the C API with alpha attachment, rotations,
+  mirroring, versioned options and profile conversion. Crop/scale also export C APIs.
 - Context allocation and memory reads; shared image handles, primary/top-level IDs,
   direct HEVC descriptions, thumbnails, uncompressed metadata and color queries.
   Handles retain their images after context release/reload; alpha lookup follows
@@ -35,10 +37,13 @@ behavior gap is explicitly retained. There is no claim of a compatible library.
 | Color/HDR differential | 198,932 transcripts, 0 mismatches | All uint16 NCLX setter inputs, all uint8 option-version pairs, all chromaticity coordinates, exact floating-point bits, ICC ownership, HDR boundaries and output sentinels; no image-handle APIs or color transforms |
 | Context/handle differential | 1,786 transcripts, 0 mismatches | Copied/borrowed input, destroyed input copies, aliases, handles after free/reload, early and late read failures, primary/hidden/boundary IDs, metadata bytes/filters, thumbnails, alpha references, color profiles, rotations, every synthetic-file/property truncation; no C decoding |
 | C client sanitizers | ASan/UBSan clients pass the context corpus | Libraries are not sanitizer-instrumented; local LeakSanitizer could not run under ptrace, so leak detection was explicitly disabled |
-| ABI | Eight structs match original-header size, alignment and every field offset; struct-return and data-symbol clients pass | Linux x86_64 only |
+| ABI | Nine structs match original-header size, alignment and every field offset; struct-return and data-symbol clients pass | Linux x86_64 only |
 | Mutation checks | Seven deliberately wrong implementations rejected | Wrong filetype enum, error code, plane samples, primary coordinate, primary item ID, alpha reload state and ABI field order; isolated builds, successful baselines, compiler/crash failures do not count |
 | HEVC native output | 5/5 fixtures match exactly | Y/Cb/Cr data, image IDs/order, dimensions, depths and strides; transformations disabled, native NCLX passthrough; **alpha not compared** |
-| HEVC default output | 4/5 tested color-plane outputs match | Example image differs because default NCLX conversion is not implemented |
+| HEVC default output | 5/5 tested color-plane outputs match | Separate default-converted Rust and reference output; no longer compares native data to default output |
+| C decoding | 115 cases, 0 mismatches | Five direct HEVC fixtures x 23 modes; native/default/planar/interleaved output including alpha, profiles, both 16-bit byte orders, sampling restrictions, callbacks and errors; not codec conformance |
+| Decoding options | 65,549 cases, 0 mismatches | All byte-valued version pairs, old short prefixes and alias copies; also passes C-client ASan/UBSan with local leak checks disabled |
+| Crop/scale | 12,240 cases, 0 mismatches | Odd geometry, 8/10/12/16-bit layouts, alpha and metadata, invalid margins, nonstandard planes; wider/custom component formats remain open |
 | Dependency guard | Pass | Two reviewed codec crates; no native build scripts or codec link dependencies in the resolved candidate graph |
 | Rust checks | Unit tests, ABI test, formatting and Clippy pass | Linux, macOS and Windows Rust build jobs passed for the color/HDR iteration; full sanitizer, fuzzing and cross-platform ABI validation remain open |
 | Completeness gate | **Fail**, as required | Missing API and unvalidated entries prevent a success claim |
@@ -61,7 +66,7 @@ The context corpus is a finite tested subset, not full parser equivalence. It
 includes five real HEIC fixtures and generated containers. All 38 added exports
 remain partial. Unsupported image types, compressed metadata, duplicate-box and
 essential-property behavior, clean-aperture edge cases, configurable budgets,
-file/reader callbacks and C decoding remain open. `context-report.json` records
+file/reader callbacks and complete decoding orchestration remain open. `context-report.json` records
 exact binary, client and corpus hashes. `context-sanitized-report.json` records
 the limited sanitizer scope; mutation evidence rejects wrong reload semantics.
 
@@ -107,7 +112,7 @@ stable speed estimate.
 2. Implement exact color conversion, transforms and
    alpha/grid composition; extend codec fixtures and conformance profiles.
 3. Implement remaining codecs/encoders and all advanced API families in PLAN.md.
-4. Profile and optimize the actual codec hot paths, with repeated output-checked
-   A/B results; expand beyond the current single-file native-sample benchmark.
-5. Complete cross-platform ABI, fuzzing, memory-safety, downstream-client and
-   full API gates before marking the draft PR ready or making a compatibility claim.
+4. Complete cross-platform ABI, fuzzing, memory-safety, downstream-client and
+   full API gates before making a compatibility claim.
+5. Only after full compatibility, profile and optimize with repeated output-checked
+   A/B results across representative workloads before marking the PR ready.

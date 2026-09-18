@@ -6,6 +6,9 @@ pub mod brands;
 pub mod color;
 pub mod container;
 pub mod context;
+pub mod conversion;
+#[cfg(feature = "hevc")]
+pub mod decoding;
 pub mod error;
 #[cfg(feature = "hevc")]
 pub mod hevc;

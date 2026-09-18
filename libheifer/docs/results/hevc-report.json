@@ -2,9 +2,9 @@
   "scope": "direct HEVC items; transformations disabled; Y/Cb/Cr planes, dimensions, bit depths and strides; alpha is NOT compared",
   "complete_decode_compatibility": false,
   "native_matches": 5,
-  "default_output_matches": 4,
+  "default_output_matches": 5,
   "reference_sha256": "5d70927cded8be6d1b4da912971aed75d426ba079c84d0b8462785ec5b9c92f7",
-  "candidate_sha256": "2d85f0b6131efcc689114d7c11eaab8a528fc591047a9e44a2cd2172fe45cbf4",
+  "candidate_sha256": "0399c0ee5f0d4a80b6f0386f150f768fbf1512c1c25f0ae60176e6feb8c3de01",
   "fixtures": [
     {
       "fixture": "examples/example.heic",
@@ -15,8 +15,10 @@
       "reference_default_sha256": "be66d100b61ced053c9da7db96a8f502bf44907c6b52ac7f76328ffea35eb5a8",
       "candidate_native_status": 0,
       "candidate_native_sha256": "cc39ba311cb6426551923ac268834557ba9b4069be0f7585bdb00b6a8ee78c8c",
+      "candidate_default_status": 0,
+      "candidate_default_sha256": "be66d100b61ced053c9da7db96a8f502bf44907c6b52ac7f76328ffea35eb5a8",
       "native_match": true,
-      "default_output_match": false
+      "default_output_match": true
     },
     {
       "fixture": "fuzzing/data/corpus/colors-no-alpha.heic",
@@ -27,6 +29,8 @@
       "reference_default_sha256": "8e02e77341ca75faca86bc3644c4e5e476e1a268b91f45b9189a0d7fffa3892a",
       "candidate_native_status": 0,
       "candidate_native_sha256": "8e02e77341ca75faca86bc3644c4e5e476e1a268b91f45b9189a0d7fffa3892a",
+      "candidate_default_status": 0,
+      "candidate_default_sha256": "8e02e77341ca75faca86bc3644c4e5e476e1a268b91f45b9189a0d7fffa3892a",
       "native_match": true,
       "default_output_match": true
     },
@@ -39,6 +43,8 @@
       "reference_default_sha256": "8e02e77341ca75faca86bc3644c4e5e476e1a268b91f45b9189a0d7fffa3892a",
       "candidate_native_status": 0,
       "candidate_native_sha256": "8e02e77341ca75faca86bc3644c4e5e476e1a268b91f45b9189a0d7fffa3892a",
+      "candidate_default_status": 0,
+      "candidate_default_sha256": "8e02e77341ca75faca86bc3644c4e5e476e1a268b91f45b9189a0d7fffa3892a",
       "native_match": true,
       "default_output_match": true
     },
@@ -51,6 +57,8 @@
       "reference_default_sha256": "ee981d98eacbbc960a4954aefd11566dd8e09ca965327a36b1b5f2af4073a52b",
       "candidate_native_status": 0,
       "candidate_native_sha256": "ee981d98eacbbc960a4954aefd11566dd8e09ca965327a36b1b5f2af4073a52b",
+      "candidate_default_status": 0,
+      "candidate_default_sha256": "ee981d98eacbbc960a4954aefd11566dd8e09ca965327a36b1b5f2af4073a52b",
       "native_match": true,
       "default_output_match": true
     },
@@ -63,6 +71,8 @@
       "reference_default_sha256": "62d57f3282bf517373b9082fde057764f1b5e3af4cc30364dd2480573b147485",
       "candidate_native_status": 0,
       "candidate_native_sha256": "62d57f3282bf517373b9082fde057764f1b5e3af4cc30364dd2480573b147485",
+      "candidate_default_status": 0,
+      "candidate_default_sha256": "62d57f3282bf517373b9082fde057764f1b5e3af4cc30364dd2480573b147485",
       "native_match": true,
       "default_output_match": true
     }

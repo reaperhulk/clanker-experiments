@@ -15,3 +15,7 @@ libheifer = { path = "../.." }
 
 [lints.rust]
 unsafe_op_in_unsafe_fn = "deny"
+
+[features]
+default = ["hevc"]
+hevc = ["libheifer/hevc"]

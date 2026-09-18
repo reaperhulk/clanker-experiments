@@ -13,7 +13,9 @@ use std::ptr;
 
 mod color;
 mod context;
+mod decoding;
 mod image;
+pub use decoding::DecodingOptions;
 
 #[repr(C)]
 #[derive(Clone, Copy, Debug)]

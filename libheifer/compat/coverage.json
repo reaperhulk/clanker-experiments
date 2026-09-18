@@ -139,6 +139,41 @@
     ],
     "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open."
   },
+  "heif_decode_image": {
+    "notes": "Five direct HEVC fixtures, 23 modes, exact visible pixels including alpha, metadata, error/output writes, cancellation/progress and explicit profiles; codec conformance, derived images, callback orchestration, resource limits, every conversion operator and other codecs remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/decode.c",
+      "tools/test_decode.py"
+    ]
+  },
+  "heif_decoding_options_alloc": {
+    "notes": "Linux x86_64: all 256x256 option-version pairs, defaults, old short allocations, null source, self-copy. Original-header C client ASan/UBSan; cross-platform ABI and allocation-failure injection pending.",
+    "status": "partial",
+    "tests": [
+      "tests/decoding_options.c",
+      "tools/test_decoding_options.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_decoding_options_copy": {
+    "notes": "Linux x86_64: all 256x256 option-version pairs, defaults, old short allocations, null source, self-copy. Original-header C client ASan/UBSan; cross-platform ABI and allocation-failure injection pending.",
+    "status": "partial",
+    "tests": [
+      "tests/decoding_options.c",
+      "tools/test_decoding_options.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_decoding_options_free": {
+    "notes": "Linux x86_64: all 256x256 option-version pairs, defaults, old short allocations, null source, self-copy. Original-header C client ASan/UBSan; cross-platform ABI and allocation-failure injection pending.",
+    "status": "partial",
+    "tests": [
+      "tests/decoding_options.c",
+      "tools/test_decoding_options.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
   "heif_error_success": {
     "notes": "Direct upstream-header C client reads the exported struct. Other architectures pending.",
     "status": "partial",
@@ -240,6 +275,14 @@
     "tests": [
       "tests/images.c",
       "tools/test_images.py"
+    ]
+  },
+  "heif_image_crop": {
+    "notes": "12,240 original-header differential transcripts for odd sizes, all integer image layouts at 8/10/12/16 bits, alpha, metadata, invalid margins and nonstandard planes. Component layouts and wider/custom types remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/transforms.c",
+      "tools/test_transforms.py"
     ]
   },
   "heif_image_get_ambient_viewing_environment": {
@@ -700,6 +743,14 @@
     "tests": [
       "tests/images.c",
       "tools/test_images.py"
+    ]
+  },
+  "heif_image_scale_image": {
+    "notes": "12,240 original-header differential transcripts for odd sizes, all integer image layouts at 8/10/12/16 bits, alpha, metadata, invalid margins and nonstandard planes. Component layouts and wider/custom types remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/transforms.c",
+      "tools/test_transforms.py"
     ]
   },
   "heif_image_set_ambient_viewing_environment": {

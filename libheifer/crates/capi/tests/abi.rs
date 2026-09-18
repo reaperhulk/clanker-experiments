@@ -45,6 +45,28 @@ fn public_structs_match_original_header_layouts() {
     }
     layout!(heif_error, heifer::HeifError, code, subcode, message);
     layout!(
+        heif_decoding_options,
+        heifer::DecodingOptions,
+        version,
+        ignore_transformations,
+        start_progress,
+        on_progress,
+        end_progress,
+        progress_user_data,
+        convert_hdr_to_8bit,
+        strict_decoding,
+        decoder_id,
+        color_conversion_options,
+        cancel_decoding,
+        color_conversion_options_ext,
+        ignore_sequence_editlist,
+        output_image_nclx_profile,
+        num_library_threads,
+        num_codec_threads,
+        autocorrect_broken_input,
+        output_image_nclx_profile_passthrough
+    );
+    layout!(
         heif_color_profile_nclx,
         NclxProfile,
         version,

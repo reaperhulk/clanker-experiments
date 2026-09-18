@@ -11,12 +11,12 @@ use std::{
 };
 
 pub struct HeifContext {
-    shared: Arc<Mutex<Context>>,
+    pub(super) shared: Arc<Mutex<Context>>,
 }
 pub struct HeifHandle {
-    shared: Arc<Mutex<Context>>,
-    document: Arc<Document>,
-    id: u32,
+    pub(super) shared: Arc<Mutex<Context>>,
+    pub(super) document: Arc<Document>,
+    pub(super) id: u32,
 }
 impl HeifHandle {
     fn image(&self) -> &ImageInfo {
@@ -30,12 +30,12 @@ impl HeifHandle {
             .map(AsRef::as_ref)
     }
 }
-fn lock(shared: &Mutex<Context>) -> MutexGuard<'_, Context> {
+pub(super) fn lock(shared: &Mutex<Context>) -> MutexGuard<'_, Context> {
     shared
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner)
 }
-fn report(context: &mut Context, error: ContextError) -> HeifError {
+pub(super) fn report(context: &mut Context, error: ContextError) -> HeifError {
     context.last_error =
         CString::new(error.message).unwrap_or_else(|_| CString::new("Invalid error text").unwrap());
     HeifError {

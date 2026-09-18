@@ -22,7 +22,25 @@ impl std::error::Error for DecodeError {}
 pub fn decode_item(container: &Container<'_>, id: u32) -> Result<Image, DecodeError> {
     let nals = container.hevc_nals(id).map_err(DecodeError::Container)?;
     let mut decoder = rusty_h265::Decoder::new();
+    let mut nclx = crate::color::Nclx {
+        primaries: 2,
+        transfer: 2,
+        matrix: 2,
+        full_range: false,
+    };
     for nal in nals {
+        if nal.len() >= 2 && (nal[0] >> 1) & 63 == 33 {
+            let rbsp = rusty_h265::nal::unescape(&nal[2..]);
+            let sps = rusty_h265::ps::parse_sps(&rbsp.data).map_err(DecodeError::Codec)?;
+            if let Some(vui) = sps.vui {
+                nclx = crate::color::Nclx {
+                    primaries: vui.colour_primaries.into(),
+                    transfer: vui.transfer_characteristics.into(),
+                    matrix: vui.matrix_coeffs.into(),
+                    full_range: vui.video_full_range_flag,
+                };
+            }
+        }
         decoder.push_nal(&nal, None).map_err(DecodeError::Codec)?;
     }
     decoder.flush();
@@ -36,6 +54,7 @@ pub fn decode_item(container: &Container<'_>, id: u32) -> Result<Image, DecodeEr
     let height = u32::try_from(frame.height).map_err(|_| DecodeError::Geometry)?;
     let mut image = Image::new(width, height, if chroma == 0 { 2 } else { 0 }, chroma)
         .map_err(DecodeError::Image)?;
+    image.color.nclx = Some(nclx);
     let (left, top, crop_width, crop_height) = picture.crop;
     if crop_width != frame.width || crop_height != frame.height {
         return Err(DecodeError::Geometry);

@@ -185,3 +185,62 @@ pub unsafe extern "C" fn heif_image_get_pixel_aspect_ratio(
         }
     }
 }
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn heif_image_crop(
+    image: *mut Image,
+    left: c_int,
+    right: c_int,
+    top: c_int,
+    bottom: c_int,
+) -> HeifError {
+    let Some(image) = (unsafe { image.as_mut() }) else {
+        return Error::NULL.into();
+    };
+    if left < 0
+        || right < 0
+        || top < 0
+        || bottom < 0
+        || i64::from(left) + i64::from(right) >= i64::from(image.width)
+        || i64::from(top) + i64::from(bottom) >= i64::from(image.height)
+    {
+        return Error::new(5, 2006, c"Invalid crop margins").into();
+    }
+    match image.crop(
+        left as u32,
+        image.width - 1 - right as u32,
+        top as u32,
+        image.height - 1 - bottom as u32,
+    ) {
+        Ok(out) => {
+            *image = out;
+            SUCCESS
+        }
+        Err(e) => e.into(),
+    }
+}
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn heif_image_scale_image(
+    input: *const Image,
+    output: *mut *mut Image,
+    width: c_int,
+    height: c_int,
+    _options: *const std::ffi::c_void,
+) -> HeifError {
+    if input.is_null() || output.is_null() {
+        return Error::NULL.into();
+    }
+    match unsafe { &*input }.scale(width as u32, height as u32) {
+        Ok(image) => {
+            let image = super::color::allocate(image);
+            if image.is_null() {
+                return Error::ALLOCATION.into();
+            }
+            unsafe {
+                output.write(image);
+            }
+            SUCCESS
+        }
+        Err(e) => e.into(),
+    }
+}

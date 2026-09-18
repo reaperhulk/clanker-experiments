@@ -338,6 +338,12 @@ pub struct Document {
     pub top_level: Vec<u32>,
 }
 impl Document {
+    pub fn container(&self) -> Result<Container<'_>> {
+        Ok(Container::parse_meta(
+            self.input.bytes(),
+            metadata(self.input.bytes())?,
+        )?)
+    }
     pub fn parse(input: Arc<dyn Input>) -> Result<Self> {
         let mut context = Context::default();
         context.read(input)?;

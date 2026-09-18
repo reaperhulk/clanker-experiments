@@ -55,7 +55,7 @@ def main():
         clone = Path(temporary)
         for name in ("Cargo.toml", "Cargo.lock"):
             shutil.copy2(root / name, clone / name)
-        for name in ("src", "crates", "examples"):
+        for name in ("src", "crates", "examples", "vendor"):
             shutil.copytree(root / name, clone / name)
         (clone / "tests").mkdir()
         (clone / "tests/upstream").symlink_to(root / "tests/upstream", target_is_directory=True)

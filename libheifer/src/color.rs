@@ -121,7 +121,7 @@ pub fn validate_matrix(value: u16) -> Result<(), Error> {
 }
 
 /// Stored image metadata is narrowed to 16 bits, matching the container model.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Nclx {
     pub primaries: u16,
     pub transfer: u16,
@@ -259,6 +259,20 @@ pub struct ColorMetadata {
     pub diffuse_white: Option<u32>,
 }
 impl ColorMetadata {
+    pub fn try_clone(&self) -> Result<Self, Error> {
+        let mut copy = Self {
+            raw: None,
+            nclx: self.nclx,
+            content_light: self.content_light,
+            mastering: self.mastering,
+            ambient: self.ambient,
+            diffuse_white: self.diffuse_white,
+        };
+        if let Some(raw) = &self.raw {
+            copy.set_raw(raw.profile_type, &raw.data)?;
+        }
+        Ok(copy)
+    }
     pub fn profile_type(&self) -> u32 {
         self.raw.as_ref().map_or_else(
             || {

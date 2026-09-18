@@ -7,7 +7,7 @@
       "source": "src/brands.rs",
       "before": "Supported = 1,",
       "after": "Supported = 7,",
-      "candidate_sha256": "8a2def31076d8948fdffdd2feeff463416e41b9462ba435793a3ab09f1eda02a",
+      "candidate_sha256": "e11754de682a3e4bdce507527eba146e76c3f458a5e1967ec837e5bfebe3e230",
       "mismatches": 533,
       "detected": true
     },
@@ -17,7 +17,7 @@
       "source": "src/error.rs",
       "before": "Self::new(5, 2001, c\"NULL argument passed\")",
       "after": "Self::new(2, 2001, c\"NULL argument passed\")",
-      "candidate_sha256": "3da6ae74b1d11e7fabffeae8f21d4eccb0f05e47867a3b734a6519a0adf4eeff",
+      "candidate_sha256": "7e0b4721842345f9bbad84c37343f0f5a4b20ac4ee1179477cc908f162833bb4",
       "mismatches": 17126,
       "detected": true
     },
@@ -27,7 +27,7 @@
       "source": "src/image.rs",
       "before": "storage.resize(allocation, 0);",
       "after": "storage.resize(allocation, 0);\n        storage[..16].fill(1);",
-      "candidate_sha256": "110ee23bbc5e2d14730c7405789b6f775a4d5e642666397d8dd9620524a73f27",
+      "candidate_sha256": "4ac8db1bfaaadc46758d4b6a0900f1c8b231606751a2862634af1acf833f9f54",
       "mismatches": 612,
       "detected": true
     },
@@ -37,7 +37,7 @@
       "source": "src/color.rs",
       "before": "color_primary_red_x: rx,",
       "after": "color_primary_red_x: rx + 0.0001,",
-      "candidate_sha256": "d29751eab11f5575a99a9be7db034787941cac51ce5a8ac2ceaecee1c1567473",
+      "candidate_sha256": "84fd57e5873bd01f8f2fc3a2a4c0cdc15ec3ee5cdb55bcc62ca7fb6b7738b4d9",
       "mismatches": 776,
       "detected": true
     },
@@ -47,7 +47,7 @@
       "source": "crates/capi/src/context.rs",
       "before": "out.write(doc.primary)",
       "after": "out.write(doc.primary.wrapping_add(1))",
-      "candidate_sha256": "b0e05f5ab85d89caf37c56405a1d72c1773d5aec9a9c668652211fe710a3b3e8",
+      "candidate_sha256": "4ffa48a63d240a2b678c3e1a756d712f671c60ac7dc3742350d003e8236137ea",
       "mismatches": 868,
       "detected": true
     },
@@ -57,7 +57,7 @@
       "source": "crates/capi/src/context.rs",
       "before": ".is_some_and(|i| i.has_alpha)",
       "after": ".is_some_and(|_| handle.image().has_alpha)",
-      "candidate_sha256": "326fac9ab8abed9df4d1c88972496715e24b8fa752f5e5b55f60537e86b071c6",
+      "candidate_sha256": "b76d424654d1484bd0de6dd1a1c5714b4fe1149115b836b835db761b86aa8521",
       "mismatches": 166,
       "detected": true
     },
@@ -67,7 +67,7 @@
       "source": "crates/capi/src/lib.rs",
       "before": "pub code: c_int,\n    pub subcode: c_int,",
       "after": "pub subcode: c_int,\n    pub code: c_int,",
-      "candidate_sha256": "b1df2423cffe399975937eee71f86e2be269589210fb445fbd53b1d0300d5829",
+      "candidate_sha256": "f4c6611aa60212f8870a0eeaeab1a3bdde586bd074e56b02b7db0051263df875",
       "detected": true
     }
   ],

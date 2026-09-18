@@ -3,16 +3,33 @@ use libheifer::{container::Container, hevc};
 use std::{fs, io::Write};
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<_> = std::env::args_os().collect();
-    if args.len() != 3 {
-        return Err("usage: hevc_probe input.heic output.bin".into());
+    if args.len() != 3 && args.len() != 4 {
+        return Err("usage: hevc_probe input.heic output.bin [default]".into());
     }
     let data = fs::read(&args[1])?;
     let container = Container::parse(&data)?;
+    let mut context = libheifer::context::Context::default();
+    if args.len() == 4 {
+        context.read(std::sync::Arc::new(data.clone()))?;
+    }
     let mut out = fs::File::create(&args[2])?;
     let ids: Vec<_> = container.top_level_images().map(|i| i.id).collect();
     out.write_all(&(ids.len() as u32).to_le_bytes())?;
     for id in ids {
-        let image = hevc::decode_item(&container, id)?;
+        let image = if let Some(document) = &context.document {
+            libheifer::decoding::decode(
+                document,
+                id,
+                99,
+                99,
+                libheifer::decoding::DecodeOptions {
+                    ignore_transformations: true,
+                    ..Default::default()
+                },
+            )?
+        } else {
+            hevc::decode_item(&container, id)?
+        };
         for n in [
             id,
             image.width,
