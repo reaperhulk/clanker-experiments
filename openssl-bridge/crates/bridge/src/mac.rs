@@ -108,6 +108,66 @@ pub enum CmacCipher {
     Aes192,
     Aes256,
     TripleDes,
+    Des,
+    Camellia128,
+    Camellia192,
+    Camellia256,
+    Sm4,
+    Seed,
+    Blowfish,
+    Cast5,
+    Idea,
+    Rc2,
+}
+
+impl CmacCipher {
+    /// Resolve a conventional CBC cipher name. AEAD, composite TLS ciphers,
+    /// and arbitrary user-defined descriptors are deliberately excluded.
+    pub fn from_cbc_name(name: &str) -> Result<Self> {
+        match name.to_ascii_uppercase().as_str() {
+            "AES-128-CBC" => Ok(Self::Aes128),
+            "AES-192-CBC" => Ok(Self::Aes192),
+            "AES-256-CBC" => Ok(Self::Aes256),
+            "DES-EDE3-CBC" => Ok(Self::TripleDes),
+            "DES-CBC" => Ok(Self::Des),
+            "CAMELLIA-128-CBC" => Ok(Self::Camellia128),
+            "CAMELLIA-192-CBC" => Ok(Self::Camellia192),
+            "CAMELLIA-256-CBC" => Ok(Self::Camellia256),
+            "SM4-CBC" => Ok(Self::Sm4),
+            "SEED-CBC" => Ok(Self::Seed),
+            "BF-CBC" => Ok(Self::Blowfish),
+            "CAST5-CBC" => Ok(Self::Cast5),
+            "IDEA-CBC" => Ok(Self::Idea),
+            "RC2-CBC" => Ok(Self::Rc2),
+            _ => Err(Error::Unsupported("unsupported CMAC cipher")),
+        }
+    }
+
+    fn descriptor(self) -> *const ffi::EVP_CIPHER {
+        let name = match self {
+            Self::Aes128 => c"AES-128-CBC",
+            Self::Aes192 => c"AES-192-CBC",
+            Self::Aes256 => c"AES-256-CBC",
+            Self::TripleDes => c"DES-EDE3-CBC",
+            Self::Des => c"DES-CBC",
+            Self::Camellia128 => c"CAMELLIA-128-CBC",
+            Self::Camellia192 => c"CAMELLIA-192-CBC",
+            Self::Camellia256 => c"CAMELLIA-256-CBC",
+            Self::Sm4 => c"SM4-CBC",
+            Self::Seed => c"SEED-CBC",
+            Self::Blowfish => c"BF-CBC",
+            Self::Cast5 => c"CAST5-CBC",
+            Self::Idea => c"IDEA-CBC",
+            Self::Rc2 => c"RC2-CBC",
+        };
+        // SAFETY: Static NUL-terminated name; lookup returns an immutable
+        // process-lifetime descriptor or NULL for an unavailable algorithm.
+        unsafe { ffi::EVP_get_cipherbyname(name.as_ptr()) }
+    }
+
+    fn variable_key_length(self) -> bool {
+        matches!(self, Self::Blowfish | Self::Cast5 | Self::Rc2)
+    }
 }
 
 pub struct Cmac {
@@ -122,15 +182,7 @@ unsafe impl Sync for Cmac {}
 
 impl Cmac {
     pub fn new(cipher: CmacCipher, key: &[u8]) -> Result<Self> {
-        // SAFETY: These getters return immutable, process-lifetime descriptors.
-        let descriptor = unsafe {
-            match cipher {
-                CmacCipher::Aes128 => ffi::EVP_aes_128_cbc(),
-                CmacCipher::Aes192 => ffi::EVP_aes_192_cbc(),
-                CmacCipher::Aes256 => ffi::EVP_aes_256_cbc(),
-                CmacCipher::TripleDes => ffi::EVP_des_ede3_cbc(),
-            }
-        };
+        let descriptor = cipher.descriptor();
         if descriptor.is_null() {
             return Err(Error::Unsupported("CMAC cipher is unavailable"));
         }
@@ -141,12 +193,15 @@ impl Cmac {
                 ffi::OB_cipher_block_size(descriptor),
             )
         };
-        if key.len() != key_size as usize {
+        if key.is_empty() || key.len() > i32::MAX as usize {
+            return Err(Error::InvalidInput("invalid CMAC key length"));
+        }
+        if !cipher.variable_key_length() && key.len() != key_size as usize {
             return Err(Error::InvalidInput("incorrect CMAC key length"));
         }
         let size = usize::try_from(block_size)
             .ok()
-            .filter(|v| *v > 0)
+            .filter(|v| matches!(*v, 8 | 16))
             .ok_or(Error::Unsupported("CMAC cipher has no block size"))?;
         // SAFETY: The allocator has no preconditions.
         let ctx = pointer(unsafe { ffi::CMAC_CTX_new() })?;
@@ -155,7 +210,9 @@ impl Cmac {
             size,
             poisoned: false,
         };
-        // SAFETY: ctx is owned, key has the selected cipher's required length.
+        // SAFETY: ctx is owned. CMAC_Init configures the cipher's key length
+        // before reading the key; the supplied length is bounded by INT_MAX for
+        // forks that narrow it internally. Fixed key sizes are checked above.
         check(unsafe {
             ffi::CMAC_Init(
                 ctx.as_ptr(),

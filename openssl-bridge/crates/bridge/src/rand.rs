@@ -9,3 +9,18 @@ pub fn fill(output: &mut [u8]) -> Result<()> {
     }
     Ok(())
 }
+
+/// Fill secret key material using OpenSSL's separate private DRBG where it is
+/// available. Forks use their cryptographic RAND_bytes implementation.
+pub fn fill_private(output: &mut [u8]) -> Result<()> {
+    #[cfg(backend = "openssl")]
+    {
+        for chunk in output.chunks_mut(i32::MAX as usize) {
+            // SAFETY: Each exclusive slice covers the checked native length.
+            check(unsafe { ffi::RAND_priv_bytes(chunk.as_mut_ptr(), chunk.len() as i32) })?;
+        }
+        Ok(())
+    }
+    #[cfg(not(backend = "openssl"))]
+    fill(output)
+}

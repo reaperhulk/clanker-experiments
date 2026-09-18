@@ -8,17 +8,18 @@ with the incremental patch must not be described as a full openssl replacement.
 - Independent bindgen bindings against each backend's actual headers.
 - Checked hash/XOF and HMAC contexts, fallible copying, consuming finalization.
 - Python hash/HMAC paths and their dependent HKDF, KBKDF, HPKE paths now use them.
+- CMAC, PBKDF2, scrypt, private random generation, and constant-time comparison.
+- The `cryptography-crypto` helper crate no longer depends on rust-openssl.
+- Ed25519/X25519 operations use algorithm-specific key types. Their serialization
+  boundary temporarily converts raw keys to the original PKey layer.
 
 ## Implemented, not yet integrated
 
-- CMAC, PBKDF2, scrypt (explicitly unavailable on LibreSSL), and random bytes.
 - AES CBC/CTR/ECB contexts; one-shot AES-GCM with authenticated plaintext release.
-- Separate Ed25519 signing/verifying and X25519 secret/public types, erased secret
-  exports, one-shot signatures, and key agreement.
 
 ## Primary replacement backlog
 
-1. Migrate remaining MAC/KDF and random helpers. Unify Python error-stack records
+1. Unify Python error-stack records
    and preserve native reason text, library/reason codes, and exception behavior.
 2. Implement the remaining conventional modes and legacy algorithms used in
    `cipher_registry.rs`, preserving backend capability discovery. Support variable

@@ -8,6 +8,14 @@ use std::{
 #[derive(Debug)]
 struct Macros(Arc<Mutex<BTreeMap<String, i64>>>);
 impl bindgen::callbacks::ParseCallbacks for Macros {
+    fn will_parse_macro(&self, name: &str) -> bindgen::callbacks::MacroParsingBehavior {
+        // Configuration switches are often empty macros. int_macro alone does
+        // not observe them, which would misreport disabled backend features.
+        if name.starts_with("OPENSSL_NO_") {
+            self.0.lock().unwrap().entry(name.into()).or_insert(0);
+        }
+        bindgen::callbacks::MacroParsingBehavior::Default
+    }
     fn int_macro(&self, name: &str, value: i64) -> Option<bindgen::callbacks::IntKind> {
         if name.starts_with("OPENSSL_") || name.starts_with("LIBRESSL_") || name.starts_with("OB_")
         {

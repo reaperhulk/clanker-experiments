@@ -1,5 +1,5 @@
 diff --git a/Cargo.lock b/Cargo.lock
-index 9f7d181..299aabb 100644
+index 9f7d181..ed6ec3b 100644
 --- a/Cargo.lock
 +++ b/Cargo.lock
 @@ -2,6 +2,15 @@
@@ -81,7 +81,24 @@ index 9f7d181..299aabb 100644
  [[package]]
  name = "cryptography-cffi"
  version = "0.51.0-dev1"
-@@ -116,6 +165,7 @@ dependencies = [
+@@ -65,7 +114,7 @@ dependencies = [
+ name = "cryptography-crypto"
+ version = "0.51.0-dev1"
+ dependencies = [
+- "openssl",
++ "openssl-bridge",
+ ]
+ 
+ [[package]]
+@@ -85,6 +134,7 @@ dependencies = [
+  "cryptography-openssl",
+  "cryptography-x509",
+  "openssl",
++ "openssl-bridge",
+  "openssl-sys",
+  "pem",
+ ]
+@@ -116,6 +166,7 @@ dependencies = [
   "cryptography-x509-verification",
   "foreign-types-shared",
   "openssl",
@@ -89,7 +106,7 @@ index 9f7d181..299aabb 100644
   "openssl-sys",
   "pem",
   "pyo3",
-@@ -139,6 +189,12 @@ dependencies = [
+@@ -139,6 +190,12 @@ dependencies = [
   "pem",
  ]
  
@@ -102,7 +119,7 @@ index 9f7d181..299aabb 100644
  [[package]]
  name = "find-msvc-tools"
  version = "0.1.12"
-@@ -160,12 +216,27 @@ version = "0.1.1"
+@@ -160,12 +217,27 @@ version = "0.1.1"
  source = "registry+https://github.com/rust-lang/crates.io-index"
  checksum = "00b0228411908ca8685dba7fc2cdd70ec9990a6e753e89b6ac91a84c40fbaf4b"
  
@@ -130,7 +147,7 @@ index 9f7d181..299aabb 100644
  [[package]]
  name = "itoa"
  version = "1.0.18"
-@@ -178,6 +249,44 @@ version = "0.2.189"
+@@ -178,6 +250,44 @@ version = "0.2.189"
  source = "registry+https://github.com/rust-lang/crates.io-index"
  checksum = "3eaf3ede3fee6db1a4c2ee091bf8a8b4dccdc6d17f656fb07896ee72867612f2"
  
@@ -175,7 +192,7 @@ index 9f7d181..299aabb 100644
  [[package]]
  name = "once_cell"
  version = "1.21.4"
-@@ -198,6 +307,22 @@ dependencies = [
+@@ -198,6 +308,22 @@ dependencies = [
   "openssl-sys",
  ]
  
@@ -198,7 +215,7 @@ index 9f7d181..299aabb 100644
  [[package]]
  name = "openssl-macros"
  version = "0.1.1"
-@@ -242,6 +367,16 @@ version = "1.15.0"
+@@ -242,6 +368,16 @@ version = "1.15.0"
  source = "registry+https://github.com/rust-lang/crates.io-index"
  checksum = "05c8b63e8d9609db387f0324918f81d68fe27748f084ef092fb35954d0539a85"
  
@@ -215,7 +232,7 @@ index 9f7d181..299aabb 100644
  [[package]]
  name = "proc-macro2"
  version = "1.0.107"
-@@ -317,12 +452,53 @@ dependencies = [
+@@ -317,12 +453,53 @@ dependencies = [
   "proc-macro2",
  ]
  
@@ -269,7 +286,7 @@ index 9f7d181..299aabb 100644
  [[package]]
  name = "shlex"
  version = "2.0.1"
-@@ -357,3 +533,9 @@ name = "vcpkg"
+@@ -357,3 +534,9 @@ name = "vcpkg"
  version = "0.2.15"
  source = "registry+https://github.com/rust-lang/crates.io-index"
  checksum = "accd4ea62f7bb7a82fe23066fb0957d48ef677f6eeb8215f372f52e48bb32426"
@@ -303,6 +320,777 @@ index 878a23d..e72306c 100644
  asn1.workspace = true
  base64.workspace = true
  cfg-if.workspace = true
+diff --git a/src/rust/cryptography-crypto/Cargo.toml b/src/rust/cryptography-crypto/Cargo.toml
+index 979931e..698d2e7 100644
+--- a/src/rust/cryptography-crypto/Cargo.toml
++++ b/src/rust/cryptography-crypto/Cargo.toml
+@@ -8,4 +8,4 @@ rust-version.workspace = true
+ license.workspace = true
+ 
+ [dependencies]
+-openssl.workspace = true
++openssl-bridge.workspace = true
+diff --git a/src/rust/cryptography-crypto/src/constant_time.rs b/src/rust/cryptography-crypto/src/constant_time.rs
+index 9a12c9c..77629e2 100644
+--- a/src/rust/cryptography-crypto/src/constant_time.rs
++++ b/src/rust/cryptography-crypto/src/constant_time.rs
+@@ -8,5 +8,5 @@ pub fn bytes_eq(a: &[u8], b: &[u8]) -> bool {
+         return false;
+     }
+ 
+-    openssl::memcmp::eq(a, b)
++    openssl_bridge::constant_time_eq(a, b)
+ }
+diff --git a/src/rust/cryptography-crypto/src/pbkdf1.rs b/src/rust/cryptography-crypto/src/pbkdf1.rs
+index 7a5bad2..0598f20 100644
+--- a/src/rust/cryptography-crypto/src/pbkdf1.rs
++++ b/src/rust/cryptography-crypto/src/pbkdf1.rs
+@@ -5,18 +5,18 @@
+ /// This is the OpenSSL KDF that's used in decrypting PEM blocks. It is a
+ /// generalization of PBKDF1.
+ pub fn openssl_kdf(
+-    hash_alg: openssl::hash::MessageDigest,
++    hash_alg: openssl_bridge::hash::Algorithm,
+     password: &[u8],
+     salt: [u8; 8],
+     length: usize,
+-) -> Result<Vec<u8>, openssl::error::ErrorStack> {
++) -> Result<Vec<u8>, openssl_bridge::Error> {
+     let mut key = Vec::with_capacity(length);
+ 
+     while key.len() < length {
+-        let mut h = openssl::hash::Hasher::new(hash_alg)?;
++        let mut h = openssl_bridge::hash::Hasher::new(hash_alg)?;
+ 
+         if !key.is_empty() {
+-            h.update(&key[key.len() - hash_alg.size()..])?;
++            h.update(&key[key.len() - hash_alg.output_size()?..])?;
+         }
+ 
+         h.update(password)?;
+@@ -32,24 +32,26 @@ pub fn openssl_kdf(
+ 
+ /// PBKDF1 as defined in RFC 2898 for PKCS#5 v1.5 PBE algorithms
+ pub fn pbkdf1(
+-    hash_alg: openssl::hash::MessageDigest,
++    hash_alg: openssl_bridge::hash::Algorithm,
+     password: &[u8],
+     salt: [u8; 8],
+     iterations: u64,
+     length: usize,
+-) -> Result<Vec<u8>, openssl::error::ErrorStack> {
+-    if length > hash_alg.size() || iterations == 0 {
+-        return Err(openssl::error::ErrorStack::get());
++) -> Result<Vec<u8>, openssl_bridge::Error> {
++    if length > hash_alg.output_size()? || iterations == 0 {
++        return Err(openssl_bridge::Error::InvalidInput(
++            "invalid PBKDF1 parameters",
++        ));
+     }
+ 
+-    let mut h = openssl::hash::Hasher::new(hash_alg)?;
++    let mut h = openssl_bridge::hash::Hasher::new(hash_alg)?;
+     h.update(password)?;
+     h.update(&salt)?;
+     let mut t = h.finish()?;
+ 
+     // Apply hash function for specified iterations
+     for _ in 1..iterations {
+-        let mut h = openssl::hash::Hasher::new(hash_alg)?;
++        let mut h = openssl_bridge::hash::Hasher::new(hash_alg)?;
+         h.update(&t)?;
+         t = h.finish()?;
+     }
+@@ -66,7 +68,7 @@ mod tests {
+     fn test_openssl_kdf() {
+         for (md, password, salt, expected) in [
+             (
+-                openssl::hash::MessageDigest::md5(),
++                openssl_bridge::hash::Algorithm::from_name("md5").unwrap(),
+                 b"password123" as &[u8],
+                 [0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08],
+                 &[
+@@ -75,7 +77,7 @@ mod tests {
+                 ][..],
+             ),
+             (
+-                openssl::hash::MessageDigest::md5(),
++                openssl_bridge::hash::Algorithm::from_name("md5").unwrap(),
+                 b"diffpassword",
+                 [0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff, 0x11, 0x22],
+                 &[
+@@ -84,7 +86,7 @@ mod tests {
+                 ],
+             ),
+             (
+-                openssl::hash::MessageDigest::md5(),
++                openssl_bridge::hash::Algorithm::from_name("md5").unwrap(),
+                 b"secret_key",
+                 [0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88],
+                 &[
+@@ -93,7 +95,7 @@ mod tests {
+                 ],
+             ),
+             (
+-                openssl::hash::MessageDigest::md5(),
++                openssl_bridge::hash::Algorithm::from_name("md5").unwrap(),
+                 b"another_password",
+                 [0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff, 0x00],
+                 &[
+@@ -102,7 +104,7 @@ mod tests {
+                 ],
+             ),
+             (
+-                openssl::hash::MessageDigest::md5(),
++                openssl_bridge::hash::Algorithm::from_name("md5").unwrap(),
+                 b"very_long_and_complex_password",
+                 [0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef],
+                 &[
+@@ -112,7 +114,7 @@ mod tests {
+                 ],
+             ),
+             (
+-                openssl::hash::MessageDigest::md5(),
++                openssl_bridge::hash::Algorithm::from_name("md5").unwrap(),
+                 b"different_secure_password",
+                 [0xfe, 0xdc, 0xba, 0x98, 0x76, 0x54, 0x32, 0x10],
+                 &[
+@@ -129,7 +131,21 @@ mod tests {
+ 
+     #[test]
+     fn test_pbkdf1() {
+-        assert!(pbkdf1(openssl::hash::MessageDigest::md5(), b"abc", [0; 8], 1, 20).is_err());
+-        assert!(pbkdf1(openssl::hash::MessageDigest::md5(), b"abc", [0; 8], 0, 8).is_err());
++        assert!(pbkdf1(
++            openssl_bridge::hash::Algorithm::from_name("md5").unwrap(),
++            b"abc",
++            [0; 8],
++            1,
++            20
++        )
++        .is_err());
++        assert!(pbkdf1(
++            openssl_bridge::hash::Algorithm::from_name("md5").unwrap(),
++            b"abc",
++            [0; 8],
++            0,
++            8
++        )
++        .is_err());
+     }
+ }
+diff --git a/src/rust/cryptography-crypto/src/pkcs12.rs b/src/rust/cryptography-crypto/src/pkcs12.rs
+index 147e861..6db96bd 100644
+--- a/src/rust/cryptography-crypto/src/pkcs12.rs
++++ b/src/rust/cryptography-crypto/src/pkcs12.rs
+@@ -12,8 +12,8 @@ pub fn kdf(
+     id: u8,
+     rounds: u64,
+     key_len: usize,
+-    hash_alg: openssl::hash::MessageDigest,
+-) -> Result<Vec<u8>, openssl::error::ErrorStack> {
++    hash_alg: openssl_bridge::hash::Algorithm,
++) -> Result<Vec<u8>, openssl_bridge::Error> {
+     // Encode the password as big-endian UTF-16 with NUL trailer
+     let pass = pass
+         .encode_utf16()
+@@ -23,7 +23,7 @@ pub fn kdf(
+ 
+     // Comments are borrowed from BoringSSL.
+     // In the spec, |block_size| is called "v", but measured in bits.
+-    let block_size = hash_alg.block_size();
++    let block_size = hash_alg.block_size()?;
+ 
+     // 1. Construct a string, D (the "diversifier"), by concatenating v/8 copies
+     // of ID.
+@@ -56,13 +56,13 @@ pub fn kdf(
+         // A. Set A_i=H^r(D||I). (i.e., the r-th hash of D||I,
+         // H(H(H(... H(D||I))))
+ 
+-        let mut h = openssl::hash::Hasher::new(hash_alg)?;
++        let mut h = openssl_bridge::hash::Hasher::new(hash_alg)?;
+         h.update(&d)?;
+         h.update(&init_key)?;
+         let mut a = h.finish()?;
+ 
+         for _ in 1..rounds {
+-            let mut h = openssl::hash::Hasher::new(hash_alg)?;
++            let mut h = openssl_bridge::hash::Hasher::new(hash_alg)?;
+             h.update(&a)?;
+             a = h.finish()?;
+         }
+@@ -113,25 +113,25 @@ mod tests {
+     fn test_pkcs12_kdf() {
+         for (password, salt, id, rounds, key_len, hash, expected_key) in [
+             // From https://github.com/RustCrypto/formats/blob/master/pkcs12/tests/kdf.rs
+-            ("ge@äheim", b"\x01\x02\x03\x04\x05\x06\x07\x08", KDF_ENCRYPTION_KEY_ID, 100, 32, openssl::hash::MessageDigest::sha256(), b"\xfa\xe4\xd4\x95z<\xc7\x81\xe1\x18\x0b\x9dO\xb7\x9c\x1e\x0c\x85y\xb7F\xa3\x17~[\x07h\xa3\x11\x8b\xf8c" as &[u8]),
+-            ("ge@äheim", b"\x01\x02\x03\x04\x05\x06\x07\x08", KDF_IV_ID, 100, 32, openssl::hash::MessageDigest::sha256(), b"\xe5\xff\x81;\xc6T}\xe5\x15[\x14\xd2\xfa\xda\x85\xb3 \x1a\x97sI\xdbn&\xcc\xc9\x98\xd9\xe8\xf8=l"),
+-            ("ge@äheim", b"\x01\x02\x03\x04\x05\x06\x07\x08", KDF_MAC_KEY_ID, 100, 32, openssl::hash::MessageDigest::sha256(), b"\x13cU\xed\x944Qf\x82SOF\xd69V\xdb_\xf0k\x84G\x02\xc2\xc1\xf3\xb4c!\xe2RJM"),
+-            ("ge@äheim", b"\x01\x02\x03\x04\x05\x06\x07\x08", KDF_ENCRYPTION_KEY_ID, 100, 20, openssl::hash::MessageDigest::sha256(), b"\xfa\xe4\xd4\x95z<\xc7\x81\xe1\x18\x0b\x9dO\xb7\x9c\x1e\x0c\x85y\xb7"),
+-            ("ge@äheim", b"\x01\x02\x03\x04\x05\x06\x07\x08", KDF_IV_ID, 100, 20, openssl::hash::MessageDigest::sha256(), b"\xe5\xff\x81;\xc6T}\xe5\x15[\x14\xd2\xfa\xda\x85\xb3 \x1a\x97s"),
+-            ("ge@äheim", b"\x01\x02\x03\x04\x05\x06\x07\x08", KDF_MAC_KEY_ID, 100, 20, openssl::hash::MessageDigest::sha256(), b"\x13cU\xed\x944Qf\x82SOF\xd69V\xdb_\xf0k\x84"),
+-            ("ge@äheim", b"\x01\x02\x03\x04\x05\x06\x07\x08", KDF_ENCRYPTION_KEY_ID, 100, 12, openssl::hash::MessageDigest::sha256(), b"\xfa\xe4\xd4\x95z<\xc7\x81\xe1\x18\x0b\x9d"),
+-            ("ge@äheim", b"\x01\x02\x03\x04\x05\x06\x07\x08", KDF_IV_ID, 100, 12, openssl::hash::MessageDigest::sha256(), b"\xe5\xff\x81;\xc6T}\xe5\x15[\x14\xd2"),
+-            ("ge@äheim", b"\x01\x02\x03\x04\x05\x06\x07\x08", KDF_MAC_KEY_ID, 100, 12, openssl::hash::MessageDigest::sha256(), b"\x13cU\xed\x944Qf\x82SOF"),
+-            ("ge@äheim", b"\x01\x02\x03\x04\x05\x06\x07\x08", KDF_ENCRYPTION_KEY_ID, 1000, 32, openssl::hash::MessageDigest::sha256(), b"+\x95\xa0V\x9bc\xf6A\xfa\xe1\xef\xca2\xe8M\xb3i\x9a\xb7E@b\x8b\xa6b\x83\xb5\x8c\xf5@\x05'"),
+-            ("ge@äheim", b"\x01\x02\x03\x04\x05\x06\x07\x08", KDF_IV_ID, 1000, 32, openssl::hash::MessageDigest::sha256(), b"dr\xc0\xeb\xad?\xabA#\xe8\xb5\xedx4\xde!\xee\xb2\x01\x87\xb3\xef\xf7\x8a}\x1c\xdf\xfa@4\x85\x1d"),
+-            ("ge@äheim", b"\x01\x02\x03\x04\x05\x06\x07\x08", KDF_MAC_KEY_ID, 1000, 32, openssl::hash::MessageDigest::sha256(), b"?\x91\x13\xf0\\0\xa9\x96\xc4\xa5\x16@\x9b\xda\xc9\xd0e\xf4B\x96\xcc\xd5+\xb7]\xe3\xfc\xfd\xbe+\xf10"),
+-            ("ge@äheim", b"\x01\x02\x03\x04\x05\x06\x07\x08", KDF_ENCRYPTION_KEY_ID, 1000, 100, openssl::hash::MessageDigest::sha256(), b"+\x95\xa0V\x9bc\xf6A\xfa\xe1\xef\xca2\xe8M\xb3i\x9a\xb7E@b\x8b\xa6b\x83\xb5\x8c\xf5@\x05\'\xd8\xd0\xeb\xe2\xcc\xbfv\x8cQ\xc4\xd8\xfb\xd1\xbb\x15k\xe0l\x1cY\xcb\xb6\x9eD\x05/\xfc77o\xdbG\xb2\xde\x7f\x9eT=\xe9\xd0\x96\xd8\xe5GK\"\x04\x10\xff\x1c]\x8b\xb7\xe5\xbc\x0fa\xba\xea\xa1/\xd0\xda\x1dz\x97\x01r"),
+-            ("ge@äheim", b"\x01\x02\x03\x04\x05\x06\x07\x08", KDF_ENCRYPTION_KEY_ID, 1000, 200, openssl::hash::MessageDigest::sha256(), b"+\x95\xa0V\x9bc\xf6A\xfa\xe1\xef\xca2\xe8M\xb3i\x9a\xb7E@b\x8b\xa6b\x83\xb5\x8c\xf5@\x05\'\xd8\xd0\xeb\xe2\xcc\xbfv\x8cQ\xc4\xd8\xfb\xd1\xbb\x15k\xe0l\x1cY\xcb\xb6\x9eD\x05/\xfc77o\xdbG\xb2\xde\x7f\x9eT=\xe9\xd0\x96\xd8\xe5GK\"\x04\x10\xff\x1c]\x8b\xb7\xe5\xbc\x0fa\xba\xea\xa1/\xd0\xda\x1dz\x97\x01r\x9c\xea`\x14\xd7\xfeb\xa2\xed\x92m\xc3ka0\x7f\x11\x9dd\xed\xbc\xebZ\x9cX\x13;\xbfu\xba\x0b\xef\x00\n\x1aQ\x80\xe4\xb1\xde}\x89\xc8\x95(\xbc\xb7\x89\x9a\x1eF\xfdM\xa0\xd9\xde\x8f\x8ee\xe8\xd0\xd7u\xe3=\x12G\xe7mYj401a\xb2\x19\xf3\x9a\xfd\xa4H\xbfQ\x8a(5\xfc^(\xf0\xb5Z\x1ba7\xa2\xc7\x0c\xf7"),
+-
+-            ("ge@äheim", b"\x01\x02\x03\x04\x05\x06\x07\x08", KDF_ENCRYPTION_KEY_ID, 100, 32, openssl::hash::MessageDigest::sha512(), b"\xb1J\x9f\x01\xbf\xd9\xdc\xe4\xc9\xd6m/\xe9\x93~_\xd9\xf1\xaf\xa5\x9e7\no\xa4\xfc\x81\xc1\xcc\x8e\xc8\xee"),
++            ("ge@äheim", b"\x01\x02\x03\x04\x05\x06\x07\x08", KDF_ENCRYPTION_KEY_ID, 100, 32, openssl_bridge::hash::Algorithm::from_name("sha256").unwrap(), b"\xfa\xe4\xd4\x95z<\xc7\x81\xe1\x18\x0b\x9dO\xb7\x9c\x1e\x0c\x85y\xb7F\xa3\x17~[\x07h\xa3\x11\x8b\xf8c" as &[u8]),
++            ("ge@äheim", b"\x01\x02\x03\x04\x05\x06\x07\x08", KDF_IV_ID, 100, 32, openssl_bridge::hash::Algorithm::from_name("sha256").unwrap(), b"\xe5\xff\x81;\xc6T}\xe5\x15[\x14\xd2\xfa\xda\x85\xb3 \x1a\x97sI\xdbn&\xcc\xc9\x98\xd9\xe8\xf8=l"),
++            ("ge@äheim", b"\x01\x02\x03\x04\x05\x06\x07\x08", KDF_MAC_KEY_ID, 100, 32, openssl_bridge::hash::Algorithm::from_name("sha256").unwrap(), b"\x13cU\xed\x944Qf\x82SOF\xd69V\xdb_\xf0k\x84G\x02\xc2\xc1\xf3\xb4c!\xe2RJM"),
++            ("ge@äheim", b"\x01\x02\x03\x04\x05\x06\x07\x08", KDF_ENCRYPTION_KEY_ID, 100, 20, openssl_bridge::hash::Algorithm::from_name("sha256").unwrap(), b"\xfa\xe4\xd4\x95z<\xc7\x81\xe1\x18\x0b\x9dO\xb7\x9c\x1e\x0c\x85y\xb7"),
++            ("ge@äheim", b"\x01\x02\x03\x04\x05\x06\x07\x08", KDF_IV_ID, 100, 20, openssl_bridge::hash::Algorithm::from_name("sha256").unwrap(), b"\xe5\xff\x81;\xc6T}\xe5\x15[\x14\xd2\xfa\xda\x85\xb3 \x1a\x97s"),
++            ("ge@äheim", b"\x01\x02\x03\x04\x05\x06\x07\x08", KDF_MAC_KEY_ID, 100, 20, openssl_bridge::hash::Algorithm::from_name("sha256").unwrap(), b"\x13cU\xed\x944Qf\x82SOF\xd69V\xdb_\xf0k\x84"),
++            ("ge@äheim", b"\x01\x02\x03\x04\x05\x06\x07\x08", KDF_ENCRYPTION_KEY_ID, 100, 12, openssl_bridge::hash::Algorithm::from_name("sha256").unwrap(), b"\xfa\xe4\xd4\x95z<\xc7\x81\xe1\x18\x0b\x9d"),
++            ("ge@äheim", b"\x01\x02\x03\x04\x05\x06\x07\x08", KDF_IV_ID, 100, 12, openssl_bridge::hash::Algorithm::from_name("sha256").unwrap(), b"\xe5\xff\x81;\xc6T}\xe5\x15[\x14\xd2"),
++            ("ge@äheim", b"\x01\x02\x03\x04\x05\x06\x07\x08", KDF_MAC_KEY_ID, 100, 12, openssl_bridge::hash::Algorithm::from_name("sha256").unwrap(), b"\x13cU\xed\x944Qf\x82SOF"),
++            ("ge@äheim", b"\x01\x02\x03\x04\x05\x06\x07\x08", KDF_ENCRYPTION_KEY_ID, 1000, 32, openssl_bridge::hash::Algorithm::from_name("sha256").unwrap(), b"+\x95\xa0V\x9bc\xf6A\xfa\xe1\xef\xca2\xe8M\xb3i\x9a\xb7E@b\x8b\xa6b\x83\xb5\x8c\xf5@\x05'"),
++            ("ge@äheim", b"\x01\x02\x03\x04\x05\x06\x07\x08", KDF_IV_ID, 1000, 32, openssl_bridge::hash::Algorithm::from_name("sha256").unwrap(), b"dr\xc0\xeb\xad?\xabA#\xe8\xb5\xedx4\xde!\xee\xb2\x01\x87\xb3\xef\xf7\x8a}\x1c\xdf\xfa@4\x85\x1d"),
++            ("ge@äheim", b"\x01\x02\x03\x04\x05\x06\x07\x08", KDF_MAC_KEY_ID, 1000, 32, openssl_bridge::hash::Algorithm::from_name("sha256").unwrap(), b"?\x91\x13\xf0\\0\xa9\x96\xc4\xa5\x16@\x9b\xda\xc9\xd0e\xf4B\x96\xcc\xd5+\xb7]\xe3\xfc\xfd\xbe+\xf10"),
++            ("ge@äheim", b"\x01\x02\x03\x04\x05\x06\x07\x08", KDF_ENCRYPTION_KEY_ID, 1000, 100, openssl_bridge::hash::Algorithm::from_name("sha256").unwrap(), b"+\x95\xa0V\x9bc\xf6A\xfa\xe1\xef\xca2\xe8M\xb3i\x9a\xb7E@b\x8b\xa6b\x83\xb5\x8c\xf5@\x05\'\xd8\xd0\xeb\xe2\xcc\xbfv\x8cQ\xc4\xd8\xfb\xd1\xbb\x15k\xe0l\x1cY\xcb\xb6\x9eD\x05/\xfc77o\xdbG\xb2\xde\x7f\x9eT=\xe9\xd0\x96\xd8\xe5GK\"\x04\x10\xff\x1c]\x8b\xb7\xe5\xbc\x0fa\xba\xea\xa1/\xd0\xda\x1dz\x97\x01r"),
++            ("ge@äheim", b"\x01\x02\x03\x04\x05\x06\x07\x08", KDF_ENCRYPTION_KEY_ID, 1000, 200, openssl_bridge::hash::Algorithm::from_name("sha256").unwrap(), b"+\x95\xa0V\x9bc\xf6A\xfa\xe1\xef\xca2\xe8M\xb3i\x9a\xb7E@b\x8b\xa6b\x83\xb5\x8c\xf5@\x05\'\xd8\xd0\xeb\xe2\xcc\xbfv\x8cQ\xc4\xd8\xfb\xd1\xbb\x15k\xe0l\x1cY\xcb\xb6\x9eD\x05/\xfc77o\xdbG\xb2\xde\x7f\x9eT=\xe9\xd0\x96\xd8\xe5GK\"\x04\x10\xff\x1c]\x8b\xb7\xe5\xbc\x0fa\xba\xea\xa1/\xd0\xda\x1dz\x97\x01r\x9c\xea`\x14\xd7\xfeb\xa2\xed\x92m\xc3ka0\x7f\x11\x9dd\xed\xbc\xebZ\x9cX\x13;\xbfu\xba\x0b\xef\x00\n\x1aQ\x80\xe4\xb1\xde}\x89\xc8\x95(\xbc\xb7\x89\x9a\x1eF\xfdM\xa0\xd9\xde\x8f\x8ee\xe8\xd0\xd7u\xe3=\x12G\xe7mYj401a\xb2\x19\xf3\x9a\xfd\xa4H\xbfQ\x8a(5\xfc^(\xf0\xb5Z\x1ba7\xa2\xc7\x0c\xf7"),
++
++            ("ge@äheim", b"\x01\x02\x03\x04\x05\x06\x07\x08", KDF_ENCRYPTION_KEY_ID, 100, 32, openssl_bridge::hash::Algorithm::from_name("sha512").unwrap(), b"\xb1J\x9f\x01\xbf\xd9\xdc\xe4\xc9\xd6m/\xe9\x93~_\xd9\xf1\xaf\xa5\x9e7\no\xa4\xfc\x81\xc1\xcc\x8e\xc8\xee"),
+ 
+             // From https://cs.opensource.google/go/x/crypto/+/master:pkcs12/pbkdf_test.go
+-            ("sesame", b"\xff\xff\xff\xff\xff\xff\xff\xff", KDF_ENCRYPTION_KEY_ID, 2048, 24, openssl::hash::MessageDigest::sha1(), b"\x7c\xd9\xfd\x3e\x2b\x3b\xe7\x69\x1a\x44\xe3\xbe\xf0\xf9\xea\x0f\xb9\xb8\x97\xd4\xe3\x25\xd9\xd1"),
++            ("sesame", b"\xff\xff\xff\xff\xff\xff\xff\xff", KDF_ENCRYPTION_KEY_ID, 2048, 24, openssl_bridge::hash::Algorithm::from_name("sha1").unwrap(), b"\x7c\xd9\xfd\x3e\x2b\x3b\xe7\x69\x1a\x44\xe3\xbe\xf0\xf9\xea\x0f\xb9\xb8\x97\xd4\xe3\x25\xd9\xd1"),
+         ] {
+             let result = kdf(password, salt, id, rounds, key_len, hash).map_err(|_| ()).unwrap();
+             assert_eq!(result, expected_key);
+diff --git a/src/rust/cryptography-key-parsing/Cargo.toml b/src/rust/cryptography-key-parsing/Cargo.toml
+index 7b80143..7b17716 100644
+--- a/src/rust/cryptography-key-parsing/Cargo.toml
++++ b/src/rust/cryptography-key-parsing/Cargo.toml
+@@ -14,6 +14,7 @@ cryptography-crypto = { path = "../cryptography-crypto" }
+ cryptography-openssl = { path = "../cryptography-openssl" }
+ cryptography-x509 = { path = "../cryptography-x509" }
+ openssl.workspace = true
++openssl-bridge.workspace = true
+ openssl-sys.workspace = true
+ pem.workspace = true
+ 
+diff --git a/src/rust/cryptography-key-parsing/src/lib.rs b/src/rust/cryptography-key-parsing/src/lib.rs
+index 0f903a5..2916880 100644
+--- a/src/rust/cryptography-key-parsing/src/lib.rs
++++ b/src/rust/cryptography-key-parsing/src/lib.rs
+@@ -24,6 +24,7 @@ pub enum KeyParsingError {
+     UnsupportedEllipticCurve(asn1::ObjectIdentifier),
+     Parse(asn1::ParseError),
+     OpenSSL(openssl::error::ErrorStack),
++    Bridge(openssl_bridge::Error),
+     UnsupportedEncryptionAlgorithm(asn1::ObjectIdentifier),
+     EncryptedKeyWithoutPassword,
+     IncorrectPassword,
+@@ -63,6 +64,7 @@ pub enum KeySerializationError {
+     PasswordMustBeUtf8,
+     Write(asn1::WriteError),
+     OpenSSL(openssl::error::ErrorStack),
++    Bridge(openssl_bridge::Error),
+ }
+ 
+ impl From<asn1::WriteError> for KeySerializationError {
+@@ -111,3 +113,15 @@ mod tests {
+         ));
+     }
+ }
++
++impl From<openssl_bridge::Error> for KeyParsingError {
++    fn from(error: openssl_bridge::Error) -> Self {
++        Self::Bridge(error)
++    }
++}
++
++impl From<openssl_bridge::Error> for KeySerializationError {
++    fn from(error: openssl_bridge::Error) -> Self {
++        Self::Bridge(error)
++    }
++}
+diff --git a/src/rust/cryptography-key-parsing/src/pbe.rs b/src/rust/cryptography-key-parsing/src/pbe.rs
+index e0f1deb..61e6849 100644
+--- a/src/rust/cryptography-key-parsing/src/pbe.rs
++++ b/src/rust/cryptography-key-parsing/src/pbe.rs
+@@ -91,7 +91,7 @@ impl EncryptionAlgorithm {
+                     cryptography_crypto::pkcs12::KDF_ENCRYPTION_KEY_ID,
+                     cipher_kdf_iter,
+                     24,
+-                    openssl::hash::MessageDigest::sha1(),
++                    openssl_bridge::hash::Algorithm::from_name("sha1")?,
+                 )?;
+                 let iv = cryptography_crypto::pkcs12::kdf(
+                     password,
+@@ -99,7 +99,7 @@ impl EncryptionAlgorithm {
+                     cryptography_crypto::pkcs12::KDF_IV_ID,
+                     cipher_kdf_iter,
+                     8,
+-                    openssl::hash::MessageDigest::sha1(),
++                    openssl_bridge::hash::Algorithm::from_name("sha1")?,
+                 )?;
+ 
+                 Ok(openssl::symm::encrypt(
+@@ -110,14 +110,19 @@ impl EncryptionAlgorithm {
+                 )?)
+             }
+             EncryptionAlgorithm::PBESv2SHA256AndAES256CBC => {
+-                let sha256 = openssl::hash::MessageDigest::sha256();
++                let sha256 = openssl_bridge::hash::Algorithm::from_name("sha256")?;
+ 
+                 let mut key = [0; 32];
+-                openssl::pkcs5::pbkdf2_hmac(
++                openssl_bridge::kdf::pbkdf2_hmac(
++                    sha256,
+                     password,
+                     salt,
+-                    cipher_kdf_iter.try_into().unwrap(),
+-                    sha256,
++                    u32::try_from(cipher_kdf_iter)
++                        .ok()
++                        .and_then(std::num::NonZeroU32::new)
++                        .ok_or(openssl_bridge::Error::InvalidInput(
++                            "invalid PBKDF2 iteration count",
++                        ))?,
+                     &mut key,
+                 )?;
+ 
+diff --git a/src/rust/cryptography-key-parsing/src/pem.rs b/src/rust/cryptography-key-parsing/src/pem.rs
+index 26d7c9c..473c9fc 100644
+--- a/src/rust/cryptography-key-parsing/src/pem.rs
++++ b/src/rust/cryptography-key-parsing/src/pem.rs
+@@ -46,7 +46,7 @@ pub fn decrypt_pem<'a>(
+                 .ok_or(KeyParsingError::PemInvalidIv)?;
+ 
+             let key = cryptography_crypto::pbkdf1::openssl_kdf(
+-                openssl::hash::MessageDigest::md5(),
++                openssl_bridge::hash::Algorithm::from_name("md5")?,
+                 password,
+                 iv.get(..8)
+                     .ok_or(KeyParsingError::PemInvalidIv)?
+@@ -89,12 +89,12 @@ pub fn encrypt_pem(
+     let cipher = openssl::symm::Cipher::aes_256_cbc();
+     let iv_len = cipher.iv_len().unwrap();
+     let mut iv = vec![0u8; iv_len];
+-    cryptography_openssl::rand::rand_bytes(&mut iv)?;
++    openssl_bridge::rand::fill_private(&mut iv)?;
+ 
+     // Derive key using MD5-based KDF (for compatibility with traditional
+     // OpenSSL format)
+     let key = cryptography_crypto::pbkdf1::openssl_kdf(
+-        openssl::hash::MessageDigest::md5(),
++        openssl_bridge::hash::Algorithm::from_name("md5")?,
+         password,
+         iv.get(..8).unwrap().try_into().unwrap(),
+         cipher.key_len(),
+diff --git a/src/rust/cryptography-key-parsing/src/pkcs8.rs b/src/rust/cryptography-key-parsing/src/pkcs8.rs
+index 7708505..ea1a5ac 100644
+--- a/src/rust/cryptography-key-parsing/src/pkcs8.rs
++++ b/src/rust/cryptography-key-parsing/src/pkcs8.rs
+@@ -270,7 +270,7 @@ fn pkcs12_pbe_decrypt(
+     data: &[u8],
+     password: &[u8],
+     cipher: openssl::symm::Cipher,
+-    hash: openssl::hash::MessageDigest,
++    hash: openssl_bridge::hash::Algorithm,
+     params: &Pkcs12PbeParams<'_>,
+ ) -> KeyParsingResult<Vec<u8>> {
+     let Ok(password) = std::str::from_utf8(password) else {
+@@ -301,7 +301,7 @@ fn pkcs5_pbe_decrypt(
+     data: &[u8],
+     password: &[u8],
+     cipher: openssl::symm::Cipher,
+-    hash: openssl::hash::MessageDigest,
++    hash: openssl_bridge::hash::Algorithm,
+     params: &PbeParams,
+ ) -> KeyParsingResult<Vec<u8>> {
+     // PKCS#5 v1.5 uses PBKDF1 with iteration count
+@@ -337,14 +337,14 @@ pub fn parse_encrypted_private_key(
+             epki.encrypted_data,
+             password,
+             openssl::symm::Cipher::des_cbc(),
+-            openssl::hash::MessageDigest::md5(),
++            openssl_bridge::hash::Algorithm::from_name("md5")?,
+             &params,
+         )?,
+         AlgorithmParameters::PbeWithShaAnd3KeyTripleDesCbc(params) => pkcs12_pbe_decrypt(
+             epki.encrypted_data,
+             password,
+             openssl::symm::Cipher::des_ede3_cbc(),
+-            openssl::hash::MessageDigest::sha1(),
++            openssl_bridge::hash::Algorithm::from_name("sha1")?,
+             &params,
+         )?,
+         #[cfg(not(CRYPTOGRAPHY_OSSLCONF = "OPENSSL_NO_RC2"))]
+@@ -352,7 +352,7 @@ pub fn parse_encrypted_private_key(
+             epki.encrypted_data,
+             password,
+             openssl::symm::Cipher::rc2_40_cbc(),
+-            openssl::hash::MessageDigest::sha1(),
++            openssl_bridge::hash::Algorithm::from_name("sha1")?,
+             &params,
+         )?,
+         #[cfg(not(CRYPTOGRAPHY_OSSLCONF = "OPENSSL_NO_RC4"))]
+@@ -360,7 +360,7 @@ pub fn parse_encrypted_private_key(
+             epki.encrypted_data,
+             password,
+             openssl::symm::Cipher::rc4(),
+-            openssl::hash::MessageDigest::sha1(),
++            openssl_bridge::hash::Algorithm::from_name("sha1")?,
+             &params,
+         )?,
+         AlgorithmParameters::Pbes2(params) => {
+@@ -398,19 +398,19 @@ pub fn parse_encrypted_private_key(
+                     let mut key = vec![0; cipher.key_len()];
+                     let md = match pbkdf2_params.prf.params {
+                         AlgorithmParameters::HmacWithSha1(_) => {
+-                            openssl::hash::MessageDigest::sha1()
++                            openssl_bridge::hash::Algorithm::from_name("sha1")?
+                         }
+                         AlgorithmParameters::HmacWithSha224(_) => {
+-                            openssl::hash::MessageDigest::sha224()
++                            openssl_bridge::hash::Algorithm::from_name("sha224")?
+                         }
+                         AlgorithmParameters::HmacWithSha256(_) => {
+-                            openssl::hash::MessageDigest::sha256()
++                            openssl_bridge::hash::Algorithm::from_name("sha256")?
+                         }
+                         AlgorithmParameters::HmacWithSha384(_) => {
+-                            openssl::hash::MessageDigest::sha384()
++                            openssl_bridge::hash::Algorithm::from_name("sha384")?
+                         }
+                         AlgorithmParameters::HmacWithSha512(_) => {
+-                            openssl::hash::MessageDigest::sha512()
++                            openssl_bridge::hash::Algorithm::from_name("sha512")?
+                         }
+                         _ => {
+                             return Err(KeyParsingError::UnsupportedEncryptionAlgorithm(
+@@ -418,18 +418,16 @@ pub fn parse_encrypted_private_key(
+                             ))
+                         }
+                     };
+-                    let iterations: usize = pbkdf2_params
+-                        .iteration_count
+-                        .try_into()
+-                        .map_err(|_| KeyParsingError::InvalidKey)?;
+-                    if iterations < 1 {
+-                        return Err(KeyParsingError::InvalidKey);
+-                    }
+-                    openssl::pkcs5::pbkdf2_hmac(
++                    let iterations = i32::try_from(pbkdf2_params.iteration_count)
++                        .ok()
++                        .and_then(|n| u32::try_from(n).ok())
++                        .and_then(std::num::NonZeroU32::new)
++                        .ok_or(KeyParsingError::InvalidKey)?;
++                    openssl_bridge::kdf::pbkdf2_hmac(
++                        md,
+                         password,
+                         pbkdf2_params.salt,
+                         iterations,
+-                        md,
+                         &mut key,
+                     )?;
+                     key
+@@ -437,7 +435,7 @@ pub fn parse_encrypted_private_key(
+                 #[cfg(not(CRYPTOGRAPHY_IS_LIBRESSL))]
+                 AlgorithmParameters::Scrypt(scrypt_params) => {
+                     let mut key = vec![0; cipher.key_len()];
+-                    openssl::pkcs5::scrypt(
++                    openssl_bridge::kdf::scrypt(
+                         password,
+                         scrypt_params.salt,
+                         scrypt_params.cost_parameter,
+@@ -645,8 +643,8 @@ pub fn serialize_encrypted_private_key(
+ 
+     let mut salt = [0u8; 16];
+     let mut iv = [0u8; 16];
+-    cryptography_openssl::rand::rand_bytes(&mut salt)?;
+-    cryptography_openssl::rand::rand_bytes(&mut iv)?;
++    openssl_bridge::rand::fill_private(&mut salt)?;
++    openssl_bridge::rand::fill_private(&mut iv)?;
+ 
+     let encrypted_data = e.encrypt(password, KDF_ITERATION_COUNT, &salt, &iv, &plaintext_der)?;
+     let encryption_alg = e.algorithm_identifier(KDF_ITERATION_COUNT, &salt, &iv);
+diff --git a/src/rust/src/backend/cmac.rs b/src/rust/src/backend/cmac.rs
+index 872d13f..626c022 100644
+--- a/src/rust/src/backend/cmac.rs
++++ b/src/rust/src/backend/cmac.rs
+@@ -15,15 +15,15 @@ use crate::{exceptions, types};
+     name = "CMAC"
+ )]
+ pub(crate) struct Cmac {
+-    ctx: Option<cryptography_openssl::cmac::Cmac>,
++    ctx: Option<openssl_bridge::mac::Cmac>,
+ }
+ 
+ impl Cmac {
+     pub(crate) fn new_bytes(
+         key: &[u8],
+-        cipher: &openssl::cipher::CipherRef,
++        cipher: openssl_bridge::mac::CmacCipher,
+     ) -> CryptographyResult<Self> {
+-        let ctx = cryptography_openssl::cmac::Cmac::new(key, cipher)?;
++        let ctx = openssl_bridge::mac::Cmac::new(cipher, key)?;
+         Ok(Cmac { ctx: Some(ctx) })
+     }
+ 
+@@ -51,6 +51,7 @@ impl Cmac {
+             .getattr(pyo3::intern!(py, "key"))?
+             .extract::<CffiBuf<'_>>()?;
+ 
++        let cipher = openssl_bridge::mac::CmacCipher::from_cbc_name(cipher.nid().short_name()?)?;
+         Cmac::new_bytes(key.as_bytes(), cipher)
+     }
+ 
+@@ -59,22 +60,23 @@ impl Cmac {
+         Ok(())
+     }
+ 
+-    pub(crate) fn finalize_bytes(
+-        &mut self,
+-    ) -> CryptographyResult<cryptography_openssl::hmac::DigestBytes> {
+-        let data = self.get_mut_ctx()?.finish()?;
+-        self.ctx = None;
++    pub(crate) fn finalize_bytes(&mut self) -> CryptographyResult<Vec<u8>> {
++        let data = self
++            .ctx
++            .take()
++            .ok_or_else(exceptions::already_finalized_error)?
++            .finish()?;
+         Ok(data)
+     }
+ 
+-    fn get_ctx(&self) -> CryptographyResult<&cryptography_openssl::cmac::Cmac> {
++    fn get_ctx(&self) -> CryptographyResult<&openssl_bridge::mac::Cmac> {
+         if let Some(ctx) = self.ctx.as_ref() {
+             return Ok(ctx);
+         }
+         Err(exceptions::already_finalized_error())
+     }
+ 
+-    fn get_mut_ctx(&mut self) -> CryptographyResult<&mut cryptography_openssl::cmac::Cmac> {
++    fn get_mut_ctx(&mut self) -> CryptographyResult<&mut openssl_bridge::mac::Cmac> {
+         if let Some(ctx) = self.ctx.as_mut() {
+             return Ok(ctx);
+         }
+@@ -120,7 +122,7 @@ impl Cmac {
+ 
+     pub(crate) fn copy(&self) -> CryptographyResult<Cmac> {
+         Ok(Cmac {
+-            ctx: Some(self.get_ctx()?.copy()?),
++            ctx: Some(self.get_ctx()?.try_clone()?),
+         })
+     }
+ }
+diff --git a/src/rust/src/backend/ed25519.rs b/src/rust/src/backend/ed25519.rs
+index c58be6a..c83406b 100644
+--- a/src/rust/src/backend/ed25519.rs
++++ b/src/rust/src/backend/ed25519.rs
+@@ -9,34 +9,63 @@ use crate::exceptions;
+ 
+ #[pyo3::pyclass(frozen, module = "cryptography.hazmat.bindings._rust.openssl.ed25519")]
+ pub(crate) struct Ed25519PrivateKey {
+-    pkey: openssl::pkey::PKey<openssl::pkey::Private>,
++    pkey: openssl_bridge::curve25519::Ed25519SigningKey,
+ }
+ 
+ #[pyo3::pyclass(frozen, module = "cryptography.hazmat.bindings._rust.openssl.ed25519")]
+ pub(crate) struct Ed25519PublicKey {
+-    pkey: openssl::pkey::PKey<openssl::pkey::Public>,
++    pkey: openssl_bridge::curve25519::Ed25519VerifyingKey,
+ }
+ 
+ #[pyo3::pyfunction]
+ fn generate_key() -> CryptographyResult<Ed25519PrivateKey> {
+     Ok(Ed25519PrivateKey {
+-        pkey: openssl::pkey::PKey::generate_ed25519()?,
++        pkey: openssl_bridge::curve25519::Ed25519SigningKey::generate()?,
+     })
+ }
+ 
++// Temporary serialization boundary until the shared key parser is migrated.
+ pub(crate) fn private_key_from_pkey(
+     pkey: &openssl::pkey::PKeyRef<openssl::pkey::Private>,
+-) -> Ed25519PrivateKey {
+-    Ed25519PrivateKey {
+-        pkey: pkey.to_owned(),
+-    }
++) -> CryptographyResult<Ed25519PrivateKey> {
++    let bytes = pkey.raw_private_key()?;
++    let bytes = bytes
++        .as_slice()
++        .try_into()
++        .map_err(|_| openssl_bridge::Error::InvalidInput("unexpected private key length"))?;
++    Ok(Ed25519PrivateKey {
++        pkey: openssl_bridge::curve25519::Ed25519SigningKey::from_seed(bytes)?,
++    })
+ }
+ 
+ pub(crate) fn public_key_from_pkey(
+     pkey: &openssl::pkey::PKeyRef<openssl::pkey::Public>,
+-) -> Ed25519PublicKey {
+-    Ed25519PublicKey {
+-        pkey: pkey.to_owned(),
++) -> CryptographyResult<Ed25519PublicKey> {
++    let bytes = pkey.raw_public_key()?;
++    let bytes = bytes
++        .as_slice()
++        .try_into()
++        .map_err(|_| openssl_bridge::Error::InvalidInput("unexpected public key length"))?;
++    Ok(Ed25519PublicKey {
++        pkey: openssl_bridge::curve25519::Ed25519VerifyingKey::from_bytes(bytes)?,
++    })
++}
++
++impl Ed25519PrivateKey {
++    fn serialization_key(&self) -> CryptographyResult<openssl::pkey::PKey<openssl::pkey::Private>> {
++        let bytes = self.pkey.to_seed()?;
++        Ok(openssl::pkey::PKey::private_key_from_raw_bytes(
++            bytes.as_ref(),
++            openssl::pkey::Id::ED25519,
++        )?)
++    }
++}
++impl Ed25519PublicKey {
++    fn serialization_key(&self) -> CryptographyResult<openssl::pkey::PKey<openssl::pkey::Public>> {
++        Ok(openssl::pkey::PKey::public_key_from_raw_bytes(
++            &self.pkey.to_bytes()?,
++            openssl::pkey::Id::ED25519,
++        )?)
+     }
+ }
+ 
+@@ -44,22 +73,21 @@ pub(crate) fn public_key_from_pkey(
+ // them is a risk.
+ #[pyo3::pyfunction]
+ fn from_private_bytes(data: CffiBuf<'_>) -> pyo3::PyResult<Ed25519PrivateKey> {
+-    let pkey = openssl::pkey::PKey::private_key_from_raw_bytes(
+-        data.as_bytes(),
+-        openssl::pkey::Id::ED25519,
+-    )
+-    .map_err(|_| {
+-        pyo3::exceptions::PyValueError::new_err("An Ed25519 private key is 32 bytes long")
+-    })?;
++    let length_error =
++        || pyo3::exceptions::PyValueError::new_err("An Ed25519 private key is 32 bytes long");
++    let bytes = data.as_bytes().try_into().map_err(|_| length_error())?;
++    let pkey = openssl_bridge::curve25519::Ed25519SigningKey::from_seed(bytes)
++        .map_err(|_| length_error())?;
+     Ok(Ed25519PrivateKey { pkey })
+ }
+ 
+ #[pyo3::pyfunction]
+ fn from_public_bytes(data: &[u8]) -> pyo3::PyResult<Ed25519PublicKey> {
+-    let pkey = openssl::pkey::PKey::public_key_from_raw_bytes(data, openssl::pkey::Id::ED25519)
+-        .map_err(|_| {
+-            pyo3::exceptions::PyValueError::new_err("An Ed25519 public key is 32 bytes long")
+-        })?;
++    let length_error =
++        || pyo3::exceptions::PyValueError::new_err("An Ed25519 public key is 32 bytes long");
++    let bytes = data.try_into().map_err(|_| length_error())?;
++    let pkey = openssl_bridge::curve25519::Ed25519VerifyingKey::from_bytes(bytes)
++        .map_err(|_| length_error())?;
+     Ok(Ed25519PublicKey { pkey })
+ }
+ 
+@@ -70,25 +98,14 @@ impl Ed25519PrivateKey {
+         py: pyo3::Python<'p>,
+         data: CffiBuf<'_>,
+     ) -> CryptographyResult<pyo3::Bound<'p, pyo3::types::PyBytes>> {
+-        let mut signer = openssl::sign::Signer::new_without_digest(&self.pkey)?;
+-        let len = signer.len()?;
+-        let data_bytes = data.as_bytes();
+-        Ok(pyo3::types::PyBytes::new_with(py, len, |b| {
+-            let n = py
+-                .detach(|| signer.sign_oneshot(b, data_bytes))
+-                .map_err(CryptographyError::from)?;
+-            assert_eq!(n, b.len());
+-            Ok(())
+-        })?)
++        let data = data.as_bytes();
++        let signature = py.detach(|| self.pkey.sign(data))?;
++        Ok(pyo3::types::PyBytes::new(py, &signature))
+     }
+ 
+     fn public_key(&self) -> CryptographyResult<Ed25519PublicKey> {
+-        let raw_bytes = self.pkey.raw_public_key()?;
+         Ok(Ed25519PublicKey {
+-            pkey: openssl::pkey::PKey::public_key_from_raw_bytes(
+-                &raw_bytes,
+-                openssl::pkey::Id::ED25519,
+-            )?,
++            pkey: self.pkey.verifying_key()?,
+         })
+     }
+ 
+@@ -96,8 +113,8 @@ impl Ed25519PrivateKey {
+         &self,
+         py: pyo3::Python<'p>,
+     ) -> CryptographyResult<pyo3::Bound<'p, pyo3::types::PyBytes>> {
+-        let raw_bytes = self.pkey.raw_private_key()?;
+-        Ok(pyo3::types::PyBytes::new(py, &raw_bytes))
++        let raw_bytes = self.pkey.to_seed()?;
++        Ok(pyo3::types::PyBytes::new(py, raw_bytes.as_ref()))
+     }
+ 
+     fn private_bytes<'p>(
+@@ -110,7 +127,7 @@ impl Ed25519PrivateKey {
+         utils::pkey_private_bytes(
+             py,
+             slf,
+-            &slf.borrow().pkey,
++            &slf.borrow().serialization_key()?,
+             encoding,
+             format,
+             encryption_algorithm,
+@@ -139,11 +156,10 @@ impl Ed25519PublicKey {
+         signature: CffiBuf<'_>,
+         data: CffiBuf<'_>,
+     ) -> CryptographyResult<()> {
+-        let mut verifier = openssl::sign::Verifier::new_without_digest(&self.pkey)?;
+-        let sig_bytes = signature.as_bytes();
+-        let data_bytes = data.as_bytes();
++        let signature = signature.as_bytes();
++        let data = data.as_bytes();
+         let valid = py
+-            .detach(|| verifier.verify_oneshot(sig_bytes, data_bytes))
++            .detach(|| self.pkey.verify(data, signature))
+             .unwrap_or(false);
+ 
+         if !valid {
+@@ -159,7 +175,7 @@ impl Ed25519PublicKey {
+         &self,
+         py: pyo3::Python<'p>,
+     ) -> CryptographyResult<pyo3::Bound<'p, pyo3::types::PyBytes>> {
+-        let raw_bytes = self.pkey.raw_public_key()?;
++        let raw_bytes = self.pkey.to_bytes()?;
+         Ok(pyo3::types::PyBytes::new(py, &raw_bytes))
+     }
+ 
+@@ -169,11 +185,19 @@ impl Ed25519PublicKey {
+         encoding: crate::serialization::Encoding,
+         format: crate::serialization::PublicFormat,
+     ) -> CryptographyResult<pyo3::Bound<'p, pyo3::types::PyBytes>> {
+-        utils::pkey_public_bytes(py, slf, &slf.borrow().pkey, encoding, format, true, true)
++        utils::pkey_public_bytes(
++            py,
++            slf,
++            &slf.borrow().serialization_key()?,
++            encoding,
++            format,
++            true,
++            true,
++        )
+     }
+ 
+-    fn __eq__(&self, other: pyo3::PyRef<'_, Self>) -> bool {
+-        self.pkey.public_eq(&other.pkey)
++    fn __eq__(&self, other: pyo3::PyRef<'_, Self>) -> CryptographyResult<bool> {
++        Ok(self.pkey.to_bytes()? == other.pkey.to_bytes()?)
+     }
+ 
+     fn __copy__(slf: pyo3::PyRef<'_, Self>) -> pyo3::PyRef<'_, Self> {
 diff --git a/src/rust/src/backend/hashes.rs b/src/rust/src/backend/hashes.rs
 index fa3b924..656cdff 100644
 --- a/src/rust/src/backend/hashes.rs
@@ -632,10 +1420,56 @@ index d8055d3..71073c4 100644
          labeled_ikm.extend_from_slice(HPKE_VERSION);
          labeled_ikm.extend_from_slice(&self.hpke_suite_id);
 diff --git a/src/rust/src/backend/kdf.rs b/src/rust/src/backend/kdf.rs
-index ee4829c..f7c6ee6 100644
+index ee4829c..7b8081d 100644
 --- a/src/rust/src/backend/kdf.rs
 +++ b/src/rust/src/backend/kdf.rs
-@@ -985,7 +985,7 @@ pub(crate) fn hkdf_extract(
+@@ -23,9 +23,9 @@ use crate::{exceptions, types};
+ )]
+ // NO-COVERAGE-END
+ struct Pbkdf2Hmac {
+-    md: openssl::hash::MessageDigest,
++    md: openssl_bridge::hash::Algorithm,
+     salt: pyo3::Py<pyo3::types::PyBytes>,
+-    iterations: usize,
++    iterations: std::num::NonZeroU32,
+     length: usize,
+     used: bool,
+ }
+@@ -54,7 +54,7 @@ impl Pbkdf2Hmac {
+         let salt = self.salt.as_bytes(py);
+         let iterations = self.iterations;
+         let md = self.md;
+-        py.detach(|| openssl::pkcs5::pbkdf2_hmac(key_material, salt, iterations, md, output))?;
++        py.detach(|| openssl_bridge::kdf::pbkdf2_hmac(md, key_material, salt, iterations, output))?;
+ 
+         Ok(self.length)
+     }
+@@ -80,7 +80,14 @@ impl Pbkdf2Hmac {
+                 ),
+             ));
+         }
+-        let md = hashes::message_digest_from_algorithm(py, &algorithm)?;
++        let iterations = i32::try_from(iterations)
++            .ok()
++            .and_then(|n| u32::try_from(n).ok())
++            .and_then(std::num::NonZeroU32::new)
++            .ok_or_else(|| {
++                pyo3::exceptions::PyOverflowError::new_err("iteration count is too large")
++            })?;
++        let md = hashes::bridge_digest_from_algorithm(py, &algorithm)?;
+ 
+         Ok(Pbkdf2Hmac {
+             md,
+@@ -175,7 +182,7 @@ impl Scrypt {
+         let r = self.r;
+         let p = self.p;
+         py.detach(|| {
+-            openssl::pkcs5::scrypt(
++            openssl_bridge::kdf::scrypt(
+                 key_material,
+                 salt,
+                 n,
+@@ -985,7 +992,7 @@ pub(crate) fn hkdf_extract(
      algorithm: &pyo3::Py<pyo3::PyAny>,
      salt: Option<&[u8]>,
      key_material: &CffiBuf<'_>,
@@ -644,7 +1478,7 @@ index ee4829c..f7c6ee6 100644
      let algorithm_bound = algorithm.bind(py);
      let digest_size = algorithm_bound
          .getattr(pyo3::intern!(py, "digest_size"))?
-@@ -1860,7 +1860,7 @@ fn kbkdf_derive_into_buffer<F>(
+@@ -1860,7 +1867,7 @@ fn kbkdf_derive_into_buffer<F>(
      mut prf_fn: F,
  ) -> CryptographyResult<usize>
  where
@@ -653,17 +1487,322 @@ index ee4829c..f7c6ee6 100644
  {
      if output.len() != length {
          return Err(CryptographyError::from(
-@@ -2159,7 +2159,7 @@ impl KbkdfCmac {
-             |data| {
-                 let mut cmac = cmac_base.copy()?;
-                 cmac.update_bytes(data)?;
--                cmac.finalize_bytes()
-+                cmac.finalize_bytes().map(|result| result.to_vec())
-             },
-         )
+diff --git a/src/rust/src/backend/keys.rs b/src/rust/src/backend/keys.rs
+index 37b8dd7..db50050 100644
+--- a/src/rust/src/backend/keys.rs
++++ b/src/rust/src/backend/keys.rs
+@@ -140,7 +140,7 @@ fn private_key_from_pkey<'p>(
+         openssl::pkey::Id::EC => Ok(crate::backend::ec::private_key_from_pkey(py, pkey)?
+             .into_pyobject(py)?
+             .into_any()),
+-        openssl::pkey::Id::X25519 => Ok(crate::backend::x25519::private_key_from_pkey(pkey)
++        openssl::pkey::Id::X25519 => Ok(crate::backend::x25519::private_key_from_pkey(pkey)?
+             .into_pyobject(py)?
+             .into_any()),
+ 
+@@ -153,7 +153,7 @@ fn private_key_from_pkey<'p>(
+             .into_pyobject(py)?
+             .into_any()),
+ 
+-        openssl::pkey::Id::ED25519 => Ok(crate::backend::ed25519::private_key_from_pkey(pkey)
++        openssl::pkey::Id::ED25519 => Ok(crate::backend::ed25519::private_key_from_pkey(pkey)?
+             .into_pyobject(py)?
+             .into_any()),
+ 
+@@ -339,7 +339,7 @@ fn public_key_from_pkey<'p>(
+         openssl::pkey::Id::EC => Ok(crate::backend::ec::public_key_from_pkey(py, pkey)?
+             .into_pyobject(py)?
+             .into_any()),
+-        openssl::pkey::Id::X25519 => Ok(crate::backend::x25519::public_key_from_pkey(pkey)
++        openssl::pkey::Id::X25519 => Ok(crate::backend::x25519::public_key_from_pkey(pkey)?
+             .into_pyobject(py)?
+             .into_any()),
+         #[cfg(not(any(
+@@ -351,7 +351,7 @@ fn public_key_from_pkey<'p>(
+             .into_pyobject(py)?
+             .into_any()),
+ 
+-        openssl::pkey::Id::ED25519 => Ok(crate::backend::ed25519::public_key_from_pkey(pkey)
++        openssl::pkey::Id::ED25519 => Ok(crate::backend::ed25519::public_key_from_pkey(pkey)?
+             .into_pyobject(py)?
+             .into_any()),
+         #[cfg(not(any(
+diff --git a/src/rust/src/backend/mldsa.rs b/src/rust/src/backend/mldsa.rs
+index 0fe421f..92a5a85 100644
+--- a/src/rust/src/backend/mldsa.rs
++++ b/src/rust/src/backend/mldsa.rs
+@@ -49,7 +49,7 @@ pub(crate) fn mldsa44_public_key_from_pkey(
+ #[pyo3::pyfunction]
+ fn generate_mldsa44_key() -> CryptographyResult<MlDsa44PrivateKey> {
+     let mut seed = [0u8; 32];
+-    cryptography_openssl::rand::rand_bytes(&mut seed)?;
++    openssl_bridge::rand::fill_private(&mut seed)?;
+     let pkey = cryptography_openssl::mldsa::new_raw_private_key(MlDsaVariant::MlDsa44, &seed)?;
+     Ok(MlDsa44PrivateKey { pkey })
+ }
+@@ -296,7 +296,7 @@ pub(crate) fn mldsa65_public_key_from_pkey(
+ #[pyo3::pyfunction]
+ fn generate_mldsa65_key() -> CryptographyResult<MlDsa65PrivateKey> {
+     let mut seed = [0u8; 32];
+-    cryptography_openssl::rand::rand_bytes(&mut seed)?;
++    openssl_bridge::rand::fill_private(&mut seed)?;
+     let pkey = cryptography_openssl::mldsa::new_raw_private_key(MlDsaVariant::MlDsa65, &seed)?;
+     Ok(MlDsa65PrivateKey { pkey })
+ }
+@@ -546,7 +546,7 @@ pub(crate) fn mldsa87_public_key_from_pkey(
+ #[pyo3::pyfunction]
+ fn generate_mldsa87_key() -> CryptographyResult<MlDsa87PrivateKey> {
+     let mut seed = [0u8; 32];
+-    cryptography_openssl::rand::rand_bytes(&mut seed)?;
++    openssl_bridge::rand::fill_private(&mut seed)?;
+     let pkey = cryptography_openssl::mldsa::new_raw_private_key(MlDsaVariant::MlDsa87, &seed)?;
+     Ok(MlDsa87PrivateKey { pkey })
+ }
+diff --git a/src/rust/src/backend/mlkem.rs b/src/rust/src/backend/mlkem.rs
+index 42195db..b4977b3 100644
+--- a/src/rust/src/backend/mlkem.rs
++++ b/src/rust/src/backend/mlkem.rs
+@@ -80,7 +80,7 @@ pub(crate) fn mlkem1024_public_key_from_pkey(
+ #[pyo3::pyfunction]
+ fn generate_mlkem768_key() -> CryptographyResult<MlKem768PrivateKey> {
+     let mut seed = [0u8; 64];
+-    cryptography_openssl::rand::rand_bytes(&mut seed)?;
++    openssl_bridge::rand::fill_private(&mut seed)?;
+     let pkey = cryptography_openssl::mlkem::new_raw_private_key(MlKemVariant::MlKem768, &seed)?;
+     Ok(MlKem768PrivateKey { pkey })
+ }
+@@ -230,7 +230,7 @@ impl MlKem768PublicKey {
+ #[pyo3::pyfunction]
+ fn generate_mlkem1024_key() -> CryptographyResult<MlKem1024PrivateKey> {
+     let mut seed = [0u8; 64];
+-    cryptography_openssl::rand::rand_bytes(&mut seed)?;
++    openssl_bridge::rand::fill_private(&mut seed)?;
+     let pkey = cryptography_openssl::mlkem::new_raw_private_key(MlKemVariant::MlKem1024, &seed)?;
+     Ok(MlKem1024PrivateKey { pkey })
+ }
+diff --git a/src/rust/src/backend/rand.rs b/src/rust/src/backend/rand.rs
+index a5a9e62..73f2f54 100644
+--- a/src/rust/src/backend/rand.rs
++++ b/src/rust/src/backend/rand.rs
+@@ -9,7 +9,7 @@ pub(crate) fn get_rand_bytes(
+     size: usize,
+ ) -> CryptographyResult<pyo3::Bound<'_, pyo3::types::PyBytes>> {
+     Ok(pyo3::types::PyBytes::new_with(py, size, |b| {
+-        cryptography_openssl::rand::rand_bytes(b).map_err(CryptographyError::from)?;
++        openssl_bridge::rand::fill_private(b).map_err(CryptographyError::from)?;
+         Ok(())
+     })?)
+ }
+diff --git a/src/rust/src/backend/x25519.rs b/src/rust/src/backend/x25519.rs
+index 577fa2d..18938c7 100644
+--- a/src/rust/src/backend/x25519.rs
++++ b/src/rust/src/backend/x25519.rs
+@@ -8,34 +8,63 @@ use crate::error::CryptographyResult;
+ 
+ #[pyo3::pyclass(frozen, module = "cryptography.hazmat.bindings._rust.openssl.x25519")]
+ pub(crate) struct X25519PrivateKey {
+-    pkey: openssl::pkey::PKey<openssl::pkey::Private>,
++    pkey: openssl_bridge::curve25519::X25519SecretKey,
+ }
+ 
+ #[pyo3::pyclass(frozen, module = "cryptography.hazmat.bindings._rust.openssl.x25519")]
+ pub(crate) struct X25519PublicKey {
+-    pkey: openssl::pkey::PKey<openssl::pkey::Public>,
++    pkey: openssl_bridge::curve25519::X25519PublicKey,
+ }
+ 
+ #[pyo3::pyfunction]
+ pub(crate) fn generate_key() -> CryptographyResult<X25519PrivateKey> {
+     Ok(X25519PrivateKey {
+-        pkey: openssl::pkey::PKey::generate_x25519()?,
++        pkey: openssl_bridge::curve25519::X25519SecretKey::generate()?,
+     })
+ }
+ 
++// Temporary serialization boundary until the shared key parser is migrated.
+ pub(crate) fn private_key_from_pkey(
+     pkey: &openssl::pkey::PKeyRef<openssl::pkey::Private>,
+-) -> X25519PrivateKey {
+-    X25519PrivateKey {
+-        pkey: pkey.to_owned(),
+-    }
++) -> CryptographyResult<X25519PrivateKey> {
++    let bytes = pkey.raw_private_key()?;
++    let bytes = bytes
++        .as_slice()
++        .try_into()
++        .map_err(|_| openssl_bridge::Error::InvalidInput("unexpected private key length"))?;
++    Ok(X25519PrivateKey {
++        pkey: openssl_bridge::curve25519::X25519SecretKey::from_bytes(bytes)?,
++    })
+ }
+ 
+ pub(crate) fn public_key_from_pkey(
+     pkey: &openssl::pkey::PKeyRef<openssl::pkey::Public>,
+-) -> X25519PublicKey {
+-    X25519PublicKey {
+-        pkey: pkey.to_owned(),
++) -> CryptographyResult<X25519PublicKey> {
++    let bytes = pkey.raw_public_key()?;
++    let bytes = bytes
++        .as_slice()
++        .try_into()
++        .map_err(|_| openssl_bridge::Error::InvalidInput("unexpected public key length"))?;
++    Ok(X25519PublicKey {
++        pkey: openssl_bridge::curve25519::X25519PublicKey::from_bytes(bytes)?,
++    })
++}
++
++impl X25519PrivateKey {
++    fn serialization_key(&self) -> CryptographyResult<openssl::pkey::PKey<openssl::pkey::Private>> {
++        let bytes = self.pkey.to_bytes()?;
++        Ok(openssl::pkey::PKey::private_key_from_raw_bytes(
++            bytes.as_ref(),
++            openssl::pkey::Id::X25519,
++        )?)
++    }
++}
++impl X25519PublicKey {
++    fn serialization_key(&self) -> CryptographyResult<openssl::pkey::PKey<openssl::pkey::Public>> {
++        Ok(openssl::pkey::PKey::public_key_from_raw_bytes(
++            &self.pkey.to_bytes()?,
++            openssl::pkey::Id::X25519,
++        )?)
      }
+ }
+ 
+@@ -43,22 +72,21 @@ pub(crate) fn public_key_from_pkey(
+ // them is a risk.
+ #[pyo3::pyfunction]
+ fn from_private_bytes(data: CffiBuf<'_>) -> pyo3::PyResult<X25519PrivateKey> {
+-    let pkey =
+-        openssl::pkey::PKey::private_key_from_raw_bytes(data.as_bytes(), openssl::pkey::Id::X25519)
+-            .map_err(|e| {
+-                pyo3::exceptions::PyValueError::new_err(format!(
+-                    "An X25519 private key is 32 bytes long: {e}"
+-                ))
+-            })?;
++    let length_error =
++        || pyo3::exceptions::PyValueError::new_err("An X25519 private key is 32 bytes long");
++    let bytes = data.as_bytes().try_into().map_err(|_| length_error())?;
++    let pkey = openssl_bridge::curve25519::X25519SecretKey::from_bytes(bytes)
++        .map_err(|_| length_error())?;
+     Ok(X25519PrivateKey { pkey })
+ }
+ 
+ #[pyo3::pyfunction]
+ pub(crate) fn from_public_bytes(data: &[u8]) -> pyo3::PyResult<X25519PublicKey> {
+-    let pkey = openssl::pkey::PKey::public_key_from_raw_bytes(data, openssl::pkey::Id::X25519)
+-        .map_err(|_| {
+-            pyo3::exceptions::PyValueError::new_err("An X25519 public key is 32 bytes long")
+-        })?;
++    let length_error =
++        || pyo3::exceptions::PyValueError::new_err("An X25519 public key is 32 bytes long");
++    let bytes = data.try_into().map_err(|_| length_error())?;
++    let pkey = openssl_bridge::curve25519::X25519PublicKey::from_bytes(bytes)
++        .map_err(|_| length_error())?;
+     Ok(X25519PublicKey { pkey })
+ }
+ 
+@@ -69,25 +97,16 @@ impl X25519PrivateKey {
+         py: pyo3::Python<'p>,
+         peer_public_key: &X25519PublicKey,
+     ) -> CryptographyResult<pyo3::Bound<'p, pyo3::types::PyBytes>> {
+-        let mut deriver = openssl::derive::Deriver::new(&self.pkey)?;
+-        deriver.set_peer(&peer_public_key.pkey)?;
+-
+-        Ok(pyo3::types::PyBytes::new_with(py, deriver.len()?, |b| {
+-            let n = deriver.derive(b).map_err(|_| {
+-                pyo3::exceptions::PyValueError::new_err("Error computing shared key.")
+-            })?;
+-            assert_eq!(n, b.len());
+-            Ok(())
+-        })?)
++        let secret = self
++            .pkey
++            .exchange(&peer_public_key.pkey)
++            .map_err(|_| pyo3::exceptions::PyValueError::new_err("Error computing shared key."))?;
++        Ok(pyo3::types::PyBytes::new(py, secret.as_ref()))
+     }
+ 
+     fn public_key(&self) -> CryptographyResult<X25519PublicKey> {
+-        let raw_bytes = self.pkey.raw_public_key()?;
+         Ok(X25519PublicKey {
+-            pkey: openssl::pkey::PKey::public_key_from_raw_bytes(
+-                &raw_bytes,
+-                openssl::pkey::Id::X25519,
+-            )?,
++            pkey: self.pkey.public_key()?,
+         })
+     }
+ 
+@@ -95,8 +114,8 @@ impl X25519PrivateKey {
+         &self,
+         py: pyo3::Python<'p>,
+     ) -> CryptographyResult<pyo3::Bound<'p, pyo3::types::PyBytes>> {
+-        let raw_bytes = self.pkey.raw_private_key()?;
+-        Ok(pyo3::types::PyBytes::new(py, &raw_bytes))
++        let raw_bytes = self.pkey.to_bytes()?;
++        Ok(pyo3::types::PyBytes::new(py, raw_bytes.as_ref()))
+     }
+ 
+     fn private_bytes<'p>(
+@@ -109,7 +128,7 @@ impl X25519PrivateKey {
+         utils::pkey_private_bytes(
+             py,
+             slf,
+-            &slf.borrow().pkey,
++            &slf.borrow().serialization_key()?,
+             encoding,
+             format,
+             encryption_algorithm,
+@@ -136,7 +155,7 @@ impl X25519PublicKey {
+         &self,
+         py: pyo3::Python<'p>,
+     ) -> CryptographyResult<pyo3::Bound<'p, pyo3::types::PyBytes>> {
+-        let raw_bytes = self.pkey.raw_public_key()?;
++        let raw_bytes = self.pkey.to_bytes()?;
+         Ok(pyo3::types::PyBytes::new(py, &raw_bytes))
+     }
+ 
+@@ -146,11 +165,19 @@ impl X25519PublicKey {
+         encoding: crate::serialization::Encoding,
+         format: crate::serialization::PublicFormat,
+     ) -> CryptographyResult<pyo3::Bound<'p, pyo3::types::PyBytes>> {
+-        utils::pkey_public_bytes(py, slf, &slf.borrow().pkey, encoding, format, false, true)
++        utils::pkey_public_bytes(
++            py,
++            slf,
++            &slf.borrow().serialization_key()?,
++            encoding,
++            format,
++            false,
++            true,
++        )
+     }
+ 
+-    fn __eq__(&self, other: pyo3::PyRef<'_, Self>) -> bool {
+-        self.pkey.public_eq(&other.pkey)
++    fn __eq__(&self, other: pyo3::PyRef<'_, Self>) -> CryptographyResult<bool> {
++        Ok(self.pkey.to_bytes()? == other.pkey.to_bytes()?)
+     }
+ 
+     fn __copy__(slf: pyo3::PyRef<'_, Self>) -> pyo3::PyRef<'_, Self> {
+diff --git a/src/rust/src/cobblestone.rs b/src/rust/src/cobblestone.rs
+index 24fc6a6..2a80ec8 100644
+--- a/src/rust/src/cobblestone.rs
++++ b/src/rust/src/cobblestone.rs
+@@ -224,7 +224,7 @@ impl ChunkedEncryptor {
+     ) -> CryptographyResult<Self> {
+         check_key_length(params, key)?;
+         let mut salt = [0; SALT_LEN];
+-        cryptography_openssl::rand::rand_bytes(&mut salt)?;
++        openssl_bridge::rand::fill_private(&mut salt)?;
+         let keys = derive_keys(py, params, key, &salt, context)?;
+         let cipher = ChunkCipher::new(py, params, &keys)?;
+         let mut header = [0; HEADER_LEN];
 diff --git a/src/rust/src/error.rs b/src/rust/src/error.rs
-index cd7c850..4e0e870 100644
+index cd7c850..3906413 100644
 --- a/src/rust/src/error.rs
 +++ b/src/rust/src/error.rs
 @@ -58,6 +58,50 @@ impl From<openssl::error::ErrorStack> for CryptographyError {
@@ -717,3 +1856,70 @@ index cd7c850..4e0e870 100644
  impl From<pem::PemError> for CryptographyError {
      fn from(e: pem::PemError) -> CryptographyError {
          CryptographyError::Py(pyo3::exceptions::PyValueError::new_err(format!(
+@@ -71,6 +115,7 @@ impl From<cryptography_key_parsing::KeyParsingError> for CryptographyError {
+         match e {
+             cryptography_key_parsing::KeyParsingError::Parse(e) => CryptographyError::KeyParsing(e),
+             cryptography_key_parsing::KeyParsingError::OpenSSL(e) => CryptographyError::OpenSSL(e),
++            cryptography_key_parsing::KeyParsingError::Bridge(e) => e.into(),
+             cryptography_key_parsing::KeyParsingError::InvalidKey => {
+                 CryptographyError::Py(pyo3::exceptions::PyValueError::new_err("Invalid key"))
+             }
+@@ -155,6 +200,7 @@ impl From<cryptography_key_parsing::KeySerializationError> for CryptographyError
+             cryptography_key_parsing::KeySerializationError::Write(e) => {
+                 CryptographyError::Asn1Write(e)
+             }
++            cryptography_key_parsing::KeySerializationError::Bridge(e) => e.into(),
+             cryptography_key_parsing::KeySerializationError::OpenSSL(e) => {
+                 CryptographyError::OpenSSL(e)
+             }
+diff --git a/src/rust/src/fernet.rs b/src/rust/src/fernet.rs
+index 4900e44..531a40c 100644
+--- a/src/rust/src/fernet.rs
++++ b/src/rust/src/fernet.rs
+@@ -262,7 +262,7 @@ impl Fernet {
+         cls: &pyo3::Bound<'p, pyo3::types::PyType>,
+     ) -> CryptographyResult<pyo3::Bound<'p, pyo3::types::PyBytes>> {
+         let mut key = [0u8; KEY_LEN];
+-        cryptography_openssl::rand::rand_bytes(&mut key)?;
++        openssl_bridge::rand::fill_private(&mut key)?;
+         b64encode(cls.py(), &key)
+     }
+ 
+@@ -281,7 +281,7 @@ impl Fernet {
+         current_time: u64,
+     ) -> CryptographyResult<pyo3::Bound<'p, pyo3::types::PyBytes>> {
+         let mut iv = [0u8; IV_LEN];
+-        cryptography_openssl::rand::rand_bytes(&mut iv)?;
++        openssl_bridge::rand::fill_private(&mut iv)?;
+         let token = self.encrypt_from_parts(py, data.as_bytes(), current_time, &iv)?;
+         b64encode(py, &token)
+     }
+@@ -412,7 +412,7 @@ impl MultiFernet {
+             .ok_or_else(invalid_token)?;
+ 
+         let mut iv = [0u8; IV_LEN];
+-        cryptography_openssl::rand::rand_bytes(&mut iv)?;
++        openssl_bridge::rand::fill_private(&mut iv)?;
+         let token = self.fernets[0]
+             .get()
+             .encrypt_from_parts(py, &plaintext, timestamp, &iv)?;
+diff --git a/src/rust/src/pkcs12.rs b/src/rust/src/pkcs12.rs
+index 48c190c..290a6f4 100644
+--- a/src/rust/src/pkcs12.rs
++++ b/src/rust/src/pkcs12.rs
+@@ -367,13 +367,13 @@ fn serialize_safebags<'p>(
+     let salt =
+         crate::backend::rand::get_rand_bytes(py, 8)?.extract::<pyo3::pybacked::PyBackedBytes>()?;
+     let mac_algorithm_md =
+-        hashes::message_digest_from_algorithm(py, &encryption_details.mac_algorithm)?;
++        hashes::bridge_digest_from_algorithm(py, &encryption_details.mac_algorithm)?;
+     let mac_key = cryptography_crypto::pkcs12::kdf(
+         password,
+         &salt,
+         cryptography_crypto::pkcs12::KDF_MAC_KEY_ID,
+         encryption_details.mac_kdf_iter,
+-        mac_algorithm_md.size(),
++        mac_algorithm_md.output_size()?,
+         mac_algorithm_md,
+     )?;
+     let mac_digest = {

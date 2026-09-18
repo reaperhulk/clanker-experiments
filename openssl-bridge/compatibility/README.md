@@ -2,8 +2,11 @@
 
 `cryptography.patch` applies to the exact cryptography commit in `sources.json`.
 Place the patched cryptography checkout next to `clanker-experiments`, so the
-Cargo path dependency resolves to this experiment. It currently migrates hashes
-and HMAC, including their use by HKDF, KBKDF, and HPKE. **It does not yet remove
+Cargo path dependency resolves to this experiment. It currently migrates hashes,
+HMAC/CMAC, PBKDF2/scrypt, random generation, constant-time comparison, and the
+Ed25519/X25519 key operations. The pure Rust password-derivation helpers now
+depend solely on the new abstraction. Ed25519/X25519 serialization still uses a
+temporary adapter to the old key parser and serializer. **It does not yet remove
 the original openssl or openssl-sys dependencies.**
 
 Use cryptography's canonical `nox -e local` session. Supply both

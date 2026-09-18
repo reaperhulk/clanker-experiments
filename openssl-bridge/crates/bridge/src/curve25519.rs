@@ -107,7 +107,7 @@ impl Ed25519SigningKey {
     }
     pub fn generate() -> Result<Self> {
         let mut seed = Secret([0; 32]);
-        crate::rand::fill(&mut seed.0)?;
+        crate::rand::fill_private(&mut seed.0)?;
         Self::from_seed(&seed.0)
     }
     pub fn to_seed(&self) -> Result<Secret<32>> {
@@ -201,7 +201,7 @@ impl X25519SecretKey {
     }
     pub fn generate() -> Result<Self> {
         let mut secret = Secret([0; 32]);
-        crate::rand::fill(&mut secret.0)?;
+        crate::rand::fill_private(&mut secret.0)?;
         Self::from_bytes(&secret.0)
     }
     pub fn to_bytes(&self) -> Result<Secret<32>> {
