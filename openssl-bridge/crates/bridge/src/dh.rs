@@ -343,6 +343,17 @@ impl PublicKeyMaterial {
     }
 }
 impl PrivateKeyMaterial {
+    /// Decode legacy material whose public value is implicit in the encoding.
+    /// This computes the value but does not validate the resulting key for use.
+    pub fn from_scalar(params: Parameters, scalar: &[u8]) -> Result<Self> {
+        let parts = params.components();
+        let p = Number::from_bytes(parts.p, MAX_BYTES)?;
+        let g = Number::from_bytes(parts.g, MAX_BYTES)?;
+        let private = Number::from_bytes(scalar, MAX_BYTES)?;
+        let public = Number::power_mod(&g, &private, &p)?.secret_bytes()?;
+        Self::from_components(params, scalar, public.as_ref())
+    }
+
     pub fn from_components(params: Parameters, scalar: &[u8], public: &[u8]) -> Result<Self> {
         let private = Number::from_bytes(scalar, MAX_BYTES)?.secret_bytes()?;
         let public = Number::from_bytes(public, MAX_BYTES)?

@@ -223,3 +223,20 @@ AWS-LC experimental KEM declarations are generated from its installed header.
 The only added C compatibility function evaluates BoringSSL's inline CBS_init.
 Known-answer tests independently check seed expansion, signature verification,
 external mu, decapsulation, and the deterministic implicit-rejection secret.
+
+## Serialization integration
+
+Cryptography's Rust ASN.1 codecs consume algorithm-specific key data and borrowed
+serialization views. They no longer reconstruct generic native PKey objects or
+accept an independently supplied algorithm id. PKCS#8 v2 public components are
+compared through canonical public encodings after parsing both key roles.
+
+RSA container parsing retains bounded erased components until the caller chooses
+its existing explicit validation policy. EC private imports derive their own
+public point and compare any encoded public component. Legacy DSA/DH private
+encodings with implicit public values use bounded constant-time exponentiation
+to form passive material; that calculation does not grant operational validity.
+
+Unsupported MAC keys and arbitrary curves cannot inhabit the serialization view.
+The old internal panic tests are replaced by compile-fail coverage and explicit
+unsupported-algorithm parser checks; Python capability skips are unchanged.

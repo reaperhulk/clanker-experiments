@@ -176,6 +176,7 @@ pub struct PublicComponents {
     pub n: Vec<u8>,
     pub e: Vec<u8>,
 }
+#[derive(Clone, Copy)]
 pub struct PrivateComponents<'a> {
     pub n: &'a [u8],
     pub e: &'a [u8],

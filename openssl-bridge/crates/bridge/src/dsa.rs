@@ -407,6 +407,17 @@ pub struct PublicKeyMaterial {
     validated: std::sync::OnceLock<Result<PublicKey>>,
 }
 impl PrivateKeyMaterial {
+    /// Decode legacy material whose public value is implicit in the encoding.
+    /// This computes the value but does not validate the resulting key for use.
+    pub fn from_scalar(params: ParameterMaterial, scalar: &[u8]) -> Result<Self> {
+        let parts = params.components();
+        let p = Number::from_bytes(parts.p, MAX_BYTES)?;
+        let g = Number::from_bytes(parts.g, MAX_BYTES)?;
+        let private = Number::from_bytes(scalar, 32)?;
+        let public = Number::power_mod(&g, &private, &p)?.secret_bytes()?;
+        Self::from_components(params, scalar, public.as_ref())
+    }
+
     pub fn from_components(
         params: ParameterMaterial,
         scalar: &[u8],

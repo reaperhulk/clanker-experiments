@@ -8,9 +8,13 @@ Ed25519/X25519/Ed448/X448/RSA/EC/DH/DSA key operations. ML-DSA and
 ML-KEM also use the independent layer on backends that implement them. Conventional and authenticated ciphers,
 Poly1305, Fernet, key wrapping, password-based encryption, and ML-DSA message
 representative hashing now use the new layer as well. The pure Rust password-derivation helpers now
-depend solely on the new abstraction. Key serialization still uses a
-temporary adapter to the old key parser and serializer. **It does not yet remove
-the original openssl or openssl-sys dependencies.**
+depend solely on the new abstraction. Key parsing and serialization now use algorithm-specific owned keys and borrowed
+serialization views. Their PKCS#1, SEC1, SPKI, PKCS#8, and PEM code no longer
+uses native PKey/BigNum adapters. The key-parsing crate depends on the new sys
+crate only for backend build metadata and continues to forbid unsafe code.
+**The overall integration still retains the original openssl and openssl-sys
+dependencies for provider/FIPS controls, Argon2, native container compatibility,
+and error handling.** The full replacement is not yet complete.
 
 Use cryptography's canonical `nox -e local` session. Supply both
 `--wycheproof-root` and `--x509-limbo-root` pointing at the revisions recorded in
