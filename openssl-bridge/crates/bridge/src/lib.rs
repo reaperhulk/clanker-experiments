@@ -17,6 +17,7 @@ pub mod error;
 pub mod gcm;
 pub mod hash;
 pub mod kdf;
+pub mod legacy_key;
 pub mod mac;
 #[cfg(any(openssl_350, backend = "boringssl", backend = "awslc"))]
 pub mod mldsa;
@@ -32,6 +33,8 @@ pub mod rand;
 pub mod rsa;
 pub mod runtime;
 pub mod secret;
+pub mod tls;
+pub mod x509;
 
 /// Compare equal-length byte strings without data-dependent early exit.
 pub fn constant_time_eq(a: &[u8], b: &[u8]) -> bool {

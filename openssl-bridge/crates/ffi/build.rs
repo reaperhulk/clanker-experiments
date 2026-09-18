@@ -14,10 +14,22 @@ impl bindgen::callbacks::ParseCallbacks for Macros {
         if name.starts_with("OPENSSL_NO_") {
             self.0.lock().unwrap().entry(name.into()).or_insert(0);
         }
+        // bindgen's integer callback omits option expressions implemented with
+        // SSL_OP_BIT(n). Evaluate these object-like macros with the target C
+        // compiler, excluding the function-like SSL_OP_BIT helper itself.
+        if name == "SSL3_VERSION" || (name.starts_with("SSL_OP_") && name != "SSL_OP_BIT") {
+            self.0.lock().unwrap().entry(name.into()).or_insert(0);
+        }
         bindgen::callbacks::MacroParsingBehavior::Default
     }
     fn int_macro(&self, name: &str, value: i64) -> Option<bindgen::callbacks::IntKind> {
-        if name.starts_with("OPENSSL_") || name.starts_with("LIBRESSL_") || name.starts_with("OB_")
+        if name.starts_with("OPENSSL_")
+            || name.starts_with("LIBRESSL_")
+            || name.starts_with("OB_")
+            || name.starts_with("SSL_")
+            || name.starts_with("TLS")
+            || name.starts_with("DTLS")
+            || name.starts_with("X509_V_")
         {
             self.0.lock().unwrap().insert(name.into(), value);
         }
@@ -77,7 +89,7 @@ fn main() {
         .allowlist_function("(MLDSA|CBS_).*")
         .allowlist_var("MLDSA.*")
         .allowlist_function("(OB_|OPENSSL_|OpenSSL_|CRYPTO_|ERR_|EVP_|BN_|RSA_|DSA_|DH_|EC_|ECDSA_|ECDH_|HMAC_|CMAC_|RAND_|OBJ_|BIO_|PEM_|SMIME_|PKCS|d2i_|i2d_|X509|ASN1_|SSL_|TLS_|DTLS_|OSSL_|FIPS_|sk_|OPENSSL_sk_).*" )
-        .allowlist_var("(OPENSSL_|LIBRESSL_|EVP_|NID_|RSA_|EC_|POINT_|ERR_|SSL_|TLS_|X509_|PKCS|OSSL_|V_ASN1_).*" )
+        .allowlist_var("(OPENSSL_|LIBRESSL_|EVP_|NID_|RSA_|EC_|POINT_|ERR_|SSL_|TLS|DTLS|TLSEXT_|BIO_|X509_|PKCS|OSSL_|V_ASN1_).*" )
         .derive_default(false)
         .layout_tests(false)
         .generate_comments(false);
@@ -91,6 +103,27 @@ fn main() {
         .write_to_file(PathBuf::from(env::var_os("OUT_DIR").unwrap()).join("bindings.rs"))
         .expect("write generated bindings");
     let macros = macros.lock().unwrap();
+    // Export numeric compatibility constants using their final preprocessor
+    // values. The safe TLS boundary copies values, never native object handles.
+    let mut constants = String::from("#include \"wrapper.h\"\nstruct OB_constant { const char *name; int64_t value; };\nstatic const struct OB_constant constants[] = {\n");
+    for name in macros.keys().filter(|name| {
+        name.as_str() == "SSL3_VERSION"
+            || name.starts_with("SSL_")
+            || name.starts_with("TLS")
+            || name.starts_with("DTLS")
+            || name.starts_with("X509_V_")
+            || name.starts_with("OPENSSL_")
+    }) {
+        if name.starts_with("OPENSSL_NO_") {
+            continue;
+        }
+        constants.push_str(&format!(
+            "#ifdef {name}\n{{\"{name}\", (int64_t){name}}},\n#endif\n"
+        ));
+    }
+    constants.push_str("};\nsize_t OB_tls_constant_count(void) { return sizeof(constants)/sizeof(constants[0]); }\nconst char *OB_tls_constant_name(size_t i) { return i < OB_tls_constant_count() ? constants[i].name : NULL; }\nint64_t OB_tls_constant_value(size_t i) { return i < OB_tls_constant_count() ? constants[i].value : 0; }\n");
+    let constants_path = PathBuf::from(env::var_os("OUT_DIR").unwrap()).join("tls_constants.c");
+    std::fs::write(&constants_path, constants).expect("write compatibility constants");
     let backend = match macros["OB_BACKEND_CODE"] {
         3 => "awslc",
         2 => "boringssl",
@@ -144,6 +177,8 @@ fn main() {
     println!("cargo:conf={}", disabled.join(","));
     cc::Build::new()
         .file("shim.c")
+        .file(constants_path)
+        .include(env::var_os("CARGO_MANIFEST_DIR").unwrap())
         .includes(&includes)
         .warnings(false)
         .compile("openssl_bridge_shim");

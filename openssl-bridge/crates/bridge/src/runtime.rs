@@ -13,9 +13,22 @@ pub fn version_number() -> u64 {
     unsafe { ffi::OpenSSL_version_num() as u64 }
 }
 
+pub fn has_implicit_rsa_rejection() -> bool {
+    // SAFETY: Pure query of the selected headers' implicit-rejection capability.
+    unsafe { ffi::OB_has_implicit_rsa_rejection() != 0 }
+}
+
 pub fn version_text() -> String {
     // SAFETY: The version selector returns a static terminated string.
     unsafe { CStr::from_ptr(ffi::OpenSSL_version(ffi::OPENSSL_VERSION as i32)) }
+        .to_string_lossy()
+        .into_owned()
+}
+
+pub fn compiled_version_text() -> String {
+    // bindgen copies the selected headers' terminated version literal.
+    CStr::from_bytes_until_nul(ffi::OPENSSL_VERSION_TEXT)
+        .expect("native version literal is terminated")
         .to_string_lossy()
         .into_owned()
 }

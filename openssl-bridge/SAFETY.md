@@ -3,6 +3,61 @@
 This document records the current implementation's invariants. It is not an
 independent audit or a claim that the complete requested API has been implemented.
 
+## TLS, callbacks, and pyOpenSSL
+
+`ContextBuilder` is exclusively mutable and consumed into a shared, immutable
+`Context`. Connections retain their factory and credentials, own their native
+SSL allocation, and require exclusive access for operations and metadata reads.
+The factory never exposes a mutable certificate or trust-store alias. Store
+verification uses a fresh native verification context; exported certificates
+are deep copies. These restrictions also apply to Python trust-store proxies
+obtained before the factory was frozen.
+
+Stream TLS owns either memory BIOs or a duplicated Unix socket descriptor. The
+descriptor outlives `SSL_free`, so closing the caller's socket cannot invalidate
+native I/O. DTLS uses a packet queue BIO with preserved datagram boundaries,
+bounded packet/queue sizes, native peek semantics, and explicit MTU. A short
+application drain buffer leaves the datagram queued. Windows socket transport
+and direct DTLS socket transport are not implemented; the memory/packet APIs
+do not require operating-system handles.
+
+A pending write owns erased-on-drop plaintext at a stable address. Retries must
+supply identical bytes, including when native moving-buffer mode is enabled.
+Unsupported asynchronous modes are rejected. Fatal TLS errors poison the
+connection and prevent further I/O or shutdown; produced alerts can still be
+drained. Error classification happens immediately on the initiating thread,
+after clearing its prior native diagnostic queue and errno.
+
+Native callbacks refer only to stable, shared callback storage, never to an
+aliased mutable connection or a uniquely owned Rust allocation. Application
+hooks receive copied metadata and return typed actions. Hooks execute without
+internal bookkeeping locks, with panic containment and per-connection failure
+storage. A scoped guard isolates their changes to the thread's error codes and
+errno. ALPN selections must be offered and retain their allocation until SSL
+destruction; OCSP responses transfer a separate native allocation. A selected
+SNI context must use the same transport protocol.
+
+Session installation checks the originating factory, credentials factory,
+verification policy, reference DNS identity, SNI, role, and callback identity.
+Configuration freezes before installing a session or starting I/O. SNI alone
+does not authenticate a hostname: chain verification and the reference DNS
+identity are explicit, separate settings. Verification callbacks can explicitly
+override rejection; exported verification chains are diagnostic data, not proof
+that a peer was authenticated.
+
+The Python X.509 and TLS adapters forbid unsafe Rust. They own their native
+objects behind exclusive locks; concurrent and reentrant connection operations
+fail instead of aliasing or deadlocking. Blocking TLS calls release the GIL
+before taking the connection lock. Python callbacks reattach using an operation
+scope, so no persistent native-to-Python reference cycle is created. The original
+Python exception is returned to the initiating operation after the C callback
+has returned. Python `sendall` separately retains its offset across retries to
+avoid repeating plaintext that was already accepted.
+
+The deprecated RNG compatibility method treats bytes as additional input and
+never accepts caller-supplied entropy credit. TLS key logging and secret exports
+remain explicit operations; consumers must protect the resulting material.
+
 ## Ownership and lifetimes
 
 The safe crate does not expose foreign pointers. Native allocations enter a

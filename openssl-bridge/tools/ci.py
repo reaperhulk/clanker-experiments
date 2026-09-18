@@ -24,6 +24,7 @@ REPOSITORIES = {
     "boringssl": "https://github.com/google/boringssl.git",
     "awslc": "https://github.com/aws/aws-lc.git",
     "cryptography": "https://github.com/pyca/cryptography.git",
+    "pyopenssl": "https://github.com/pyca/pyopenssl.git",
     "wycheproof": "https://github.com/C2SP/wycheproof.git",
     "x509-limbo": "https://github.com/C2SP/x509-limbo.git",
 }
@@ -218,6 +219,12 @@ def prepare(work: Path, row: str) -> None:
     # Include new files and all deleted adapter files in the source-identity
     # checks. Do not accidentally validate a patch that drops untracked files.
     run(["git", "apply", "--index", str(patch)], cryptography)
+    if row in MATRIX["wrapper_rows"]:
+        pyopenssl = work / "pyopenssl"
+        checkout(REPOSITORIES["pyopenssl"], SOURCES["pyopenssl"], pyopenssl)
+        tls_patch = ROOT / "compatibility/pyopenssl.patch"
+        run(["git", "apply", "--check", str(tls_patch)], pyopenssl)
+        run(["git", "apply", "--index", str(tls_patch)], pyopenssl)
     acceptance = ROOT / "validation/acceptance"
     report = json.loads((acceptance / "report.json").read_text())
     accepted = next(item for item in report["rows"] if item["label"] == row)

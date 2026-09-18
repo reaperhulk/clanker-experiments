@@ -25,8 +25,15 @@ a copy is not a promise of an atomic snapshot under external mutation.
 **The primary replacement passes the full pinned acceptance matrix.**
 See [the final report](../validation/acceptance/README.md) for per-row counts,
 source identities, baseline comparisons, and the scope of validation.
-The CFFI/TLS layer is retained for the subsequent pyOpenSSL stage; its build
-metadata comes from the new sys crate.
+The current patch also removes the CFFI/TLS layer. The historical primary patch
+is preserved in `cryptography-primary.patch`. The subsequent migration is under
+validation; see [its status](../validation/tls/PROGRESS.md).
+
+Apply `pyopenssl.patch` to the pyOpenSSL revision in `sources.json`. It replaces
+CFFI with typed X.509 and TLS adapters provided by the patched cryptography
+extension. Run `tools/validate_pyopenssl.py` after the full cryptography nox
+check to test the same native extension, physically remove CFFI, and compare
+the complete pyOpenSSL suite against the recorded upstream baseline.
 
 Use cryptography's canonical `nox -e local` session. Supply both
 `--wycheproof-root` and `--x509-limbo-root` at the revisions in `sources.json`.
@@ -65,8 +72,9 @@ The primary acceptance gate verifies:
 - The cryptography patch must be regenerated from the tested source tree and
   apply cleanly to the pinned revision.
 
-The later CFFI/TLS replacement will be validated with pyOpenSSL and recorded
-with its own integration patch and test evidence.
+The CFFI/TLS replacement has its own pyOpenSSL patch and test evidence. Its
+acceptance requires full cryptography regressions and all five core pyOpenSSL
+backend runs, with no omitted tests or added skips masking regressions.
 
 The final primary report establishes complete migration of the pinned Rust API
 surface and the stated test matrix. It does not claim an independent security

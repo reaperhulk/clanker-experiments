@@ -17,6 +17,7 @@
 #include <openssl/x509.h>
 #include <openssl/x509_vfy.h>
 #include <openssl/ssl.h>
+#include <openssl/buffer.h>
 #if defined(OPENSSL_IS_AWSLC)
 #define OB_BACKEND_CODE 3
 #elif defined(OPENSSL_IS_BORINGSSL)
@@ -64,6 +65,79 @@ int OB_rsa_pss_saltlen(EVP_PKEY_CTX *ctx, int length);
 int OB_rsa_oaep_label(EVP_PKEY_CTX *ctx, const unsigned char *label, int length);
 
 int OB_signature_nonce(EVP_PKEY_CTX *ctx, unsigned int nonce_type);
+
+void OB_free(void *p);
+void OB_clear_memory_bio(BIO *bio);
+size_t OB_bio_pending(BIO *bio);
+STACK_OF(X509) *OB_x509_stack_new(void);
+int OB_x509_stack_push(STACK_OF(X509) *stack, X509 *cert);
+ASN1_TIME *OB_x509_not_before(X509 *cert);
+ASN1_TIME *OB_x509_not_after(X509 *cert);
+int OB_pkey_id(const EVP_PKEY *key);
+int OB_pkey_bits(const EVP_PKEY *key);
+unsigned long OB_x509_name_hash(X509_NAME *name);
+
+uint64_t OB_tls_context_set_options(SSL_CTX *ctx, uint64_t options);
+uint64_t OB_tls_set_options(SSL *ssl, uint64_t options);
+uint64_t OB_tls_context_set_mode(SSL_CTX *ctx, uint64_t mode);
+uint64_t OB_tls_context_clear_mode(SSL_CTX *ctx, uint64_t mode);
+uint64_t OB_tls_set_mode(SSL *ssl, uint64_t mode);
+int OB_tls_context_min_version(SSL_CTX *ctx, int version);
+int OB_tls_context_max_version(SSL_CTX *ctx, int version);
+int OB_tls_context_add_chain_cert(SSL_CTX *ctx, X509 *cert);
+long OB_tls_context_cache_mode(SSL_CTX *ctx);
+long OB_tls_context_set_cache_mode(SSL_CTX *ctx, long mode);
+long OB_tls_context_timeout(SSL_CTX *ctx);
+void OB_bio_eof_return(BIO *bio, int value);
+int OB_bio_retry(BIO *bio);
+int OB_tls_set_server_name(SSL *ssl, const char *name);
+int OB_dup_socket(int descriptor);
+void OB_close_socket(int descriptor);
+void OB_clear_errno(void);
+int OB_get_errno(void);
+void OB_set_errno(int value);
+void OB_restore_error(unsigned long code);
+int OB_has_implicit_rsa_rejection(void);
+/* Bounded fixed-code fixture for consumers' error-translation tests. */
+unsigned long OB_test_queue_errors(unsigned int count);
+void OB_bio_clear_retry(BIO *bio);
+void OB_bio_retry_read(BIO *bio);
+void OB_bio_retry_write(BIO *bio);
+int OB_dgram_control_kind(int command);
+int OB_dtls_set_mtu(SSL *ssl, unsigned int mtu);
+int OB_dtls_timeout(SSL *ssl, uint64_t *microseconds);
+int OB_dtls_handle_timeout(SSL *ssl);
+int OB_dtls_listen(SSL *ssl, unsigned int mtu);
+size_t OB_dtls_data_mtu(SSL *ssl, unsigned int mtu);
+int OB_tls_handshake_complete(SSL *ssl);
+size_t OB_tls_constant_count(void);
+const char *OB_tls_constant_name(size_t index);
+int64_t OB_tls_constant_value(size_t index);
+int OB_tls_context_groups(SSL_CTX *ctx, const char *groups);
+int OB_tls_context_dh(SSL_CTX *ctx, DH *parameters);
+int OB_tls_context_srtp(SSL_CTX *ctx, const char *profiles);
+const char *OB_tls_srtp(SSL *ssl);
+const char *OB_tls_group(SSL *ssl);
+X509 *OB_tls_peer_certificate(SSL *ssl);
+const STACK_OF(X509) *OB_tls_verified_chain(SSL *ssl);
+size_t OB_x509_name_stack_len(const STACK_OF(X509_NAME) *stack);
+X509_NAME *OB_x509_name_stack_get(const STACK_OF(X509_NAME) *stack, size_t index);
+STACK_OF(X509_NAME) *OB_x509_name_stack_new(void);
+int OB_x509_name_stack_push(STACK_OF(X509_NAME) *stack, X509_NAME *name);
+void OB_x509_name_stack_free(STACK_OF(X509_NAME) *stack);
+int OB_tls_renegotiate(SSL *ssl);
+int OB_tls_renegotiate_pending(SSL *ssl);
+long OB_tls_total_renegotiations(SSL *ssl);
+int OB_tls_ex_index(void);
+int OB_tls_context_sni_callback(SSL_CTX *ctx, int (*callback)(SSL *, int *, void *));
+int OB_tls_context_ocsp_callback(SSL_CTX *ctx, int (*callback)(SSL *, void *));
+size_t OB_tls_ocsp_response(SSL *ssl, const unsigned char **out);
+int OB_tls_set_ocsp_response(SSL *ssl, const unsigned char *data, size_t length);
+int OB_tls_request_ocsp(SSL *ssl);
+int OB_tls_is_server(SSL *ssl);
+int OB_tls_context_cookie_callbacks(SSL_CTX *ctx,
+    int (*generate)(SSL *, unsigned char *, unsigned int *),
+    int (*verify)(SSL *, const unsigned char *, unsigned int));
 
 size_t OB_x509_stack_len(const STACK_OF(X509) *stack);
 X509 *OB_x509_stack_get(const STACK_OF(X509) *stack, size_t index);

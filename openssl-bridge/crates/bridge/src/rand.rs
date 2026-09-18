@@ -1,5 +1,23 @@
 use crate::{error::check, ffi, Result};
 
+/// Mix additional input without trusting a caller's entropy estimate. The
+/// backend remains responsible for obtaining entropy from the operating system.
+pub fn mix_additional_input(input: &[u8]) -> Result<()> {
+    crate::initialize()?;
+    for chunk in input.chunks(i32::MAX as usize) {
+        // SAFETY: Live bounded input; zero entropy credit cannot substitute
+        // caller-controlled bytes for the backend's required entropy source.
+        unsafe { ffi::RAND_add(chunk.as_ptr().cast(), chunk.len() as _, 0.0) };
+    }
+    Ok(())
+}
+
+pub fn is_ready() -> Result<bool> {
+    crate::initialize()?;
+    // SAFETY: Native RNG readiness query, without external pointer arguments.
+    Ok(unsafe { ffi::RAND_status() == 1 })
+}
+
 pub fn fill(output: &mut [u8]) -> Result<()> {
     crate::initialize()?;
     // The common API uses int on OpenSSL and size_t on some forks. Chunking

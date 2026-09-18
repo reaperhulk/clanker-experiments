@@ -75,4 +75,7 @@ The migration includes its API changes, changelog entries, and regression tests.
 [SAFETY.md](SAFETY.md) describes ownership, state, bounds, secret storage,
 concurrency, and backend assumptions. The checked-in tests and integration
 results provide evidence for these invariants; they are not an independent audit.
-The CFFI/TLS surface used by pyOpenSSL is the subsequent stage.
+The subsequent CFFI/TLS implementation and pyOpenSSL migration patch are now
+included, with their current validation status recorded in
+[the TLS progress report](validation/tls/PROGRESS.md). The original primary
+acceptance patch is preserved as `compatibility/cryptography-primary.patch`.

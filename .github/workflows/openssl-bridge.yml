@@ -7,7 +7,7 @@ on:
       - '.github/workflows/openssl-bridge.yml'
       - '.github/actions/openssl-bridge-native/**'
   push:
-    branches: [main]
+    branches: [main, openssl-bridge-tls-validation]
     paths:
       - 'openssl-bridge/**'
       - '.github/workflows/openssl-bridge.yml'
@@ -127,6 +127,13 @@ jobs:
           if [[ -n "${OPENSSL_LIB_DIR:-}" ]]; then args+=(--openssl-lib-dir "$OPENSSL_LIB_DIR"); fi
           if [[ "$BRIDGE_FIPS" == true ]]; then args+=(--fips); fi
           python clanker-experiments/openssl-bridge/tools/validate.py "${args[@]}"
+      - name: Full pyOpenSSL suite without CFFI
+        if: contains(fromJSON('["system", "openssl4", "libressl", "boringssl", "awslc"]'), matrix.id)
+        env:
+          BRIDGE_ROW: ${{ matrix.id }}
+        run: |
+          python clanker-experiments/openssl-bridge/tools/validate_pyopenssl.py \
+            --cryptography cryptography --pyopenssl pyopenssl --row "$BRIDGE_ROW" --out ci-results
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         if: always()
         with:

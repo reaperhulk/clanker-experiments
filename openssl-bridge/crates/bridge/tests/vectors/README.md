@@ -20,3 +20,10 @@ group of the named Wycheproof DSA files at revision
 message (a dash denotes empty), and DER signature, all values hex encoded.
 Wycheproof is licensed under Apache-2.0. These public values measure repeated
 parameter import and complete signature verification; no secret material is used.
+
+`tls-localhost.der` is a test-only leaf certificate using the public test
+key in `cert-key-aes256cbc.p12`, serial 778, P-256/SHA-256, SAN `localhost`,
+valid 2017-01-01 through 2038-12-31. Its issuer is `tls-ca.der`, a test-only
+P-256 CA (private scalar 2), serial 777, with the same validity dates.
+The distinct leaf and issuer exercise TLS reference identity verification and
+OCSP stapling, including OpenSSL 4's exclusion of self-signed certificates.

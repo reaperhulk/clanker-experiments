@@ -135,7 +135,7 @@ pub fn parse_pkcs12(
 
 // SAFETY: The key is live and exclusively owned for this call.
 #[cfg(any(backend = "openssl", backend = "libressl"))]
-unsafe fn export_private_key(key: *mut ffi::EVP_PKEY) -> Result<SecretBytes> {
+pub(crate) unsafe fn export_private_key(key: *mut ffi::EVP_PKEY) -> Result<SecretBytes> {
     // SAFETY: The caller keeps key live; the output is a fresh owned object.
     let p8 = NativePkcs8(pointer(unsafe { ffi::EVP_PKEY2PKCS8(key) })?.as_ptr());
     // SAFETY: The exclusively owned p8 remains unchanged during encoding.
@@ -144,7 +144,7 @@ unsafe fn export_private_key(key: *mut ffi::EVP_PKEY) -> Result<SecretBytes> {
 
 // SAFETY: The key is live and exclusively owned for this call.
 #[cfg(any(backend = "boringssl", backend = "awslc"))]
-unsafe fn export_private_key(key: *mut ffi::EVP_PKEY) -> Result<SecretBytes> {
+pub(crate) unsafe fn export_private_key(key: *mut ffi::EVP_PKEY) -> Result<SecretBytes> {
     // A fixed caller-owned buffer avoids native reallocations and a PKCS#8
     // object's uncleared private octet string on these forks. Retry allocation
     // sizes up to an explicit 16 MiB export limit; each failed buffer is erased.
