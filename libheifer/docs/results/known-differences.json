@@ -1,0 +1,12 @@
+[
+  {
+    "entrypoint": "heif_has_compatible_brand",
+    "input_hex": "000000086d657461",
+    "brand": "avif",
+    "results": {
+      "reference": -1,
+      "candidate": -2
+    },
+    "explanation": "Upstream parses the malformed non-ftyp meta box before checking its type; candidate only validates the outer header. Full box-specific malformed-input behavior is incomplete."
+  }
+]

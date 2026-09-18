@@ -1,0 +1,65 @@
+name: libheifer development and completion gates
+on:
+  push:
+    branches: [libheifer]
+  pull_request:
+    paths: ['libheifer/**', '.github/workflows/libheifer.yml', '.gitmodules']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  rust:
+    name: Rust build (${{ matrix.os }})
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: libheifer
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.90.0
+      - run: cargo test --locked -p libheifer --all-features
+      - run: cargo build --locked --release -p libheifer-capi
+
+  differential:
+    name: Independent C clients (Linux)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: libheifer
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: dtolnay/rust-toolchain@1.90.0
+        with:
+          components: rustfmt, clippy
+      - run: python -m pip install libclang==18.1.1
+      - run: cargo fmt --all --check
+      - run: cargo clippy --locked --workspace --all-targets --all-features -- -D warnings
+      - run: cargo test --locked --workspace --all-features
+      - run: python tools/inventory.py --check
+      - run: python tools/audit_dependencies.py
+      - run: python tools/build_reference.py --hevc
+      - run: cargo build --locked --release -p libheifer-capi
+      - run: cargo build --locked --release --features hevc --example hevc_probe
+      - run: python tools/test_brands.py --reference-build .build/reference
+      - run: python tools/test_images.py --reference-build .build/reference
+      - run: python tools/test_hevc.py --reference-build .build/reference
+      - run: python tools/check_coverage.py --reference .build/reference/libheif/libheif.so --development
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: libheifer-development-evidence
+          path: |
+            libheifer/.build/*report.json
+            libheifer/.build/coverage.json
+            libheifer/.build/dependencies.json
+      # Intentionally fail until the complete contract is implemented. Passing
+      # the preceding development tests must never imply a compatible replacement.
+      - name: Full API completion (expected to fail during implementation)
+        run: python tools/check_coverage.py

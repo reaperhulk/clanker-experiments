@@ -1,0 +1,305 @@
+{
+  "heif_brand_to_fourcc": {
+    "notes": "Tested on Linux x86_64; cross-platform ABI and exhaustive input coverage pending.",
+    "status": "partial",
+    "tests": [
+      "tests/brands.c",
+      "tools/test_brands.py"
+    ]
+  },
+  "heif_check_filetype": {
+    "notes": "Tested on Linux x86_64; cross-platform ABI and exhaustive input coverage pending.",
+    "status": "partial",
+    "tests": [
+      "tests/brands.c",
+      "tools/test_brands.py"
+    ]
+  },
+  "heif_check_jpeg_filetype": {
+    "notes": "Tested on Linux x86_64; cross-platform ABI and exhaustive input coverage pending.",
+    "status": "partial",
+    "tests": [
+      "tests/brands.c",
+      "tools/test_brands.py"
+    ]
+  },
+  "heif_error_success": {
+    "notes": "Direct upstream-header C client reads the exported struct. Other architectures pending.",
+    "status": "partial",
+    "tests": [
+      "tests/images.c"
+    ]
+  },
+  "heif_fourcc_to_brand": {
+    "notes": "Tested on Linux x86_64; cross-platform ABI and exhaustive input coverage pending.",
+    "status": "partial",
+    "tests": [
+      "tests/brands.c",
+      "tools/test_brands.py"
+    ]
+  },
+  "heif_free_list_of_compatible_brands": {
+    "notes": "Tested on Linux x86_64; cross-platform ABI and exhaustive input coverage pending.",
+    "status": "partial",
+    "tests": [
+      "tests/brands.c",
+      "tools/test_brands.py"
+    ]
+  },
+  "heif_get_file_mime_type": {
+    "notes": "Tested on Linux x86_64; cross-platform ABI and exhaustive input coverage pending.",
+    "status": "partial",
+    "tests": [
+      "tests/brands.c",
+      "tools/test_brands.py"
+    ]
+  },
+  "heif_get_version": {
+    "notes": "Tested on Linux x86_64; cross-platform ABI and exhaustive input coverage pending.",
+    "status": "partial",
+    "tests": [
+      "tests/brands.c",
+      "tools/test_brands.py"
+    ]
+  },
+  "heif_get_version_number": {
+    "notes": "Tested on Linux x86_64; cross-platform ABI and exhaustive input coverage pending.",
+    "status": "partial",
+    "tests": [
+      "tests/brands.c",
+      "tools/test_brands.py"
+    ]
+  },
+  "heif_get_version_number_maintenance": {
+    "notes": "Tested on Linux x86_64; cross-platform ABI and exhaustive input coverage pending.",
+    "status": "partial",
+    "tests": [
+      "tests/brands.c",
+      "tools/test_brands.py"
+    ]
+  },
+  "heif_get_version_number_major": {
+    "notes": "Tested on Linux x86_64; cross-platform ABI and exhaustive input coverage pending.",
+    "status": "partial",
+    "tests": [
+      "tests/brands.c",
+      "tools/test_brands.py"
+    ]
+  },
+  "heif_get_version_number_minor": {
+    "notes": "Tested on Linux x86_64; cross-platform ABI and exhaustive input coverage pending.",
+    "status": "partial",
+    "tests": [
+      "tests/brands.c",
+      "tools/test_brands.py"
+    ]
+  },
+  "heif_has_compatible_brand": {
+    "notes": "Differential corpus passes; exhaustive malformed non-ftyp box behavior still depends on the full container parser.",
+    "status": "partial",
+    "tests": [
+      "tests/brands.c",
+      "tools/test_brands.py"
+    ]
+  },
+  "heif_has_compatible_filetype": {
+    "notes": "Tested on Linux x86_64; cross-platform ABI and exhaustive input coverage pending.",
+    "status": "partial",
+    "tests": [
+      "tests/brands.c",
+      "tools/test_brands.py"
+    ]
+  },
+  "heif_image_add_plane": {
+    "notes": "6553 differential cases on Linux x86_64; other architectures, allocation failure, transforms and codec integration remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/images.c",
+      "tools/test_images.py"
+    ]
+  },
+  "heif_image_create": {
+    "notes": "6553 differential cases on Linux x86_64; other architectures, allocation failure, transforms and codec integration remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/images.c",
+      "tools/test_images.py"
+    ]
+  },
+  "heif_image_get_bits_per_pixel": {
+    "notes": "6553 differential cases on Linux x86_64; other architectures, allocation failure, transforms and codec integration remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/images.c",
+      "tools/test_images.py"
+    ]
+  },
+  "heif_image_get_bits_per_pixel_range": {
+    "notes": "6553 differential cases on Linux x86_64; other architectures, allocation failure, transforms and codec integration remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/images.c",
+      "tools/test_images.py"
+    ]
+  },
+  "heif_image_get_chroma_format": {
+    "notes": "6553 differential cases on Linux x86_64; other architectures, allocation failure, transforms and codec integration remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/images.c",
+      "tools/test_images.py"
+    ]
+  },
+  "heif_image_get_colorspace": {
+    "notes": "6553 differential cases on Linux x86_64; other architectures, allocation failure, transforms and codec integration remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/images.c",
+      "tools/test_images.py"
+    ]
+  },
+  "heif_image_get_height": {
+    "notes": "6553 differential cases on Linux x86_64; other architectures, allocation failure, transforms and codec integration remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/images.c",
+      "tools/test_images.py"
+    ]
+  },
+  "heif_image_get_pixel_aspect_ratio": {
+    "notes": "6553 differential cases on Linux x86_64; other architectures, allocation failure, transforms and codec integration remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/images.c",
+      "tools/test_images.py"
+    ]
+  },
+  "heif_image_get_plane": {
+    "notes": "6553 differential cases on Linux x86_64; other architectures, allocation failure, transforms and codec integration remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/images.c",
+      "tools/test_images.py"
+    ]
+  },
+  "heif_image_get_plane2": {
+    "notes": "6553 differential cases on Linux x86_64; other architectures, allocation failure, transforms and codec integration remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/images.c",
+      "tools/test_images.py"
+    ]
+  },
+  "heif_image_get_plane_readonly": {
+    "notes": "6553 differential cases on Linux x86_64; other architectures, allocation failure, transforms and codec integration remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/images.c",
+      "tools/test_images.py"
+    ]
+  },
+  "heif_image_get_plane_readonly2": {
+    "notes": "6553 differential cases on Linux x86_64; other architectures, allocation failure, transforms and codec integration remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/images.c",
+      "tools/test_images.py"
+    ]
+  },
+  "heif_image_get_primary_height": {
+    "notes": "6553 differential cases on Linux x86_64; other architectures, allocation failure, transforms and codec integration remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/images.c",
+      "tools/test_images.py"
+    ]
+  },
+  "heif_image_get_primary_width": {
+    "notes": "6553 differential cases on Linux x86_64; other architectures, allocation failure, transforms and codec integration remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/images.c",
+      "tools/test_images.py"
+    ]
+  },
+  "heif_image_get_width": {
+    "notes": "6553 differential cases on Linux x86_64; other architectures, allocation failure, transforms and codec integration remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/images.c",
+      "tools/test_images.py"
+    ]
+  },
+  "heif_image_has_channel": {
+    "notes": "6553 differential cases on Linux x86_64; other architectures, allocation failure, transforms and codec integration remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/images.c",
+      "tools/test_images.py"
+    ]
+  },
+  "heif_image_is_premultiplied_alpha": {
+    "notes": "6553 differential cases on Linux x86_64; other architectures, allocation failure, transforms and codec integration remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/images.c",
+      "tools/test_images.py"
+    ]
+  },
+  "heif_image_release": {
+    "notes": "6553 differential cases on Linux x86_64; other architectures, allocation failure, transforms and codec integration remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/images.c",
+      "tools/test_images.py"
+    ]
+  },
+  "heif_image_set_pixel_aspect_ratio": {
+    "notes": "6553 differential cases on Linux x86_64; other architectures, allocation failure, transforms and codec integration remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/images.c",
+      "tools/test_images.py"
+    ]
+  },
+  "heif_image_set_premultiplied_alpha": {
+    "notes": "6553 differential cases on Linux x86_64; other architectures, allocation failure, transforms and codec integration remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/images.c",
+      "tools/test_images.py"
+    ]
+  },
+  "heif_list_compatible_brands": {
+    "notes": "Tested on Linux x86_64; cross-platform ABI and exhaustive input coverage pending.",
+    "status": "partial",
+    "tests": [
+      "tests/brands.c",
+      "tools/test_brands.py"
+    ]
+  },
+  "heif_main_brand": {
+    "notes": "Tested on Linux x86_64; cross-platform ABI and exhaustive input coverage pending.",
+    "status": "partial",
+    "tests": [
+      "tests/brands.c",
+      "tools/test_brands.py"
+    ]
+  },
+  "heif_read_main_brand": {
+    "notes": "Tested on Linux x86_64; cross-platform ABI and exhaustive input coverage pending.",
+    "status": "partial",
+    "tests": [
+      "tests/brands.c",
+      "tools/test_brands.py"
+    ]
+  },
+  "heif_read_minor_version_brand": {
+    "notes": "Tested on Linux x86_64; cross-platform ABI and exhaustive input coverage pending.",
+    "status": "partial",
+    "tests": [
+      "tests/brands.c",
+      "tools/test_brands.py"
+    ]
+  }
+}

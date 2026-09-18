@@ -1,0 +1,37 @@
+[workspace]
+members = ["crates/capi"]
+resolver = "3"
+
+[package]
+name = "libheifer"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+license = "LGPL-3.0-or-later"
+description = "Rust HEIF implementation (in development; not yet a libheif replacement)"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[dependencies]
+rusty_h265 = { version = "=0.6.0", optional = true }
+
+[features]
+hevc = ["dep:rusty_h265"]
+hevc-profile = ["hevc", "rusty_h265/prof"]
+
+[[example]]
+name = "hevc_probe"
+required-features = ["hevc"]
+
+[[example]]
+name = "bench_hevc"
+required-features = ["hevc"]
+
+[[example]]
+name = "profile_hevc"
+required-features = ["hevc-profile"]

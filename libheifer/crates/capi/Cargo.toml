@@ -1,0 +1,17 @@
+[package]
+name = "libheifer-capi"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+license = "LGPL-3.0-or-later"
+description = "Optional libheif C ABI for libheifer (in development)"
+
+[lib]
+name = "heifer"
+crate-type = ["cdylib", "staticlib", "rlib"]
+
+[dependencies]
+libheifer = { path = "../.." }
+
+[lints.rust]
+unsafe_op_in_unsafe_fn = "deny"
