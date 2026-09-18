@@ -848,7 +848,7 @@ fn upsample(p: &Plane, q: &mut Plane, w: u32, h: u32, ch: i32) {
     if ch == 2 {
         for y in 0..h {
             put(q, 0, y, sample(p, 0, y));
-            if w % 2 == 0 {
+            if w.is_multiple_of(2) {
                 put(q, w - 1, y, sample(p, w / 2 - 1, y));
             }
             for x in (1..w.saturating_sub(1)).step_by(2) {
@@ -867,7 +867,7 @@ fn upsample(p: &Plane, q: &mut Plane, w: u32, h: u32, ch: i32) {
         put(q, 2 * cx + 1, 0, (3 * a + b + 2) / 4);
         put(q, 2 * cx + 2, 0, (a + 3 * b + 2) / 4);
     }
-    if w % 2 == 0 {
+    if w.is_multiple_of(2) {
         put(q, w - 1, 0, sample(p, w / 2 - 1, 0));
     }
     for cy in 0..(h - 1) / 2 {
@@ -876,10 +876,10 @@ fn upsample(p: &Plane, q: &mut Plane, w: u32, h: u32, ch: i32) {
         put(q, 0, 2 * cy + 1, (3 * a + b + 2) / 4);
         put(q, 0, 2 * cy + 2, (a + 3 * b + 2) / 4);
     }
-    if h % 2 == 0 {
+    if h.is_multiple_of(2) {
         put(q, 0, h - 1, sample(p, 0, h / 2 - 1));
     }
-    if w % 2 == 0 {
+    if w.is_multiple_of(2) {
         for cy in 0..(h - 1) / 2 {
             let a = sample(p, w / 2 - 1, cy / 2);
             let b = sample(p, w / 2 - 1, cy / 2 + 1);
@@ -887,7 +887,7 @@ fn upsample(p: &Plane, q: &mut Plane, w: u32, h: u32, ch: i32) {
             put(q, w - 1, 2 * cy + 2, (a + 3 * b + 2) / 4);
         }
     }
-    if h % 2 == 0 {
+    if h.is_multiple_of(2) {
         for cx in 0..(w - 1) / 2 {
             let a = sample(p, cx / 2, h / 2 - 1);
             let b = sample(p, cx / 2 + 1, h / 2 - 1);
@@ -895,7 +895,7 @@ fn upsample(p: &Plane, q: &mut Plane, w: u32, h: u32, ch: i32) {
             put(q, 2 * cx + 2, h - 1, (a + 3 * b + 2) / 4);
         }
     }
-    if w % 2 == 0 && h % 2 == 0 {
+    if w.is_multiple_of(2) && h.is_multiple_of(2) {
         put(q, w - 1, h - 1, sample(p, w / 2 - 1, h / 2 - 1));
     }
     for y in (1..h.saturating_sub(1)).step_by(2) {

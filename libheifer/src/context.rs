@@ -781,14 +781,14 @@ impl Document {
                         .map(|i| (i.luma_bits, i.chroma_bits, i.colorspace, i.chroma));
                 }
             };
-            if let Some((l, c, cs, ch)) = description {
-                if let Some(i) = images.get_mut(&item.id).and_then(Arc::get_mut) {
-                    i.luma_bits = l;
-                    i.chroma_bits = c;
-                    if item.kind != *b"iovl" {
-                        i.colorspace = cs;
-                        i.chroma = ch;
-                    }
+            if let Some((l, c, cs, ch)) = description
+                && let Some(i) = images.get_mut(&item.id).and_then(Arc::get_mut)
+            {
+                i.luma_bits = l;
+                i.chroma_bits = c;
+                if item.kind != *b"iovl" {
+                    i.colorspace = cs;
+                    i.chroma = ch;
                 }
             }
             if item.kind == *b"grid" {
