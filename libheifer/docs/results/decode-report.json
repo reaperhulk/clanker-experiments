@@ -4,10 +4,11 @@
   "mismatches": 0,
   "client_sha256": "94bf24920da0bc83430c85c051478261d4fa8201d545c2beed6d1f61140a9bdf",
   "reference_sha256": "5d70927cded8be6d1b4da912971aed75d426ba079c84d0b8462785ec5b9c92f7",
-  "candidate_sha256": "a8e6c69fe606bb0c0217ee7b859ccbb9df6f452e8a0049a15a249ed29e03eb73",
+  "candidate_sha256": "ab05515b384a77f48be25313f3ae9b89e878b707b985212b43fddd807d6b0a5e",
   "results": [
     {
       "fixture": "examples/example.heic",
+      "fixture_sha256": "7f8b363e4936c0666a25f64f3a92fda10bd8e5453be4592530b65a55dd98f3f2",
       "mode": 0,
       "match": true,
       "reference_sha256": "6f65abdc230e6092c2f4885e8a5f31c7ba4c07a7cbb2f0b6aceb316ccd3331f3",
@@ -15,6 +16,7 @@
     },
     {
       "fixture": "examples/example.heic",
+      "fixture_sha256": "7f8b363e4936c0666a25f64f3a92fda10bd8e5453be4592530b65a55dd98f3f2",
       "mode": 1,
       "match": true,
       "reference_sha256": "882103981508bd9d7de7467469c8fd28a4e378995b3a1e8c01c134f16ea7769f",
@@ -22,6 +24,7 @@
     },
     {
       "fixture": "examples/example.heic",
+      "fixture_sha256": "7f8b363e4936c0666a25f64f3a92fda10bd8e5453be4592530b65a55dd98f3f2",
       "mode": 2,
       "match": true,
       "reference_sha256": "882103981508bd9d7de7467469c8fd28a4e378995b3a1e8c01c134f16ea7769f",
@@ -29,6 +32,7 @@
     },
     {
       "fixture": "examples/example.heic",
+      "fixture_sha256": "7f8b363e4936c0666a25f64f3a92fda10bd8e5453be4592530b65a55dd98f3f2",
       "mode": 3,
       "match": true,
       "reference_sha256": "e35f7ead267bd5f1978f2f73f6bc000138ee67c66cb2e42fccc3ca816ecb9bc7",
@@ -36,6 +40,7 @@
     },
     {
       "fixture": "examples/example.heic",
+      "fixture_sha256": "7f8b363e4936c0666a25f64f3a92fda10bd8e5453be4592530b65a55dd98f3f2",
       "mode": 4,
       "match": true,
       "reference_sha256": "6e981b4dd37feab3ba1131af1487238890aca830c789a9e5655f7486db493608",
@@ -43,6 +48,7 @@
     },
     {
       "fixture": "examples/example.heic",
+      "fixture_sha256": "7f8b363e4936c0666a25f64f3a92fda10bd8e5453be4592530b65a55dd98f3f2",
       "mode": 5,
       "match": true,
       "reference_sha256": "a5e4f6052a969e8a6063a0d911493002c7fc75129dfae74d7a7aea0fea525a68",
@@ -50,6 +56,7 @@
     },
     {
       "fixture": "examples/example.heic",
+      "fixture_sha256": "7f8b363e4936c0666a25f64f3a92fda10bd8e5453be4592530b65a55dd98f3f2",
       "mode": 6,
       "match": true,
       "reference_sha256": "7ef8e73e93c6c22109eb2fb34b5abbf59ddb0b63c5eb94bd0a0b815279873297",
@@ -57,6 +64,7 @@
     },
     {
       "fixture": "examples/example.heic",
+      "fixture_sha256": "7f8b363e4936c0666a25f64f3a92fda10bd8e5453be4592530b65a55dd98f3f2",
       "mode": 7,
       "match": true,
       "reference_sha256": "e2ad5f1fcfdd8f74266ac340c10465670ba6ffdf30c4c45d0ff32dc9b3faa8c8",
@@ -64,6 +72,7 @@
     },
     {
       "fixture": "examples/example.heic",
+      "fixture_sha256": "7f8b363e4936c0666a25f64f3a92fda10bd8e5453be4592530b65a55dd98f3f2",
       "mode": 8,
       "match": true,
       "reference_sha256": "c16ef45c3796809083a05687462e90493caef826a71300de69b68ddcebcb9932",
@@ -71,6 +80,7 @@
     },
     {
       "fixture": "examples/example.heic",
+      "fixture_sha256": "7f8b363e4936c0666a25f64f3a92fda10bd8e5453be4592530b65a55dd98f3f2",
       "mode": 9,
       "match": true,
       "reference_sha256": "882103981508bd9d7de7467469c8fd28a4e378995b3a1e8c01c134f16ea7769f",
@@ -78,6 +88,7 @@
     },
     {
       "fixture": "examples/example.heic",
+      "fixture_sha256": "7f8b363e4936c0666a25f64f3a92fda10bd8e5453be4592530b65a55dd98f3f2",
       "mode": 10,
       "match": true,
       "reference_sha256": "df7e588ec5418e85734ab221c9adfcfb1937f538617ec7946063a8eca7a1c5b2",
@@ -85,6 +96,7 @@
     },
     {
       "fixture": "examples/example.heic",
+      "fixture_sha256": "7f8b363e4936c0666a25f64f3a92fda10bd8e5453be4592530b65a55dd98f3f2",
       "mode": 11,
       "match": true,
       "reference_sha256": "882103981508bd9d7de7467469c8fd28a4e378995b3a1e8c01c134f16ea7769f",
@@ -92,6 +104,7 @@
     },
     {
       "fixture": "examples/example.heic",
+      "fixture_sha256": "7f8b363e4936c0666a25f64f3a92fda10bd8e5453be4592530b65a55dd98f3f2",
       "mode": 12,
       "match": true,
       "reference_sha256": "3d23b9656981570da9d14f8e318f59d036906ea9a13baeadad1fa13864098f54",
@@ -99,6 +112,7 @@
     },
     {
       "fixture": "examples/example.heic",
+      "fixture_sha256": "7f8b363e4936c0666a25f64f3a92fda10bd8e5453be4592530b65a55dd98f3f2",
       "mode": 13,
       "match": true,
       "reference_sha256": "78e8ec855488c20afb470256234946f0bac33f1dddcc689176f153c00035165c",
@@ -106,6 +120,7 @@
     },
     {
       "fixture": "examples/example.heic",
+      "fixture_sha256": "7f8b363e4936c0666a25f64f3a92fda10bd8e5453be4592530b65a55dd98f3f2",
       "mode": 14,
       "match": true,
       "reference_sha256": "edc49cc2bc303ca36e7d3e378175a152aed89d2290e6c1db814c7e7957da2f3d",
@@ -113,6 +128,7 @@
     },
     {
       "fixture": "examples/example.heic",
+      "fixture_sha256": "7f8b363e4936c0666a25f64f3a92fda10bd8e5453be4592530b65a55dd98f3f2",
       "mode": 15,
       "match": true,
       "reference_sha256": "1c6d7c9ffa480d3d51e9269a345d01b5d35fccfd1dba0328073714b8bcc3a411",
@@ -120,6 +136,7 @@
     },
     {
       "fixture": "examples/example.heic",
+      "fixture_sha256": "7f8b363e4936c0666a25f64f3a92fda10bd8e5453be4592530b65a55dd98f3f2",
       "mode": 16,
       "match": true,
       "reference_sha256": "3e7429b3a011358b8e2e7a9bb98b7bff769d25f714b1fc6f782fed7c0ce1d44e",
@@ -127,6 +144,7 @@
     },
     {
       "fixture": "examples/example.heic",
+      "fixture_sha256": "7f8b363e4936c0666a25f64f3a92fda10bd8e5453be4592530b65a55dd98f3f2",
       "mode": 17,
       "match": true,
       "reference_sha256": "92428a2e84bf633aa2bb03b02146e2f1ff784dbb966594c1259f8865b820adda",
@@ -134,6 +152,7 @@
     },
     {
       "fixture": "examples/example.heic",
+      "fixture_sha256": "7f8b363e4936c0666a25f64f3a92fda10bd8e5453be4592530b65a55dd98f3f2",
       "mode": 18,
       "match": true,
       "reference_sha256": "6e981b4dd37feab3ba1131af1487238890aca830c789a9e5655f7486db493608",
@@ -141,6 +160,7 @@
     },
     {
       "fixture": "examples/example.heic",
+      "fixture_sha256": "7f8b363e4936c0666a25f64f3a92fda10bd8e5453be4592530b65a55dd98f3f2",
       "mode": 19,
       "match": true,
       "reference_sha256": "5492e43336f15f4d81d252068c215d7a26f5e5b5a7b9ccbea170134867806f28",
@@ -148,6 +168,7 @@
     },
     {
       "fixture": "examples/example.heic",
+      "fixture_sha256": "7f8b363e4936c0666a25f64f3a92fda10bd8e5453be4592530b65a55dd98f3f2",
       "mode": 20,
       "match": true,
       "reference_sha256": "882103981508bd9d7de7467469c8fd28a4e378995b3a1e8c01c134f16ea7769f",
@@ -155,6 +176,7 @@
     },
     {
       "fixture": "examples/example.heic",
+      "fixture_sha256": "7f8b363e4936c0666a25f64f3a92fda10bd8e5453be4592530b65a55dd98f3f2",
       "mode": 21,
       "match": true,
       "reference_sha256": "e35f7ead267bd5f1978f2f73f6bc000138ee67c66cb2e42fccc3ca816ecb9bc7",
@@ -162,6 +184,7 @@
     },
     {
       "fixture": "examples/example.heic",
+      "fixture_sha256": "7f8b363e4936c0666a25f64f3a92fda10bd8e5453be4592530b65a55dd98f3f2",
       "mode": 22,
       "match": true,
       "reference_sha256": "e35f7ead267bd5f1978f2f73f6bc000138ee67c66cb2e42fccc3ca816ecb9bc7",
@@ -169,6 +192,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-no-alpha.heic",
+      "fixture_sha256": "76f82ffc717a647b1c9c2551e5ea0545832a2d3216c7540f7e5b092282a04b63",
       "mode": 0,
       "match": true,
       "reference_sha256": "207850f0974e5adeea9352b8d4717ea849c9169376f53f47066edc5aa8786f91",
@@ -176,6 +200,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-no-alpha.heic",
+      "fixture_sha256": "76f82ffc717a647b1c9c2551e5ea0545832a2d3216c7540f7e5b092282a04b63",
       "mode": 1,
       "match": true,
       "reference_sha256": "207850f0974e5adeea9352b8d4717ea849c9169376f53f47066edc5aa8786f91",
@@ -183,6 +208,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-no-alpha.heic",
+      "fixture_sha256": "76f82ffc717a647b1c9c2551e5ea0545832a2d3216c7540f7e5b092282a04b63",
       "mode": 2,
       "match": true,
       "reference_sha256": "207850f0974e5adeea9352b8d4717ea849c9169376f53f47066edc5aa8786f91",
@@ -190,6 +216,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-no-alpha.heic",
+      "fixture_sha256": "76f82ffc717a647b1c9c2551e5ea0545832a2d3216c7540f7e5b092282a04b63",
       "mode": 3,
       "match": true,
       "reference_sha256": "73409eb8f56897c40a4667d746a47c5d7d54420bf27b347551f4418f11b0008d",
@@ -197,6 +224,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-no-alpha.heic",
+      "fixture_sha256": "76f82ffc717a647b1c9c2551e5ea0545832a2d3216c7540f7e5b092282a04b63",
       "mode": 4,
       "match": true,
       "reference_sha256": "8600d9a740101f3b5a549dc12f675364a544ae50e95c13c1d55b21fe3ecaa246",
@@ -204,6 +232,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-no-alpha.heic",
+      "fixture_sha256": "76f82ffc717a647b1c9c2551e5ea0545832a2d3216c7540f7e5b092282a04b63",
       "mode": 5,
       "match": true,
       "reference_sha256": "b23a3de3edd0ad4325fa1bce62f346b51398045acc669df3742efb537e9019cd",
@@ -211,6 +240,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-no-alpha.heic",
+      "fixture_sha256": "76f82ffc717a647b1c9c2551e5ea0545832a2d3216c7540f7e5b092282a04b63",
       "mode": 6,
       "match": true,
       "reference_sha256": "9d875538e185a10e5ddad29b0c46e5406917705dbcd04528ec7b96eb3efc5e98",
@@ -218,6 +248,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-no-alpha.heic",
+      "fixture_sha256": "76f82ffc717a647b1c9c2551e5ea0545832a2d3216c7540f7e5b092282a04b63",
       "mode": 7,
       "match": true,
       "reference_sha256": "ab29f17d228ba2e5b6f0000fdc96fd6e2a5197398e367924ee492668d4646a61",
@@ -225,6 +256,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-no-alpha.heic",
+      "fixture_sha256": "76f82ffc717a647b1c9c2551e5ea0545832a2d3216c7540f7e5b092282a04b63",
       "mode": 8,
       "match": true,
       "reference_sha256": "e0b856e63cc18b870f995f81758f850f82410e2455b5e1305ebf4c624ceba39e",
@@ -232,6 +264,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-no-alpha.heic",
+      "fixture_sha256": "76f82ffc717a647b1c9c2551e5ea0545832a2d3216c7540f7e5b092282a04b63",
       "mode": 9,
       "match": true,
       "reference_sha256": "207850f0974e5adeea9352b8d4717ea849c9169376f53f47066edc5aa8786f91",
@@ -239,6 +272,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-no-alpha.heic",
+      "fixture_sha256": "76f82ffc717a647b1c9c2551e5ea0545832a2d3216c7540f7e5b092282a04b63",
       "mode": 10,
       "match": true,
       "reference_sha256": "7c99bb6271d249f31854d5850a05382ed8b4943531289f181b8d9784f5b20bc0",
@@ -246,6 +280,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-no-alpha.heic",
+      "fixture_sha256": "76f82ffc717a647b1c9c2551e5ea0545832a2d3216c7540f7e5b092282a04b63",
       "mode": 11,
       "match": true,
       "reference_sha256": "207850f0974e5adeea9352b8d4717ea849c9169376f53f47066edc5aa8786f91",
@@ -253,6 +288,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-no-alpha.heic",
+      "fixture_sha256": "76f82ffc717a647b1c9c2551e5ea0545832a2d3216c7540f7e5b092282a04b63",
       "mode": 12,
       "match": true,
       "reference_sha256": "f44b3c860ebff6b5b5d2bba9113c6f8ca96745dd1ccd8475a1674276f0321e7d",
@@ -260,6 +296,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-no-alpha.heic",
+      "fixture_sha256": "76f82ffc717a647b1c9c2551e5ea0545832a2d3216c7540f7e5b092282a04b63",
       "mode": 13,
       "match": true,
       "reference_sha256": "28c6b39e801d4859ce86a02596ff980dd110defc176062bb29cdc4fac0478151",
@@ -267,6 +304,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-no-alpha.heic",
+      "fixture_sha256": "76f82ffc717a647b1c9c2551e5ea0545832a2d3216c7540f7e5b092282a04b63",
       "mode": 14,
       "match": true,
       "reference_sha256": "6195cb7d7c0b088c3b222c2bdde5b032e0b5643e464e589a94c9c8932f654944",
@@ -274,6 +312,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-no-alpha.heic",
+      "fixture_sha256": "76f82ffc717a647b1c9c2551e5ea0545832a2d3216c7540f7e5b092282a04b63",
       "mode": 15,
       "match": true,
       "reference_sha256": "2cc8a1ae21a5b91c3aec5c5ab9f8989191bd6c76cb610784059ff9149b11c8b4",
@@ -281,6 +320,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-no-alpha.heic",
+      "fixture_sha256": "76f82ffc717a647b1c9c2551e5ea0545832a2d3216c7540f7e5b092282a04b63",
       "mode": 16,
       "match": true,
       "reference_sha256": "68f51cd9adb851bb5252de9831ab9725421a9b1290ea5704cf4be61c3897609a",
@@ -288,6 +328,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-no-alpha.heic",
+      "fixture_sha256": "76f82ffc717a647b1c9c2551e5ea0545832a2d3216c7540f7e5b092282a04b63",
       "mode": 17,
       "match": true,
       "reference_sha256": "ebed0f6f86eee26bd2c02eb34a82af85732a17459db7012efec7d8399bd42f33",
@@ -295,6 +336,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-no-alpha.heic",
+      "fixture_sha256": "76f82ffc717a647b1c9c2551e5ea0545832a2d3216c7540f7e5b092282a04b63",
       "mode": 18,
       "match": true,
       "reference_sha256": "8600d9a740101f3b5a549dc12f675364a544ae50e95c13c1d55b21fe3ecaa246",
@@ -302,6 +344,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-no-alpha.heic",
+      "fixture_sha256": "76f82ffc717a647b1c9c2551e5ea0545832a2d3216c7540f7e5b092282a04b63",
       "mode": 19,
       "match": true,
       "reference_sha256": "1ee516b4f748593e4e1b250068bf7c638438faa49b779bff789d065cabc95565",
@@ -309,6 +352,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-no-alpha.heic",
+      "fixture_sha256": "76f82ffc717a647b1c9c2551e5ea0545832a2d3216c7540f7e5b092282a04b63",
       "mode": 20,
       "match": true,
       "reference_sha256": "17b81511c7b850bb9469a26ba0517ec1866191224786ae5ca02258aa81bb7bcf",
@@ -316,6 +360,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-no-alpha.heic",
+      "fixture_sha256": "76f82ffc717a647b1c9c2551e5ea0545832a2d3216c7540f7e5b092282a04b63",
       "mode": 21,
       "match": true,
       "reference_sha256": "73409eb8f56897c40a4667d746a47c5d7d54420bf27b347551f4418f11b0008d",
@@ -323,6 +368,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-no-alpha.heic",
+      "fixture_sha256": "76f82ffc717a647b1c9c2551e5ea0545832a2d3216c7540f7e5b092282a04b63",
       "mode": 22,
       "match": true,
       "reference_sha256": "73409eb8f56897c40a4667d746a47c5d7d54420bf27b347551f4418f11b0008d",
@@ -330,6 +376,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-with-alpha.heic",
+      "fixture_sha256": "cbe33c0e3efe098570787a9dcded1061436f9d06b09cd5b2afd0d02eacce527b",
       "mode": 0,
       "match": true,
       "reference_sha256": "9d480928b564fca7421908a95d7917b96ad124e66525aed34c1fcdc2d70a5ccc",
@@ -337,6 +384,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-with-alpha.heic",
+      "fixture_sha256": "cbe33c0e3efe098570787a9dcded1061436f9d06b09cd5b2afd0d02eacce527b",
       "mode": 1,
       "match": true,
       "reference_sha256": "9d480928b564fca7421908a95d7917b96ad124e66525aed34c1fcdc2d70a5ccc",
@@ -344,6 +392,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-with-alpha.heic",
+      "fixture_sha256": "cbe33c0e3efe098570787a9dcded1061436f9d06b09cd5b2afd0d02eacce527b",
       "mode": 2,
       "match": true,
       "reference_sha256": "9d480928b564fca7421908a95d7917b96ad124e66525aed34c1fcdc2d70a5ccc",
@@ -351,6 +400,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-with-alpha.heic",
+      "fixture_sha256": "cbe33c0e3efe098570787a9dcded1061436f9d06b09cd5b2afd0d02eacce527b",
       "mode": 3,
       "match": true,
       "reference_sha256": "73409eb8f56897c40a4667d746a47c5d7d54420bf27b347551f4418f11b0008d",
@@ -358,6 +408,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-with-alpha.heic",
+      "fixture_sha256": "cbe33c0e3efe098570787a9dcded1061436f9d06b09cd5b2afd0d02eacce527b",
       "mode": 4,
       "match": true,
       "reference_sha256": "06f3004e3022540dba4734661b404471db523e4c30ebc719bc20f565012535eb",
@@ -365,6 +416,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-with-alpha.heic",
+      "fixture_sha256": "cbe33c0e3efe098570787a9dcded1061436f9d06b09cd5b2afd0d02eacce527b",
       "mode": 5,
       "match": true,
       "reference_sha256": "b23a3de3edd0ad4325fa1bce62f346b51398045acc669df3742efb537e9019cd",
@@ -372,6 +424,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-with-alpha.heic",
+      "fixture_sha256": "cbe33c0e3efe098570787a9dcded1061436f9d06b09cd5b2afd0d02eacce527b",
       "mode": 6,
       "match": true,
       "reference_sha256": "6a667eb5589262c12ba0642491a6aa089391197d7aad1a570e6e4f4ecbefb995",
@@ -379,6 +432,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-with-alpha.heic",
+      "fixture_sha256": "cbe33c0e3efe098570787a9dcded1061436f9d06b09cd5b2afd0d02eacce527b",
       "mode": 7,
       "match": true,
       "reference_sha256": "327d602785b3e8819d05d4abd333b3bec20b5fed8620430c7c266c8ce6c4ec38",
@@ -386,6 +440,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-with-alpha.heic",
+      "fixture_sha256": "cbe33c0e3efe098570787a9dcded1061436f9d06b09cd5b2afd0d02eacce527b",
       "mode": 8,
       "match": true,
       "reference_sha256": "331f8da2579c69d7df5a2d3d0f64e24a669a89a2fb9f19688d579df5596a2219",
@@ -393,6 +448,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-with-alpha.heic",
+      "fixture_sha256": "cbe33c0e3efe098570787a9dcded1061436f9d06b09cd5b2afd0d02eacce527b",
       "mode": 9,
       "match": true,
       "reference_sha256": "9d480928b564fca7421908a95d7917b96ad124e66525aed34c1fcdc2d70a5ccc",
@@ -400,6 +456,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-with-alpha.heic",
+      "fixture_sha256": "cbe33c0e3efe098570787a9dcded1061436f9d06b09cd5b2afd0d02eacce527b",
       "mode": 10,
       "match": true,
       "reference_sha256": "7c99bb6271d249f31854d5850a05382ed8b4943531289f181b8d9784f5b20bc0",
@@ -407,6 +464,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-with-alpha.heic",
+      "fixture_sha256": "cbe33c0e3efe098570787a9dcded1061436f9d06b09cd5b2afd0d02eacce527b",
       "mode": 11,
       "match": true,
       "reference_sha256": "9d480928b564fca7421908a95d7917b96ad124e66525aed34c1fcdc2d70a5ccc",
@@ -414,6 +472,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-with-alpha.heic",
+      "fixture_sha256": "cbe33c0e3efe098570787a9dcded1061436f9d06b09cd5b2afd0d02eacce527b",
       "mode": 12,
       "match": true,
       "reference_sha256": "f44b3c860ebff6b5b5d2bba9113c6f8ca96745dd1ccd8475a1674276f0321e7d",
@@ -421,6 +480,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-with-alpha.heic",
+      "fixture_sha256": "cbe33c0e3efe098570787a9dcded1061436f9d06b09cd5b2afd0d02eacce527b",
       "mode": 13,
       "match": true,
       "reference_sha256": "501d73706bcdcc248f469ccf268aaebda744fa2bc26e91399db56c04d948912f",
@@ -428,6 +488,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-with-alpha.heic",
+      "fixture_sha256": "cbe33c0e3efe098570787a9dcded1061436f9d06b09cd5b2afd0d02eacce527b",
       "mode": 14,
       "match": true,
       "reference_sha256": "6195cb7d7c0b088c3b222c2bdde5b032e0b5643e464e589a94c9c8932f654944",
@@ -435,6 +496,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-with-alpha.heic",
+      "fixture_sha256": "cbe33c0e3efe098570787a9dcded1061436f9d06b09cd5b2afd0d02eacce527b",
       "mode": 15,
       "match": true,
       "reference_sha256": "ef260a2fad1ebb8a2c6b0a6db39c8444a8e7328b6005f40cd78ea251ca54d59c",
@@ -442,6 +504,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-with-alpha.heic",
+      "fixture_sha256": "cbe33c0e3efe098570787a9dcded1061436f9d06b09cd5b2afd0d02eacce527b",
       "mode": 16,
       "match": true,
       "reference_sha256": "68f51cd9adb851bb5252de9831ab9725421a9b1290ea5704cf4be61c3897609a",
@@ -449,6 +512,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-with-alpha.heic",
+      "fixture_sha256": "cbe33c0e3efe098570787a9dcded1061436f9d06b09cd5b2afd0d02eacce527b",
       "mode": 17,
       "match": true,
       "reference_sha256": "68aee293433e4ce6c24511afb5197c5c71dbbae960d6a702d12632c34a60ce76",
@@ -456,6 +520,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-with-alpha.heic",
+      "fixture_sha256": "cbe33c0e3efe098570787a9dcded1061436f9d06b09cd5b2afd0d02eacce527b",
       "mode": 18,
       "match": true,
       "reference_sha256": "06f3004e3022540dba4734661b404471db523e4c30ebc719bc20f565012535eb",
@@ -463,6 +528,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-with-alpha.heic",
+      "fixture_sha256": "cbe33c0e3efe098570787a9dcded1061436f9d06b09cd5b2afd0d02eacce527b",
       "mode": 19,
       "match": true,
       "reference_sha256": "45deada98b742dcb93551d4a8f0b67da31615d810dabb83c979982a681b58e44",
@@ -470,6 +536,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-with-alpha.heic",
+      "fixture_sha256": "cbe33c0e3efe098570787a9dcded1061436f9d06b09cd5b2afd0d02eacce527b",
       "mode": 20,
       "match": true,
       "reference_sha256": "3d02869b0b3d153d93ec324648d2d3d7d8f45137df3a21f18b009e291c9dd329",
@@ -477,6 +544,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-with-alpha.heic",
+      "fixture_sha256": "cbe33c0e3efe098570787a9dcded1061436f9d06b09cd5b2afd0d02eacce527b",
       "mode": 21,
       "match": true,
       "reference_sha256": "73409eb8f56897c40a4667d746a47c5d7d54420bf27b347551f4418f11b0008d",
@@ -484,6 +552,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-with-alpha.heic",
+      "fixture_sha256": "cbe33c0e3efe098570787a9dcded1061436f9d06b09cd5b2afd0d02eacce527b",
       "mode": 22,
       "match": true,
       "reference_sha256": "73409eb8f56897c40a4667d746a47c5d7d54420bf27b347551f4418f11b0008d",
@@ -491,6 +560,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-no-alpha-thumbnail.heic",
+      "fixture_sha256": "b610c6224a5cbd1f57122ee0adae4ba38b952a22fe72e9cfaf5dfad93513dc2f",
       "mode": 0,
       "match": true,
       "reference_sha256": "327934bf7de950285237cfb34cebfcd439296cb95e92f68d94cbae7196239f0e",
@@ -498,6 +568,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-no-alpha-thumbnail.heic",
+      "fixture_sha256": "b610c6224a5cbd1f57122ee0adae4ba38b952a22fe72e9cfaf5dfad93513dc2f",
       "mode": 1,
       "match": true,
       "reference_sha256": "327934bf7de950285237cfb34cebfcd439296cb95e92f68d94cbae7196239f0e",
@@ -505,6 +576,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-no-alpha-thumbnail.heic",
+      "fixture_sha256": "b610c6224a5cbd1f57122ee0adae4ba38b952a22fe72e9cfaf5dfad93513dc2f",
       "mode": 2,
       "match": true,
       "reference_sha256": "327934bf7de950285237cfb34cebfcd439296cb95e92f68d94cbae7196239f0e",
@@ -512,6 +584,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-no-alpha-thumbnail.heic",
+      "fixture_sha256": "b610c6224a5cbd1f57122ee0adae4ba38b952a22fe72e9cfaf5dfad93513dc2f",
       "mode": 3,
       "match": true,
       "reference_sha256": "c79285794b9c4bc48f331fe0d45df958e699773b806b238705ef6b87de2124d7",
@@ -519,6 +592,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-no-alpha-thumbnail.heic",
+      "fixture_sha256": "b610c6224a5cbd1f57122ee0adae4ba38b952a22fe72e9cfaf5dfad93513dc2f",
       "mode": 4,
       "match": true,
       "reference_sha256": "0a4ee9cfa1b52d0fa3ec12604eeae1aac7eb9ca606afd5a58825e48f102db435",
@@ -526,6 +600,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-no-alpha-thumbnail.heic",
+      "fixture_sha256": "b610c6224a5cbd1f57122ee0adae4ba38b952a22fe72e9cfaf5dfad93513dc2f",
       "mode": 5,
       "match": true,
       "reference_sha256": "b23a3de3edd0ad4325fa1bce62f346b51398045acc669df3742efb537e9019cd",
@@ -533,6 +608,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-no-alpha-thumbnail.heic",
+      "fixture_sha256": "b610c6224a5cbd1f57122ee0adae4ba38b952a22fe72e9cfaf5dfad93513dc2f",
       "mode": 6,
       "match": true,
       "reference_sha256": "4369b6958f4c2d389d529b4544c91c1298da5ebdfdec1f41f16ca65be4042bfb",
@@ -540,6 +616,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-no-alpha-thumbnail.heic",
+      "fixture_sha256": "b610c6224a5cbd1f57122ee0adae4ba38b952a22fe72e9cfaf5dfad93513dc2f",
       "mode": 7,
       "match": true,
       "reference_sha256": "b5df93645634d892d102d314c810833004b091ce00c3afcdab217ab018cc5d13",
@@ -547,6 +624,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-no-alpha-thumbnail.heic",
+      "fixture_sha256": "b610c6224a5cbd1f57122ee0adae4ba38b952a22fe72e9cfaf5dfad93513dc2f",
       "mode": 8,
       "match": true,
       "reference_sha256": "1464e8f0fb4aa385b5c6d2d3e8c7ba18fe5c07746a68b83ade0b3f67ec6cd278",
@@ -554,6 +632,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-no-alpha-thumbnail.heic",
+      "fixture_sha256": "b610c6224a5cbd1f57122ee0adae4ba38b952a22fe72e9cfaf5dfad93513dc2f",
       "mode": 9,
       "match": true,
       "reference_sha256": "327934bf7de950285237cfb34cebfcd439296cb95e92f68d94cbae7196239f0e",
@@ -561,6 +640,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-no-alpha-thumbnail.heic",
+      "fixture_sha256": "b610c6224a5cbd1f57122ee0adae4ba38b952a22fe72e9cfaf5dfad93513dc2f",
       "mode": 10,
       "match": true,
       "reference_sha256": "7c99bb6271d249f31854d5850a05382ed8b4943531289f181b8d9784f5b20bc0",
@@ -568,6 +648,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-no-alpha-thumbnail.heic",
+      "fixture_sha256": "b610c6224a5cbd1f57122ee0adae4ba38b952a22fe72e9cfaf5dfad93513dc2f",
       "mode": 11,
       "match": true,
       "reference_sha256": "327934bf7de950285237cfb34cebfcd439296cb95e92f68d94cbae7196239f0e",
@@ -575,6 +656,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-no-alpha-thumbnail.heic",
+      "fixture_sha256": "b610c6224a5cbd1f57122ee0adae4ba38b952a22fe72e9cfaf5dfad93513dc2f",
       "mode": 12,
       "match": true,
       "reference_sha256": "1cefbb53f10af7f6bac4f062b834298766f8c51e20427090a6075aac805a413c",
@@ -582,6 +664,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-no-alpha-thumbnail.heic",
+      "fixture_sha256": "b610c6224a5cbd1f57122ee0adae4ba38b952a22fe72e9cfaf5dfad93513dc2f",
       "mode": 13,
       "match": true,
       "reference_sha256": "1defb4303e0681d7e05e6d2dafcb2fb0fa8d2588fccf6dc3287a226976f1352c",
@@ -589,6 +672,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-no-alpha-thumbnail.heic",
+      "fixture_sha256": "b610c6224a5cbd1f57122ee0adae4ba38b952a22fe72e9cfaf5dfad93513dc2f",
       "mode": 14,
       "match": true,
       "reference_sha256": "c0caddb56d0ded6b1feaebf7860c7c73386caca6e8b5a4f7543686bd46d69b1b",
@@ -596,6 +680,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-no-alpha-thumbnail.heic",
+      "fixture_sha256": "b610c6224a5cbd1f57122ee0adae4ba38b952a22fe72e9cfaf5dfad93513dc2f",
       "mode": 15,
       "match": true,
       "reference_sha256": "499329bd50eec7f12e0ea37bb9be087fcb098e7d41114f682df9c33681f9d406",
@@ -603,6 +688,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-no-alpha-thumbnail.heic",
+      "fixture_sha256": "b610c6224a5cbd1f57122ee0adae4ba38b952a22fe72e9cfaf5dfad93513dc2f",
       "mode": 16,
       "match": true,
       "reference_sha256": "e2849d8047b95778267a3b22242485219617a366408c8904bf197b1ade05427e",
@@ -610,6 +696,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-no-alpha-thumbnail.heic",
+      "fixture_sha256": "b610c6224a5cbd1f57122ee0adae4ba38b952a22fe72e9cfaf5dfad93513dc2f",
       "mode": 17,
       "match": true,
       "reference_sha256": "021f260a591666072551eaba80f82760595b5eee3f56e8897352c76b2ffa9b76",
@@ -617,6 +704,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-no-alpha-thumbnail.heic",
+      "fixture_sha256": "b610c6224a5cbd1f57122ee0adae4ba38b952a22fe72e9cfaf5dfad93513dc2f",
       "mode": 18,
       "match": true,
       "reference_sha256": "0a4ee9cfa1b52d0fa3ec12604eeae1aac7eb9ca606afd5a58825e48f102db435",
@@ -624,6 +712,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-no-alpha-thumbnail.heic",
+      "fixture_sha256": "b610c6224a5cbd1f57122ee0adae4ba38b952a22fe72e9cfaf5dfad93513dc2f",
       "mode": 19,
       "match": true,
       "reference_sha256": "d0c4e586d1dea5ab77b8cb687db3bec180dc1420c40d1a0dc679e33265cd4664",
@@ -631,6 +720,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-no-alpha-thumbnail.heic",
+      "fixture_sha256": "b610c6224a5cbd1f57122ee0adae4ba38b952a22fe72e9cfaf5dfad93513dc2f",
       "mode": 20,
       "match": true,
       "reference_sha256": "0e8329b93e90f8f244596f652a8f7cc2a3afa4ce3de78134609f1656c56dfb52",
@@ -638,6 +728,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-no-alpha-thumbnail.heic",
+      "fixture_sha256": "b610c6224a5cbd1f57122ee0adae4ba38b952a22fe72e9cfaf5dfad93513dc2f",
       "mode": 21,
       "match": true,
       "reference_sha256": "c79285794b9c4bc48f331fe0d45df958e699773b806b238705ef6b87de2124d7",
@@ -645,6 +736,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-no-alpha-thumbnail.heic",
+      "fixture_sha256": "b610c6224a5cbd1f57122ee0adae4ba38b952a22fe72e9cfaf5dfad93513dc2f",
       "mode": 22,
       "match": true,
       "reference_sha256": "c79285794b9c4bc48f331fe0d45df958e699773b806b238705ef6b87de2124d7",
@@ -652,6 +744,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-with-alpha-thumbnail.heic",
+      "fixture_sha256": "adfe0a2782891979af1f1fc4a9b90c33fbec060e73f38697e3b79a2d52c9107c",
       "mode": 0,
       "match": true,
       "reference_sha256": "9879651c727351da6055d604954bdbb48c9eb4945ef86d08622ce535af871230",
@@ -659,6 +752,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-with-alpha-thumbnail.heic",
+      "fixture_sha256": "adfe0a2782891979af1f1fc4a9b90c33fbec060e73f38697e3b79a2d52c9107c",
       "mode": 1,
       "match": true,
       "reference_sha256": "9879651c727351da6055d604954bdbb48c9eb4945ef86d08622ce535af871230",
@@ -666,6 +760,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-with-alpha-thumbnail.heic",
+      "fixture_sha256": "adfe0a2782891979af1f1fc4a9b90c33fbec060e73f38697e3b79a2d52c9107c",
       "mode": 2,
       "match": true,
       "reference_sha256": "9879651c727351da6055d604954bdbb48c9eb4945ef86d08622ce535af871230",
@@ -673,6 +768,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-with-alpha-thumbnail.heic",
+      "fixture_sha256": "adfe0a2782891979af1f1fc4a9b90c33fbec060e73f38697e3b79a2d52c9107c",
       "mode": 3,
       "match": true,
       "reference_sha256": "e1c2b645c2b815e992f7b4bcc3a41342d4996eeb5861bb6241c887c30abbbdaf",
@@ -680,6 +776,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-with-alpha-thumbnail.heic",
+      "fixture_sha256": "adfe0a2782891979af1f1fc4a9b90c33fbec060e73f38697e3b79a2d52c9107c",
       "mode": 4,
       "match": true,
       "reference_sha256": "fc1c14b086fb4bbb953fedc104e7b5e8abea740f6d73b3118a72fb1c60ad76ff",
@@ -687,6 +784,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-with-alpha-thumbnail.heic",
+      "fixture_sha256": "adfe0a2782891979af1f1fc4a9b90c33fbec060e73f38697e3b79a2d52c9107c",
       "mode": 5,
       "match": true,
       "reference_sha256": "b23a3de3edd0ad4325fa1bce62f346b51398045acc669df3742efb537e9019cd",
@@ -694,6 +792,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-with-alpha-thumbnail.heic",
+      "fixture_sha256": "adfe0a2782891979af1f1fc4a9b90c33fbec060e73f38697e3b79a2d52c9107c",
       "mode": 6,
       "match": true,
       "reference_sha256": "99b7d3790c31fb4d1e440994d6e33a367cb58e0b6aa0c0a07a51cdc48a9a7876",
@@ -701,6 +800,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-with-alpha-thumbnail.heic",
+      "fixture_sha256": "adfe0a2782891979af1f1fc4a9b90c33fbec060e73f38697e3b79a2d52c9107c",
       "mode": 7,
       "match": true,
       "reference_sha256": "67d07f050e831b2a653383761d7ab8309992df2e4b2ea0c12139051dc03d84b1",
@@ -708,6 +808,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-with-alpha-thumbnail.heic",
+      "fixture_sha256": "adfe0a2782891979af1f1fc4a9b90c33fbec060e73f38697e3b79a2d52c9107c",
       "mode": 8,
       "match": true,
       "reference_sha256": "0c7b367f4bd2651347c227510e9ce2e18ae864e796f29f136da6eaf8406d64e8",
@@ -715,6 +816,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-with-alpha-thumbnail.heic",
+      "fixture_sha256": "adfe0a2782891979af1f1fc4a9b90c33fbec060e73f38697e3b79a2d52c9107c",
       "mode": 9,
       "match": true,
       "reference_sha256": "9879651c727351da6055d604954bdbb48c9eb4945ef86d08622ce535af871230",
@@ -722,6 +824,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-with-alpha-thumbnail.heic",
+      "fixture_sha256": "adfe0a2782891979af1f1fc4a9b90c33fbec060e73f38697e3b79a2d52c9107c",
       "mode": 10,
       "match": true,
       "reference_sha256": "7c99bb6271d249f31854d5850a05382ed8b4943531289f181b8d9784f5b20bc0",
@@ -729,6 +832,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-with-alpha-thumbnail.heic",
+      "fixture_sha256": "adfe0a2782891979af1f1fc4a9b90c33fbec060e73f38697e3b79a2d52c9107c",
       "mode": 11,
       "match": true,
       "reference_sha256": "9879651c727351da6055d604954bdbb48c9eb4945ef86d08622ce535af871230",
@@ -736,6 +840,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-with-alpha-thumbnail.heic",
+      "fixture_sha256": "adfe0a2782891979af1f1fc4a9b90c33fbec060e73f38697e3b79a2d52c9107c",
       "mode": 12,
       "match": true,
       "reference_sha256": "367fcccc7d0fe04de2d131aefe2f62f6833033d1559c12ef389f04868a579b7a",
@@ -743,6 +848,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-with-alpha-thumbnail.heic",
+      "fixture_sha256": "adfe0a2782891979af1f1fc4a9b90c33fbec060e73f38697e3b79a2d52c9107c",
       "mode": 13,
       "match": true,
       "reference_sha256": "3780b796d0d5e23fdfd0e550d02901f2f65c3b29f6094914042cb1c53cc28248",
@@ -750,6 +856,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-with-alpha-thumbnail.heic",
+      "fixture_sha256": "adfe0a2782891979af1f1fc4a9b90c33fbec060e73f38697e3b79a2d52c9107c",
       "mode": 14,
       "match": true,
       "reference_sha256": "cc71a985008741bfeb2a4a28560ffd1aff3476f21e0920f07000501bc83df001",
@@ -757,6 +864,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-with-alpha-thumbnail.heic",
+      "fixture_sha256": "adfe0a2782891979af1f1fc4a9b90c33fbec060e73f38697e3b79a2d52c9107c",
       "mode": 15,
       "match": true,
       "reference_sha256": "3e46daa94926d8a0d8f799b10338dfbc3b9dfffe64ffe9ae5db08fe6eb528f8b",
@@ -764,6 +872,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-with-alpha-thumbnail.heic",
+      "fixture_sha256": "adfe0a2782891979af1f1fc4a9b90c33fbec060e73f38697e3b79a2d52c9107c",
       "mode": 16,
       "match": true,
       "reference_sha256": "7c83c24a39e7f411bfc8019218b2c732e4a7a28f19be4de054afbbfb4631edc2",
@@ -771,6 +880,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-with-alpha-thumbnail.heic",
+      "fixture_sha256": "adfe0a2782891979af1f1fc4a9b90c33fbec060e73f38697e3b79a2d52c9107c",
       "mode": 17,
       "match": true,
       "reference_sha256": "88c7d8eaf4134de09fe3fb20be226c975948678b3a52a4a4c7c671f3237bf7d1",
@@ -778,6 +888,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-with-alpha-thumbnail.heic",
+      "fixture_sha256": "adfe0a2782891979af1f1fc4a9b90c33fbec060e73f38697e3b79a2d52c9107c",
       "mode": 18,
       "match": true,
       "reference_sha256": "fc1c14b086fb4bbb953fedc104e7b5e8abea740f6d73b3118a72fb1c60ad76ff",
@@ -785,6 +896,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-with-alpha-thumbnail.heic",
+      "fixture_sha256": "adfe0a2782891979af1f1fc4a9b90c33fbec060e73f38697e3b79a2d52c9107c",
       "mode": 19,
       "match": true,
       "reference_sha256": "2078ccd149105710c402523bbeb3d22c4840016ad25946c3a21980eeb4839216",
@@ -792,6 +904,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-with-alpha-thumbnail.heic",
+      "fixture_sha256": "adfe0a2782891979af1f1fc4a9b90c33fbec060e73f38697e3b79a2d52c9107c",
       "mode": 20,
       "match": true,
       "reference_sha256": "3ce792e6a7d60913f2db2452f57e5ca3ac83f93ccd6ba80416c4349b29f80dbb",
@@ -799,6 +912,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-with-alpha-thumbnail.heic",
+      "fixture_sha256": "adfe0a2782891979af1f1fc4a9b90c33fbec060e73f38697e3b79a2d52c9107c",
       "mode": 21,
       "match": true,
       "reference_sha256": "e1c2b645c2b815e992f7b4bcc3a41342d4996eeb5861bb6241c887c30abbbdaf",
@@ -806,6 +920,7 @@
     },
     {
       "fixture": "fuzzing/data/corpus/colors-with-alpha-thumbnail.heic",
+      "fixture_sha256": "adfe0a2782891979af1f1fc4a9b90c33fbec060e73f38697e3b79a2d52c9107c",
       "mode": 22,
       "match": true,
       "reference_sha256": "e1c2b645c2b815e992f7b4bcc3a41342d4996eeb5861bb6241c887c30abbbdaf",

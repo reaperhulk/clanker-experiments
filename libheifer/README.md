@@ -53,6 +53,7 @@ python tools/test_context.py --reference-build .build/reference --sanitize --out
 python tools/test_decoding_options.py --reference-build .build/reference
 python tools/test_transforms.py --reference-build .build/reference
 python tools/test_decode.py --reference-build .build/reference
+python tools/test_decode_geometry.py --reference-build .build/reference
 python tools/test_hevc.py --reference-build .build/reference --require-default-output
 python tools/test_mutations.py --reference-build .build/reference
 python tools/check_coverage.py --reference .build/reference/libheif/libheif.so
@@ -68,7 +69,7 @@ The C API also handles native alpha, rotation/mirroring, YCbCr/RGB conversion,
 The current decode differential checks 23 modes on five fixtures, including all
 visible alpha samples, profiles and error outputs. Generated crop/scale cases
 cover odd sizes and 8/10/12/16-bit planes. These finite checks do not establish
-whole-library compatibility: grids/overlays, clean apertures, all conversion
+whole-library compatibility: grids/overlays, complete transform coverage, all conversion
 operators, codec conformance, resource budgets and other codecs remain unfinished.
 CI's final completion step remains red until the full contract is validated.
 

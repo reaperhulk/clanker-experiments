@@ -24,14 +24,14 @@ impl<'a> SliceDecoder<'a> {
             log2 > max_tb || (self.intra_split && depth == 0) || inter_split
         };
         let (mut cbf_cb, mut cbf_cr) = (false, false);
-        if log2 > 2 {
+        if log2 > 2 && self.sps.chroma_array_type != 0 {
             if depth == 0 || parent_cbf_cb {
                 cbf_cb = self.cab.decode(CTX_CBF_CHROMA + depth as usize) == 1;
             }
             if depth == 0 || parent_cbf_cr {
                 cbf_cr = self.cab.decode(CTX_CBF_CHROMA + depth as usize) == 1;
             }
-        } else {
+        } else if self.sps.chroma_array_type != 0 {
             cbf_cb = parent_cbf_cb;
             cbf_cr = parent_cbf_cr;
         }
@@ -97,7 +97,7 @@ impl<'a> SliceDecoder<'a> {
         } else {
             (0, 0, 0, false)
         };
-        if do_chroma {
+        if do_chroma && self.sps.chroma_array_type != 0 {
             let nc = 1usize << log2c;
             let cmode = self.intra_chroma_mode;
             for c in 1..3usize {

@@ -140,11 +140,12 @@
     "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open."
   },
   "heif_decode_image": {
-    "notes": "Five direct HEVC fixtures, 23 modes, exact visible pixels including alpha, metadata, error/output writes, cancellation/progress and explicit profiles; codec conformance, derived images, callback orchestration, resource limits, every conversion operator and other codecs remain open.",
+    "notes": "Five direct HEVC fixtures in 23 modes plus 688 generated/real geometry cases: exact visible pixels including monochrome HEVC alpha, crop/rotate/mirror order, fractional boundaries, metadata, errors and output writes. Full codec conformance, derived images, callback orchestration, resource limits, every conversion operator and other codecs remain open.",
     "status": "partial",
     "tests": [
       "tests/decode.c",
-      "tools/test_decode.py"
+      "tools/test_decode.py",
+      "tools/test_decode_geometry.py"
     ]
   },
   "heif_decoding_options_alloc": {

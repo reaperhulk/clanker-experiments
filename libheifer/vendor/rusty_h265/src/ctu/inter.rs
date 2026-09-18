@@ -737,7 +737,7 @@ impl<'a> SliceDecoder<'a> {
             (pu.flags & 1 != 0).then(|| &refs.l0[pu.ref_idx[0] as usize]),
             (pu.flags & 2 != 0).then(|| &refs.l1[pu.ref_idx[1] as usize]),
         ];
-        for c in 0..3usize {
+        for c in 0..if sps.chroma_array_type == 0 { 1 } else { 3usize } {
             let ss = if c == 0 { 0 } else { 1 };
             let (bw, bh) = (w >> ss, h >> ss);
             if bw == 0 || bh == 0 {

@@ -39,3 +39,7 @@ required-features = ["hevc-profile"]
 
 [patch.crates-io]
 rusty_h265 = { path = "vendor/rusty_h265" }
+
+[[example]]
+name = "inspect_hevc"
+required-features = ["hevc"]

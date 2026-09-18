@@ -259,7 +259,7 @@ fn deblock(planes: &mut [Plane; 3], st: &PicState, sps: &Sps, pps: &Pps, bs_v: &
 
                 // Chroma: bS == 2 on the chroma 8-grid (the luma 16-grid).
                 let on_chroma_grid = if dir == 0 { x4 % 4 == 0 } else { y4 % 4 == 0 };
-                if b == 2 && on_chroma_grid {
+                if b == 2 && on_chroma_grid && sps.chroma_array_type != 0 {
                     if accel::census::ALWAYS {
                         accel::census::arm(&accel::census::RT_DEBLOCK_CHROMA);
                     }

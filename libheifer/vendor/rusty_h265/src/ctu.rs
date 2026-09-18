@@ -846,6 +846,8 @@ impl<'a> SliceDecoder<'a> {
             self.mark_edges(x0 + pb, y0, pb, n, 1);
             self.mark_edges(x0, y0 + pb, n, pb, 1);
         }
+        // Monochrome has no intra_chroma_pred_mode syntax (7.3.8.5).
+        if self.sps.chroma_array_type == 0 { return Ok(()); }
         // intra_chroma_pred_mode (once for 4:2:0)
         let icpm = if self.cab.decode(CTX_INTRA_CHROMA_PRED_MODE) == 0 { 4 } else { self.cab.bypass_bits(2) as u8 };
         let luma0 = self.st.intra_mode[self.st.idx4(x0, y0)];
@@ -925,7 +927,7 @@ impl<'a> SliceDecoder<'a> {
                 }
             }
         }
-        for c in 1..3 {
+        for c in 1..if sps.chroma_array_type == 0 { 1 } else { 3 } {
             let pl = &mut self.pic.planes[c];
             for y in 0..n / 2 {
                 for x in 0..n / 2 {

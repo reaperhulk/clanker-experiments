@@ -892,11 +892,11 @@ impl Decoder {
 /// syntax), ≤ 10 bit, no extensions.
 fn check_scope(sps: &Sps, pps: &Pps) -> Result<()> {
     let prof = sps.ptl.profile();
-    if !matches!(prof, 0 | PROFILE_MAIN | PROFILE_MAIN10 | PROFILE_MAIN_STILL) {
+    if !matches!(prof, 0 | PROFILE_MAIN | PROFILE_MAIN10 | PROFILE_MAIN_STILL) && !(prof == 4 && sps.chroma_format_idc == 0) {
         return Err(Error::unsupported(format!("general_profile_idc {prof} (only Main / Main 10 / Main Still Picture)")));
     }
-    if sps.chroma_format_idc != 1 {
-        return Err(Error::unsupported(format!("chroma_format_idc {} (only 4:2:0)", sps.chroma_format_idc)));
+    if sps.chroma_format_idc > 1 {
+        return Err(Error::unsupported(format!("chroma_format_idc {} (only monochrome or 4:2:0)", sps.chroma_format_idc)));
     }
     if sps.bit_depth_luma > 10 || sps.bit_depth_chroma > 10 {
         return Err(Error::unsupported(format!("bit depth {}/{} (max 10)", sps.bit_depth_luma, sps.bit_depth_chroma)));

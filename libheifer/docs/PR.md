@@ -31,7 +31,8 @@ ASan/UBSan C clients pass that corpus (libraries are not instrumented; local lea
 checking was disabled because LeakSanitizer cannot run under ptrace).
 115 decode comparisons match across five HEIC fixtures and 23 modes, including
 alpha, default conversion, explicit profiles and 16-bit byte order. 65,549 decoding
-option cases and 12,240 crop/scale cases match. Short option allocations also pass
+option cases and 12,240 crop/scale cases match. Another 688 geometry/monochrome
+HEVC cases check transform order, fractions, conformance-window cropping and alpha. Short option allocations also pass
 C-client ASan/UBSan. A malformed-box brand mismatch remains recorded. Unit/ABI tests, formatting
 and Clippy pass on Linux x86_64. The color/HDR CI run passed Rust builds on Linux,
 macOS and Windows and all Linux development checks, including mutation tests; its sole failing step was

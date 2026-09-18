@@ -156,6 +156,9 @@ fn has_images(boxes: &[([u8; 4], &[u8])]) -> bool {
 fn validate_property(kind: [u8; 4], p: &[u8]) -> Result<()> {
     match &kind {
         b"ispe" if p.len() < 12 => return Err(ContextError::truncated()),
+        b"clap" => {
+            crate::geometry::CleanAperture::parse(p)?;
+        }
         b"hvcC" => {
             if p.len() < 23 {
                 return Err(ContextError::truncated());
@@ -430,7 +433,7 @@ impl Document {
             }
             if container
                 .properties(item.id)?
-                .any(|(kind, p)| kind == *b"irot" && p.is_empty())
+                .any(|(kind, p)| (kind == *b"irot" || kind == *b"imir") && p.is_empty())
             {
                 return Err(ContextError::truncated());
             }
@@ -456,16 +459,15 @@ impl Document {
                             std::mem::swap(&mut image.width, &mut image.height);
                         }
                     }
-                    b"clap" if p.len() >= 32 => {
-                        let n =
-                            |offset| u32::from_be_bytes(p[offset..offset + 4].try_into().unwrap());
-                        if n(4) == 0 || n(12) == 0 {
-                            return Err(ContextError::invalid(128, "Invalid fractional number"));
+                    b"clap" => {
+                        (image.width, image.height) =
+                            crate::geometry::CleanAperture::parse(p)?.dimensions();
+                        if image.width == 0 || image.height == 0 {
+                            return Err(ContextError::invalid(
+                                120,
+                                "Invalid clean-aperture specification: Clean aperture (clap) reduces image to zero size",
+                            ));
                         }
-                        image.width =
-                            ((u64::from(n(0)) + u64::from(n(4)) / 2) / u64::from(n(4))) as u32;
-                        image.height =
-                            ((u64::from(n(8)) + u64::from(n(12)) / 2) / u64::from(n(12))) as u32;
                     }
                     b"pasp" if p.len() >= 8 => {
                         image.pixel_aspect = Some((

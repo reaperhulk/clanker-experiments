@@ -16,6 +16,7 @@ def main():
     p.add_argument('--output', default='.build/decode-report.json')
     p.add_argument('--modes', default=','.join(map(str, range(23))))
     args = p.parse_args()
+    Path(args.output).unlink(missing_ok=True)
     source = Path(args.source).resolve()
     reference = Path(args.reference_build).resolve()
     work = Path('.build/decode').resolve()
@@ -37,7 +38,7 @@ def main():
                 if run.returncode:raise SystemExit(f'{name}: {fixture} mode {mode}: {run.returncode} {run.stderr.decode(errors="replace")}')
                 data[name]=out.read_bytes()
             match=data['reference']==data['candidate']
-            record={'fixture':fixture,'mode':mode,'match':match, **{name+'_sha256':hashlib.sha256(value).hexdigest() for name,value in data.items()}}
+            record={'fixture':fixture,'fixture_sha256':hashlib.sha256((source/fixture).read_bytes()).hexdigest(),'mode':mode,'match':match, **{name+'_sha256':hashlib.sha256(value).hexdigest() for name,value in data.items()}}
             if not match:
                 at=next((i for i,(a,b) in enumerate(zip(data['reference'],data['candidate'])) if a!=b),min(map(len,data.values())))
                 record.update(offset=at,reference=data['reference'][max(0,at-16):at+80].hex(),candidate=data['candidate'][max(0,at-16):at+80].hex())

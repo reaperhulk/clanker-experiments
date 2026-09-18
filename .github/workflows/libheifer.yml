@@ -54,6 +54,7 @@ jobs:
       - run: python tools/test_decoding_options.py --reference-build .build/reference --sanitize --output .build/decoding-options-sanitized-report.json
       - run: python tools/test_transforms.py --reference-build .build/reference
       - run: python tools/test_decode.py --reference-build .build/reference
+      - run: python tools/test_decode_geometry.py --reference-build .build/reference
       - run: python tools/test_hevc.py --reference-build .build/reference --require-default-output
       - run: python tools/test_mutations.py --reference-build .build/reference
       - run: python tools/check_coverage.py --reference .build/reference/libheif/libheif.so --development

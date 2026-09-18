@@ -21,7 +21,7 @@ behavior gap is explicitly retained. There is no claim of a compatible library.
   Ordered minimum-cost YCbCr/RGB conversion, chroma sampling and 8/16-bit packing.
 - Rust-only bounded item-container parsing and experimental direct HEVC native
   YUV decoding, now exposed through the C API with alpha attachment, rotations,
-  mirroring, versioned options and profile conversion. Crop/scale also export C APIs.
+  mirroring, clean apertures, versioned options and profile conversion. Crop/scale also export C APIs.
 - Context allocation and memory reads; shared image handles, primary/top-level IDs,
   direct HEVC descriptions, thumbnails, uncompressed metadata and color queries.
   Handles retain their images after context release/reload; alpha lookup follows
@@ -42,6 +42,7 @@ behavior gap is explicitly retained. There is no claim of a compatible library.
 | HEVC native output | 5/5 fixtures match exactly | Y/Cb/Cr data, image IDs/order, dimensions, depths and strides; transformations disabled, native NCLX passthrough; **alpha not compared** |
 | HEVC default output | 5/5 tested color-plane outputs match | Separate default-converted Rust and reference output; no longer compares native data to default output |
 | C decoding | 115 cases, 0 mismatches | Five direct HEVC fixtures x 23 modes; native/default/planar/interleaved output including alpha, profiles, both 16-bit byte orders, sampling restrictions, callbacks and errors; not codec conformance |
+| Geometry/monochrome HEVC | 688 cases, 0 mismatches | Ordered rotations/mirrors/clean apertures, truncated fractions and integer boundaries, conformance-window cropping and real monochrome alpha; includes four additional upstream images |
 | Decoding options | 65,549 cases, 0 mismatches | All byte-valued version pairs, old short prefixes and alias copies; also passes C-client ASan/UBSan with local leak checks disabled |
 | Crop/scale | 12,240 cases, 0 mismatches | Odd geometry, 8/10/12/16-bit layouts, alpha and metadata, invalid margins, nonstandard planes; wider/custom component formats remain open |
 | Dependency guard | Pass | Two reviewed codec crates; no native build scripts or codec link dependencies in the resolved candidate graph |
@@ -65,7 +66,7 @@ the full-completion gate. A job summary is retained in `results/ci-color-report.
 The context corpus is a finite tested subset, not full parser equivalence. It
 includes five real HEIC fixtures and generated containers. All 38 added exports
 remain partial. Unsupported image types, compressed metadata, duplicate-box and
-essential-property behavior, clean-aperture edge cases, configurable budgets,
+essential-property behavior, complete clean-aperture coverage, configurable budgets,
 file/reader callbacks and complete decoding orchestration remain open. `context-report.json` records
 exact binary, client and corpus hashes. `context-sanitized-report.json` records
 the limited sanitizer scope; mutation evidence rejects wrong reload semantics.

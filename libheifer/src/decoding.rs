@@ -121,13 +121,18 @@ fn decode_native(
                     image = image.rotate(p[0] & 3)?;
                 }
                 b"imir" if !p.is_empty() => {
-                    image.mirror(p[0] & 1 == 0)?;
+                    image.mirror(p[0] & 1 != 0)?;
                 }
-                b"clap" | b"iscl" => {
+                b"clap" => {
+                    let (l, r, t, b) = crate::geometry::CleanAperture::parse(p)?
+                        .crop(image.width, image.height)?;
+                    image = image.crop(l, r, t, b)?;
+                }
+                b"iscl" => {
                     return Err(ContextError::new(
                         4,
                         0,
-                        "Unsupported feature: Unspecified: Transform not implemented",
+                        "Unsupported feature: Unspecified: Image scaling (iscl) transformative property is not yet supported",
                     ));
                 }
                 _ => {}
