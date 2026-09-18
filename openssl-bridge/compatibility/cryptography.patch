@@ -312,7 +312,7 @@ index 9f7d181..ed6ec3b 100644
 +source = "registry+https://github.com/rust-lang/crates.io-index"
 +checksum = "f0805222e57f7521d6a62e36fa9163bc891acd422f971defe97d64e70d0a4fe5"
 diff --git a/Cargo.toml b/Cargo.toml
-index c9783a4..9246411 100644
+index c9783a4..bf06129 100644
 --- a/Cargo.toml
 +++ b/Cargo.toml
 @@ -21,6 +21,7 @@ rust-version = "1.83.0"
@@ -3618,6 +3618,18 @@ index 6ac87c1..4b4a76e 100644
  
      // Decrypt the data
      let mut decrypted_data = vec![0; data.len() + (block_size / 8)];
+diff --git a/src/rust/src/types.rs b/src/rust/src/types.rs
+index d0fff8b..f8c5f4f 100644
+--- a/src/rust/src/types.rs
++++ b/src/rust/src/types.rs
+@@ -594,6 +594,7 @@ pub static CTR: LazyPyImport =
+     LazyPyImport::new("cryptography.hazmat.primitives.ciphers.modes", &["CTR"]);
+ pub static GCM: LazyPyImport =
+     LazyPyImport::new("cryptography.hazmat.primitives.ciphers.modes", &["GCM"]);
++#[cfg(not(CRYPTOGRAPHY_IS_BORINGSSL))]
+ pub static XTS: LazyPyImport =
+     LazyPyImport::new("cryptography.hazmat.primitives.ciphers.modes", &["XTS"]);
+ 
 diff --git a/tests/hazmat/primitives/test_aes.py b/tests/hazmat/primitives/test_aes.py
 index 10484b9..1384852 100644
 --- a/tests/hazmat/primitives/test_aes.py
