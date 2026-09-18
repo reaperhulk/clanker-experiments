@@ -4,7 +4,7 @@ This starts a pure Rust libheif replacement with an optional compatible C ABI.
 The reference contract is libheif 1.23.4. Native code is used only by independent
 test oracles; the candidate's resolved implementation dependencies are Rust.
 
-The PR is **not complete** and must remain draft. It implements 119 of 465
+The PR is **not complete** and must remain draft. It implements 131 of 465
 functions, plus the public success object. The strict completion check fails on
 missing and unvalidated APIs. Unsupported-operation stubs and libheif forwarding
 are not used to inflate coverage.
@@ -25,10 +25,12 @@ Changes:
   for image data, decoder input and metadata, including release/reload semantics.
 - Reject malformed/oversized HEVC SPS configurations before codec entry and match
   empty, missing and reordered parameter-set behavior.
+- Add twelve auxiliary/depth APIs, owned auxiliary type strings, exact depth SEI
+  values, filters and retained child handles. They also work with codecs disabled.
 - Keep error-message buffers on their owning image objects; reproduce and fix a
   cross-handle use-after-free with an independent sanitizer client.
 - Add context/handle ownership, reload state, metadata, thumbnails and color queries.
-- Validate ten public struct layouts and reject thirteen deliberately mutated
+- Validate eleven public struct layouts and reject thirteen deliberately mutated
   implementations (enums, errors, pixels, coordinates, item IDs, reload state, worker callbacks, warning text, mask samples, overlay alpha, resource budgets and field order).
 - Add dependency auditing, ABI checks, CI development checks, and an intentionally
   failing full-completion gate.
@@ -52,7 +54,7 @@ error-order cases use one worker because upstream races can select different
 errors. A malformed-box brand mismatch remains recorded. Unit/ABI tests, formatting
 and Clippy pass on Linux x86_64. Another 400 HEVC configuration and 144 error-lifetime cases match; the lifetime client also passes ASan/UBSan after reproducing the pre-fix use-after-free. A fourteenth deliberate coded-size defect is rejected in a separate local run. The preceding security/overlay CI run passed Rust builds on Linux,
 macOS and Windows and all Linux development checks, including mutation tests; its sole failing step was
-the strict full-API gate. Cross-platform ABI, fuzzing and memory-safety validation
+the strict full-API gate. Another 512 auxiliary/depth transcripts match, with C-client ASan/UBSan and codec-free builds. Two additional deliberate defects in auxiliary filtering and depth arithmetic are rejected. Eleven public structs now pass layout checks. Cross-platform ABI, fuzzing and memory-safety validation
 remain open.
 
 Performance is not yet a success: the candidate's median is higher in the initial

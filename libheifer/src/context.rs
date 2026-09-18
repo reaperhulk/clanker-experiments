@@ -171,6 +171,21 @@ fn has_images(boxes: &[([u8; 4], &[u8])]) -> bool {
 }
 fn validate_property(kind: [u8; 4], p: &[u8]) -> Result<()> {
     match &kind {
+        b"auxC" => {
+            if p.len() < 4 {
+                return Err(ContextError::truncated());
+            }
+            if p[0] != 0 {
+                return Err(ContextError::new(
+                    4,
+                    3002,
+                    format!(
+                        "Unsupported feature: Unsupported data version: auxC box data version {} is not implemented yet",
+                        p[0]
+                    ),
+                ));
+            }
+        }
         b"mskC" if p.len() < 5 => return Err(ContextError::truncated()),
         b"ispe" if p.len() < 12 => return Err(ContextError::truncated()),
         b"clap" => {
@@ -395,6 +410,7 @@ pub(crate) struct DecoderInput {
     pub _reservation: crate::security::Reservation,
 }
 pub struct ImageInfo {
+    pub auxiliary: crate::auxiliary::Auxiliary,
     pub last_error: std::sync::Mutex<CString>,
     pub(crate) decode_mutex: std::sync::Mutex<()>,
     pub related_images: Vec<u32>,
@@ -531,6 +547,7 @@ impl Document {
             }
             let ispe = container.dimensions(item.id).unwrap_or((0, 0));
             let mut image = ImageInfo {
+                auxiliary: crate::auxiliary::Auxiliary::default(),
                 last_error: std::sync::Mutex::new(CString::new("Success").unwrap()),
                 decode_mutex: std::sync::Mutex::new(()),
                 related_images: Vec::new(),
@@ -587,8 +604,9 @@ impl Document {
                 }
                 image.colorspace = 1;
                 image.chroma = 3;
-            } else if item.kind == *b"iden" {
-                // Identity images are resolved when decoded or queried.
+            } else if matches!(&item.kind, b"iden" | b"jpeg") {
+                // Neither identity items nor JPEG require a configuration box
+                // to construct a handle. Bitstream decoding is a separate step.
             } else {
                 // The file and its image ID are still visible, but this initial
                 // implementation cannot yet construct other codec/derived handles.
@@ -692,6 +710,10 @@ impl Document {
                 continue;
             }
             for (kind, targets) in &item.references {
+                if kind == b"auxl" {
+                    attach_auxiliary(images, &mut self.top_level, container, item.id, targets)?;
+                    continue;
+                }
                 for target in targets {
                     if kind == b"thmb" {
                         thumbnails.insert(item.id);
@@ -710,48 +732,6 @@ impl Document {
                         master.thumbnails.push(item.id);
                         master.related_images.push(item.id);
                         self.top_level.retain(|id| *id != item.id);
-                    } else if kind == b"auxl" {
-                        let p=container.property(item.id,*b"auxC").map_err(|_|ContextError::invalid(123,&format!("Type of auxiliary image unspecified: No auxC property for image {}",item.id)))?;
-                        let aux = p
-                            .get(4..)
-                            .and_then(|p| p.split(|b| *b == 0).next())
-                            .unwrap_or_default();
-                        if matches!(
-                            aux,
-                            b"urn:mpeg:avc:2015:auxid:1"
-                                | b"urn:mpeg:hevc:2015:auxid:1"
-                                | b"urn:mpeg:mpegB:cicp:systems:auxiliary:alpha"
-                        ) {
-                            if let Some(master) = images.get_mut(target).and_then(Arc::get_mut) {
-                                if item.id == *target {
-                                    return Err(ContextError::invalid(
-                                        2000,
-                                        "Non-existing item ID referenced: Recursive alpha image detected",
-                                    ));
-                                }
-                                master.has_alpha = true;
-                            } else if !container.items.contains_key(target) {
-                                return Err(ContextError::invalid(
-                                    2000,
-                                    "Non-existing item ID referenced: Non-existing alpha image referenced",
-                                ));
-                            }
-                        }
-                        if let Some(master) = images.get_mut(target).and_then(Arc::get_mut) {
-                            master.related_images.push(item.id);
-                            if item.id == *target {
-                                return Err(ContextError::invalid(
-                                    2000,
-                                    "Non-existing item ID referenced: Recursive aux image detected",
-                                ));
-                            }
-                            self.top_level.retain(|id| *id != item.id);
-                        } else if !container.items.contains_key(target) {
-                            return Err(ContextError::invalid(
-                                2000,
-                                "Non-existing item ID referenced: Non-existing aux image referenced",
-                            ));
-                        }
                     }
                 }
             }
@@ -920,4 +900,122 @@ impl Context {
         self.document = Some(Arc::new(document));
         outcome
     }
+}
+
+fn attach_auxiliary(
+    images: &mut BTreeMap<u32, Arc<ImageInfo>>,
+    top_level: &mut Vec<u32>,
+    container: &Container<'_>,
+    id: u32,
+    targets: &[u32],
+) -> Result<()> {
+    let property = container.property(id, *b"auxC").map_err(|_| {
+        ContextError::invalid(
+            123,
+            &format!("Type of auxiliary image unspecified: No auxC property for image {id}"),
+        )
+    })?;
+    let data = property.get(4..).unwrap_or_default();
+    // read_string() consumes the final byte without appending it when the box
+    // ends before a NUL terminator. Preserve that observable upstream behavior.
+    let end = data
+        .iter()
+        .position(|v| *v == 0)
+        .unwrap_or(data.len().saturating_sub(1));
+    let kind = &data[..end];
+    let subtypes = data.get(end + 1..).unwrap_or_default();
+    let alpha = matches!(
+        kind,
+        b"urn:mpeg:avc:2015:auxid:1"
+            | b"urn:mpeg:hevc:2015:auxid:1"
+            | b"urn:mpeg:mpegB:cicp:systems:auxiliary:alpha"
+    );
+    let depth = matches!(
+        kind,
+        b"urn:mpeg:hevc:2015:auxid:2" | b"urn:mpeg:mpegB:cicp:systems:auxiliary:depth"
+    );
+    if alpha {
+        images
+            .get_mut(&id)
+            .and_then(Arc::get_mut)
+            .unwrap()
+            .auxiliary
+            .is_alpha = true;
+        for target in targets {
+            if let Some(master) = images.get_mut(target).and_then(Arc::get_mut) {
+                if id == *target {
+                    return Err(ContextError::invalid(
+                        2000,
+                        "Non-existing item ID referenced: Recursive alpha image detected",
+                    ));
+                }
+                master.has_alpha = true;
+                master.related_images.push(id);
+            } else if !container.items.contains_key(target) {
+                return Err(ContextError::invalid(
+                    2000,
+                    "Non-existing item ID referenced: Non-existing alpha image referenced",
+                ));
+            }
+        }
+    }
+    if depth {
+        images
+            .get_mut(&id)
+            .and_then(Arc::get_mut)
+            .unwrap()
+            .auxiliary
+            .is_depth = true;
+        for target in targets {
+            if let Some(master) = images.get_mut(target).and_then(Arc::get_mut) {
+                if id == *target {
+                    return Err(ContextError::invalid(
+                        2000,
+                        "Non-existing item ID referenced: Recursive depth image detected",
+                    ));
+                }
+                master.auxiliary.depth_image = Some(id);
+                master.related_images.push(id);
+                if !subtypes.is_empty() {
+                    let info = crate::auxiliary::depth_info(subtypes)?;
+                    images
+                        .get_mut(&id)
+                        .and_then(Arc::get_mut)
+                        .unwrap()
+                        .auxiliary
+                        .depth_info = info;
+                }
+            } else if !container.items.contains_key(target) {
+                return Err(ContextError::invalid(
+                    2000,
+                    "Non-existing item ID referenced: Non-existing depth image referenced",
+                ));
+            }
+        }
+    }
+    images
+        .get_mut(&id)
+        .and_then(Arc::get_mut)
+        .unwrap()
+        .auxiliary
+        .kind = CString::new(kind).unwrap();
+    for target in targets {
+        if let Some(master) = images.get_mut(target).and_then(Arc::get_mut) {
+            if id == *target {
+                return Err(ContextError::invalid(
+                    2000,
+                    "Non-existing item ID referenced: Recursive aux image detected",
+                ));
+            }
+            master.related_images.push(id);
+            master.auxiliary.images.push(id);
+            top_level.retain(|i| *i != id);
+        } else if !container.items.contains_key(target) {
+            return Err(ContextError::invalid(
+                2000,
+                "Non-existing item ID referenced: Non-existing aux image referenced",
+            ));
+        }
+    }
+    Ok(())
 }

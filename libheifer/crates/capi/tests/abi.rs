@@ -66,6 +66,23 @@ fn public_structs_match_original_header_layouts() {
         max_iso23001_17_pixel_size_bytes,
         parent
     );
+    layout!(
+        heif_depth_representation_info,
+        heifer::DepthRepresentationInfo,
+        version,
+        has_z_near,
+        has_z_far,
+        has_d_min,
+        has_d_max,
+        z_near,
+        z_far,
+        d_min,
+        d_max,
+        depth_representation_type,
+        disparity_reference_view,
+        depth_nonlinear_representation_model_size,
+        depth_nonlinear_representation_model
+    );
     layout!(heif_error, heifer::HeifError, code, subcode, message);
     layout!(
         heif_decoding_options,

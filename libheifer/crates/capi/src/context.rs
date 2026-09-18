@@ -32,7 +32,7 @@ pub struct HeifContext {
 }
 pub struct HeifHandle {
     pub(super) shared: Arc<SharedContext>,
-    images: std::collections::BTreeMap<u32, Arc<ImageInfo>>,
+    pub(super) images: std::collections::BTreeMap<u32, Arc<ImageInfo>>,
     pub(super) id: u32,
 }
 impl HeifHandle {
@@ -276,7 +276,7 @@ unsafe fn create_handle(
     }
     unsafe { create_handle_images(shared, &doc.images, id, out) }
 }
-unsafe fn create_handle_images(
+pub(super) unsafe fn create_handle_images(
     shared: &Arc<SharedContext>,
     source: &std::collections::BTreeMap<u32, Arc<ImageInfo>>,
     id: u32,

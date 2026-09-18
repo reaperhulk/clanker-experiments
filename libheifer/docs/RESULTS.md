@@ -8,8 +8,8 @@ with VUI unspecified-color, monochrome-decoding and typed missing-parameter fixe
 
 ## Implemented scope
 
-119 of 465 public functions are exported, plus `heif_error_success`.
-346 functions are missing. Even the exported functions are marked **partial**:
+131 of 465 public functions are exported, plus `heif_error_success`.
+334 functions are missing. Even the exported functions are marked **partial**:
 coverage is finite, platform coverage is incomplete, and one malformed-box
 behavior gap is explicitly retained. There is no claim of a compatible library.
 
@@ -39,9 +39,11 @@ behavior gap is explicitly retained. There is no claim of a compatible library.
 | Color/HDR differential | 198,932 transcripts, 0 mismatches | All uint16 NCLX setter inputs, all uint8 option-version pairs, all chromaticity coordinates, exact floating-point bits, ICC ownership, HDR boundaries and output sentinels; no image-handle APIs or color transforms |
 | Context/handle differential | 1,786 transcripts, 0 mismatches | Copied/borrowed input, destroyed input copies, aliases, handles after free/reload, early and late read failures, primary/hidden/boundary IDs, metadata bytes/filters, thumbnails, alpha references, color profiles, rotations, every synthetic-file/property truncation; no C decoding |
 | C client sanitizers | ASan/UBSan clients pass the context corpus | Libraries are not sanitizer-instrumented; local LeakSanitizer could not run under ptrace, so leak detection was explicitly disabled |
-| ABI | Ten structs match original-header size, alignment and every field offset; struct-return and data-symbol clients pass | Linux x86_64 only |
+| ABI | Eleven structs match original-header size, alignment and every field offset; struct-return and data-symbol clients pass | Linux x86_64 only |
 | Mutation checks | Thirteen deliberately wrong implementations rejected | Wrong filetype enum, error code, plane samples, primary coordinate, primary item ID, alpha reload state, worker callbacks, warning text, mask samples, overlay alpha, decode-operation/total-memory budgets and ABI field order; isolated builds, successful baselines, compiler/crash failures do not count |
 | HEVC configuration | 400 cases, 0 mismatches | SPS prefixes, coded-size limits, crop/depth/chroma bounds, sub-layer flags, empty/reordered/missing parameter sets and recovery after early slices |
+| Auxiliary/depth APIs | 512 file transcripts, 0 mismatches; C-client ASan/UBSan pass | Twelve APIs; every auxiliary-box version, filters/counts/output sentinels, copied type strings, typed child errors, exact depth float bits, malformed SEI and handles after reload/free. Also passes with optional codecs disabled |
+| Auxiliary/depth mutations | Both defects rejected | Wrong alpha-filter bit (4 mismatches) and exponent (148 mismatches), independently passing baselines; the default mutation set now contains sixteen defects |
 | Error-buffer lifetimes | 144 cases, 0 mismatches; C-client ASan/UBSan pass | Unrelated handles/context errors, aliases and releases; the pre-fix candidate use-after-free was reproduced under ASan |
 | Coded-size mutation | One additional defect rejected (138 mismatches) | Independent baseline passed; changed the tightened limit floor from 65,536 to 65,535; the full default mutation set now contains fourteen defects |
 | HEVC native output | 5/5 fixtures match exactly | Y/Cb/Cr data, image IDs/order, dimensions, depths and strides; transformations disabled, native NCLX passthrough; **alpha not compared** |
@@ -116,6 +118,19 @@ passes after it. The latest completed CI (`15646d9`) passes all development chec
 including thirteen mutations and sanitizer clients with leak checking enabled,
 and Linux/macOS/Windows Rust builds. Only its full completion gate fails. That CI
 run predates these SPS and error-lifetime additions; their local evidence is separate.
+
+Twelve auxiliary/depth entry points expose filters, type strings, depth handles and
+HEVC depth-representation SEI metadata without requiring the HEVC codec feature.
+The depth parser follows the pinned reference's one-message parsing and ignores
+its declared NAL/payload lengths where upstream does. Unsupported SEI syntax is
+not presented as fully supported. JPEG item handles can now be constructed for
+auxiliary queries without a `jpgC` box, matching upstream; complete JPEG
+bitstream descriptions and decoding remain open.
+
+The following SPS/error-lifetime CI (`f843fe7`) also passed every development check,
+including all fourteen then-registered mutations and leak-enabled C sanitizers.
+Its only failure was the strict full-completion gate. Auxiliary/depth results
+were collected locally after that CI and remain separately identified by hash.
 
 ## Initial performance evidence
 

@@ -11,6 +11,8 @@ use std::alloc::{Layout, alloc, dealloc};
 use std::ffi::{c_char, c_int};
 use std::ptr;
 
+mod auxiliary;
+pub use auxiliary::DepthRepresentationInfo;
 mod color;
 mod context;
 mod decoding;

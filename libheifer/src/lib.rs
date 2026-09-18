@@ -2,6 +2,7 @@
 //! Pure Rust HEIF implementation. See PLAN.md for current compatibility scope.
 #![forbid(unsafe_code)]
 
+pub mod auxiliary;
 pub mod brands;
 pub mod color;
 pub mod container;
