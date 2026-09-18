@@ -423,7 +423,7 @@ index 9f7d181..81091f9 100644
 -checksum = "accd4ea62f7bb7a82fe23066fb0957d48ef677f6eeb8215f372f52e48bb32426"
 +checksum = "f0805222e57f7521d6a62e36fa9163bc891acd422f971defe97d64e70d0a4fe5"
 diff --git a/Cargo.toml b/Cargo.toml
-index c9783a4..693ef6f 100644
+index c9783a4..6414920 100644
 --- a/Cargo.toml
 +++ b/Cargo.toml
 @@ -6,7 +6,6 @@ members = [
@@ -593,7 +593,7 @@ index 9a12c9c..77629e2 100644
 +    openssl_bridge::constant_time_eq(a, b)
  }
 diff --git a/src/rust/cryptography-crypto/src/pbkdf1.rs b/src/rust/cryptography-crypto/src/pbkdf1.rs
-index 7a5bad2..0598f20 100644
+index 7a5bad2..3db86bb 100644
 --- a/src/rust/cryptography-crypto/src/pbkdf1.rs
 +++ b/src/rust/cryptography-crypto/src/pbkdf1.rs
 @@ -5,18 +5,18 @@
@@ -652,8 +652,12 @@ index 7a5bad2..0598f20 100644
          h.update(&t)?;
          t = h.finish()?;
      }
-@@ -66,7 +68,7 @@ mod tests {
-     fn test_openssl_kdf() {
+@@ -63,10 +65,10 @@ mod tests {
+     use super::{openssl_kdf, pbkdf1};
+ 
+     #[test]
+-    fn test_openssl_kdf() {
++    fn test_openssl_kdf_md5() {
          for (md, password, salt, expected) in [
              (
 -                openssl::hash::MessageDigest::md5(),
@@ -706,8 +710,46 @@ index 7a5bad2..0598f20 100644
                  b"different_secure_password",
                  [0xfe, 0xdc, 0xba, 0x98, 0x76, 0x54, 0x32, 0x10],
                  &[
-@@ -129,7 +131,21 @@ mod tests {
+@@ -122,14 +124,57 @@ mod tests {
+                 ],
+             ),
+         ] {
+-            let key = openssl_kdf(md, password, salt, expected.len()).unwrap();
+-            assert_eq!(key, expected);
++            let key = openssl_kdf(md, password, salt, expected.len());
++            if openssl_bridge::BACKEND == openssl_bridge::Backend::OpenSsl
++                && openssl_bridge::runtime::is_fips_enabled()
++            {
++                // Startup FIPS properties must reject MD5, including when
++                // called from a Rust test instead of the Python API.
++                assert!(key.is_err());
++            } else {
++                assert_eq!(key.unwrap(), expected);
++            }
+         }
+     }
  
++    #[test]
++    fn test_openssl_kdf_sha256() {
++        // OpenSSL enc -aes-256-cbc -P -md sha256 -S 0102030405060708
++        // -pass pass:password123, concatenating the printed key and IV.
++        // This spans two digest blocks and runs with startup FIPS properties.
++        let expected = [
++            0x73, 0xb8, 0x6b, 0x89, 0xbb, 0xf8, 0x2a, 0xff, 0xc1, 0x4c, 0x9f, 0xe4, 0x00, 0xbe,
++            0x75, 0x51, 0x06, 0x05, 0x4c, 0x12, 0x60, 0xd5, 0x12, 0x67, 0xbb, 0x1e, 0xc4, 0xc4,
++            0xd5, 0x9a, 0x61, 0xb8, 0xc3, 0xba, 0x39, 0x12, 0xff, 0x6b, 0x91, 0xf6, 0x8e, 0x67,
++            0x3e, 0xf0, 0xfb, 0x81, 0x29, 0xbc,
++        ];
++        let key = openssl_kdf(
++            openssl_bridge::hash::Algorithm::from_name("sha256").unwrap(),
++            b"password123",
++            [0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08],
++            expected.len(),
++        )
++        .unwrap();
++        assert_eq!(key, expected);
++    }
++
      #[test]
      fn test_pbkdf1() {
 -        assert!(pbkdf1(openssl::hash::MessageDigest::md5(), b"abc", [0; 8], 1, 20).is_err());
@@ -4790,9 +4832,18 @@ index 799b50b..0000000
 -    b.to_vec_padded(b.num_bits() / 8 + 1)
 -}
 diff --git a/src/rust/src/backend/aead.rs b/src/rust/src/backend/aead.rs
-index 2289d1c..11bb56a 100644
+index 2289d1c..8d51c7b 100644
 --- a/src/rust/src/backend/aead.rs
 +++ b/src/rust/src/backend/aead.rs
+@@ -2,7 +2,7 @@
+ // 2.0, and the BSD License. See the LICENSE file in the root of this repository
+ // for complete details.
+ 
+-use pyo3::types::{PyAnyMethods, PyListMethods};
++use pyo3::types::PyListMethods;
+ 
+ use crate::buf::{CffiBuf, CffiMutBuf};
+ use crate::error::{CryptographyError, CryptographyResult};
 @@ -46,11 +46,13 @@ fn extract_aad(aad: Option<Aad<'_>>) -> CryptographyResult<(ExtractedAad<'_>, us
          }
          Some(Aad::List(ads)) => {
@@ -4800,7 +4851,8 @@ index 2289d1c..11bb56a 100644
 -            let mut len = 0;
 +            let mut len = 0usize;
              for ad in ads.iter() {
-                 let buf = ad.extract::<CffiBuf<'_>>()?;
+-                let buf = ad.extract::<CffiBuf<'_>>()?;
++                let buf = crate::buf::extract_aead_buffer(&ad)?;
                  check_length(buf.as_bytes())?;
 -                len += buf.as_bytes().len();
 +                len = len.checked_add(buf.as_bytes().len()).ok_or_else(|| {
@@ -5358,7 +5410,33 @@ index 2289d1c..11bb56a 100644
                      )?,
                  })
              }
-@@ -602,6 +298,7 @@ impl ChaCha20Poly1305 {
+@@ -552,8 +248,10 @@ impl ChaCha20Poly1305 {
+         &self,
+         py: pyo3::Python<'p>,
+         nonce: CffiBuf<'_>,
+-        data: CffiBuf<'_>,
+-        associated_data: Option<CffiBuf<'_>>,
++        #[pyo3(from_py_with = crate::buf::extract_aead_buffer)] data: CffiBuf<'_>,
++        #[pyo3(from_py_with = crate::buf::extract_optional_aead_buffer)] associated_data: Option<
++            CffiBuf<'_>,
++        >,
+     ) -> CryptographyResult<pyo3::Bound<'p, pyo3::types::PyBytes>> {
+         let data_bytes = data.as_bytes();
+         check_length(data_bytes)?;
+@@ -573,8 +271,10 @@ impl ChaCha20Poly1305 {
+         &self,
+         py: pyo3::Python<'_>,
+         nonce: CffiBuf<'_>,
+-        data: CffiBuf<'_>,
+-        associated_data: Option<CffiBuf<'_>>,
++        #[pyo3(from_py_with = crate::buf::extract_aead_buffer)] data: CffiBuf<'_>,
++        #[pyo3(from_py_with = crate::buf::extract_optional_aead_buffer)] associated_data: Option<
++            CffiBuf<'_>,
++        >,
+         mut buf: CffiMutBuf<'_>,
+     ) -> CryptographyResult<usize> {
+         let nonce_bytes = nonce.as_bytes();
+@@ -602,6 +302,7 @@ impl ChaCha20Poly1305 {
  
          self.ctx
              .encrypt_into(py, data_bytes, aad, Some(nonce_bytes), buf.as_mut_bytes())?;
@@ -5366,7 +5444,33 @@ index 2289d1c..11bb56a 100644
          Ok(expected_len)
      }
  
-@@ -668,6 +365,7 @@ impl ChaCha20Poly1305 {
+@@ -610,8 +311,10 @@ impl ChaCha20Poly1305 {
+         &self,
+         py: pyo3::Python<'p>,
+         nonce: CffiBuf<'_>,
+-        data: CffiBuf<'_>,
+-        associated_data: Option<CffiBuf<'_>>,
++        #[pyo3(from_py_with = crate::buf::extract_aead_buffer)] data: CffiBuf<'_>,
++        #[pyo3(from_py_with = crate::buf::extract_optional_aead_buffer)] associated_data: Option<
++            CffiBuf<'_>,
++        >,
+     ) -> CryptographyResult<pyo3::Bound<'p, pyo3::types::PyBytes>> {
+         if nonce.as_bytes().len() != 12 {
+             return Err(CryptographyError::from(
+@@ -637,8 +340,10 @@ impl ChaCha20Poly1305 {
+         &self,
+         py: pyo3::Python<'_>,
+         nonce: CffiBuf<'_>,
+-        data: CffiBuf<'_>,
+-        associated_data: Option<CffiBuf<'_>>,
++        #[pyo3(from_py_with = crate::buf::extract_aead_buffer)] data: CffiBuf<'_>,
++        #[pyo3(from_py_with = crate::buf::extract_optional_aead_buffer)] associated_data: Option<
++            CffiBuf<'_>,
++        >,
+         mut buf: CffiMutBuf<'_>,
+     ) -> CryptographyResult<usize> {
+         let nonce_bytes = nonce.as_bytes();
+@@ -668,6 +373,7 @@ impl ChaCha20Poly1305 {
          self.ctx
              .decrypt_into(py, data_bytes, aad, Some(nonce_bytes), buf.as_mut_bytes())?;
  
@@ -5374,7 +5478,7 @@ index 2289d1c..11bb56a 100644
          Ok(expected_len)
      }
  }
-@@ -680,7 +378,7 @@ impl ChaCha20Poly1305 {
+@@ -680,7 +386,7 @@ impl ChaCha20Poly1305 {
  )]
  // NO-COVERAGE-END
  pub(crate) struct AesGcm {
@@ -5383,7 +5487,7 @@ index 2289d1c..11bb56a 100644
  }
  
  #[pyo3::pymethods]
-@@ -692,9 +390,9 @@ impl AesGcm {
+@@ -692,9 +398,9 @@ impl AesGcm {
      ) -> CryptographyResult<AesGcm> {
          let key_buf = key.extract::<CffiBuf<'_>>(py)?;
          let cipher = match key_buf.as_bytes().len() {
@@ -5396,7 +5500,7 @@ index 2289d1c..11bb56a 100644
              _ => {
                  return Err(CryptographyError::from(
                      pyo3::exceptions::PyValueError::new_err(
-@@ -705,15 +403,7 @@ impl AesGcm {
+@@ -705,15 +411,7 @@ impl AesGcm {
          };
  
          Ok(AesGcm {
@@ -5413,7 +5517,33 @@ index 2289d1c..11bb56a 100644
          })
      }
  
-@@ -786,6 +476,7 @@ impl AesGcm {
+@@ -736,8 +434,10 @@ impl AesGcm {
+         &self,
+         py: pyo3::Python<'p>,
+         nonce: CffiBuf<'_>,
+-        data: CffiBuf<'_>,
+-        associated_data: Option<CffiBuf<'_>>,
++        #[pyo3(from_py_with = crate::buf::extract_aead_buffer)] data: CffiBuf<'_>,
++        #[pyo3(from_py_with = crate::buf::extract_optional_aead_buffer)] associated_data: Option<
++            CffiBuf<'_>,
++        >,
+     ) -> CryptographyResult<pyo3::Bound<'p, pyo3::types::PyBytes>> {
+         let data_bytes = data.as_bytes();
+         check_length(data_bytes)?;
+@@ -757,8 +457,10 @@ impl AesGcm {
+         &self,
+         py: pyo3::Python<'_>,
+         nonce: CffiBuf<'_>,
+-        data: CffiBuf<'_>,
+-        associated_data: Option<CffiBuf<'_>>,
++        #[pyo3(from_py_with = crate::buf::extract_aead_buffer)] data: CffiBuf<'_>,
++        #[pyo3(from_py_with = crate::buf::extract_optional_aead_buffer)] associated_data: Option<
++            CffiBuf<'_>,
++        >,
+         mut buf: CffiMutBuf<'_>,
+     ) -> CryptographyResult<usize> {
+         let nonce_bytes = nonce.as_bytes();
+@@ -786,6 +488,7 @@ impl AesGcm {
  
          self.ctx
              .encrypt_into(py, data_bytes, aad, Some(nonce_bytes), buf.as_mut_bytes())?;
@@ -5421,7 +5551,33 @@ index 2289d1c..11bb56a 100644
          Ok(expected_len)
      }
  
-@@ -857,6 +548,7 @@ impl AesGcm {
+@@ -794,8 +497,10 @@ impl AesGcm {
+         &self,
+         py: pyo3::Python<'p>,
+         nonce: CffiBuf<'_>,
+-        data: CffiBuf<'_>,
+-        associated_data: Option<CffiBuf<'_>>,
++        #[pyo3(from_py_with = crate::buf::extract_aead_buffer)] data: CffiBuf<'_>,
++        #[pyo3(from_py_with = crate::buf::extract_optional_aead_buffer)] associated_data: Option<
++            CffiBuf<'_>,
++        >,
+     ) -> CryptographyResult<pyo3::Bound<'p, pyo3::types::PyBytes>> {
+         let nonce_bytes = nonce.as_bytes();
+         let data_bytes = data.as_bytes();
+@@ -826,8 +531,10 @@ impl AesGcm {
+         &self,
+         py: pyo3::Python<'_>,
+         nonce: CffiBuf<'_>,
+-        data: CffiBuf<'_>,
+-        associated_data: Option<CffiBuf<'_>>,
++        #[pyo3(from_py_with = crate::buf::extract_aead_buffer)] data: CffiBuf<'_>,
++        #[pyo3(from_py_with = crate::buf::extract_optional_aead_buffer)] associated_data: Option<
++            CffiBuf<'_>,
++        >,
+         mut buf: CffiMutBuf<'_>,
+     ) -> CryptographyResult<usize> {
+         let nonce_bytes = nonce.as_bytes();
+@@ -857,6 +564,7 @@ impl AesGcm {
          self.ctx
              .decrypt_into(py, data_bytes, aad, Some(nonce_bytes), buf.as_mut_bytes())?;
  
@@ -5429,7 +5585,7 @@ index 2289d1c..11bb56a 100644
          Ok(expected_len)
      }
  }
-@@ -869,7 +561,7 @@ impl AesGcm {
+@@ -869,7 +577,7 @@ impl AesGcm {
  )]
  // NO-COVERAGE-END
  struct AesCcm {
@@ -5438,7 +5594,7 @@ index 2289d1c..11bb56a 100644
      tag_length: usize,
  }
  
-@@ -896,9 +588,9 @@ impl AesCcm {
+@@ -896,9 +604,9 @@ impl AesCcm {
              } else {
                  let key_buf = key.extract::<CffiBuf<'_>>(py)?;
                  let cipher = match key_buf.as_bytes().len() {
@@ -5451,7 +5607,7 @@ index 2289d1c..11bb56a 100644
                      _ => {
                          return Err(CryptographyError::from(
                              pyo3::exceptions::PyValueError::new_err(
-@@ -915,14 +607,12 @@ impl AesCcm {
+@@ -915,14 +623,12 @@ impl AesCcm {
                  }
  
                  Ok(AesCcm {
@@ -5468,7 +5624,33 @@ index 2289d1c..11bb56a 100644
                      )?,
                      tag_length
                  })
-@@ -1010,6 +700,7 @@ impl AesCcm {
+@@ -948,8 +654,10 @@ impl AesCcm {
+         &self,
+         py: pyo3::Python<'p>,
+         nonce: CffiBuf<'_>,
+-        data: CffiBuf<'_>,
+-        associated_data: Option<CffiBuf<'_>>,
++        #[pyo3(from_py_with = crate::buf::extract_aead_buffer)] data: CffiBuf<'_>,
++        #[pyo3(from_py_with = crate::buf::extract_optional_aead_buffer)] associated_data: Option<
++            CffiBuf<'_>,
++        >,
+     ) -> CryptographyResult<pyo3::Bound<'p, pyo3::types::PyBytes>> {
+         let data_bytes = data.as_bytes();
+         check_length(data_bytes)?;
+@@ -969,8 +677,10 @@ impl AesCcm {
+         &self,
+         py: pyo3::Python<'_>,
+         nonce: CffiBuf<'_>,
+-        data: CffiBuf<'_>,
+-        associated_data: Option<CffiBuf<'_>>,
++        #[pyo3(from_py_with = crate::buf::extract_aead_buffer)] data: CffiBuf<'_>,
++        #[pyo3(from_py_with = crate::buf::extract_optional_aead_buffer)] associated_data: Option<
++            CffiBuf<'_>,
++        >,
+         mut buf: CffiMutBuf<'_>,
+     ) -> CryptographyResult<usize> {
+         let nonce_bytes = nonce.as_bytes();
+@@ -1010,6 +720,7 @@ impl AesCcm {
  
          self.ctx
              .encrypt_into(py, data_bytes, aad, Some(nonce_bytes), buf.as_mut_bytes())?;
@@ -5476,7 +5658,33 @@ index 2289d1c..11bb56a 100644
          Ok(expected_len)
      }
  
-@@ -1092,6 +783,7 @@ impl AesCcm {
+@@ -1018,8 +729,10 @@ impl AesCcm {
+         &self,
+         py: pyo3::Python<'p>,
+         nonce: CffiBuf<'_>,
+-        data: CffiBuf<'_>,
+-        associated_data: Option<CffiBuf<'_>>,
++        #[pyo3(from_py_with = crate::buf::extract_aead_buffer)] data: CffiBuf<'_>,
++        #[pyo3(from_py_with = crate::buf::extract_optional_aead_buffer)] associated_data: Option<
++            CffiBuf<'_>,
++        >,
+     ) -> CryptographyResult<pyo3::Bound<'p, pyo3::types::PyBytes>> {
+         let nonce_bytes = nonce.as_bytes();
+         let data_bytes = data.as_bytes();
+@@ -1049,8 +762,10 @@ impl AesCcm {
+         &self,
+         py: pyo3::Python<'_>,
+         nonce: CffiBuf<'_>,
+-        data: CffiBuf<'_>,
+-        associated_data: Option<CffiBuf<'_>>,
++        #[pyo3(from_py_with = crate::buf::extract_aead_buffer)] data: CffiBuf<'_>,
++        #[pyo3(from_py_with = crate::buf::extract_optional_aead_buffer)] associated_data: Option<
++            CffiBuf<'_>,
++        >,
+         mut buf: CffiMutBuf<'_>,
+     ) -> CryptographyResult<usize> {
+         let nonce_bytes = nonce.as_bytes();
+@@ -1092,6 +807,7 @@ impl AesCcm {
          self.ctx
              .decrypt_into(py, data_bytes, aad, Some(nonce_bytes), buf.as_mut_bytes())?;
  
@@ -5484,7 +5692,7 @@ index 2289d1c..11bb56a 100644
          Ok(expected_len)
      }
  }
-@@ -1104,7 +796,7 @@ impl AesCcm {
+@@ -1104,7 +820,7 @@ impl AesCcm {
  )]
  // NO-COVERAGE-END
  struct AesSiv {
@@ -5493,7 +5701,7 @@ index 2289d1c..11bb56a 100644
  }
  
  #[pyo3::pymethods]
-@@ -1127,7 +819,7 @@ impl AesSiv {
+@@ -1127,7 +843,7 @@ impl AesSiv {
  
          cfg_if::cfg_if! {
              if #[cfg(not(any(CRYPTOGRAPHY_IS_LIBRESSL, CRYPTOGRAPHY_IS_BORINGSSL, CRYPTOGRAPHY_IS_AWSLC)))] {
@@ -5502,7 +5710,7 @@ index 2289d1c..11bb56a 100644
                      return Err(CryptographyError::from(
                          exceptions::UnsupportedAlgorithm::new_err((
                              "AES-SIV is not supported by this version of OpenSSL",
-@@ -1136,16 +828,14 @@ impl AesSiv {
+@@ -1136,16 +852,14 @@ impl AesSiv {
                      ));
                  }
  
@@ -5522,7 +5730,25 @@ index 2289d1c..11bb56a 100644
                      )?,
                  })
              } else {
-@@ -1228,6 +918,7 @@ impl AesSiv {
+@@ -1179,7 +893,7 @@ impl AesSiv {
+     fn encrypt<'p>(
+         &self,
+         py: pyo3::Python<'p>,
+-        data: CffiBuf<'_>,
++        #[pyo3(from_py_with = crate::buf::extract_aead_buffer)] data: CffiBuf<'_>,
+         associated_data: Option<pyo3::Bound<'p, pyo3::types::PyList>>,
+     ) -> CryptographyResult<pyo3::Bound<'p, pyo3::types::PyBytes>> {
+         check_length(data.as_bytes())?;
+@@ -1198,7 +912,7 @@ impl AesSiv {
+     fn encrypt_into(
+         &self,
+         py: pyo3::Python<'_>,
+-        data: CffiBuf<'_>,
++        #[pyo3(from_py_with = crate::buf::extract_aead_buffer)] data: CffiBuf<'_>,
+         associated_data: Option<pyo3::Bound<'_, pyo3::types::PyList>>,
+         mut buf: CffiMutBuf<'_>,
+     ) -> CryptographyResult<usize> {
+@@ -1228,6 +942,7 @@ impl AesSiv {
          self.ctx
              .encrypt_into(py, data_bytes, aad, None, buf.as_mut_bytes())?;
  
@@ -5530,7 +5756,25 @@ index 2289d1c..11bb56a 100644
          Ok(expected_len)
      }
  
-@@ -1281,6 +972,7 @@ impl AesSiv {
+@@ -1235,7 +950,7 @@ impl AesSiv {
+     fn decrypt<'p>(
+         &self,
+         py: pyo3::Python<'p>,
+-        data: CffiBuf<'_>,
++        #[pyo3(from_py_with = crate::buf::extract_aead_buffer)] data: CffiBuf<'_>,
+         associated_data: Option<pyo3::Bound<'_, pyo3::types::PyList>>,
+     ) -> CryptographyResult<pyo3::Bound<'p, pyo3::types::PyBytes>> {
+         if data.as_bytes().len() < self.ctx.tag_len {
+@@ -1256,7 +971,7 @@ impl AesSiv {
+     fn decrypt_into(
+         &self,
+         py: pyo3::Python<'_>,
+-        data: CffiBuf<'_>,
++        #[pyo3(from_py_with = crate::buf::extract_aead_buffer)] data: CffiBuf<'_>,
+         associated_data: Option<pyo3::Bound<'_, pyo3::types::PyList>>,
+         mut buf: CffiMutBuf<'_>,
+     ) -> CryptographyResult<usize> {
+@@ -1281,6 +996,7 @@ impl AesSiv {
          self.ctx
              .decrypt_into(py, data_bytes, aad, None, buf.as_mut_bytes())?;
  
@@ -5538,7 +5782,7 @@ index 2289d1c..11bb56a 100644
          Ok(expected_len)
      }
  }
-@@ -1293,7 +985,7 @@ impl AesSiv {
+@@ -1293,7 +1009,7 @@ impl AesSiv {
  )]
  // NO-COVERAGE-END
  struct AesOcb3 {
@@ -5547,7 +5791,7 @@ index 2289d1c..11bb56a 100644
  }
  
  #[pyo3::pymethods]
-@@ -1313,7 +1005,7 @@ impl AesOcb3 {
+@@ -1313,7 +1029,7 @@ impl AesOcb3 {
                      )),
                  ))
              } else {
@@ -5556,7 +5800,7 @@ index 2289d1c..11bb56a 100644
                      return Err(CryptographyError::from(
                          exceptions::UnsupportedAlgorithm::new_err((
                              "AES-OCB3 is not supported by this version of OpenSSL",
-@@ -1323,9 +1015,9 @@ impl AesOcb3 {
+@@ -1323,9 +1039,9 @@ impl AesOcb3 {
                  }
  
                  let cipher = match key_buf.as_bytes().len() {
@@ -5569,7 +5813,7 @@ index 2289d1c..11bb56a 100644
                      _ => {
                          return Err(CryptographyError::from(
                              pyo3::exceptions::PyValueError::new_err(
-@@ -1336,14 +1028,12 @@ impl AesOcb3 {
+@@ -1336,14 +1052,12 @@ impl AesOcb3 {
                  };
  
                  Ok(AesOcb3 {
@@ -5586,7 +5830,33 @@ index 2289d1c..11bb56a 100644
                      )?,
                  })
              }
-@@ -1419,6 +1109,7 @@ impl AesOcb3 {
+@@ -1369,8 +1083,10 @@ impl AesOcb3 {
+         &self,
+         py: pyo3::Python<'p>,
+         nonce: CffiBuf<'_>,
+-        data: CffiBuf<'_>,
+-        associated_data: Option<CffiBuf<'_>>,
++        #[pyo3(from_py_with = crate::buf::extract_aead_buffer)] data: CffiBuf<'_>,
++        #[pyo3(from_py_with = crate::buf::extract_optional_aead_buffer)] associated_data: Option<
++            CffiBuf<'_>,
++        >,
+     ) -> CryptographyResult<pyo3::Bound<'p, pyo3::types::PyBytes>> {
+         let data_bytes = data.as_bytes();
+         check_length(data_bytes)?;
+@@ -1390,8 +1106,10 @@ impl AesOcb3 {
+         &self,
+         py: pyo3::Python<'_>,
+         nonce: CffiBuf<'_>,
+-        data: CffiBuf<'_>,
+-        associated_data: Option<CffiBuf<'_>>,
++        #[pyo3(from_py_with = crate::buf::extract_aead_buffer)] data: CffiBuf<'_>,
++        #[pyo3(from_py_with = crate::buf::extract_optional_aead_buffer)] associated_data: Option<
++            CffiBuf<'_>,
++        >,
+         mut buf: CffiMutBuf<'_>,
+     ) -> CryptographyResult<usize> {
+         let nonce_bytes = nonce.as_bytes();
+@@ -1419,6 +1137,7 @@ impl AesOcb3 {
  
          self.ctx
              .encrypt_into(py, data_bytes, aad, Some(nonce_bytes), buf.as_mut_bytes())?;
@@ -5594,7 +5864,33 @@ index 2289d1c..11bb56a 100644
          Ok(expected_len)
      }
  
-@@ -1490,6 +1181,7 @@ impl AesOcb3 {
+@@ -1427,8 +1146,10 @@ impl AesOcb3 {
+         &self,
+         py: pyo3::Python<'p>,
+         nonce: CffiBuf<'_>,
+-        data: CffiBuf<'_>,
+-        associated_data: Option<CffiBuf<'_>>,
++        #[pyo3(from_py_with = crate::buf::extract_aead_buffer)] data: CffiBuf<'_>,
++        #[pyo3(from_py_with = crate::buf::extract_optional_aead_buffer)] associated_data: Option<
++            CffiBuf<'_>,
++        >,
+     ) -> CryptographyResult<pyo3::Bound<'p, pyo3::types::PyBytes>> {
+         let nonce_bytes = nonce.as_bytes();
+         let data_bytes = data.as_bytes();
+@@ -1459,8 +1180,10 @@ impl AesOcb3 {
+         &self,
+         py: pyo3::Python<'_>,
+         nonce: CffiBuf<'_>,
+-        data: CffiBuf<'_>,
+-        associated_data: Option<CffiBuf<'_>>,
++        #[pyo3(from_py_with = crate::buf::extract_aead_buffer)] data: CffiBuf<'_>,
++        #[pyo3(from_py_with = crate::buf::extract_optional_aead_buffer)] associated_data: Option<
++            CffiBuf<'_>,
++        >,
+         mut buf: CffiMutBuf<'_>,
+     ) -> CryptographyResult<usize> {
+         let nonce_bytes = nonce.as_bytes();
+@@ -1490,6 +1213,7 @@ impl AesOcb3 {
          self.ctx
              .decrypt_into(py, data_bytes, aad, Some(nonce_bytes), buf.as_mut_bytes())?;
  
@@ -5602,7 +5898,7 @@ index 2289d1c..11bb56a 100644
          Ok(expected_len)
      }
  }
-@@ -1502,10 +1194,7 @@ impl AesOcb3 {
+@@ -1502,10 +1226,7 @@ impl AesOcb3 {
  )]
  // NO-COVERAGE-END
  struct AesGcmSiv {
@@ -5614,7 +5910,7 @@ index 2289d1c..11bb56a 100644
  }
  
  #[pyo3::pymethods]
-@@ -1530,8 +1219,8 @@ impl AesGcmSiv {
+@@ -1530,8 +1251,8 @@ impl AesGcmSiv {
              if #[cfg(any(CRYPTOGRAPHY_IS_BORINGSSL, CRYPTOGRAPHY_IS_AWSLC))] {
                  let _ = cipher_name;
                  let aead_type = match key_buf.as_bytes().len() {
@@ -5625,7 +5921,7 @@ index 2289d1c..11bb56a 100644
                      _ => return Err(CryptographyError::from(
                          exceptions::UnsupportedAlgorithm::new_err((
                              "Only 128-bit and 256-bit keys are supported for AES-GCM-SIV with AWS-LC or BoringSSL",
-@@ -1540,7 +1229,7 @@ impl AesGcmSiv {
+@@ -1540,7 +1261,7 @@ impl AesGcmSiv {
                      ))
                  };
                  Ok(AesGcmSiv {
@@ -5634,7 +5930,7 @@ index 2289d1c..11bb56a 100644
                  })
              } else if #[cfg(not(CRYPTOGRAPHY_OPENSSL_320_OR_GREATER))] {
                  let _ = cipher_name;
-@@ -1551,7 +1240,7 @@ impl AesGcmSiv {
+@@ -1551,7 +1272,7 @@ impl AesGcmSiv {
                      )),
                  ))
              } else {
@@ -5643,7 +5939,7 @@ index 2289d1c..11bb56a 100644
                      return Err(CryptographyError::from(
                          exceptions::UnsupportedAlgorithm::new_err((
                              "AES-GCM-SIV is not supported by this version of OpenSSL",
-@@ -1559,16 +1248,14 @@ impl AesGcmSiv {
+@@ -1559,16 +1280,14 @@ impl AesGcmSiv {
                          )),
                      ));
                  }
@@ -5663,7 +5959,33 @@ index 2289d1c..11bb56a 100644
                      )?,
                  })
              }
-@@ -1654,6 +1341,7 @@ impl AesGcmSiv {
+@@ -1594,8 +1313,10 @@ impl AesGcmSiv {
+         &self,
+         py: pyo3::Python<'p>,
+         nonce: CffiBuf<'_>,
+-        data: CffiBuf<'_>,
+-        associated_data: Option<CffiBuf<'_>>,
++        #[pyo3(from_py_with = crate::buf::extract_aead_buffer)] data: CffiBuf<'_>,
++        #[pyo3(from_py_with = crate::buf::extract_optional_aead_buffer)] associated_data: Option<
++            CffiBuf<'_>,
++        >,
+     ) -> CryptographyResult<pyo3::Bound<'p, pyo3::types::PyBytes>> {
+         let data_bytes = data.as_bytes();
+         check_length(data_bytes)?;
+@@ -1615,8 +1336,10 @@ impl AesGcmSiv {
+         &self,
+         py: pyo3::Python<'_>,
+         nonce: CffiBuf<'_>,
+-        data: CffiBuf<'_>,
+-        associated_data: Option<CffiBuf<'_>>,
++        #[pyo3(from_py_with = crate::buf::extract_aead_buffer)] data: CffiBuf<'_>,
++        #[pyo3(from_py_with = crate::buf::extract_optional_aead_buffer)] associated_data: Option<
++            CffiBuf<'_>,
++        >,
+         mut buf: CffiMutBuf<'_>,
+     ) -> CryptographyResult<usize> {
+         let nonce_bytes = nonce.as_bytes();
+@@ -1654,6 +1377,7 @@ impl AesGcmSiv {
  
          self.ctx
              .encrypt_into(py, data_bytes, aad, Some(nonce_bytes), buf.as_mut_bytes())?;
@@ -5671,7 +5993,33 @@ index 2289d1c..11bb56a 100644
          Ok(expected_len)
      }
  
-@@ -1725,6 +1413,7 @@ impl AesGcmSiv {
+@@ -1662,8 +1386,10 @@ impl AesGcmSiv {
+         &self,
+         py: pyo3::Python<'p>,
+         nonce: CffiBuf<'_>,
+-        data: CffiBuf<'_>,
+-        associated_data: Option<CffiBuf<'_>>,
++        #[pyo3(from_py_with = crate::buf::extract_aead_buffer)] data: CffiBuf<'_>,
++        #[pyo3(from_py_with = crate::buf::extract_optional_aead_buffer)] associated_data: Option<
++            CffiBuf<'_>,
++        >,
+     ) -> CryptographyResult<pyo3::Bound<'p, pyo3::types::PyBytes>> {
+         let nonce_bytes = nonce.as_bytes();
+         let data_bytes = data.as_bytes();
+@@ -1694,8 +1420,10 @@ impl AesGcmSiv {
+         &self,
+         py: pyo3::Python<'_>,
+         nonce: CffiBuf<'_>,
+-        data: CffiBuf<'_>,
+-        associated_data: Option<CffiBuf<'_>>,
++        #[pyo3(from_py_with = crate::buf::extract_aead_buffer)] data: CffiBuf<'_>,
++        #[pyo3(from_py_with = crate::buf::extract_optional_aead_buffer)] associated_data: Option<
++            CffiBuf<'_>,
++        >,
+         mut buf: CffiMutBuf<'_>,
+     ) -> CryptographyResult<usize> {
+         let nonce_bytes = nonce.as_bytes();
+@@ -1725,6 +1453,7 @@ impl AesGcmSiv {
          self.ctx
              .decrypt_into(py, data_bytes, aad, Some(nonce_bytes), buf.as_mut_bytes())?;
  
@@ -11131,7 +11479,7 @@ index a5a9e62..73f2f54 100644
      })?)
  }
 diff --git a/src/rust/src/backend/rsa.rs b/src/rust/src/backend/rsa.rs
-index 86bc1a0..ce4f305 100644
+index 86bc1a0..1de990e 100644
 --- a/src/rust/src/backend/rsa.rs
 +++ b/src/rust/src/backend/rsa.rs
 @@ -4,7 +4,6 @@
@@ -11620,7 +11968,7 @@ index 86bc1a0..ce4f305 100644
  }
  
  #[pyo3::pymethods]
-@@ -310,25 +298,27 @@ impl RsaPrivateKey {
+@@ -310,25 +298,29 @@ impl RsaPrivateKey {
              }
          };
  
@@ -11652,7 +12000,9 @@ index 86bc1a0..ce4f305 100644
 +        )?)?;
 +        let digest = signature_digest(py, &algorithm)?;
 +        if let Some(digest) = digest {
-+            if !self.pkey.signature_digest_supported(digest)? {
++            if !self.pkey.signature_digest_supported(digest).map_err(|_| {
++                pyo3::exceptions::PyValueError::new_err("Unable to sign with this key and digest")
++            })? {
 +                unsupported_signature_digest(py, &algorithm)?;
 +            }
 +        }
@@ -11667,7 +12017,7 @@ index 86bc1a0..ce4f305 100644
      }
  
      fn decrypt<'p>(
-@@ -337,76 +327,57 @@ impl RsaPrivateKey {
+@@ -337,76 +329,57 @@ impl RsaPrivateKey {
          ciphertext: &[u8],
          padding: &pyo3::Bound<'p, pyo3::PyAny>,
      ) -> CryptographyResult<pyo3::Bound<'p, pyo3::types::PyBytes>> {
@@ -11780,7 +12130,7 @@ index 86bc1a0..ce4f305 100644
  
          let public_numbers = RsaPublicNumbers {
              e: py_e.extract()?,
-@@ -433,7 +404,9 @@ impl RsaPrivateKey {
+@@ -433,7 +406,9 @@ impl RsaPrivateKey {
          utils::pkey_private_bytes(
              py,
              slf,
@@ -11791,7 +12141,7 @@ index 86bc1a0..ce4f305 100644
              encoding,
              format,
              encryption_algorithm,
-@@ -475,13 +448,27 @@ impl RsaPublicKey {
+@@ -475,13 +450,27 @@ impl RsaPublicKey {
              }
          };
  
@@ -11826,7 +12176,7 @@ index 86bc1a0..ce4f305 100644
          if !valid {
              return Err(CryptographyError::from(
                  exceptions::InvalidSignature::new_err(()),
-@@ -497,19 +484,11 @@ impl RsaPublicKey {
+@@ -497,19 +486,11 @@ impl RsaPublicKey {
          plaintext: &[u8],
          padding: &pyo3::Bound<'p, pyo3::PyAny>,
      ) -> CryptographyResult<pyo3::Bound<'p, pyo3::types::PyBytes>> {
@@ -11851,7 +12201,7 @@ index 86bc1a0..ce4f305 100644
      }
  
      fn recover_data_from_signature<'p>(
-@@ -532,29 +511,43 @@ impl RsaPublicKey {
+@@ -532,29 +513,43 @@ impl RsaPublicKey {
              ));
          }
  
@@ -11910,7 +12260,7 @@ index 86bc1a0..ce4f305 100644
  
          Ok(RsaPublicNumbers {
              e: py_e.extract()?,
-@@ -568,11 +561,21 @@ impl RsaPublicKey {
+@@ -568,11 +563,21 @@ impl RsaPublicKey {
          encoding: crate::serialization::Encoding,
          format: crate::serialization::PublicFormat,
      ) -> CryptographyResult<pyo3::Bound<'p, pyo3::types::PyBytes>> {
@@ -11935,7 +12285,7 @@ index 86bc1a0..ce4f305 100644
      }
  
      fn __copy__(slf: pyo3::PyRef<'_, Self>) -> pyo3::PyRef<'_, Self> {
-@@ -750,22 +753,27 @@ impl RsaPrivateNumbers {
+@@ -750,22 +755,27 @@ impl RsaPrivateNumbers {
              self.public_numbers.get().n.bind(py),
          )?;
          let public_numbers = self.public_numbers.get();
@@ -11978,7 +12328,7 @@ index 86bc1a0..ce4f305 100644
      }
  
      fn __eq__(
-@@ -798,31 +806,22 @@ impl RsaPrivateNumbers {
+@@ -798,31 +808,22 @@ impl RsaPrivateNumbers {
      }
  }
  
@@ -12023,7 +12373,7 @@ index 86bc1a0..ce4f305 100644
      Ok(())
  }
  
-@@ -841,13 +840,14 @@ impl RsaPublicNumbers {
+@@ -841,13 +842,14 @@ impl RsaPublicNumbers {
      ) -> CryptographyResult<RsaPublicKey> {
          let _ = backend;
  
@@ -12615,7 +12965,7 @@ index 9374d87..7d8afcc 100644
  
      fn __copy__(slf: pyo3::PyRef<'_, Self>) -> pyo3::PyRef<'_, Self> {
 diff --git a/src/rust/src/buf.rs b/src/rust/src/buf.rs
-index 79cfcc7..a8f6da4 100644
+index 79cfcc7..f1b04cf 100644
 --- a/src/rust/src/buf.rs
 +++ b/src/rust/src/buf.rs
 @@ -2,14 +2,15 @@
@@ -12631,7 +12981,7 @@ index 79cfcc7..a8f6da4 100644
 -use pyo3::types::PyAnyMethods;
 +use openssl_bridge::secret::SecretBytes;
 +use pyo3::pybacked::PyBackedBytes;
-+use pyo3::types::{PyAnyMethods, PyBytes, PyMemoryView, PySlice};
++use pyo3::types::{PyAnyMethods, PyBytes, PyBytesMethods, PyMemoryView, PySlice};
  
 -#[cfg(not(Py_3_11))]
 -use crate::types;
@@ -12640,7 +12990,7 @@ index 79cfcc7..a8f6da4 100644
  fn generate_non_convertible_buffer_error_msg(
      pyobj: &pyo3::Borrowed<'_, '_, pyo3::PyAny>,
  ) -> String {
-@@ -26,167 +27,182 @@ fn generate_non_convertible_buffer_error_msg(
+@@ -26,167 +27,215 @@ fn generate_non_convertible_buffer_error_msg(
      }
  }
  
@@ -12751,14 +13101,28 @@ index 79cfcc7..a8f6da4 100644
      }
  }
 -
- impl<'p> pyo3::conversion::FromPyObject<'_, 'p> for CffiBuf<'p> {
-     type Error = pyo3::PyErr;
+-impl<'p> pyo3::conversion::FromPyObject<'_, 'p> for CffiBuf<'p> {
+-    type Error = pyo3::PyErr;
 -
-     fn extract(pyobj: pyo3::Borrowed<'_, 'p, pyo3::PyAny>) -> pyo3::PyResult<Self> {
+-    fn extract(pyobj: pyo3::Borrowed<'_, 'p, pyo3::PyAny>) -> pyo3::PyResult<Self> {
 -        let (bufobj, ptrval, len) = _extract_buffer_length(&pyobj, false)?;
 -        let buf = if len == 0 {
 -            &[]
++impl<'p> CffiBuf<'p> {
++    fn extract_limited(
++        pyobj: pyo3::Borrowed<'_, 'p, pyo3::PyAny>,
++        maximum: usize,
++    ) -> pyo3::PyResult<Self> {
++        let check_length = |length: usize| -> pyo3::PyResult<()> {
++            if length > maximum {
++                return Err(pyo3::exceptions::PyOverflowError::new_err(
++                    "Data or associated data too long. Max 2**31 - 1 bytes",
++                ));
++            }
++            Ok(())
++        };
 +        let bytes = if let Ok(bytes) = pyobj.cast::<PyBytes>() {
++            check_length(bytes.as_bytes().len())?;
 +            bytes.to_owned()
          } else {
 -            // SAFETY: _extract_buffer_length ensures that we have a valid ptr
@@ -12770,11 +13134,11 @@ index 79cfcc7..a8f6da4 100644
 -            // for details. This is the same as our cffi status quo ante, so
 -            // we're doing an unsound thing and living with it.
 -            unsafe { slice::from_raw_parts(ptrval as *const u8, len) }
-+            // Even a readonly memoryview can refer to mutable underlying storage.
-+            // The interpreter performs the copy before Rust borrows its bytes.
-+            memory_view(&pyobj, false)?
-+                .call_method0("tobytes")?
-+                .cast_into::<PyBytes>()?
++            // Validate the export's byte count before copying a potentially huge
++            // mapping. Readonly views can still have mutable underlying storage.
++            let view = memory_view(&pyobj, false)?;
++            check_length(view.getattr("nbytes")?.extract()?)?;
++            view.call_method0("tobytes")?.cast_into::<PyBytes>()?
          };
 -        Ok(CffiBuf {
 +        Ok(Self {
@@ -12788,6 +13152,12 @@ index 79cfcc7..a8f6da4 100644
          })
      }
  }
++impl<'p> pyo3::conversion::FromPyObject<'_, 'p> for CffiBuf<'p> {
++    type Error = pyo3::PyErr;
++    fn extract(pyobj: pyo3::Borrowed<'_, 'p, pyo3::PyAny>) -> pyo3::PyResult<Self> {
++        Self::extract_limited(pyobj, usize::MAX)
++    }
++}
  
 -pub(crate) struct CffiMutBuf<'p> {
 -    _pyobj: pyo3::Bound<'p, pyo3::PyAny>,
@@ -12796,6 +13166,22 @@ index 79cfcc7..a8f6da4 100644
 -    #[cfg(Py_3_11)]
 -    _bufobj: Option<pyo3::buffer::PyBuffer<u8>>,
 -    buf: &'p mut [u8],
++/// AEAD's native signed-length limit is checked before any mutable input copy.
++pub(crate) fn extract_aead_buffer<'p>(
++    obj: &pyo3::Bound<'p, pyo3::PyAny>,
++) -> pyo3::PyResult<CffiBuf<'p>> {
++    CffiBuf::extract_limited(obj.as_borrowed(), i32::MAX as usize)
++}
++pub(crate) fn extract_optional_aead_buffer<'p>(
++    obj: &pyo3::Bound<'p, pyo3::PyAny>,
++) -> pyo3::PyResult<Option<CffiBuf<'p>>> {
++    if obj.is_none() {
++        Ok(None)
++    } else {
++        extract_aead_buffer(obj).map(Some)
++    }
++}
++
 +enum Output<'p> {
 +    Borrowed(&'p mut [u8]),
 +    Python {

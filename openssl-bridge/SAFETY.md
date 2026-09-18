@@ -290,3 +290,18 @@ Python input/output views without creating aliased Rust references. One-shot
 AEAD commits only after authentication; failed or abandoned operations leave
 Python destinations unchanged. Explicit streaming GCM remains unverified until
 its final tag check, as required by the existing Python API.
+
+
+Repeated DSA parameter imports reuse at most 32 fully validated groups. The
+cache contains canonical public p, q, and g bytes and uses exact equality,
+including every component. Cache misses retain the same primality and subgroup
+checks. Changed public keys still undergo range and subgroup validation. No
+private key, native object, or provider-policy decision enters the cache; native
+operations continue to enforce provider policy. Locks cover only lookup and
+insertion, and a poisoned cache is bypassed. Concurrent misses may repeat work.
+The maximum retained component payload is 33,792 bytes plus Rust metadata.
+
+AEAD's Python payload and associated-data extractors inspect the actual buffer
+export byte count before copying. Oversized inputs receive the existing
+OverflowError without materializing a large mapping. Rust-to-Rust callers retain
+the operation's length checks. This does not relax the ownership boundary.

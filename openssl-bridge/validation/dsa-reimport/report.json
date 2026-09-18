@@ -1,0 +1,502 @@
+{
+  "baseline_commit": "036d85a7760d4856790dd9a1aed92f8eb26f7a97",
+  "candidate_commit": "dc1e41c3a385337631b025e1e352c696abe9349f",
+  "compiler": "rustc 1.90.0",
+  "profile": "release, CARGO_INCREMENTAL=0",
+  "backend": "OpenSSL 4.0.2 f089acdf4bc7ba94a79f4bf6eb7362c3e7d14aa9 static",
+  "cpu": "x86_64 Intel Xeon Platinum 8272CL @ 2.60 GHz, container quota 8 CPUs",
+  "corpus": "Wycheproof 3fa63dd0344abb611f1fb1d77e119938603ea230; checked-in public vectors",
+  "benchmark_scope": "Repeated parameter import, public key construction and successful signature verification. Includes initial cache miss, allocation and teardown. Three interleaved A/B samples, reversed order on alternate sample. Concurrent unrelated build/test work makes absolute wall time variable.",
+  "instruction_counts": "not measured",
+  "allocation_counts": "not measured",
+  "memory_bound": "At most 32 public groups, totaling at most 33792 component payload bytes plus collection/Arc/Vec metadata. No secret or native context retained.",
+  "binary_sha256": {
+    "baseline": "21236b778583229bb3f658fc0719ede64da34da9d5484b924799a0103bd5b230",
+    "candidate": "133b6f2b0751586aa8257b36ec7e958b65a3aa07e8a9bf589f04c7bf2240fc86"
+  },
+  "rejected_measurement": "Initial shared-target candidate lacked the VALIDATED_GROUPS symbol and was discarded. Clean isolated candidate checkout/target was rebuilt; symbol presence was required before measurements.",
+  "summary": [
+    {
+      "vector": "dsa_2048_224_sha256_test.json",
+      "threads": 1,
+      "operations": 12,
+      "baseline_seconds": 2.918837029,
+      "candidate_seconds": 0.355348616,
+      "elapsed_reduction_percent": 87.82567808790122,
+      "samples_seconds": {
+        "baseline": [
+          3.776755069,
+          2.918837029,
+          2.860776146
+        ],
+        "candidate": [
+          0.591086088,
+          0.174294475,
+          0.355348616
+        ]
+      }
+    },
+    {
+      "vector": "dsa_2048_224_sha256_test.json",
+      "threads": 4,
+      "operations": 48,
+      "baseline_seconds": 4.578786317,
+      "candidate_seconds": 0.421076052,
+      "elapsed_reduction_percent": 90.80376276925962,
+      "samples_seconds": {
+        "baseline": [
+          5.033155689,
+          4.140835563,
+          4.578786317
+        ],
+        "candidate": [
+          0.424906747,
+          0.421076052,
+          0.36803312
+        ]
+      }
+    },
+    {
+      "vector": "dsa_2048_256_sha256_test.json",
+      "threads": 1,
+      "operations": 12,
+      "baseline_seconds": 3.105517218,
+      "candidate_seconds": 0.336569551,
+      "elapsed_reduction_percent": 89.16220624863396,
+      "samples_seconds": {
+        "baseline": [
+          3.258537356,
+          3.105517218,
+          2.897693112
+        ],
+        "candidate": [
+          0.336569551,
+          0.165795694,
+          0.341225783
+        ]
+      }
+    },
+    {
+      "vector": "dsa_2048_256_sha256_test.json",
+      "threads": 4,
+      "operations": 48,
+      "baseline_seconds": 4.847188097,
+      "candidate_seconds": 0.50857871,
+      "elapsed_reduction_percent": 89.50775790370571,
+      "samples_seconds": {
+        "baseline": [
+          4.847188097,
+          4.809980526,
+          5.134830862
+        ],
+        "candidate": [
+          0.433251675,
+          0.615478036,
+          0.50857871
+        ]
+      }
+    },
+    {
+      "vector": "dsa_3072_256_sha256_test.json",
+      "threads": 1,
+      "operations": 12,
+      "baseline_seconds": 17.834792583,
+      "candidate_seconds": 1.479899136,
+      "elapsed_reduction_percent": 91.70217915844657,
+      "samples_seconds": {
+        "baseline": [
+          19.950006355,
+          17.834792583,
+          13.818625939
+        ],
+        "candidate": [
+          1.826011646,
+          1.121089873,
+          1.479899136
+        ]
+      }
+    },
+    {
+      "vector": "dsa_3072_256_sha256_test.json",
+      "threads": 4,
+      "operations": 48,
+      "baseline_seconds": 24.175339128,
+      "candidate_seconds": 2.504557159,
+      "elapsed_reduction_percent": 89.64003298675877,
+      "samples_seconds": {
+        "baseline": [
+          26.273052762,
+          23.085149096,
+          24.175339128
+        ],
+        "candidate": [
+          1.494629847,
+          3.263641157,
+          2.504557159
+        ]
+      }
+    }
+  ],
+  "samples": [
+    {
+      "vector": "dsa_2048_224_sha256_test.json",
+      "sample": "0",
+      "threads": 1,
+      "variant": "baseline",
+      "operations": 12,
+      "elapsed_ns": 3776755069,
+      "parameter_thread_ns": 3745534464,
+      "key_and_verify_thread_ns": 26972263
+    },
+    {
+      "vector": "dsa_2048_256_sha256_test.json",
+      "sample": "0",
+      "threads": 1,
+      "variant": "baseline",
+      "operations": 12,
+      "elapsed_ns": 3258537356,
+      "parameter_thread_ns": 3230103121,
+      "key_and_verify_thread_ns": 24874517
+    },
+    {
+      "vector": "dsa_3072_256_sha256_test.json",
+      "sample": "0",
+      "threads": 1,
+      "variant": "baseline",
+      "operations": 12,
+      "elapsed_ns": 19950006355,
+      "parameter_thread_ns": 19884503794,
+      "key_and_verify_thread_ns": 65111069
+    },
+    {
+      "vector": "dsa_2048_224_sha256_test.json",
+      "sample": "0",
+      "threads": 1,
+      "variant": "candidate",
+      "operations": 12,
+      "elapsed_ns": 591086088,
+      "parameter_thread_ns": 559048945,
+      "key_and_verify_thread_ns": 23322767
+    },
+    {
+      "vector": "dsa_2048_256_sha256_test.json",
+      "sample": "0",
+      "threads": 1,
+      "variant": "candidate",
+      "operations": 12,
+      "elapsed_ns": 336569551,
+      "parameter_thread_ns": 317729250,
+      "key_and_verify_thread_ns": 15973580
+    },
+    {
+      "vector": "dsa_3072_256_sha256_test.json",
+      "sample": "0",
+      "threads": 1,
+      "variant": "candidate",
+      "operations": 12,
+      "elapsed_ns": 1826011646,
+      "parameter_thread_ns": 1788918326,
+      "key_and_verify_thread_ns": 36854422
+    },
+    {
+      "vector": "dsa_2048_224_sha256_test.json",
+      "sample": "0",
+      "threads": 4,
+      "variant": "baseline",
+      "operations": 48,
+      "elapsed_ns": 5033155689,
+      "parameter_thread_ns": 16166538197,
+      "key_and_verify_thread_ns": 82724467
+    },
+    {
+      "vector": "dsa_2048_256_sha256_test.json",
+      "sample": "0",
+      "threads": 4,
+      "variant": "baseline",
+      "operations": 48,
+      "elapsed_ns": 4847188097,
+      "parameter_thread_ns": 17641958174,
+      "key_and_verify_thread_ns": 113509062
+    },
+    {
+      "vector": "dsa_3072_256_sha256_test.json",
+      "sample": "0",
+      "threads": 4,
+      "variant": "baseline",
+      "operations": 48,
+      "elapsed_ns": 26273052762,
+      "parameter_thread_ns": 86757584717,
+      "key_and_verify_thread_ns": 108818490
+    },
+    {
+      "vector": "dsa_2048_224_sha256_test.json",
+      "sample": "0",
+      "threads": 4,
+      "variant": "candidate",
+      "operations": 48,
+      "elapsed_ns": 424906747,
+      "parameter_thread_ns": 1466801648,
+      "key_and_verify_thread_ns": 85371910
+    },
+    {
+      "vector": "dsa_2048_256_sha256_test.json",
+      "sample": "0",
+      "threads": 4,
+      "variant": "candidate",
+      "operations": 48,
+      "elapsed_ns": 433251675,
+      "parameter_thread_ns": 1545133737,
+      "key_and_verify_thread_ns": 88236381
+    },
+    {
+      "vector": "dsa_3072_256_sha256_test.json",
+      "sample": "0",
+      "threads": 4,
+      "variant": "candidate",
+      "operations": 48,
+      "elapsed_ns": 1494629847,
+      "parameter_thread_ns": 5534279510,
+      "key_and_verify_thread_ns": 116129726
+    },
+    {
+      "vector": "dsa_2048_224_sha256_test.json",
+      "sample": "1",
+      "threads": 1,
+      "variant": "candidate",
+      "operations": 12,
+      "elapsed_ns": 174294475,
+      "parameter_thread_ns": 162261923,
+      "key_and_verify_thread_ns": 11142763
+    },
+    {
+      "vector": "dsa_2048_256_sha256_test.json",
+      "sample": "1",
+      "threads": 1,
+      "variant": "candidate",
+      "operations": 12,
+      "elapsed_ns": 165795694,
+      "parameter_thread_ns": 153777800,
+      "key_and_verify_thread_ns": 10371468
+    },
+    {
+      "vector": "dsa_3072_256_sha256_test.json",
+      "sample": "1",
+      "threads": 1,
+      "variant": "candidate",
+      "operations": 12,
+      "elapsed_ns": 1121089873,
+      "parameter_thread_ns": 1098703614,
+      "key_and_verify_thread_ns": 20748075
+    },
+    {
+      "vector": "dsa_2048_224_sha256_test.json",
+      "sample": "1",
+      "threads": 1,
+      "variant": "baseline",
+      "operations": 12,
+      "elapsed_ns": 2918837029,
+      "parameter_thread_ns": 2899343890,
+      "key_and_verify_thread_ns": 15396702
+    },
+    {
+      "vector": "dsa_2048_256_sha256_test.json",
+      "sample": "1",
+      "threads": 1,
+      "variant": "baseline",
+      "operations": 12,
+      "elapsed_ns": 3105517218,
+      "parameter_thread_ns": 3089530954,
+      "key_and_verify_thread_ns": 15736869
+    },
+    {
+      "vector": "dsa_3072_256_sha256_test.json",
+      "sample": "1",
+      "threads": 1,
+      "variant": "baseline",
+      "operations": 12,
+      "elapsed_ns": 17834792583,
+      "parameter_thread_ns": 17802442563,
+      "key_and_verify_thread_ns": 32011569
+    },
+    {
+      "vector": "dsa_2048_224_sha256_test.json",
+      "sample": "1",
+      "threads": 4,
+      "variant": "candidate",
+      "operations": 48,
+      "elapsed_ns": 421076052,
+      "parameter_thread_ns": 1251938129,
+      "key_and_verify_thread_ns": 52453812
+    },
+    {
+      "vector": "dsa_2048_256_sha256_test.json",
+      "sample": "1",
+      "threads": 4,
+      "variant": "candidate",
+      "operations": 48,
+      "elapsed_ns": 615478036,
+      "parameter_thread_ns": 2038300321,
+      "key_and_verify_thread_ns": 166747619
+    },
+    {
+      "vector": "dsa_3072_256_sha256_test.json",
+      "sample": "1",
+      "threads": 4,
+      "variant": "candidate",
+      "operations": 48,
+      "elapsed_ns": 3263641157,
+      "parameter_thread_ns": 10962287114,
+      "key_and_verify_thread_ns": 186867070
+    },
+    {
+      "vector": "dsa_2048_224_sha256_test.json",
+      "sample": "1",
+      "threads": 4,
+      "variant": "baseline",
+      "operations": 48,
+      "elapsed_ns": 4140835563,
+      "parameter_thread_ns": 13445465761,
+      "key_and_verify_thread_ns": 70990906
+    },
+    {
+      "vector": "dsa_2048_256_sha256_test.json",
+      "sample": "1",
+      "threads": 4,
+      "variant": "baseline",
+      "operations": 48,
+      "elapsed_ns": 4809980526,
+      "parameter_thread_ns": 17799149428,
+      "key_and_verify_thread_ns": 133031552
+    },
+    {
+      "vector": "dsa_3072_256_sha256_test.json",
+      "sample": "1",
+      "threads": 4,
+      "variant": "baseline",
+      "operations": 48,
+      "elapsed_ns": 23085149096,
+      "parameter_thread_ns": 83697354321,
+      "key_and_verify_thread_ns": 138052798
+    },
+    {
+      "vector": "dsa_2048_224_sha256_test.json",
+      "sample": "2",
+      "threads": 1,
+      "variant": "baseline",
+      "operations": 12,
+      "elapsed_ns": 2860776146,
+      "parameter_thread_ns": 2819935120,
+      "key_and_verify_thread_ns": 40481988
+    },
+    {
+      "vector": "dsa_2048_256_sha256_test.json",
+      "sample": "2",
+      "threads": 1,
+      "variant": "baseline",
+      "operations": 12,
+      "elapsed_ns": 2897693112,
+      "parameter_thread_ns": 2873735774,
+      "key_and_verify_thread_ns": 15906220
+    },
+    {
+      "vector": "dsa_3072_256_sha256_test.json",
+      "sample": "2",
+      "threads": 1,
+      "variant": "baseline",
+      "operations": 12,
+      "elapsed_ns": 13818625939,
+      "parameter_thread_ns": 13795369159,
+      "key_and_verify_thread_ns": 23035714
+    },
+    {
+      "vector": "dsa_2048_224_sha256_test.json",
+      "sample": "2",
+      "threads": 1,
+      "variant": "candidate",
+      "operations": 12,
+      "elapsed_ns": 355348616,
+      "parameter_thread_ns": 333434041,
+      "key_and_verify_thread_ns": 21232550
+    },
+    {
+      "vector": "dsa_2048_256_sha256_test.json",
+      "sample": "2",
+      "threads": 1,
+      "variant": "candidate",
+      "operations": 12,
+      "elapsed_ns": 341225783,
+      "parameter_thread_ns": 322819707,
+      "key_and_verify_thread_ns": 18199467
+    },
+    {
+      "vector": "dsa_3072_256_sha256_test.json",
+      "sample": "2",
+      "threads": 1,
+      "variant": "candidate",
+      "operations": 12,
+      "elapsed_ns": 1479899136,
+      "parameter_thread_ns": 1458871640,
+      "key_and_verify_thread_ns": 20879914
+    },
+    {
+      "vector": "dsa_2048_224_sha256_test.json",
+      "sample": "2",
+      "threads": 4,
+      "variant": "baseline",
+      "operations": 48,
+      "elapsed_ns": 4578786317,
+      "parameter_thread_ns": 17710423159,
+      "key_and_verify_thread_ns": 98981033
+    },
+    {
+      "vector": "dsa_2048_256_sha256_test.json",
+      "sample": "2",
+      "threads": 4,
+      "variant": "baseline",
+      "operations": 48,
+      "elapsed_ns": 5134830862,
+      "parameter_thread_ns": 18223275879,
+      "key_and_verify_thread_ns": 79542879
+    },
+    {
+      "vector": "dsa_3072_256_sha256_test.json",
+      "sample": "2",
+      "threads": 4,
+      "variant": "baseline",
+      "operations": 48,
+      "elapsed_ns": 24175339128,
+      "parameter_thread_ns": 86387071656,
+      "key_and_verify_thread_ns": 137166918
+    },
+    {
+      "vector": "dsa_2048_224_sha256_test.json",
+      "sample": "2",
+      "threads": 4,
+      "variant": "candidate",
+      "operations": 48,
+      "elapsed_ns": 368033120,
+      "parameter_thread_ns": 1322821737,
+      "key_and_verify_thread_ns": 97036719
+    },
+    {
+      "vector": "dsa_2048_256_sha256_test.json",
+      "sample": "2",
+      "threads": 4,
+      "variant": "candidate",
+      "operations": 48,
+      "elapsed_ns": 508578710,
+      "parameter_thread_ns": 1574896814,
+      "key_and_verify_thread_ns": 85218532
+    },
+    {
+      "vector": "dsa_3072_256_sha256_test.json",
+      "sample": "2",
+      "threads": 4,
+      "variant": "candidate",
+      "operations": 48,
+      "elapsed_ns": 2504557159,
+      "parameter_thread_ns": 7874901006,
+      "key_and_verify_thread_ns": 113005148
+    }
+  ]
+}
