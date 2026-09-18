@@ -40,6 +40,39 @@ impl Number {
     pub(crate) fn positive(&self) -> bool {
         self.bits() != 0
     }
+    pub(crate) fn is_one(&self) -> bool {
+        // SAFETY: Initialized immutable integer query.
+        unsafe { ffi::BN_is_one(self.ptr()) == 1 }
+    }
+    pub(crate) fn is_prime(&self) -> Result<bool> {
+        let ctx = Context::new()?;
+        // SAFETY: The bounded integer is initialized, the context is exclusive,
+        // and NULL disables callbacks. Explicit rounds cover adversarial imports.
+        match unsafe { ffi::BN_is_prime_ex(self.ptr(), 64, ctx.0.as_ptr(), ptr::null_mut()) } {
+            1 => Ok(true),
+            0 => Ok(false),
+            _ => Err(Error::capture()),
+        }
+    }
+    pub(crate) fn modulo(&self, modulus: &Self) -> Result<Self> {
+        if !modulus.positive() {
+            return Err(Error::InvalidInput("modulus is zero"));
+        }
+        let output = Self::new()?;
+        let ctx = Context::new()?;
+        // SAFETY: Division has a positive divisor, distinct remainder storage,
+        // and a unique context. A NULL quotient requests only the remainder.
+        check(unsafe {
+            ffi::BN_div(
+                ptr::null_mut(),
+                output.ptr(),
+                self.ptr(),
+                modulus.ptr(),
+                ctx.0.as_ptr(),
+            )
+        })?;
+        Ok(output)
+    }
     pub(crate) fn less_than(&self, other: &Self) -> bool {
         // SAFETY: Both numbers are initialized and read-only.
         unsafe { ffi::BN_cmp(self.ptr(), other.ptr()) < 0 }

@@ -188,8 +188,16 @@ methods are required to obtain operational keys. No incomplete or unvalidated
 native key object escapes the implementation. Every agreement builds fresh
 native state; concurrently shared Rust key data is immutable.
 
-For legacy Python DH agreement, the private operational key is derived afresh
-from the stored exponent. Its cached public encoding is not used in the
-operation. This preserves old round trips and test vectors that store a peer's
-public value alongside a private exponent, while the operational key itself
-always has a mathematically consistent public component.
+## DSA
+
+Operational DSA keys require bounded prime p and q, q dividing p-1, a nontrivial
+generator of the q-order subgroup, and checked scalar/public relationships.
+Private construction derives the public component with constant-time modular
+exponentiation. Public keys are range- and subgroup-checked. Each signature or
+verification owns a fresh EVP context, preserving native provider policy and
+avoiding shared mutable signing state. Digest and DER lengths are bounded.
+
+Separate material types preserve legacy parsing of malformed keys without
+claiming cryptographic validity. They have no signing or verification methods.
+Explicit validation produces operational types and caches its result. Secret
+scalars use erased storage, including temporary native BIGNUMs.

@@ -312,7 +312,7 @@ index 9f7d181..ed6ec3b 100644
 +source = "registry+https://github.com/rust-lang/crates.io-index"
 +checksum = "f0805222e57f7521d6a62e36fa9163bc891acd422f971defe97d64e70d0a4fe5"
 diff --git a/Cargo.toml b/Cargo.toml
-index c9783a4..6a17d0e 100644
+index c9783a4..3a4275f 100644
 --- a/Cargo.toml
 +++ b/Cargo.toml
 @@ -21,6 +21,7 @@ rust-version = "1.83.0"
@@ -3002,11 +3002,368 @@ index 7e5001d..c042e92 100644
  
          Ok(DHPublicKey { pkey })
      }
+diff --git a/src/rust/src/backend/dsa.rs b/src/rust/src/backend/dsa.rs
+index 56363f4..fa21afa 100644
+--- a/src/rust/src/backend/dsa.rs
++++ b/src/rust/src/backend/dsa.rs
+@@ -4,10 +4,13 @@
+ 
+ use pyo3::types::PyAnyMethods;
+ 
+-use crate::backend::utils;
++use crate::backend::{hashes, utils};
+ use crate::buf::CffiBuf;
+ use crate::error::{CryptographyError, CryptographyResult};
+ use crate::{error, exceptions, types};
++use openssl_bridge::dsa::{
++    Components, ParameterMaterial, Parameters, PrivateKeyMaterial, PublicKeyMaterial,
++};
+ 
+ fn warn_dsa_deprecated(py: pyo3::Python<'_>) -> pyo3::PyResult<()> {
+     let warning_cls = types::DEPRECATED_IN_51.get(py)?;
+@@ -21,7 +24,7 @@ fn warn_dsa_deprecated(py: pyo3::Python<'_>) -> pyo3::PyResult<()> {
+     name = "DSAPrivateKey"
+ )]
+ pub(crate) struct DsaPrivateKey {
+-    pkey: openssl::pkey::PKey<openssl::pkey::Private>,
++    pkey: PrivateKeyMaterial,
+ }
+ 
+ #[pyo3::pyclass(
+@@ -30,7 +33,7 @@ pub(crate) struct DsaPrivateKey {
+     name = "DSAPublicKey"
+ )]
+ pub(crate) struct DsaPublicKey {
+-    pkey: openssl::pkey::PKey<openssl::pkey::Public>,
++    pkey: PublicKeyMaterial,
+ }
+ 
+ #[pyo3::pyclass(
+@@ -39,39 +42,97 @@ pub(crate) struct DsaPublicKey {
+     name = "DSAParameters"
+ )]
+ struct DsaParameters {
+-    dsa: openssl::dsa::Dsa<openssl::pkey::Params>,
++    dsa: ParameterMaterial,
+ }
+ 
+ pub(crate) fn private_key_from_pkey(
+     py: pyo3::Python<'_>,
+     pkey: &openssl::pkey::PKeyRef<openssl::pkey::Private>,
+ ) -> CryptographyResult<DsaPrivateKey> {
++    let dsa = pkey.dsa()?;
++    let pkey = private_material(&dsa)?;
+     warn_dsa_deprecated(py)?;
+-    Ok(DsaPrivateKey {
+-        pkey: pkey.to_owned(),
+-    })
++    Ok(DsaPrivateKey { pkey })
+ }
+ 
+ pub(crate) fn public_key_from_pkey(
+     py: pyo3::Python<'_>,
+     pkey: &openssl::pkey::PKeyRef<openssl::pkey::Public>,
+ ) -> CryptographyResult<DsaPublicKey> {
++    let dsa = pkey.dsa()?;
++    let pkey = public_material(&dsa)?;
+     warn_dsa_deprecated(py)?;
+-    Ok(DsaPublicKey {
+-        pkey: pkey.to_owned(),
+-    })
++    Ok(DsaPublicKey { pkey })
+ }
+ 
+ #[pyo3::pyfunction]
+ fn generate_parameters(py: pyo3::Python<'_>, key_size: u32) -> CryptographyResult<DsaParameters> {
+-    let dsa = py.detach(|| openssl::dsa::Dsa::generate_params(key_size))?;
++    let dsa = py.detach(|| Parameters::generate(key_size))?.into();
+     Ok(DsaParameters { dsa })
+ }
+ 
+-fn clone_dsa_params<T: openssl::pkey::HasParams>(
+-    d: &openssl::dsa::Dsa<T>,
+-) -> Result<openssl::dsa::Dsa<openssl::pkey::Params>, openssl::error::ErrorStack> {
+-    openssl::dsa::Dsa::from_pqg(d.p().to_owned()?, d.q().to_owned()?, d.g().to_owned()?)
++fn parameter_material<T: openssl::pkey::HasParams>(
++    d: &openssl::dsa::DsaRef<T>,
++) -> CryptographyResult<ParameterMaterial> {
++    Ok(ParameterMaterial::from_components(Components {
++        p: &d.p().to_vec(),
++        q: &d.q().to_vec(),
++        g: &d.g().to_vec(),
++    })?)
++}
++fn private_material(
++    d: &openssl::dsa::DsaRef<openssl::pkey::Private>,
++) -> CryptographyResult<PrivateKeyMaterial> {
++    let scalar = openssl_bridge::secret::SecretBytes::from(d.priv_key().to_vec());
++    Ok(PrivateKeyMaterial::from_components(
++        parameter_material(d)?,
++        scalar.as_ref(),
++        &d.pub_key().to_vec(),
++    )?)
++}
++fn public_material(
++    d: &openssl::dsa::DsaRef<openssl::pkey::Public>,
++) -> CryptographyResult<PublicKeyMaterial> {
++    Ok(PublicKeyMaterial::from_components(
++        parameter_material(d)?,
++        &d.pub_key().to_vec(),
++    )?)
++}
++fn serialization_parameters(
++    params: &ParameterMaterial,
++) -> CryptographyResult<openssl::dsa::Dsa<openssl::pkey::Params>> {
++    let p = params.components();
++    Ok(openssl::dsa::Dsa::from_pqg(
++        openssl::bn::BigNum::from_slice(p.p)?,
++        openssl::bn::BigNum::from_slice(p.q)?,
++        openssl::bn::BigNum::from_slice(p.g)?,
++    )?)
++}
++// Temporary component conversion for the shared parser/serializer.
++impl DsaPrivateKey {
++    fn serialization_key(&self) -> CryptographyResult<openssl::pkey::PKey<openssl::pkey::Private>> {
++        let p = self.pkey.parameters().components();
++        let key = openssl::dsa::Dsa::from_private_components(
++            openssl::bn::BigNum::from_slice(p.p)?,
++            openssl::bn::BigNum::from_slice(p.q)?,
++            openssl::bn::BigNum::from_slice(p.g)?,
++            openssl::bn::BigNum::from_slice(self.pkey.scalar())?,
++            openssl::bn::BigNum::from_slice(self.pkey.public_key().public_value())?,
++        )?;
++        Ok(openssl::pkey::PKey::from_dsa(key)?)
++    }
++}
++impl DsaPublicKey {
++    fn serialization_key(&self) -> CryptographyResult<openssl::pkey::PKey<openssl::pkey::Public>> {
++        let p = self.pkey.parameters().components();
++        let key = openssl::dsa::Dsa::from_public_components(
++            openssl::bn::BigNum::from_slice(p.p)?,
++            openssl::bn::BigNum::from_slice(p.q)?,
++            openssl::bn::BigNum::from_slice(p.g)?,
++            openssl::bn::BigNum::from_slice(self.pkey.public_value())?,
++        )?;
++        Ok(openssl::pkey::PKey::from_dsa(key)?)
++    }
+ }
+ 
+ #[pyo3::pymethods]
+@@ -82,51 +143,42 @@ impl DsaPrivateKey {
+         data: CffiBuf<'_>,
+         algorithm: pyo3::Bound<'_, pyo3::PyAny>,
+     ) -> CryptographyResult<pyo3::Bound<'p, pyo3::types::PyBytes>> {
+-        let (data, _) = utils::calculate_digest_and_algorithm(py, data.as_bytes(), &algorithm)?;
+-
+-        let mut signer = openssl::pkey_ctx::PkeyCtx::new(&self.pkey)?;
+-        signer.sign_init()?;
+-        let data_bytes = data.as_bytes();
+-        let sig = py
+-            .detach(|| {
+-                let mut sig = vec![];
+-                signer.sign_to_vec(data_bytes, &mut sig)?;
+-                Ok::<_, openssl::error::ErrorStack>(sig)
+-            })
+-            .map_err(|e| {
+-                pyo3::exceptions::PyValueError::new_err((
++        let (data, algo) = utils::calculate_digest_and_algorithm(py, data.as_bytes(), &algorithm)?;
++
++        let digest = hashes::bridge_digest_from_algorithm(py, &algo)?;
++        let bytes = data.as_bytes();
++        let sig = match py.detach(|| self.pkey.validate()?.sign_digest(digest, bytes)) {
++            Ok(signature) => signature,
++            Err(e) => {
++                return Err(pyo3::exceptions::PyValueError::new_err((
+                     "DSA signing failed. This generally indicates an invalid key.",
+-                    error::list_from_openssl_error(py, &e).unbind(),
++                    error::list_from_bridge_error(py, &e)?.unbind(),
+                 ))
+-            })?;
++                .into())
++            }
++        };
+         Ok(pyo3::types::PyBytes::new(py, &sig))
+     }
+ 
+     #[getter]
+     fn key_size(&self) -> i32 {
+-        self.pkey.dsa().unwrap().p().num_bits()
++        self.pkey.parameters().bits() as i32
+     }
+ 
+     fn public_key(&self) -> CryptographyResult<DsaPublicKey> {
+-        let priv_dsa = self.pkey.dsa()?;
+-        let pub_dsa = openssl::dsa::Dsa::from_public_components(
+-            priv_dsa.p().to_owned()?,
+-            priv_dsa.q().to_owned()?,
+-            priv_dsa.g().to_owned()?,
+-            priv_dsa.pub_key().to_owned()?,
+-        )
+-        .unwrap();
+-        let pkey = openssl::pkey::PKey::from_dsa(pub_dsa)?;
+-        Ok(DsaPublicKey { pkey })
++        Ok(DsaPublicKey {
++            pkey: self.pkey.public_key(),
++        })
+     }
+ 
+     fn parameters(&self) -> CryptographyResult<DsaParameters> {
+-        let dsa = clone_dsa_params(&self.pkey.dsa().unwrap())?;
++        let dsa = self.pkey.parameters().clone();
+         Ok(DsaParameters { dsa })
+     }
+ 
+     fn private_numbers(&self, py: pyo3::Python<'_>) -> CryptographyResult<DsaPrivateNumbers> {
+-        let dsa = self.pkey.dsa().unwrap();
++        let key = self.serialization_key()?;
++        let dsa = key.dsa()?;
+ 
+         let py_p = utils::bn_to_py_int(py, dsa.p())?;
+         let py_q = utils::bn_to_py_int(py, dsa.q())?;
+@@ -160,7 +212,7 @@ impl DsaPrivateKey {
+         utils::pkey_private_bytes(
+             py,
+             slf,
+-            &slf.borrow().pkey,
++            &slf.borrow().serialization_key()?,
+             encoding,
+             format,
+             encryption_algorithm,
+@@ -190,13 +242,18 @@ impl DsaPublicKey {
+         data: CffiBuf<'_>,
+         algorithm: pyo3::Bound<'_, pyo3::PyAny>,
+     ) -> CryptographyResult<()> {
+-        let (data, _) = utils::calculate_digest_and_algorithm(py, data.as_bytes(), &algorithm)?;
++        let (data, algo) = utils::calculate_digest_and_algorithm(py, data.as_bytes(), &algorithm)?;
+ 
+-        let mut verifier = openssl::pkey_ctx::PkeyCtx::new(&self.pkey)?;
+-        verifier.verify_init()?;
++        let digest = hashes::bridge_digest_from_algorithm(py, &algo)?;
+         let data_bytes = data.as_bytes();
+-        let sig_bytes = signature.as_bytes();
+-        let valid = py.detach(|| verifier.verify(data_bytes, sig_bytes).unwrap_or(false));
++        let signature = signature.as_bytes();
++        let valid = py
++            .detach(|| {
++                self.pkey
++                    .validate()?
++                    .verify_digest(digest, data_bytes, signature)
++            })
++            .unwrap_or(false);
+         if !valid {
+             return Err(CryptographyError::from(
+                 exceptions::InvalidSignature::new_err(()),
+@@ -208,16 +265,17 @@ impl DsaPublicKey {
+ 
+     #[getter]
+     fn key_size(&self) -> i32 {
+-        self.pkey.dsa().unwrap().p().num_bits()
++        self.pkey.parameters().bits() as i32
+     }
+ 
+     fn parameters(&self) -> CryptographyResult<DsaParameters> {
+-        let dsa = clone_dsa_params(&self.pkey.dsa().unwrap())?;
++        let dsa = self.pkey.parameters().clone();
+         Ok(DsaParameters { dsa })
+     }
+ 
+     fn public_numbers(&self, py: pyo3::Python<'_>) -> CryptographyResult<DsaPublicNumbers> {
+-        let dsa = self.pkey.dsa().unwrap();
++        let key = self.serialization_key()?;
++        let dsa = key.dsa()?;
+ 
+         let py_p = utils::bn_to_py_int(py, dsa.p())?;
+         let py_q = utils::bn_to_py_int(py, dsa.q())?;
+@@ -242,11 +300,24 @@ impl DsaPublicKey {
+         encoding: crate::serialization::Encoding,
+         format: crate::serialization::PublicFormat,
+     ) -> CryptographyResult<pyo3::Bound<'p, pyo3::types::PyBytes>> {
+-        utils::pkey_public_bytes(py, slf, &slf.borrow().pkey, encoding, format, true, false)
++        utils::pkey_public_bytes(
++            py,
++            slf,
++            &slf.borrow().serialization_key()?,
++            encoding,
++            format,
++            true,
++            false,
++        )
+     }
+ 
+     fn __eq__(&self, other: pyo3::PyRef<'_, Self>) -> bool {
+-        self.pkey.public_eq(&other.pkey)
++        let a = self.pkey.parameters().components();
++        let b = other.pkey.parameters().components();
++        a.p == b.p
++            && a.q == b.q
++            && a.g == b.g
++            && self.pkey.public_value() == other.pkey.public_value()
+     }
+ 
+     fn __copy__(slf: pyo3::PyRef<'_, Self>) -> pyo3::PyRef<'_, Self> {
+@@ -264,15 +335,16 @@ impl DsaPublicKey {
+ #[pyo3::pymethods]
+ impl DsaParameters {
+     fn generate_private_key(&self) -> CryptographyResult<DsaPrivateKey> {
+-        let dsa = clone_dsa_params(&self.dsa)?.generate_key()?;
+-        let pkey = openssl::pkey::PKey::from_dsa(dsa)?;
+-        Ok(DsaPrivateKey { pkey })
++        Ok(DsaPrivateKey {
++            pkey: self.dsa.validate()?.generate_key()?.into(),
++        })
+     }
+ 
+     fn parameter_numbers(&self, py: pyo3::Python<'_>) -> CryptographyResult<DsaParameterNumbers> {
+-        let py_p = utils::bn_to_py_int(py, self.dsa.p())?;
+-        let py_q = utils::bn_to_py_int(py, self.dsa.q())?;
+-        let py_g = utils::bn_to_py_int(py, self.dsa.g())?;
++        let native = serialization_parameters(&self.dsa)?;
++        let py_p = utils::bn_to_py_int(py, native.p())?;
++        let py_q = utils::bn_to_py_int(py, native.q())?;
++        let py_g = utils::bn_to_py_int(py, native.g())?;
+ 
+         Ok(DsaParameterNumbers {
+             p: py_p.extract()?,
+@@ -416,8 +488,9 @@ impl DsaPrivateNumbers {
+             utils::py_int_to_bn(py, public_numbers.y.bind(py))?,
+         )
+         .unwrap();
+-        let pkey = openssl::pkey::PKey::from_dsa(dsa)?;
+-        Ok(DsaPrivateKey { pkey })
++        Ok(DsaPrivateKey {
++            pkey: private_material(&dsa)?,
++        })
+     }
+ 
+     fn __eq__(
+@@ -465,8 +538,9 @@ impl DsaPublicNumbers {
+             utils::py_int_to_bn(py, self.y.bind(py))?,
+         )
+         .unwrap();
+-        let pkey = openssl::pkey::PKey::from_dsa(dsa)?;
+-        Ok(DsaPublicKey { pkey })
++        Ok(DsaPublicKey {
++            pkey: public_material(&dsa)?,
++        })
+     }
+ 
+     fn __eq__(
+@@ -521,7 +595,9 @@ impl DsaParameterNumbers {
+             utils::py_int_to_bn(py, self.g.bind(py))?,
+         )
+         .unwrap();
+-        Ok(DsaParameters { dsa })
++        Ok(DsaParameters {
++            dsa: parameter_material(&dsa)?,
++        })
+     }
+ 
+     fn __eq__(
 diff --git a/src/rust/src/backend/ec.rs b/src/rust/src/backend/ec.rs
-index ca215ba..922b7ed 100644
+index ca215ba..08e271c 100644
 --- a/src/rust/src/backend/ec.rs
 +++ b/src/rust/src/backend/ec.rs
-@@ -7,69 +7,73 @@ use std::hash::{Hash, Hasher};
+@@ -7,69 +7,76 @@ use std::hash::{Hash, Hasher};
  
  use pyo3::types::PyAnyMethods;
  
@@ -3108,7 +3465,10 @@ index ca215ba..922b7ed 100644
 +    // Preserve the existing Python capability set while the shared codecs
 +    // retain their backend-specific curve support.
 +    #[cfg(any(CRYPTOGRAPHY_IS_BORINGSSL, CRYPTOGRAPHY_IS_AWSLC))]
-+    if matches!(curve, Curve::BrainpoolP256r1 | Curve::BrainpoolP384r1 | Curve::BrainpoolP512r1) {
++    if matches!(
++        curve,
++        Curve::BrainpoolP256r1 | Curve::BrainpoolP384r1 | Curve::BrainpoolP512r1
++    ) {
 +        return Err(unsupported().into());
 +    }
 +
@@ -3119,7 +3479,7 @@ index ca215ba..922b7ed 100644
  }
  
  fn py_curve_from_curve<'p>(
-@@ -110,8 +114,24 @@ pub(crate) fn private_key_from_pkey(
+@@ -110,8 +117,24 @@ pub(crate) fn private_key_from_pkey(
          .map_err(|_| pyo3::exceptions::PyValueError::new_err("Invalid EC key"))?;
      let curve = py_curve_from_curve(py, ec_key.group())?;
      check_key_infinity(&ec_key)?;
@@ -3145,7 +3505,7 @@ index ca215ba..922b7ed 100644
          curve: curve.into(),
      })
  }
-@@ -123,7 +143,14 @@ pub(crate) fn public_key_from_pkey(
+@@ -123,7 +146,14 @@ pub(crate) fn public_key_from_pkey(
      let ec = pkey.ec_key()?;
      let curve = py_curve_from_curve(py, ec.group())?;
  
@@ -3161,7 +3521,7 @@ index ca215ba..922b7ed 100644
  }
  
  #[pyo3::pyfunction]
-@@ -135,13 +162,14 @@ pub(crate) fn generate_private_key(
+@@ -135,13 +165,14 @@ pub(crate) fn generate_private_key(
  ) -> CryptographyResult<ECPrivateKey> {
      let _ = backend;
  
@@ -3181,7 +3541,7 @@ index ca215ba..922b7ed 100644
      })
  }
  
-@@ -154,16 +182,10 @@ fn derive_private_key(
+@@ -154,16 +185,10 @@ fn derive_private_key(
      let curve = curve_from_py_curve(py, py_curve.clone())?;
      let private_value = utils::py_int_to_bn(py, py_private_value)?;
  
@@ -3200,7 +3560,7 @@ index ca215ba..922b7ed 100644
      Ok(ECPrivateKey {
          pkey,
          curve: py_curve.into(),
-@@ -178,13 +200,12 @@ pub(crate) fn from_public_bytes(
+@@ -178,13 +203,12 @@ pub(crate) fn from_public_bytes(
  ) -> CryptographyResult<ECPublicKey> {
      let curve = curve_from_py_curve(py, py_curve.clone())?;
  
@@ -3219,7 +3579,7 @@ index ca215ba..922b7ed 100644
  }
  
  #[pyo3::pymethods]
-@@ -212,38 +233,10 @@ impl ECPrivateKey {
+@@ -212,38 +236,10 @@ impl ECPrivateKey {
              ));
          }
  
@@ -3261,7 +3621,7 @@ index ca215ba..922b7ed 100644
      }
  
      fn sign<'p>(
-@@ -264,50 +257,23 @@ impl ECPrivateKey {
+@@ -264,50 +260,23 @@ impl ECPrivateKey {
          let (data, algo) =
              utils::calculate_digest_and_algorithm(py, data.as_bytes(), &bound_algorithm)?;
  
@@ -3325,7 +3685,7 @@ index ca215ba..922b7ed 100644
              curve: self.curve.clone_ref(py),
          })
      }
-@@ -316,26 +282,11 @@ impl ECPrivateKey {
+@@ -316,26 +285,11 @@ impl ECPrivateKey {
          &self,
          py: pyo3::Python<'_>,
      ) -> CryptographyResult<EllipticCurvePrivateNumbers> {
@@ -3356,7 +3716,7 @@ index ca215ba..922b7ed 100644
              public_numbers: pyo3::Py::new(py, public_numbers)?,
          })
      }
-@@ -350,7 +301,7 @@ impl ECPrivateKey {
+@@ -350,7 +304,7 @@ impl ECPrivateKey {
          utils::pkey_private_bytes(
              py,
              slf,
@@ -3365,7 +3725,7 @@ index ca215ba..922b7ed 100644
              encoding,
              format,
              encryption_algorithm,
-@@ -371,21 +322,38 @@ impl ECPrivateKey {
+@@ -371,21 +325,38 @@ impl ECPrivateKey {
      }
  }
  
@@ -3418,7 +3778,7 @@ index ca215ba..922b7ed 100644
      }
  }
  
-@@ -415,17 +383,16 @@ impl ECPublicKey {
+@@ -415,17 +386,16 @@ impl ECPublicKey {
              ));
          }
  
@@ -3439,7 +3799,7 @@ index ca215ba..922b7ed 100644
          if !valid {
              return Err(CryptographyError::from(
                  exceptions::InvalidSignature::new_err(()),
-@@ -439,19 +406,10 @@ impl ECPublicKey {
+@@ -439,19 +409,10 @@ impl ECPublicKey {
          &self,
          py: pyo3::Python<'_>,
      ) -> CryptographyResult<EllipticCurvePublicNumbers> {
@@ -3462,7 +3822,7 @@ index ca215ba..922b7ed 100644
              curve: self.curve.clone_ref(py),
          })
      }
-@@ -462,11 +420,21 @@ impl ECPublicKey {
+@@ -462,11 +423,21 @@ impl ECPublicKey {
          encoding: crate::serialization::Encoding,
          format: crate::serialization::PublicFormat,
      ) -> CryptographyResult<pyo3::Bound<'p, pyo3::types::PyBytes>> {
@@ -3487,7 +3847,7 @@ index ca215ba..922b7ed 100644
      }
  
      fn __copy__(slf: pyo3::PyRef<'_, Self>) -> pyo3::PyRef<'_, Self> {
-@@ -502,8 +470,8 @@ struct EllipticCurvePublicNumbers {
+@@ -502,8 +473,8 @@ struct EllipticCurvePublicNumbers {
  fn public_key_from_numbers(
      py: pyo3::Python<'_>,
      numbers: &EllipticCurvePublicNumbers,
@@ -3498,7 +3858,7 @@ index ca215ba..922b7ed 100644
      if numbers.x.bind(py).lt(0)? || numbers.y.bind(py).lt(0)? {
          return Err(CryptographyError::from(
              pyo3::exceptions::PyValueError::new_err(
-@@ -515,17 +483,13 @@ fn public_key_from_numbers(
+@@ -515,17 +486,13 @@ fn public_key_from_numbers(
      let x = utils::py_int_to_bn(py, numbers.x.bind(py))?;
      let y = utils::py_int_to_bn(py, numbers.y.bind(py))?;
  
@@ -3520,7 +3880,7 @@ index ca215ba..922b7ed 100644
  }
  
  #[pyo3::pymethods]
-@@ -550,27 +514,17 @@ impl EllipticCurvePrivateNumbers {
+@@ -550,27 +517,17 @@ impl EllipticCurvePrivateNumbers {
          let _ = backend;
  
          let curve = curve_from_py_curve(py, self.public_numbers.get().curve.bind(py).clone())?;
@@ -3556,7 +3916,7 @@ index ca215ba..922b7ed 100644
          Ok(ECPrivateKey {
              pkey,
              curve: self.public_numbers.get().curve.clone_ref(py),
-@@ -631,11 +585,12 @@ impl EllipticCurvePublicNumbers {
+@@ -631,11 +588,12 @@ impl EllipticCurvePublicNumbers {
          let _ = backend;
  
          let curve = curve_from_py_curve(py, self.curve.bind(py).clone())?;
@@ -6189,7 +6549,7 @@ index 24fc6a6..2a80ec8 100644
          let cipher = ChunkCipher::new(py, params, &keys)?;
          let mut header = [0; HEADER_LEN];
 diff --git a/src/rust/src/error.rs b/src/rust/src/error.rs
-index cd7c850..3906413 100644
+index cd7c850..64cd7f0 100644
 --- a/src/rust/src/error.rs
 +++ b/src/rust/src/error.rs
 @@ -58,6 +58,50 @@ impl From<openssl::error::ErrorStack> for CryptographyError {
@@ -6259,6 +6619,26 @@ index cd7c850..3906413 100644
              cryptography_key_parsing::KeySerializationError::OpenSSL(e) => {
                  CryptographyError::OpenSSL(e)
              }
+@@ -162,6 +208,19 @@ impl From<cryptography_key_parsing::KeySerializationError> for CryptographyError
+     }
+ }
+ 
++pub(crate) fn list_from_bridge_error<'p>(
++    py: pyo3::Python<'p>,
++    error: &openssl_bridge::Error,
++) -> pyo3::PyResult<pyo3::Bound<'p, pyo3::types::PyList>> {
++    let errors = pyo3::types::PyList::empty(py);
++    if let openssl_bridge::Error::Native(native) = error {
++        for e in native {
++            errors.append(pyo3::Bound::new(py, BridgeOpenSSLError { e: e.clone() })?)?;
++        }
++    }
++    Ok(errors)
++}
++
+ pub(crate) fn list_from_openssl_error<'p>(
+     py: pyo3::Python<'p>,
+     error_stack: &openssl::error::ErrorStack,
 diff --git a/src/rust/src/fernet.rs b/src/rust/src/fernet.rs
 index 4900e44..d613795 100644
 --- a/src/rust/src/fernet.rs

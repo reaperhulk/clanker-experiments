@@ -8,6 +8,7 @@ pub mod cipher;
 pub mod curve25519;
 pub mod curve448;
 pub mod dh;
+pub mod dsa;
 pub mod ec;
 pub mod error;
 pub mod gcm;
