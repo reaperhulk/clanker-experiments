@@ -90,3 +90,11 @@ and agreement-public key types with exact array sizes and fresh native operation
 contexts. RFC 8032/7748 vectors check signatures, shared secrets, and rejection
 of low-order agreement peers. These algorithms remain absent on forks that do
 not implement them, matching cryptography's existing capability guards.
+
+## Finite-field integration under validation
+
+DH parameter validation, generation, typed operational keys, and agreement now
+use independent bindings. Passive key-material types preserve legacy component
+round trips while requiring explicit validation before cryptographic use.
+Shared number/serialization adapters remain temporary and the full cryptography
+backend matrix is still required. DSA is the next finite-field operation.

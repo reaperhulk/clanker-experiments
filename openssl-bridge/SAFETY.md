@@ -168,3 +168,28 @@ and confines deterministic nonce controls to supported OpenSSL signing contexts.
 Private scalar exports and native temporary BIGNUMs are erased on destruction.
 No raw key pointer, arbitrary curve, generator, or unvalidated peer crosses the
 safe public interface.
+
+## Finite-field DH
+
+DH parameters are bounded to 512–10,000 bits and pass native parameter checks
+before key operations. Private exponents are positive and below the subgroup
+order when supplied, or below the modulus otherwise. Public construction
+checks the range and native subgroup constraints. Private construction derives
+the public value using constant-time Montgomery exponentiation and verifies
+any supplied public component. Agreement requires identical parameters and
+rechecks the peer before creating a complete, privately owned EVP operation.
+The result is padded to the full modulus width and stored in an erased buffer.
+EVP is used for agreement so OpenSSL provider policy remains in effect.
+
+The legacy Python API also permits round trips of inconsistent components.
+`PrivateKeyMaterial` and `PublicKeyMaterial` hold these bounded encodings as
+Rust data, with no cryptographic methods. Their explicit, fallible `validate`
+methods are required to obtain operational keys. No incomplete or unvalidated
+native key object escapes the implementation. Every agreement builds fresh
+native state; concurrently shared Rust key data is immutable.
+
+For legacy Python DH agreement, the private operational key is derived afresh
+from the stored exponent. Its cached public encoding is not used in the
+operation. This preserves old round trips and test vectors that store a peer's
+public value alongside a private exponent, while the operational key itself
+always has a mathematically consistent public component.
