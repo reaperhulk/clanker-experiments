@@ -1,0 +1,89 @@
+{
+  "stage": "Incremental conventional cipher and streaming GCM integration; NOT a complete replacement",
+  "complete_replacement": false,
+  "complete_upstream_matrix": false,
+  "original_openssl_dependencies_remain": true,
+  "upstream_sources": {
+    "cryptography": "19ff77880bbd485464849366122982cd3a04d94b",
+    "pyopenssl": "567808adb4d859323424c3a6bc183e13a1ac59e8",
+    "wycheproof": "3fa63dd0344abb611f1fb1d77e119938603ea230",
+    "x509-limbo": "118721335e675edde10015df89b138cf292d7554",
+    "backend_builds": {
+      "openssl": {
+        "commit": "f089acdf4bc7ba94a79f4bf6eb7362c3e7d14aa9"
+      },
+      "boringssl": {
+        "commit": "8626998e7fdd6d779f37b7ba0b726631bbb76266"
+      },
+      "awslc": {
+        "commit": "39b142ec346e514af5e49cbd6036e2ed3b893466"
+      },
+      "libressl": {
+        "version": "4.3.2",
+        "archive_sha256": "edf01aee24c65d69e6a9efcb9d44bcda682ff9d4f3bbbd95e794e1dfa90847b5"
+      }
+    }
+  },
+  "rows": [
+    {
+      "backend": "openssl",
+      "source_commit": "74306f33e53908e076a0684ad888f90cf2d18f54",
+      "source_tree": "8cfa3b698d5f0a4d838c863fb4f2e538483085a2",
+      "integration_patch_sha256": "dc79a4a9d17bb7297f1f1727ba33f2ed39bc4b9ebad22019f536a6a61c937850",
+      "python_passed": 4226,
+      "python_skipped": 486,
+      "nox_local_success": true,
+      "log": "integration-ciphers-primary-openssl.log.gz",
+      "uncompressed_log_sha256": "3200cadd1d7f90adb55c34d91a71a7a77113952ca2f213c562d2665ca3433c65"
+    },
+    {
+      "backend": "openssl4",
+      "source_commit": "74306f33e53908e076a0684ad888f90cf2d18f54",
+      "source_tree": "8cfa3b698d5f0a4d838c863fb4f2e538483085a2",
+      "integration_patch_sha256": "dc79a4a9d17bb7297f1f1727ba33f2ed39bc4b9ebad22019f536a6a61c937850",
+      "python_passed": 4689,
+      "python_skipped": 23,
+      "nox_local_success": true,
+      "log": "integration-ciphers-primary-openssl4.log.gz",
+      "uncompressed_log_sha256": "0f9e787a7baee3176b922fe9ecb5479df08d1fced8fc846f57b55995ed07a51c"
+    },
+    {
+      "backend": "libressl",
+      "source_commit": "74306f33e53908e076a0684ad888f90cf2d18f54",
+      "source_tree": "8cfa3b698d5f0a4d838c863fb4f2e538483085a2",
+      "integration_patch_sha256": "dc79a4a9d17bb7297f1f1727ba33f2ed39bc4b9ebad22019f536a6a61c937850",
+      "python_passed": 3971,
+      "python_skipped": 741,
+      "nox_local_success": true,
+      "log": "integration-ciphers-primary-libressl.log.gz",
+      "uncompressed_log_sha256": "e58e147436169622a196897477ba1980b3146beb93227a73c72879785ff66049"
+    },
+    {
+      "backend": "boringssl",
+      "source_commit": "4be8ca1c160e5efc31d1ef8de3eea0829ea60d19",
+      "source_tree": "0a963a63e1936813edef21d98033f1070ce1abaf",
+      "integration_patch_sha256": "16e73988c95856d893cf445263c24a2519bf39a55bd0184e040483577b0c1820",
+      "python_passed": 3805,
+      "python_skipped": 907,
+      "nox_local_success": true,
+      "log": "integration-ciphers-primary-boringssl.log.gz",
+      "uncompressed_log_sha256": "f76eef27f9b724a48b38d8aedd975d6ff9f970c69865fbcd51b9cd605b031540"
+    },
+    {
+      "backend": "awslc",
+      "source_commit": "d6b1c880483ebda741eee94ccc42bb6aabc9c9ef",
+      "source_tree": "2775ed5212b03e73f183233dd466e68ba3a5098e",
+      "integration_patch_sha256": "16e73988c95856d893cf445263c24a2519bf39a55bd0184e040483577b0c1820",
+      "python_passed": 4320,
+      "python_skipped": 392,
+      "nox_local_success": true,
+      "log": "integration-ciphers-primary-awslc.log.gz",
+      "uncompressed_log_sha256": "0cf92d875be850232028b643939d40d594999652ff2aeab44ef53b85f401eb36"
+    }
+  ],
+  "fixes_between_rows": {
+    "boringssl": "Gate an unused Python XTS type import on BoringSSL; no cipher operation changes.",
+    "awslc": "Normalize the AWS-LC Blowfish ECB descriptor IV length to zero; pass NULL for empty IVs and add a known-answer regression test. Other rows predate this final fix; they must be repeated for a single final acceptance snapshot."
+  },
+  "behavior_change": "One nonempty update per AES-XTS data unit. A new regression test and changelog entry describe the safety restriction; existing tests/skips were not removed."
+}
