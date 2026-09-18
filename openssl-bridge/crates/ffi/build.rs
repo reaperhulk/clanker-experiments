@@ -1,0 +1,131 @@
+use std::{
+    collections::BTreeMap,
+    env,
+    path::PathBuf,
+    sync::{Arc, Mutex},
+};
+
+#[derive(Debug)]
+struct Macros(Arc<Mutex<BTreeMap<String, i64>>>);
+impl bindgen::callbacks::ParseCallbacks for Macros {
+    fn int_macro(&self, name: &str, value: i64) -> Option<bindgen::callbacks::IntKind> {
+        if name.starts_with("OPENSSL_") || name.starts_with("LIBRESSL_") || name.starts_with("OB_")
+        {
+            self.0.lock().unwrap().insert(name.into(), value);
+        }
+        None
+    }
+}
+
+fn configured(name: &str) -> Option<std::ffi::OsString> {
+    let target = env::var("TARGET").unwrap().to_uppercase().replace('-', "_");
+    let specific = format!("{target}_{name}");
+    println!("cargo:rerun-if-env-changed={specific}");
+    println!("cargo:rerun-if-env-changed={name}");
+    env::var_os(&specific).or_else(|| env::var_os(name))
+}
+
+fn main() {
+    println!("cargo:rerun-if-changed=wrapper.h");
+    println!("cargo:rerun-if-changed=shim.c");
+    let root = configured("OPENSSL_DIR").map(PathBuf::from);
+    let include = configured("OPENSSL_INCLUDE_DIR")
+        .map(PathBuf::from)
+        .or_else(|| root.as_ref().map(|p| p.join("include")));
+    let lib = configured("OPENSSL_LIB_DIR")
+        .map(PathBuf::from)
+        .or_else(|| {
+            root.as_ref().map(|p| {
+                if p.join("lib64").is_dir() {
+                    p.join("lib64")
+                } else {
+                    p.join("lib")
+                }
+            })
+        });
+    let static_link = configured("OPENSSL_STATIC").map(|v| v == "1");
+    let includes = match (include, lib) {
+        (Some(include), Some(lib)) => {
+            assert!(include.join("openssl/evp.h").is_file(), "OPENSSL_INCLUDE_DIR must contain openssl/evp.h");
+            assert!(lib.is_dir(), "OPENSSL_LIB_DIR must be a directory");
+            println!("cargo:rustc-link-search=native={}", lib.display());
+            let kind = if static_link.unwrap_or(false) { "static" } else { "dylib" };
+            println!("cargo:rustc-link-lib={kind}=ssl");
+            println!("cargo:rustc-link-lib={kind}=crypto");
+            vec![include]
+        }
+        (None, None) => pkg_config::Config::new()
+            .statik(static_link.unwrap_or(false)).probe("openssl")
+            .expect("install an OpenSSL backend and pkg-config, or set OPENSSL_DIR (and OPENSSL_LIB_DIR for multiarch installs)")
+            .include_paths,
+        _ => panic!("set both OPENSSL_INCLUDE_DIR and OPENSSL_LIB_DIR, or set OPENSSL_DIR"),
+    };
+    let macros = Arc::new(Mutex::new(BTreeMap::new()));
+    let mut builder = bindgen::Builder::default()
+        .header("wrapper.h")
+        .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
+        .parse_callbacks(Box::new(Macros(macros.clone())))
+        .allowlist_function("(OB_|OPENSSL_|OpenSSL_|CRYPTO_|ERR_|EVP_|BN_|RSA_|DSA_|DH_|EC_|ECDSA_|ECDH_|HMAC_|CMAC_|RAND_|OBJ_|BIO_|PEM_|PKCS|d2i_|i2d_|X509|ASN1_|SSL_|TLS_|DTLS_|OSSL_|FIPS_|sk_|OPENSSL_sk_).*" )
+        .allowlist_var("(OPENSSL_|LIBRESSL_|EVP_|NID_|RSA_|EC_|POINT_|ERR_|SSL_|TLS_|X509_|PKCS|OSSL_|V_ASN1_).*" )
+        .derive_default(false)
+        .layout_tests(false)
+        .generate_comments(false);
+    for include in &includes {
+        builder = builder.clang_arg(format!("-I{}", include.display()));
+    }
+    let bindings = builder
+        .generate()
+        .expect("generate bindings from the selected backend's headers");
+    bindings
+        .write_to_file(PathBuf::from(env::var_os("OUT_DIR").unwrap()).join("bindings.rs"))
+        .expect("write generated bindings");
+    let macros = macros.lock().unwrap();
+    let backend = match macros["OB_BACKEND_CODE"] {
+        3 => "awslc",
+        2 => "boringssl",
+        1 => "libressl",
+        0 => "openssl",
+        _ => unreachable!(),
+    };
+    println!("cargo:backend={backend}");
+    println!(
+        "cargo:include={}",
+        env::join_paths(&includes).unwrap().to_str().unwrap()
+    );
+    match backend {
+        "awslc" => println!("cargo:awslc=true"),
+        "boringssl" => println!("cargo:boringssl=true"),
+        "libressl" => println!(
+            "cargo:libressl_version_number={:x}",
+            macros["LIBRESSL_VERSION_NUMBER"]
+        ),
+        _ => println!(
+            "cargo:version_number={:x}",
+            macros["OPENSSL_VERSION_NUMBER"]
+        ),
+    }
+    if backend == "openssl" {
+        println!(
+            "cargo:version_number_decimal={}",
+            macros["OPENSSL_VERSION_NUMBER"]
+        );
+    }
+    let disabled: Vec<_> = macros
+        .keys()
+        .filter(|k| k.starts_with("OPENSSL_NO_"))
+        .cloned()
+        .collect();
+    println!("cargo:conf={}", disabled.join(","));
+    cc::Build::new()
+        .file("shim.c")
+        .includes(&includes)
+        .warnings(false)
+        .compile("openssl_bridge_shim");
+    if matches!(backend, "boringssl" | "awslc") && env::var("CARGO_CFG_UNIX").is_ok() {
+        if env::var("CARGO_CFG_TARGET_OS").as_deref() == Ok("macos") {
+            println!("cargo:rustc-link-lib=c++");
+        } else {
+            println!("cargo:rustc-link-lib=stdc++");
+        }
+    }
+}
