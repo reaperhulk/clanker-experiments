@@ -320,6 +320,58 @@ impl Image {
         self.planes.push(plane);
         Ok(())
     }
+    pub fn apply_descriptions(&mut self, source: &crate::components::ComponentIds) {
+        if source.descriptions.is_empty() {
+            return;
+        }
+        let current = &self.component_ids.descriptions;
+        if current.len() == source.descriptions.len()
+            && current
+                .iter()
+                .zip(&source.descriptions)
+                .all(|(a, b)| a.id == b.id && a.channel == b.channel)
+        {
+            return;
+        }
+        let automatic: std::collections::BTreeMap<_, _> =
+            current.iter().map(|d| (d.channel, d.clone())).collect();
+        let dimensions: std::collections::BTreeMap<_, _> = self
+            .planes
+            .iter()
+            .map(|p| (p.channel, (p.width, p.height)))
+            .collect();
+        let mut descriptions = Vec::new();
+        let mut by_channel = std::collections::BTreeMap::new();
+        let mut next = source.next;
+        for description in &source.descriptions {
+            if !description.has_data {
+                continue;
+            }
+            let mut d = description.clone();
+            if let Some(&(w, h)) = dimensions.get(&d.channel) {
+                d.width = w;
+                d.height = h;
+            }
+            next = next.max(d.id.saturating_add(1));
+            by_channel.insert(d.channel, d.id);
+            descriptions.push(d);
+        }
+        for plane in &mut self.planes {
+            if plane.component_ids.is_empty() {
+                continue;
+            }
+            if let Some(&id) = by_channel.get(&plane.channel) {
+                plane.component_ids = vec![id];
+            } else if let Some(d) = automatic.get(&plane.channel) {
+                let mut d = d.clone();
+                d.id = next;
+                next = next.wrapping_add(1);
+                plane.component_ids = vec![d.id];
+                descriptions.push(d);
+            }
+        }
+        self.component_ids = crate::components::ComponentIds { next, descriptions };
+    }
     pub fn plane(&self, channel: i32) -> Option<&Plane> {
         self.planes.iter().find(|p| p.channel == channel)
     }

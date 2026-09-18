@@ -55,6 +55,7 @@ python tools/test_decode_properties.py --reference-build .build/reference
 python tools/test_camera.py --reference-build .build/reference
 python tools/test_sensor.py --reference-build .build/reference
 python tools/test_components.py --reference-build .build/reference
+python tools/test_component_handles.py --reference-build .build/reference
 python tools/test_context.py --reference-build .build/reference --sanitize --output .build/context-sanitized-report.json
 python tools/test_decoding_options.py --reference-build .build/reference
 python tools/test_transforms.py --reference-build .build/reference
@@ -127,5 +128,8 @@ file-property parsing, encoding and multi-component codec paths remain open.
 
 Decoded-image components have independent IDs, types, datatypes and aligned
 storage, including reference-only entries and duplicate channels. Typed access
-returns element strides; raw access returns byte strides. Handle descriptions,
-multi-component codec paths and content-ID serialization remain unfinished.
+returns element strides; raw access returns byte strides. Handle descriptions preserve parse order, and decoded IDs are reconciled before
+output conversion. Multi-component codec paths and content-ID serialization remain unfinished.
+
+JPEG header descriptions support SOF scanning across jpgC/item data; JPEG pixel
+decoding and complete dynamic read-limit recovery remain unfinished.

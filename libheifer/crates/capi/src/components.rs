@@ -220,3 +220,48 @@ pub unsafe extern "C" fn heif_image_set_gimi_component_content_id(
     desc.content_id = data;
     SUCCESS
 }
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn heif_image_handle_get_number_of_components(
+    handle: *const super::context::HeifHandle,
+) -> u32 {
+    unsafe { handle.as_ref() }.map_or(0, |h| h.image().components.descriptions.len() as u32)
+}
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn heif_image_handle_get_used_component_ids(
+    handle: *const super::context::HeifHandle,
+    out: *mut u32,
+) {
+    if let Some(handle) = unsafe { handle.as_ref() }
+        && !out.is_null()
+    {
+        for (index, d) in handle.image().components.descriptions.iter().enumerate() {
+            unsafe {
+                out.add(index).write(d.id);
+            }
+        }
+    }
+}
+macro_rules! handle_query {
+    ($name:ident, $ty:ty, $missing:expr, $field:ident) => {
+        #[unsafe(no_mangle)]
+        pub unsafe extern "C" fn $name(handle: *const super::context::HeifHandle, id: u32) -> $ty {
+            unsafe { handle.as_ref() }
+                .and_then(|h| h.image().components.find(id))
+                .map_or($missing, |d| d.$field as $ty)
+        }
+    };
+}
+handle_query!(heif_image_handle_get_component_type, u16, 0, kind);
+handle_query!(
+    heif_image_handle_get_component_bits_per_pixel,
+    c_int,
+    -1,
+    bit_depth
+);
+handle_query!(
+    heif_image_handle_get_component_datatype,
+    c_int,
+    255,
+    datatype
+);

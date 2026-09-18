@@ -1133,6 +1133,30 @@
       "tools/test_derived_handles.py"
     ]
   },
+  "heif_image_handle_get_component_bits_per_pixel": {
+    "notes": "Linux x86_64 original-header comparisons: HEVC/JPEG header descriptions, parse ordering for grids/identities/overlays, alpha descriptions, unknown IDs, context reloads/lifetimes and decoded component IDs on five HEVC fixtures plus masks/derived files. Remaining codecs, dynamic JPEG read-limit recovery, component content IDs and full file/decoder equivalence remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/component_handles.c",
+      "tools/test_component_handles.py"
+    ]
+  },
+  "heif_image_handle_get_component_datatype": {
+    "notes": "Linux x86_64 original-header comparisons: HEVC/JPEG header descriptions, parse ordering for grids/identities/overlays, alpha descriptions, unknown IDs, context reloads/lifetimes and decoded component IDs on five HEVC fixtures plus masks/derived files. Remaining codecs, dynamic JPEG read-limit recovery, component content IDs and full file/decoder equivalence remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/component_handles.c",
+      "tools/test_component_handles.py"
+    ]
+  },
+  "heif_image_handle_get_component_type": {
+    "notes": "Linux x86_64 original-header comparisons: HEVC/JPEG header descriptions, parse ordering for grids/identities/overlays, alpha descriptions, unknown IDs, context reloads/lifetimes and decoded component IDs on five HEVC fixtures plus masks/derived files. Remaining codecs, dynamic JPEG read-limit recovery, component content IDs and full file/decoder equivalence remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/component_handles.c",
+      "tools/test_component_handles.py"
+    ]
+  },
   "heif_image_handle_get_context": {
     "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open. Derived and mask handle queries also cover cyclic/missing references and partial reloads.",
     "status": "partial",
@@ -1306,6 +1330,14 @@
       "crates/capi/tests/abi.rs"
     ]
   },
+  "heif_image_handle_get_number_of_components": {
+    "notes": "Linux x86_64 original-header comparisons: HEVC/JPEG header descriptions, parse ordering for grids/identities/overlays, alpha descriptions, unknown IDs, context reloads/lifetimes and decoded component IDs on five HEVC fixtures plus masks/derived files. Remaining codecs, dynamic JPEG read-limit recovery, component content IDs and full file/decoder equivalence remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/component_handles.c",
+      "tools/test_component_handles.py"
+    ]
+  },
   "heif_image_handle_get_number_of_depth_images": {
     "notes": "512 original-header file transcripts including filters, flags, type ownership, depth SEI values, partial reloads and aliases. Finite Linux x86_64 evidence; broader platform and malformed-file coverage remains open.",
     "status": "partial",
@@ -1380,6 +1412,14 @@
       "tools/test_derived_handles.py",
       "tests/error_lifetimes.c",
       "tools/test_error_lifetimes.py"
+    ]
+  },
+  "heif_image_handle_get_used_component_ids": {
+    "notes": "Linux x86_64 original-header comparisons: HEVC/JPEG header descriptions, parse ordering for grids/identities/overlays, alpha descriptions, unknown IDs, context reloads/lifetimes and decoded component IDs on five HEVC fixtures plus masks/derived files. Remaining codecs, dynamic JPEG read-limit recovery, component content IDs and full file/decoder equivalence remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/component_handles.c",
+      "tools/test_component_handles.py"
     ]
   },
   "heif_image_handle_get_width": {

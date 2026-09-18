@@ -8,8 +8,8 @@ with VUI unspecified-color, monochrome-decoding and typed missing-parameter fixe
 
 ## Implemented scope
 
-206 of 465 public functions are exported, plus `heif_error_success`.
-259 functions are missing. Even the exported functions are marked **partial**:
+211 of 465 public functions are exported, plus `heif_error_success`.
+254 functions are missing. Even the exported functions are marked **partial**:
 coverage is finite, platform coverage is incomplete, and one malformed-box
 behavior gap is explicitly retained. There is no claim of a compatible library.
 
@@ -55,6 +55,8 @@ behavior gap is explicitly retained. There is no claim of a compatible library.
 | Sensor mutations | Three additional defects rejected | polarization_match_order (704 mismatches), polarization_nan_bits (2 mismatches), component_id_sequence (704 mismatches); independent passing baselines, isolated builds; default set now contains 25 defects |
 | Decoded-component APIs | 67,329 transcripts, 0 mismatches; C-client ASan/UBSan pass | Thirty-four APIs; every uint16 reference type, all 1–128-bit depths, datatype passthrough, duplicate channels, reference-only descriptions, pointer identity, typed strides, setter errors and crop/scale. Handle-side APIs and file/codec integration remain open |
 | Component mutations | Three new defects and the relocated ID-sequence defect rejected | component_id_sequence (704 mismatches), component_reference_count (67328 mismatches), component_typed_stride (1674 mismatches), component_crop_datatype (1061 mismatches); independently passing baselines and isolated builds; default set now contains 28 defects |
+| Handle component APIs | 791 transcripts, 0 mismatches; C-client ASan/UBSan pass | Five APIs, HEVC/JPEG descriptions, parse order, derived alpha depths, decoded/conversion IDs, output sentinels and reload/free lifetimes. Description-only mode also passes without codecs |
+| Handle-component mutations | Four new defects rejected | component_grid_parse_order (7 mismatches), component_decode_ids (4 mismatches), component_alpha_depth (20 mismatches), jpeg_sof_boundary (1 mismatches); independent baselines and isolated builds; default mutation set now contains 32 defects |
 | Error-buffer lifetimes | 144 cases, 0 mismatches; C-client ASan/UBSan pass | Unrelated handles/context errors, aliases and releases; the pre-fix candidate use-after-free was reproduced under ASan |
 | Coded-size mutation | One additional defect rejected (138 mismatches) | Independent baseline passed; changed the tightened limit floor from 65,536 to 65,535; the full default mutation set now contains fourteen defects |
 | HEVC native output | 5/5 fixtures match exactly | Y/Cb/Cr data, image IDs/order, dimensions, depths and strides; transformations disabled, native NCLX passthrough; **alpha not compared** |
@@ -242,3 +244,20 @@ The component suite also passes against the codec-free binary.
 The sensor CI at `8f07766` passed all development steps, all twenty-five mutations
 and the three-platform Rust builds. Only the full-API gate failed
 (`results/ci-sensor-report.json`).
+
+The handle-component increment preserves description population during the first
+item pass, before geometry and auxiliary links are installed. Grid descriptions
+therefore depend on whether their coded descendant has already been initialized;
+identity items initially have no descriptions. Alpha descriptions resolve the
+coded descendant's bit depth, including derived alpha images. Decoded IDs follow
+the reference's reconciliation before final color conversion, including its
+shortcut when ID/channel lists already align. JPEG SOF description scanning is
+implemented in Rust, with input-buffer accounting retained by the image, optional
+jpgC prefixes, exact marker/precision/sampling behavior and strict bounds.
+This is header parsing, not JPEG pixel decoding. Dynamic JPEG read-limit recovery,
+remaining codecs and component content-ID serialization remain open.
+
+The prior decoded-component CI at `e357110` passed all development steps, all
+28 mutations and Linux/macOS/Windows Rust builds. Only the full-completion gate
+failed (`results/ci-components-report.json`). Existing context (1,786), auxiliary
+(512) and C decode (115) regressions pass against the new handle candidate.

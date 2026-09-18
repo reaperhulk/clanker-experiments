@@ -455,12 +455,14 @@ pub struct Metadata {
     pub uri_type: CString,
     pub data: Vec<u8>,
 }
-#[cfg(feature = "hevc")]
 pub(crate) struct DecoderInput {
     pub data: Arc<Vec<u8>>,
     pub _reservation: crate::security::Reservation,
 }
 pub struct ImageInfo {
+    pub description_error: Option<ContextError>,
+    description_input: Option<DecoderInput>,
+    pub components: crate::components::ComponentIds,
     pub intrinsic: Option<crate::camera::IntrinsicMatrix>,
     pub extrinsic: Option<crate::camera::ExtrinsicMatrix>,
     pub warnings: Vec<crate::image::DecodingWarning>,
@@ -557,6 +559,9 @@ impl Document {
                 "Unsupported feature: Support for this compression format has not been built in: No decoder for this image format",
             ));
         }
+        if let Some(error) = &coded.description_error {
+            return Err(error.clone());
+        }
         Ok(
             if coded.colorspace == 0 && color.nclx.is_some_and(|p| p.matrix == 0) {
                 (1, 3)
@@ -601,6 +606,9 @@ impl Document {
             }
             let ispe = container.dimensions(item.id).unwrap_or((0, 0));
             let mut image = ImageInfo {
+                description_error: None,
+                description_input: None,
+                components: crate::components::ComponentIds::default(),
                 intrinsic: None,
                 extrinsic: None,
                 warnings: Vec::new(),
@@ -663,9 +671,39 @@ impl Document {
                 }
                 image.colorspace = 1;
                 image.chroma = 3;
-            } else if matches!(&item.kind, b"iden" | b"jpeg") {
-                // Neither identity items nor JPEG require a configuration box
-                // to construct a handle. Bitstream decoding is a separate step.
+            } else if item.kind == *b"jpeg" {
+                // Configuration is optional: SOF may span jpgC and item data.
+                // Keep decoder-input accounting alive for the image lifetime.
+                let description = (|| -> Result<crate::jpeg_config::Description> {
+                    let data = container.payload(item.id)?;
+                    let reservation = self
+                        .budget
+                        .reserve(data.len() as u64, "decoder input buffer (iloc)")?;
+                    image.description_input = Some(DecoderInput {
+                        data: Arc::new(data),
+                        _reservation: reservation,
+                    });
+                    let payload = &image.description_input.as_ref().unwrap().data;
+                    let config = container.property(item.id, *b"jpgC").unwrap_or_default();
+                    let mut combined = Vec::new();
+                    combined
+                        .try_reserve_exact(config.len().saturating_add(payload.len()))
+                        .map_err(|_| crate::error::Error::ALLOCATION)?;
+                    combined.extend_from_slice(config);
+                    combined.extend_from_slice(payload);
+                    crate::jpeg_config::parse(&combined)
+                })();
+                match description {
+                    Ok(d) => {
+                        image.colorspace = d.colorspace;
+                        image.chroma = d.chroma;
+                        image.luma_bits = i32::from(d.precision);
+                        image.chroma_bits = i32::from(d.precision);
+                    }
+                    Err(e) => image.description_error = Some(e),
+                }
+            } else if item.kind == *b"iden" {
+                // Identity items have no decoder of their own.
             } else {
                 // The file and its image ID are still visible, but this initial
                 // implementation cannot yet construct other codec/derived handles.
@@ -674,6 +712,49 @@ impl Document {
                     3003,
                     "Unsupported feature: Unsupported image type",
                 ));
+            }
+            // The reference populates descriptions during its first item pass,
+            // before interpreted dimensions and auxiliary links are installed.
+            // A derived item's coded descendant must already have been loaded.
+            if image.error.is_none() {
+                let coded = if item.kind == *b"grid" {
+                    let mut next = item.id;
+                    let mut visited = BTreeSet::new();
+                    loop {
+                        if !visited.insert(next) {
+                            break None;
+                        }
+                        let Some(node) = container.items.get(&next) else {
+                            break None;
+                        };
+                        if matches!(&node.kind, b"grid" | b"iden" | b"iovl") {
+                            let Some(child) = node.references.get(b"dimg").and_then(|r| r.first())
+                            else {
+                                break None;
+                            };
+                            next = *child;
+                        } else {
+                            break images.get(&next).filter(|i| i.error.is_none());
+                        }
+                    }
+                } else {
+                    None
+                };
+                let description = match &item.kind {
+                    b"hvc1" | b"jpeg" => Some((
+                        image.colorspace,
+                        image.chroma,
+                        image.luma_bits,
+                        image.chroma_bits,
+                    )),
+                    b"iovl" if ispe.0 != 0 && ispe.1 != 0 => Some((1, 3, 8, 8)),
+                    b"grid" => coded.map(|c| (c.colorspace, c.chroma, c.luma_bits, c.chroma_bits)),
+                    _ => None,
+                };
+                if let Some((cs, ch, l, c)) = description {
+                    image.components =
+                        crate::components::ComponentIds::visual(ispe.0, ispe.1, cs, ch, l, c)?;
+                }
             }
             images.insert(item.id, Arc::new(image));
             if !item.hidden {
@@ -1059,6 +1140,27 @@ fn attach_auxiliary(
         b"urn:mpeg:hevc:2015:auxid:2" | b"urn:mpeg:mpegB:cicp:systems:auxiliary:depth"
     );
     if alpha {
+        let alpha_depth = {
+            let mut next = id;
+            let mut visited = BTreeSet::new();
+            loop {
+                if !visited.insert(next) {
+                    break -1;
+                }
+                let Some(item) = container.items.get(&next) else {
+                    break -1;
+                };
+                if matches!(&item.kind, b"iden" | b"grid" | b"iovl") {
+                    let Some(child) = item.references.get(b"dimg").and_then(|ids| ids.first())
+                    else {
+                        break -1;
+                    };
+                    next = *child;
+                } else {
+                    break images.get(&next).map_or(-1, |i| i.luma_bits);
+                }
+            }
+        };
         images
             .get_mut(&id)
             .and_then(Arc::get_mut)
@@ -1074,6 +1176,9 @@ fn attach_auxiliary(
                     ));
                 }
                 master.has_alpha = true;
+                master
+                    .components
+                    .alpha(master.ispe.0, master.ispe.1, alpha_depth)?;
                 master.related_images.push(id);
             } else if !container.items.contains_key(target) {
                 return Err(ContextError::invalid(

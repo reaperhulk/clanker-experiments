@@ -101,3 +101,63 @@ pub fn types_for_channel(channel: i32, chroma: i32) -> Vec<u16> {
         _ => vec![channel.wrapping_add(1000) as u16],
     }
 }
+
+impl ComponentIds {
+    pub fn visual(
+        width: u32,
+        height: u32,
+        colorspace: i32,
+        chroma: i32,
+        luma: i32,
+        chroma_depth: i32,
+    ) -> Result<Self, Error> {
+        let mut out = Self::default();
+        let luma = if luma > 0 { luma } else { 8 } as u16;
+        let chroma_depth = if chroma_depth > 0 {
+            chroma_depth as u16
+        } else {
+            luma
+        };
+        let kinds: &[u16] = match colorspace {
+            2 => &[0],
+            0 => &[1, 2, 3],
+            1 => &[4, 5, 6],
+            _ => &[],
+        };
+        for &kind in kinds {
+            let mut d = Description::reference(kind);
+            d.has_data = true;
+            d.datatype = 0;
+            d.bit_depth = if matches!(kind, 2 | 3) {
+                chroma_depth
+            } else {
+                luma
+            };
+            d.width = if matches!(kind, 2 | 3) && matches!(chroma, 1 | 2) {
+                width.div_ceil(2)
+            } else {
+                width
+            };
+            d.height = if matches!(kind, 2 | 3) && chroma == 1 {
+                height.div_ceil(2)
+            } else {
+                height
+            };
+            out.add(d)?;
+        }
+        Ok(out)
+    }
+    pub fn alpha(&mut self, width: u32, height: u32, depth: i32) -> Result<(), Error> {
+        if self.descriptions.iter().any(|d| d.channel == 6) {
+            return Ok(());
+        }
+        let mut d = Description::reference(7);
+        d.datatype = 0;
+        d.bit_depth = if depth > 0 { depth as u16 } else { 8 };
+        d.width = width;
+        d.height = height;
+        d.has_data = true;
+        self.add(d)?;
+        Ok(())
+    }
+}

@@ -19,6 +19,7 @@ pub mod geometry;
 pub mod hevc;
 pub mod hevc_config;
 pub mod image;
+pub mod jpeg_config;
 pub mod mask;
 pub mod overlay;
 pub mod properties;

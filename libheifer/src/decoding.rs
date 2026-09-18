@@ -77,6 +77,7 @@ pub fn decode(
         count: Arc::new(AtomicU32::new(0)),
     };
     let mut image = decode_native(document, id, &options, &mut visiting)?;
+    image.apply_descriptions(&document.images[&id].components);
     let target_cs = if colorspace == 99 {
         image.colorspace
     } else {

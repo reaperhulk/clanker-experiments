@@ -41,6 +41,10 @@ MUTATIONS = [
     ("component_reference_count", "crates/capi/src/components.rs", "i.component_ids.descriptions.len() as u32", "i.component_ids.descriptions.iter().filter(|d| d.has_data).count() as u32", "components"),
     ("component_typed_stride", "crates/capi/src/components.rs", "stride.write(plane.map_or(0, |p| p.stride / std::mem::size_of::<$ty>()));", "stride.write(plane.map_or(0, |p| p.stride));", "components"),
     ("component_crop_datatype", "src/image.rs", "plane.datatype = source.datatype;", "plane.datatype = 0;", "components"),
+    ("component_grid_parse_order", "src/context.rs", 'b"grid" => coded.map(|c| (c.colorspace, c.chroma, c.luma_bits, c.chroma_bits)),', 'b"grid" => coded.map(|c| (c.colorspace, c.chroma, c.luma_bits + 1, c.chroma_bits)),', "component_handles"),
+    ("component_decode_ids", "src/decoding.rs", "image.apply_descriptions(&document.images[&id].components);", "// Deliberate defect: skip component reconciliation.", "component_handles"),
+    ("component_alpha_depth", "src/components.rs", "if depth > 0 { depth as u16 } else { 8 }", "if false { depth as u16 } else { 8 }", "component_handles"),
+    ("jpeg_sof_boundary", "src/jpeg_config.rs", "11 + 3 * count >= data.len()", "11 + 3 * count > data.len()", "component_handles"),
     ("coded_size_limit", "src/decoding.rs", ".max(65536)", ".max(65535)", "hevc_limits"),
     ("error_field_order", "crates/capi/src/lib.rs", "pub code: c_int,\n    pub subcode: c_int,", "pub subcode: c_int,\n    pub code: c_int,", "abi"),
 ]

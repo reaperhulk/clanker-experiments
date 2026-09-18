@@ -4,8 +4,8 @@ This implements an independent Rust library with an optional compatible C ABI,
 targeting the complete libheif 1.23.4 contract. All implementation dependencies
 are pure Rust. Native libheif and libde265 are independent test oracles only.
 
-**Incomplete: 206 of 465 functions are implemented and remain marked partial;
-259 functions are missing.** Keep this PR draft. The strict completion gate
+**Incomplete: 211 of 465 functions are implemented and remain marked partial;
+254 functions are missing.** Keep this PR draft. The strict completion gate
 rejects missing APIs and unvalidated behavior. Unsupported stubs and forwarding
 to libheif do not count toward coverage.
 
@@ -22,15 +22,16 @@ The current implementation includes:
 - Versioned security limits, allocation accounting and ownership across reloads,
   malformed SPS rejection, and image-owned error-message buffers.
 
-Recent validation adds 67,329 component transcripts, covering every 16-bit
-reference-component type, all 1–128-bit sample depths, datatype passthrough,
-all typed pointer accessors, byte/element strides, duplicate channels,
-reference-only entries, output sentinels and crop/scale behavior. ASan/UBSan
-C clients and the codec-free build pass. Three additional deliberate defects
-are detected; the default mutation set now contains 28 defects. Seventeen
-public struct layouts match the original headers on
-Linux x86_64. Five handle-side component APIs, multi-component file/codec paths
-and content-ID serialization remain open.
+Recent validation adds 791 handle/decoded-component transcripts, covering
+HEVC and JPEG header descriptions, item parse order, derived alpha bit depths,
+component IDs after decoding/conversion, and retained descriptions after context
+reload/free. Five HEVC fixtures and generated mask/derived files are included.
+The C client passes ASan/UBSan; all descriptions also match without codecs.
+The preceding component suite compares 67,329 transcripts and seventeen public
+struct layouts match the original headers on Linux x86_64. All 39 component
+export names are present; remaining codec paths and serialized content IDs
+still prevent full compatibility. Four new deliberate defects are rejected;
+the default mutation set now contains 32 defects.
 
 These tests supplement the existing brand, image, color, context, decode,
 geometry, derived-image, auxiliary, error-lifetime and security suites. Exact
@@ -38,8 +39,8 @@ binary/client/corpus hashes and per-case evidence are in `docs/results/`;
 `docs/RESULTS.md` records the scope and known gaps. Local sanitizer coverage is
 limited to C clients, with leak checking disabled where ptrace prevents it.
 
-The preceding sensor commit (`8f07766`) passed all development CI steps,
-all 25 then-present mutation tests and Rust builds on Linux, macOS and Windows.
+The preceding component commit (`e357110`) passed all development CI steps,
+all 28 then-present mutation tests and Rust builds on Linux, macOS and Windows.
 Only the full-API completion gate failed. Cross-platform ABI, fuzzing, full codec
 conformance, remaining APIs and whole-library memory-safety validation remain open.
 
