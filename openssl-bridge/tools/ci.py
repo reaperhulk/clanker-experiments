@@ -181,7 +181,11 @@ def build(row: dict, plan: dict, work: Path, jobs: int) -> None:
             )
     else:
         extra = (
-            ["-DLIBRESSL_APPS=OFF", "-DLIBRESSL_TESTS=OFF"]
+            [
+                "-DLIBRESSL_APPS=OFF",
+                "-DLIBRESSL_TESTS=OFF",
+                f"-DOPENSSLDIR={prefix}/etc/ssl",
+            ]
             if backend == "libressl"
             else ["-DBUILD_TESTING=OFF"]
         )

@@ -44,6 +44,13 @@ Custom-prefix native builds have no populated default CA bundle, so CI explicitl
 supplies the host's CA file for the upstream external-server verification test.
 Verification remains enabled; the test report records the CA file and hash.
 
+The next run passed the system, OpenSSL 4, BoringSSL, and AWS-LC pyOpenSSL
+checks. LibreSSL still failed the external-server trust test: its native
+default lookup ignores SSL_CERT_FILE, and CMake's default OPENSSLDIR was
+relative. CI now builds LibreSSL with an absolute default directory in its
+isolated prefix and refreshes the host CA bundle there after cache restore.
+The implementation and test expectations remain unchanged by this build fix.
+
 CI applies both portable patches to pinned upstream checkouts. In addition to
 the existing matrix, five core integration rows run the full pyOpenSSL suite,
 format/lint/types, physical CFFI removal and import checks. They compare every

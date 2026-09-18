@@ -42,3 +42,21 @@ runs:
       with:
         path: ${{ steps.native.outputs.prefix }}
         key: ${{ steps.native.outputs.cache_key }}
+    - name: Install host trust bundle for LibreSSL default lookup
+      if: inputs.row == 'libressl' || inputs.row == 'libressl421'
+      shell: bash
+      run: |
+        python3 - <<'PY'
+        import hashlib
+        import os
+        import shutil
+        from pathlib import Path
+
+        # LibreSSL's native default lookup ignores SSL_CERT_FILE. Refresh the
+        # runner's trust bundle in this isolated installation after cache restore.
+        bundle = Path('/etc/ssl/certs/ca-certificates.crt')
+        destination = Path(os.environ['OPENSSL_DIR']) / 'etc/ssl/cert.pem'
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(bundle, destination)
+        print(destination, hashlib.sha256(destination.read_bytes()).hexdigest())
+        PY
