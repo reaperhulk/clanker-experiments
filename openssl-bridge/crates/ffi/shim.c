@@ -57,3 +57,9 @@ int OB_signature_nonce(EVP_PKEY_CTX *ctx, unsigned int nonce_type) {
     return 0;
 #endif
 }
+
+#if defined(OPENSSL_IS_BORINGSSL) && !defined(OPENSSL_IS_AWSLC)
+void OB_CBS_init(CBS *cbs, const unsigned char *data, size_t length) {
+    CBS_init(cbs, data, length);
+}
+#endif

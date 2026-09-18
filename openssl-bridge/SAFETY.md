@@ -201,3 +201,25 @@ Separate material types preserve legacy parsing of malformed keys without
 claiming cryptographic validity. They have no signing or verification methods.
 Explicit validation produces operational types and caches its result. Secret
 scalars use erased storage, including temporary native BIGNUMs.
+
+## ML-DSA and ML-KEM
+
+Private and public roles are separate. Seeds have fixed array sizes; variants
+form closed enums. Shared key objects contain immutable Rust encodings, not
+shared native state. Each operation constructs its own native key and context.
+Input lengths, context strings, and output capacities are checked before FFI.
+Seed temporaries, expanded BoringSSL ML-DSA keys, and shared secrets are erased.
+BoringSSL's expanded structs stay in aligned stable heap storage; no Rust value
+is assumed initialized from native writes or copied with uninitialized padding.
+
+ML-DSA message signing and external-mu signing are separate methods. The latter
+takes exactly 64 bytes and documents the required public-key and context domain
+separation. Normal signing limits context strings to 255 bytes. Native randomized
+nonce generation remains enabled. ML-KEM rejects incorrect ciphertext lengths;
+correctly sized invalid ciphertexts retain native implicit-rejection semantics.
+Returned shared secrets do not imply ciphertext authentication.
+
+AWS-LC experimental KEM declarations are generated from its installed header.
+The only added C compatibility function evaluates BoringSSL's inline CBS_init.
+Known-answer tests independently check seed expansion, signature verification,
+external mu, decapsulation, and the deterministic implicit-rejection secret.

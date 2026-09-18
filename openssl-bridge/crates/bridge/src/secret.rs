@@ -23,3 +23,9 @@ impl Drop for SecretBytes {
         unsafe { ffi::OPENSSL_cleanse(self.0.as_mut_ptr().cast(), self.0.len()) };
     }
 }
+
+/// Erase an exclusively borrowed byte buffer with the backend's non-elidable wipe.
+pub fn erase(bytes: &mut [u8]) {
+    // SAFETY: The exclusive slice is writable for its exact initialized length.
+    unsafe { ffi::OPENSSL_cleanse(bytes.as_mut_ptr().cast(), bytes.len()) };
+}

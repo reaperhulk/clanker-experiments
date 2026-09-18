@@ -74,6 +74,8 @@ fn main() {
         .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
         .parse_callbacks(Box::new(Macros(macros.clone())))
         .allowlist_type("poly1305_state")
+        .allowlist_function("(MLDSA|CBS_).*")
+        .allowlist_var("MLDSA.*")
         .allowlist_function("(OB_|OPENSSL_|OpenSSL_|CRYPTO_|ERR_|EVP_|BN_|RSA_|DSA_|DH_|EC_|ECDSA_|ECDH_|HMAC_|CMAC_|RAND_|OBJ_|BIO_|PEM_|PKCS|d2i_|i2d_|X509|ASN1_|SSL_|TLS_|DTLS_|OSSL_|FIPS_|sk_|OPENSSL_sk_).*" )
         .allowlist_var("(OPENSSL_|LIBRESSL_|EVP_|NID_|RSA_|EC_|POINT_|ERR_|SSL_|TLS_|X509_|PKCS|OSSL_|V_ASN1_).*" )
         .derive_default(false)

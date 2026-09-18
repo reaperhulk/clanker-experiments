@@ -15,8 +15,14 @@ pub mod gcm;
 pub mod hash;
 pub mod kdf;
 pub mod mac;
+#[cfg(any(openssl_350, backend = "boringssl", backend = "awslc"))]
+pub mod mldsa;
+#[cfg(any(openssl_350, backend = "boringssl", backend = "awslc"))]
+pub mod mlkem;
 mod number;
 pub mod poly1305;
+#[cfg(any(openssl_350, backend = "boringssl", backend = "awslc"))]
+mod pq;
 pub mod rand;
 pub mod rsa;
 pub mod secret;

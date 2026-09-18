@@ -26,6 +26,13 @@
 #else
 #define OB_BACKEND_CODE 0
 #endif
+#if defined(OPENSSL_IS_AWSLC)
+#include <openssl/experimental/kem_deterministic_api.h>
+#elif defined(OPENSSL_IS_BORINGSSL)
+#include <openssl/mldsa.h>
+#include <openssl/bytestring.h>
+void OB_CBS_init(CBS *cbs, const unsigned char *data, size_t length);
+#endif
 #if defined(LIBRESSL_VERSION_NUMBER)
 #include <openssl/poly1305.h>
 #endif
