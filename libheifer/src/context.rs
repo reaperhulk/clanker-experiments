@@ -461,6 +461,8 @@ pub(crate) struct DecoderInput {
     pub _reservation: crate::security::Reservation,
 }
 pub struct ImageInfo {
+    pub intrinsic: Option<crate::camera::IntrinsicMatrix>,
+    pub extrinsic: Option<crate::camera::ExtrinsicMatrix>,
     pub warnings: Vec<crate::image::DecodingWarning>,
     pub auxiliary: crate::auxiliary::Auxiliary,
     pub last_error: std::sync::Mutex<CString>,
@@ -599,6 +601,8 @@ impl Document {
             }
             let ispe = container.dimensions(item.id).unwrap_or((0, 0));
             let mut image = ImageInfo {
+                intrinsic: None,
+                extrinsic: None,
                 warnings: Vec::new(),
                 auxiliary: crate::auxiliary::Auxiliary::default(),
                 last_error: std::sync::Mutex::new(CString::new("Success").unwrap()),
@@ -710,14 +714,48 @@ impl Document {
                     }
                 }
             }
-            if container.property(item.id, *b"ispe").is_ok() {
-                if image.ispe.0 == 0 || image.ispe.1 == 0 {
+            let mut has_ispe = false;
+            for (kind, p) in container.properties(item.id)? {
+                if kind != *b"ispe" {
+                    continue;
+                }
+                let width = u32::from_be_bytes(p[4..8].try_into().unwrap());
+                let height = u32::from_be_bytes(p[8..12].try_into().unwrap());
+                if width == 0 || height == 0 {
                     return Err(ContextError::invalid(
                         129,
                         "Invalid image size: Zero image width or height",
                     ));
                 }
-                (image.width, image.height) = image.ispe;
+                (image.width, image.height) = (width, height);
+                has_ispe = true;
+            }
+            if !has_ispe {
+                image
+                    .warnings
+                    .push(ContextError::invalid(137, "Image has no 'ispe' property").into());
+            }
+            for (kind, p) in container.properties(item.id)? {
+                match &kind {
+                    b"cmin" => {
+                        if let Ok(matrix) = crate::camera::intrinsic(p, image.ispe.0, image.ispe.1)
+                        {
+                            if !has_ispe {
+                                return Err(ContextError::invalid(
+                                    137,
+                                    "Image has no 'ispe' property",
+                                ));
+                            }
+                            image.intrinsic = Some(matrix);
+                        }
+                    }
+                    b"cmex" => {
+                        if let Ok(matrix) = crate::camera::ExtrinsicMatrix::parse(p) {
+                            image.extrinsic = Some(matrix);
+                        }
+                    }
+                    _ => {}
+                }
             }
             for (kind, p) in container.properties(item.id)? {
                 match &kind {
@@ -732,14 +770,27 @@ impl Document {
                             std::mem::swap(&mut image.width, &mut image.height);
                         }
                     }
+                    b"imir" => {
+                        if !has_ispe {
+                            return Err(ContextError::invalid(137, "Image has no 'ispe' property"));
+                        }
+                        if let Some(matrix) = &mut image.intrinsic {
+                            matrix.mirror(p[0] & 1 != 0, image.width, image.height);
+                        }
+                    }
                     b"clap" => {
-                        (image.width, image.height) =
-                            crate::geometry::CleanAperture::parse(p)?.dimensions();
+                        let aperture = crate::geometry::CleanAperture::parse(p)?;
+                        (image.width, image.height) = aperture.dimensions();
                         if image.width == 0 || image.height == 0 {
                             return Err(ContextError::invalid(
                                 120,
                                 "Invalid clean-aperture specification: Clean aperture (clap) reduces image to zero size",
                             ));
+                        }
+                        if let Some(matrix) = &mut image.intrinsic {
+                            let (x, y) = aperture.camera_crop_offset(image.width, image.height)?;
+                            matrix.principal_point_x -= x;
+                            matrix.principal_point_y -= y;
                         }
                     }
                     b"pasp" if p.len() >= 8 => {

@@ -118,6 +118,17 @@ impl CleanAperture {
         let bottom = self.height.integer(-1).integer(top).round();
         Ok((left, right, top, bottom))
     }
+    pub fn camera_crop_offset(&self, width: u32, height: u32) -> Result<(f64, f64)> {
+        let x = self
+            .horizontal
+            .add(Fraction::external(i64::from(width as i32) - 1, 2)?)
+            .sub(self.width.integer(-1).half());
+        let y = self
+            .vertical
+            .add(Fraction::external(i64::from(height as i32) - 1, 2)?)
+            .sub(self.height.integer(-1).half());
+        Ok((x.n as f64 / x.d as f64, y.n as f64 / y.d as f64))
+    }
     pub fn crop(&self, width: u32, height: u32) -> Result<(u32, u32, u32, u32)> {
         let (left, right, top, bottom) = self.unclamped_crop(width, height)?;
         let (left, top) = (left.max(0), top.max(0));

@@ -52,6 +52,7 @@ python tools/test_context.py --reference-build .build/reference
 python tools/test_auxiliary.py --reference-build .build/reference
 python tools/test_properties.py --reference-build .build/reference
 python tools/test_decode_properties.py --reference-build .build/reference
+python tools/test_camera.py --reference-build .build/reference
 python tools/test_context.py --reference-build .build/reference --sanitize --output .build/context-sanitized-report.json
 python tools/test_decoding_options.py --reference-build .build/reference
 python tools/test_transforms.py --reference-build .build/reference
@@ -112,3 +113,7 @@ independently of retained image handles; optional description errors propagate
 as decode warnings. The new public description layout is checked against the
 original header. These APIs remain partial while other property classes and
 serialization are implemented.
+
+Camera intrinsic/extrinsic queries parse standard and legacy UUID properties,
+apply the pinned crop/mirror behavior, and return independently owned extrinsic
+matrices. Tests compare exact floating-point bits, parse warnings and lifetimes.

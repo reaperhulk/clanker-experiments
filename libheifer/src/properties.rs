@@ -12,7 +12,7 @@ pub struct Property {
 }
 impl Property {
     pub(crate) fn parsed(kind: [u8; 4], uuid: Option<[u8; 16]>, data: &[u8]) -> Self {
-        let malformed = parse_error(kind, data).is_some();
+        let malformed = parse_error(crate::camera::kind(kind, uuid), data).is_some();
         Self {
             kind: if malformed { *b"ERR " } else { kind },
             uuid,
@@ -51,6 +51,12 @@ impl Property {
 /// as error boxes and rejected when their image is interpreted.
 pub(crate) fn parse_error(kind: [u8; 4], data: &[u8]) -> Option<(ContextError, bool)> {
     match &kind {
+        b"cmin" => crate::camera::intrinsic(data, 0, 0)
+            .err()
+            .map(|e| (e, true)),
+        b"cmex" => crate::camera::ExtrinsicMatrix::parse(data)
+            .err()
+            .map(|e| (e, true)),
         b"udes" if data.len() < 4 => {
             Some((ContextError::invalid(100, "Unexpected end of file"), true))
         }

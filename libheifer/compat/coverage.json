@@ -7,6 +7,24 @@
       "tools/test_brands.py"
     ]
   },
+  "heif_camera_extrinsic_matrix_get_rotation_matrix": {
+    "notes": "Linux x86_64 original-header comparisons: exact intrinsic/quaternion bits, all property versions, prefixes, fixed-point shifts, orientation flags, legacy UUIDs, transform order, optional warnings, owned matrices and handles after reload/free. Cross-platform floating-point/ABI and complete parser combinations remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/camera.c",
+      "tools/test_camera.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_camera_extrinsic_matrix_release": {
+    "notes": "Linux x86_64 original-header comparisons: exact intrinsic/quaternion bits, all property versions, prefixes, fixed-point shifts, orientation flags, legacy UUIDs, transform order, optional warnings, owned matrices and handles after reload/free. Cross-platform floating-point/ABI and complete parser combinations remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/camera.c",
+      "tools/test_camera.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
   "heif_check_filetype": {
     "notes": "Tested on Linux x86_64; cross-platform ABI and exhaustive input coverage pending.",
     "status": "partial",
@@ -629,6 +647,24 @@
       "crates/capi/tests/abi.rs"
     ]
   },
+  "heif_image_handle_get_camera_extrinsic_matrix": {
+    "notes": "Linux x86_64 original-header comparisons: exact intrinsic/quaternion bits, all property versions, prefixes, fixed-point shifts, orientation flags, legacy UUIDs, transform order, optional warnings, owned matrices and handles after reload/free. Cross-platform floating-point/ABI and complete parser combinations remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/camera.c",
+      "tools/test_camera.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_image_handle_get_camera_intrinsic_matrix": {
+    "notes": "Linux x86_64 original-header comparisons: exact intrinsic/quaternion bits, all property versions, prefixes, fixed-point shifts, orientation flags, legacy UUIDs, transform order, optional warnings, owned matrices and handles after reload/free. Cross-platform floating-point/ABI and complete parser combinations remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/camera.c",
+      "tools/test_camera.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
   "heif_image_handle_get_chroma_bits_per_pixel": {
     "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open. Derived and mask handle queries also cover cyclic/missing references and partial reloads.",
     "status": "partial",
@@ -912,6 +948,24 @@
       "tests/context.c",
       "tools/test_context.py",
       "tools/test_derived_handles.py"
+    ]
+  },
+  "heif_image_handle_has_camera_extrinsic_matrix": {
+    "notes": "Linux x86_64 original-header comparisons: exact intrinsic/quaternion bits, all property versions, prefixes, fixed-point shifts, orientation flags, legacy UUIDs, transform order, optional warnings, owned matrices and handles after reload/free. Cross-platform floating-point/ABI and complete parser combinations remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/camera.c",
+      "tools/test_camera.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_image_handle_has_camera_intrinsic_matrix": {
+    "notes": "Linux x86_64 original-header comparisons: exact intrinsic/quaternion bits, all property versions, prefixes, fixed-point shifts, orientation flags, legacy UUIDs, transform order, optional warnings, owned matrices and handles after reload/free. Cross-platform floating-point/ABI and complete parser combinations remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/camera.c",
+      "tools/test_camera.py",
+      "crates/capi/tests/abi.rs"
     ]
   },
   "heif_image_handle_has_depth_image": {

@@ -13,6 +13,7 @@ use std::ptr;
 
 mod auxiliary;
 pub use auxiliary::DepthRepresentationInfo;
+mod camera;
 mod color;
 mod context;
 mod decoding;

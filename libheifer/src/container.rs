@@ -473,7 +473,7 @@ impl<'a> Container<'a> {
         item.properties
             .iter()
             .map(|i| self.properties[*i])
-            .find(|p| p.kind == kind)
+            .find(|p| crate::camera::kind(p.kind, p.uuid) == kind)
             .map(|p| p.data)
             .ok_or(ParseError::MissingProperty)
     }
@@ -482,7 +482,7 @@ impl<'a> Container<'a> {
         self.check_properties(item)?;
         Ok(item.properties.iter().map(|i| {
             let p = self.properties[*i];
-            (p.kind, p.data)
+            (crate::camera::kind(p.kind, p.uuid), p.data)
         }))
     }
     fn check_properties(&self, item: &Item) -> Result<()> {

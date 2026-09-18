@@ -1,0 +1,12 @@
+{
+  "scope": "Original-header camera matrices, exact floating-point bits, parse warnings and lifetimes.",
+  "cases": 1641,
+  "mismatches": 0,
+  "client_sanitizers": false,
+  "leak_check": false,
+  "client_sha256": "ea080af7410a06abc80a477f3fe66b7e394b1692ada3fb1ea86a650d3d85e087",
+  "corpus_sha256": "a22d78c423c8ccd1ea81e3d0c5b609a83ec2921c999da90e78aacb0bd31a5c0c",
+  "differences": [],
+  "reference_sha256": "5d70927cded8be6d1b4da912971aed75d426ba079c84d0b8462785ec5b9c92f7",
+  "candidate_sha256": "a0fd45b9c57e504dc2ac701ace82a7a09120b67f1d8d4fe126c5b1cf969cbf67"
+}

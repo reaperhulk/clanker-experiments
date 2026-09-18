@@ -8,8 +8,8 @@ with VUI unspecified-color, monochrome-decoding and typed missing-parameter fixe
 
 ## Implemented scope
 
-144 of 465 public functions are exported, plus `heif_error_success`.
-321 functions are missing. Even the exported functions are marked **partial**:
+150 of 465 public functions are exported, plus `heif_error_success`.
+315 functions are missing. Even the exported functions are marked **partial**:
 coverage is finite, platform coverage is incomplete, and one malformed-box
 behavior gap is explicitly retained. There is no claim of a compatible library.
 
@@ -41,7 +41,7 @@ behavior gap is explicitly retained. There is no claim of a compatible library.
 | Color/HDR differential | 198,932 transcripts, 0 mismatches | All uint16 NCLX setter inputs, all uint8 option-version pairs, all chromaticity coordinates, exact floating-point bits, ICC ownership, HDR boundaries and output sentinels; no image-handle APIs or color transforms |
 | Context/handle differential | 1,786 transcripts, 0 mismatches | Copied/borrowed input, destroyed input copies, aliases, handles after free/reload, early and late read failures, primary/hidden/boundary IDs, metadata bytes/filters, thumbnails, alpha references, color profiles, rotations, every synthetic-file/property truncation; no C decoding |
 | C client sanitizers | ASan/UBSan clients pass the context corpus | Libraries are not sanitizer-instrumented; local LeakSanitizer could not run under ptrace, so leak detection was explicitly disabled |
-| ABI | Twelve structs match original-header size, alignment and every field offset; struct-return and data-symbol clients pass | Linux x86_64 only |
+| ABI | Thirteen structs match original-header size, alignment and every field offset; struct-return and data-symbol clients pass | Linux x86_64 only |
 | Mutation checks | Thirteen deliberately wrong implementations rejected | Wrong filetype enum, error code, plane samples, primary coordinate, primary item ID, alpha reload state, worker callbacks, warning text, mask samples, overlay alpha, decode-operation/total-memory budgets and ABI field order; isolated builds, successful baselines, compiler/crash failures do not count |
 | HEVC configuration | 400 cases, 0 mismatches | SPS prefixes, coded-size limits, crop/depth/chroma bounds, sub-layer flags, empty/reordered/missing parameter sets and recovery after early slices |
 | Auxiliary/depth APIs | 512 file transcripts, 0 mismatches; C-client ASan/UBSan pass | Twelve APIs; every auxiliary-box version, filters/counts/output sentinels, copied type strings, typed child errors, exact depth float bits, malformed SEI and handles after reload/free. Also passes with optional codecs disabled |
@@ -49,6 +49,8 @@ behavior gap is explicitly retained. There is no claim of a compatible library.
 | Item-property APIs | 960 transcripts, 0 mismatches; C-client ASan/UBSan pass | Thirteen APIs, item-local IDs/order, raw/UUID copies, typed/raw deduplication, descriptions after context release, all rotation/mirror bytes, crop fractions, missing boxes, duplicate/invalid associations, essential flags and failed reload state. Also passes with optional codecs disabled |
 | Property decoding | 3,772 comparisons, 0 mismatches | 943 property fixtures across native, transformed, RGB and strict decode modes; optional warning text, item errors, essential properties, pixels and metadata are compared |
 | Property mutations | Four additional defects rejected | Wrong item-local IDs (921 mismatches), raw-class selection (921), unterminated descriptions (21) and crop origins (15); independently passing baselines and isolated builds |
+| Camera matrices | 1,641 transcripts, 0 mismatches; C-client ASan/UBSan pass | Six APIs; exact floating-point bits, fixed-point shifts, 16/32-bit quaternion fields, every version, malformed prefixes, legacy UUID forms, crop/mirror/rotation order, duplicate matrices, warnings, and owned objects after context/handle release. Also passes without codecs |
+| Camera mutations | Two additional defects rejected | Incorrect focal scaling (365 mismatches) and quaternion normalization (165), with independent passing baselines; the default mutation set now contains 22 defects |
 | Error-buffer lifetimes | 144 cases, 0 mismatches; C-client ASan/UBSan pass | Unrelated handles/context errors, aliases and releases; the pre-fix candidate use-after-free was reproduced under ASan |
 | Coded-size mutation | One additional defect rejected (138 mismatches) | Independent baseline passed; changed the tightened limit floor from 65,536 to 65,535; the full default mutation set now contains fourteen defects |
 | HEVC native output | 5/5 fixtures match exactly | Y/Cb/Cr data, image IDs/order, dimensions, depths and strides; transformations disabled, native NCLX passthrough; **alpha not compared** |
@@ -197,3 +199,12 @@ are rejected, and duplicate associations preserve the first essential flag.
 The independent tests also cover insertion into a fresh context; libheif rejects
 insertion after reading a file, which this implementation preserves. Remaining
 property classes, serialization and allocation-failure behavior remain open.
+
+The item-property CI at `0e37368` passed every development check, all twenty
+mutations and the three-platform Rust builds; only the strict full-API gate
+failed (`results/ci-properties-report.json`). Camera matrix checks are recorded
+separately. The camera implementation preserves the reference's absolute
+intrinsic scaling and crop/mirror semantics, including legacy UUID properties.
+The reference rejects all nonzero extrinsic-box versions; this implementation
+preserves that behavior rather than interpreting the unreachable Euler branch.
+Cross-platform floating-point conformance remains open.

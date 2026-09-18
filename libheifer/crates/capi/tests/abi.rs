@@ -92,6 +92,15 @@ fn public_structs_match_original_header_layouts() {
         description,
         tags
     );
+    layout!(
+        heif_camera_intrinsic_matrix,
+        libheifer::camera::IntrinsicMatrix,
+        focal_length_x,
+        focal_length_y,
+        principal_point_x,
+        principal_point_y,
+        skew
+    );
     layout!(heif_error, heifer::HeifError, code, subcode, message);
     layout!(
         heif_decoding_options,
