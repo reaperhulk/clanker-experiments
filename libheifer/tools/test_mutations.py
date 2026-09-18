@@ -27,6 +27,7 @@ MUTATIONS = [
     ("overlay_alpha", "src/overlay.rs", "((src * a + dst * (255 - a)) / 255)", "((src * a + dst * (255 - a)) / 256)", "decode_graphs"),
     ("derived_operation_budget", "src/decoding.rs", ".saturating_mul(2)", ".saturating_mul(3)", "decode_graphs"),
     ("live_memory_budget", "src/security.rs", ".checked_add(amount)", ".checked_add(0)", "security"),
+    ("coded_size_limit", "src/decoding.rs", ".max(65536)", ".max(65535)", "hevc_limits"),
     ("error_field_order", "crates/capi/src/lib.rs", "pub code: c_int,\n    pub subcode: c_int,", "pub subcode: c_int,\n    pub code: c_int,", "abi"),
 ]
 
@@ -42,15 +43,17 @@ def main():
     parser.add_argument("--reference-build", required=True)
     parser.add_argument("--candidate", default="target/release/libheifer.so")
     parser.add_argument("--output", default=".build/mutations-report.json")
+    parser.add_argument("--only", choices=[m[0] for m in MUTATIONS], action="append", help="Run selected defects; default runs the complete mutation set")
     args = parser.parse_args()
+    mutations = [m for m in MUTATIONS if args.only is None or m[0] in args.only]
     root = Path.cwd()
     evidence = root / ".build/mutations"
     evidence.mkdir(parents=True, exist_ok=True)
     reference = str(Path(args.reference_build).resolve())
     candidate = str(Path(args.candidate).resolve())
     # Baselines must pass on this tree before a rejected mutant is meaningful.
-    for suite in ("brands", "images", "color", "context", "warnings", "decode_derived", "decode_mask", "decode_graphs", "security"):
-        run = execute([sys.executable, f"tools/test_{suite}.py", "--reference-build", reference, "--candidate", candidate, *(["--work", str(evidence / "decode")] if suite.startswith("decode_") else []), "--output", str(evidence / f"baseline-{suite}.json")], root, os.environ, evidence / f"baseline-{suite}.log")
+    for suite in dict.fromkeys(m[4] for m in mutations if m[4] != "abi"):
+        run = execute([sys.executable, f"tools/test_{suite}.py", "--reference-build", reference, "--candidate", candidate, *(["--work", str(evidence / "decode")] if suite.startswith("decode_") or suite == "hevc_limits" else []), "--output", str(evidence / f"baseline-{suite}.json")], root, os.environ, evidence / f"baseline-{suite}.log")
         if run.returncode:
             raise SystemExit(f"Baseline {suite} failed; see {evidence}")
     run = execute(["cargo", "test", "--locked", "-p", "libheifer-capi", "--test", "abi"], root, os.environ, evidence / "baseline-abi.log")
@@ -66,7 +69,7 @@ def main():
         (clone / "tests").mkdir()
         (clone / "tests/upstream").symlink_to(root / "tests/upstream", target_is_directory=True)
         env = dict(os.environ, CARGO_TARGET_DIR=str(clone / "target"))
-        for name, file, before, after, suite in MUTATIONS:
+        for name, file, before, after, suite in mutations:
             path = clone / file
             original = path.read_text()
             if original.count(before) != 1:
@@ -84,7 +87,7 @@ def main():
                 else:
                     report_path = evidence / f"{name}.json"
                     report_path.unlink(missing_ok=True)
-                    run = execute([sys.executable, f"tools/test_{suite}.py", "--reference-build", reference, "--candidate", str(library), *(["--work", str(evidence / "decode")] if suite.startswith("decode_") else []), "--output", str(report_path)], root, os.environ, evidence / f"{name}.log")
+                    run = execute([sys.executable, f"tools/test_{suite}.py", "--reference-build", reference, "--candidate", str(library), *(["--work", str(evidence / "decode")] if suite.startswith("decode_") or suite == "hevc_limits" else []), "--output", str(report_path)], root, os.environ, evidence / f"{name}.log")
                     report = json.loads(report_path.read_text()) if report_path.exists() else {}
                     record["mismatches"] = report.get("mismatches", 0)
                     record["detected"] = run.returncode == 1 and record["mismatches"] > 0
@@ -92,7 +95,7 @@ def main():
                 print(json.dumps(record), flush=True)
             finally:
                 path.write_text(original)
-    report = {"scope": f"{len(MUTATIONS)} deliberate defects; not comprehensive mutation coverage", "mutations": results, "all_detected": all(r["detected"] for r in results)}
+    report = {"scope": f"{len(mutations)} deliberate defects; not comprehensive mutation coverage", "mutations": results, "all_detected": all(r["detected"] for r in results)}
     Path(args.output).parent.mkdir(parents=True, exist_ok=True)
     Path(args.output).write_text(json.dumps(report, indent=2) + "\n")
     if not report["all_detected"]:

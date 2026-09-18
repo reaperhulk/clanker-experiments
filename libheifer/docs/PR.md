@@ -23,6 +23,10 @@ Changes:
   dynamic derived-handle queries after partial context reloads.
 - Add versioned security limits, safe plane allocation and context-wide accounting
   for image data, decoder input and metadata, including release/reload semantics.
+- Reject malformed/oversized HEVC SPS configurations before codec entry and match
+  empty, missing and reordered parameter-set behavior.
+- Keep error-message buffers on their owning image objects; reproduce and fix a
+  cross-handle use-after-free with an independent sanitizer client.
 - Add context/handle ownership, reload state, metadata, thumbnails and color queries.
 - Validate ten public struct layouts and reject thirteen deliberately mutated
   implementations (enums, errors, pixels, coordinates, item IDs, reload state, worker callbacks, warning text, mask samples, overlay alpha, resource budgets and field order).
@@ -46,7 +50,7 @@ new handle corpus. Another 2,927 security-limit and 276 resource-lifetime
 comparisons match; the security C client also passes ASan/UBSan. Mask comparisons also pass with optional codecs disabled. Callback values and worker placement are checked. Unknown-decoder
 error-order cases use one worker because upstream races can select different
 errors. A malformed-box brand mismatch remains recorded. Unit/ABI tests, formatting
-and Clippy pass on Linux x86_64. The preceding grid/warning CI run passed Rust builds on Linux,
+and Clippy pass on Linux x86_64. Another 400 HEVC configuration and 144 error-lifetime cases match; the lifetime client also passes ASan/UBSan after reproducing the pre-fix use-after-free. A fourteenth deliberate coded-size defect is rejected in a separate local run. The preceding security/overlay CI run passed Rust builds on Linux,
 macOS and Windows and all Linux development checks, including mutation tests; its sole failing step was
 the strict full-API gate. Cross-platform ABI, fuzzing and memory-safety validation
 remain open.

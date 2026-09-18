@@ -320,6 +320,24 @@ pub(crate) fn decode_native(
                     "Error while loading plugin: Unspecified: No decoder with that ID found.",
                 ));
             }
+            let mut coded_limits = limits;
+            if info.ispe.0 != 0
+                && info.ispe.1 != 0
+                && let Some(padded) =
+                    (u64::from(info.ispe.0) + 64).checked_mul(u64::from(info.ispe.1) + 64)
+            {
+                let maximum = padded.max(65536);
+                if coded_limits.max_image_size_pixels == 0
+                    || maximum < coded_limits.max_image_size_pixels
+                {
+                    coded_limits.max_image_size_pixels = maximum;
+                }
+            }
+            if let Some((width, height)) =
+                crate::hevc_config::coded_size(container.property(id, *b"hvcC")?)?
+            {
+                coded_limits.check_image_size(width, height)?;
+            }
             let data = {
                 let mut cached = info
                     .decoder_input
@@ -352,6 +370,11 @@ pub(crate) fn decode_native(
             .map_err(|e| match e {
                 crate::hevc::DecodeError::Container(e) => e.into(),
                 crate::hevc::DecodeError::Image(e) => e.into(),
+                crate::hevc::DecodeError::NoImage => ContextError::new(
+                    7,
+                    0,
+                    "Decoder plugin generated an error: Unspecified: Decoding the input data did not give a decompressed image.",
+                ),
                 e => ContextError::new(
                     7,
                     0,

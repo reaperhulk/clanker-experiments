@@ -211,9 +211,9 @@ pub unsafe extern "C" fn heif_decode_image(
             }
             super::SUCCESS
         }
-        Ok(Err(error)) => super::context::report(&mut super::context::lock(&handle.shared), error),
-        Err(_) => super::context::report(
-            &mut super::context::lock(&handle.shared),
+        Ok(Err(error)) => super::context::report_image(handle.image(), error),
+        Err(_) => super::context::report_image(
+            handle.image(),
             ContextError::new(
                 7,
                 0,

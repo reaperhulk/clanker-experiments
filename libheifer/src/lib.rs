@@ -14,6 +14,7 @@ pub mod error_text;
 pub mod geometry;
 #[cfg(feature = "hevc")]
 pub mod hevc;
+pub mod hevc_config;
 pub mod image;
 pub mod mask;
 pub mod overlay;

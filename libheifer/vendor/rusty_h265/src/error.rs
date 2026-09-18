@@ -19,6 +19,8 @@ pub enum Error {
     Again,
     /// The bitstream is malformed or internally inconsistent.
     InvalidData(String),
+    /// A slice arrived before its referenced parameter sets.
+    MissingParameterSet(u8),
     /// The input is valid but uses a feature outside this decoder's scope
     /// (RExt / SCC / multi-layer profiles are parsed and refused by name).
     Unsupported(String),
@@ -50,6 +52,7 @@ impl std::fmt::Display for Error {
             Error::Unimplemented(what) => write!(f, "not yet implemented: {what}"),
             Error::Eof => write!(f, "end of stream"),
             Error::Again => write!(f, "more input required"),
+            Error::MissingParameterSet(id) => write!(f, "invalid data: slice refers to unknown PPS {id}"),
             Error::InvalidData(msg) => write!(f, "invalid data: {msg}"),
             Error::Unsupported(msg) => write!(f, "unsupported: {msg}"),
         }

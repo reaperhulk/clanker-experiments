@@ -4,7 +4,7 @@ Reference: libheif 1.23.4, commit `4e14f5942c1732ace9611b9522cc991501445463`.
 HEVC reference backend: libde265 1.0.16, commit
 `7ba65889d3d6d8a0d99b5360b028243ba843be3a`. Candidate uses only Rust code;
 the HEVC feature uses rusty_h265/rusty_h265-accel 0.6.0. The former is vendored
-with VUI unspecified-color and monochrome-decoding fixes; its Apache-2.0 notices are retained.
+with VUI unspecified-color, monochrome-decoding and typed missing-parameter fixes; its Apache-2.0 notices are retained.
 
 ## Implemented scope
 
@@ -41,6 +41,9 @@ behavior gap is explicitly retained. There is no claim of a compatible library.
 | C client sanitizers | ASan/UBSan clients pass the context corpus | Libraries are not sanitizer-instrumented; local LeakSanitizer could not run under ptrace, so leak detection was explicitly disabled |
 | ABI | Ten structs match original-header size, alignment and every field offset; struct-return and data-symbol clients pass | Linux x86_64 only |
 | Mutation checks | Thirteen deliberately wrong implementations rejected | Wrong filetype enum, error code, plane samples, primary coordinate, primary item ID, alpha reload state, worker callbacks, warning text, mask samples, overlay alpha, decode-operation/total-memory budgets and ABI field order; isolated builds, successful baselines, compiler/crash failures do not count |
+| HEVC configuration | 400 cases, 0 mismatches | SPS prefixes, coded-size limits, crop/depth/chroma bounds, sub-layer flags, empty/reordered/missing parameter sets and recovery after early slices |
+| Error-buffer lifetimes | 144 cases, 0 mismatches; C-client ASan/UBSan pass | Unrelated handles/context errors, aliases and releases; the pre-fix candidate use-after-free was reproduced under ASan |
+| Coded-size mutation | One additional defect rejected (138 mismatches) | Independent baseline passed; changed the tightened limit floor from 65,536 to 65,535; the full default mutation set now contains fourteen defects |
 | HEVC native output | 5/5 fixtures match exactly | Y/Cb/Cr data, image IDs/order, dimensions, depths and strides; transformations disabled, native NCLX passthrough; **alpha not compared** |
 | HEVC default output | 5/5 tested color-plane outputs match | Separate default-converted Rust and reference output; no longer compares native data to default output |
 | C decoding | 115 cases, 0 mismatches | Five direct HEVC fixtures x 23 modes; native/default/planar/interleaved output including alpha, profiles, both 16-bit byte orders, sampling restrictions, callbacks and errors; not codec conformance |
@@ -100,6 +103,19 @@ The Rust accounting follows libheif allocation lifetimes, including retained dec
 input and metadata. A context reload releases unrelated images while existing
 handles retain their own objects and auxiliary images. Limits for codecs/formats
 not yet implemented, and complete allocator-failure behavior, remain open.
+
+HEVC configuration geometry is now checked against tightened context limits before
+reading media or entering the codec. Empty parameter-set NALs are ignored, PPSs
+with unavailable sequence parameters are discarded on arrival, and slices without
+parameters can be followed by a later complete frame. This is a bounded set of
+malformed-stream checks, not full HEVC conformance or codec allocation accounting.
+
+Errors returned through image handles now use the image's shared error buffer.
+The independent sanitizer client reproduced a use-after-free before the fix and
+passes after it. The latest completed CI (`15646d9`) passes all development checks,
+including thirteen mutations and sanitizer clients with leak checking enabled,
+and Linux/macOS/Windows Rust builds. Only its full completion gate fails. That CI
+run predates these SPS and error-lifetime additions; their local evidence is separate.
 
 ## Initial performance evidence
 

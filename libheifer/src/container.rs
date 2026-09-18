@@ -502,7 +502,10 @@ impl<'a> Container<'a> {
                 if nals.len() >= 65536 {
                     return Err(ParseError::Limit);
                 }
-                nals.push(config.take(size)?.to_vec());
+                let nal = config.take(size)?;
+                if !nal.is_empty() {
+                    nals.push(nal.to_vec());
+                }
             }
         }
         let mut r = Reader(payload);

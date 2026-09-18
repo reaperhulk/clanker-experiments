@@ -11,6 +11,7 @@ pub enum DecodeError {
     Codec(rusty_h265::Error),
     Image(crate::error::Error),
     Geometry,
+    NoImage,
 }
 impl std::fmt::Display for DecodeError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -52,10 +53,14 @@ fn decode_nals(
         matrix: 2,
         full_range: false,
     };
+    let mut sequence_sets = [false; 16];
     for nal in nals {
         if nal.len() >= 2 && (nal[0] >> 1) & 63 == 33 {
             let rbsp = rusty_h265::nal::unescape(&nal[2..]);
             let sps = rusty_h265::ps::parse_sps(&rbsp.data).map_err(DecodeError::Codec)?;
+            if let Some(present) = sequence_sets.get_mut(usize::from(sps.id)) {
+                *present = true;
+            }
             if let Some(vui) = sps.vui {
                 nclx = crate::color::Nclx {
                     primaries: vui.colour_primaries.into(),
@@ -65,10 +70,31 @@ fn decode_nals(
                 };
             }
         }
-        decoder.push_nal(&nal, None).map_err(DecodeError::Codec)?;
+        if nal.len() >= 2 && (nal[0] >> 1) & 63 == 34 {
+            let rbsp = rusty_h265::nal::unescape(&nal[2..]);
+            let pps = rusty_h265::ps::parse_pps(&rbsp.data).map_err(DecodeError::Codec)?;
+            // libde265 validates the SPS reference when the PPS arrives; an
+            // unknown reference discards that PPS instead of deferring it.
+            if !sequence_sets
+                .get(usize::from(pps.sps_id))
+                .copied()
+                .unwrap_or(false)
+            {
+                continue;
+            }
+        }
+        // libde265 discards slices whose parameter sets have not arrived. Keep
+        // accepting later NALs so a subsequent complete picture can be decoded.
+        match decoder.push_nal(&nal, None) {
+            Ok(()) | Err(rusty_h265::Error::MissingParameterSet(_)) => {}
+            Err(error) => return Err(DecodeError::Codec(error)),
+        }
     }
     decoder.flush();
-    let frame = decoder.next_frame().map_err(DecodeError::Codec)?;
+    let frame = decoder.next_frame().map_err(|error| match error {
+        rusty_h265::Error::Again | rusty_h265::Error::Eof => DecodeError::NoImage,
+        error => DecodeError::Codec(error),
+    })?;
     let picture = &frame.picture;
     let chroma = i32::from(picture.chroma_format_idc);
     if chroma > 3 {

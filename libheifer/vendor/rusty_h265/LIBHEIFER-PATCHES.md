@@ -12,3 +12,7 @@ no chroma prediction-mode or coded-block flags are consumed; chroma reconstructi
 PCM samples, motion compensation and deblocking are omitted. Extension-tool flags
 remain checked and unsupported tools are still rejected. The independent alpha
 fixture exercises this path; broader monochrome conformance remains required.
+
+Parameter-set lookup failures now have a typed `MissingParameterSet` error (with
+the previous Display text). The libheifer adapter can discard such slices and
+continue accepting subsequent NAL units, matching libde265 stream behavior.

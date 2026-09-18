@@ -36,7 +36,7 @@ pub struct HeifHandle {
     pub(super) id: u32,
 }
 impl HeifHandle {
-    fn image(&self) -> &ImageInfo {
+    pub(super) fn image(&self) -> &ImageInfo {
         &self.images[&self.id]
     }
     fn metadata(&self, id: u32) -> Option<&Metadata> {
@@ -67,9 +67,22 @@ pub(super) fn report(context: &mut Context, error: ContextError) -> HeifError {
         message: context.last_error.as_ptr(),
     }
 }
-fn invalid_id(shared: &SharedContext) -> HeifError {
-    report(
-        &mut lock(shared),
+pub(super) fn report_image(image: &ImageInfo, error: ContextError) -> HeifError {
+    let mut buffer = image
+        .last_error
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    *buffer =
+        CString::new(error.message).unwrap_or_else(|_| CString::new("Invalid error text").unwrap());
+    HeifError {
+        code: error.code,
+        subcode: error.subcode,
+        message: buffer.as_ptr(),
+    }
+}
+fn invalid_id(image: &ImageInfo) -> HeifError {
+    report_image(
+        image,
         ContextError::new(5, 2000, "Usage error: Non-existing item ID referenced"),
     )
 }
@@ -269,9 +282,6 @@ unsafe fn create_handle_images(
     id: u32,
     out: *mut *mut HeifHandle,
 ) -> HeifError {
-    if let Some(e) = &source[&id].error {
-        return report(&mut lock(shared), e.clone());
-    }
     let mut images = std::collections::BTreeMap::new();
     let mut pending = vec![id];
     while let Some(child) = pending.pop() {
@@ -445,12 +455,12 @@ pub unsafe extern "C" fn heif_image_handle_get_preferred_decoding_colorspace(
     let Some(handle) = (unsafe { handle.as_ref() }) else {
         return Error::NULL.into();
     };
-    let mut context = lock(&handle.shared);
+    let context = lock(&handle.shared);
     let document = context.document.as_ref().expect("handle owns its context");
     let (preferred_colorspace, preferred_chroma) =
         match document.preferred_colorspace(handle.image()) {
             Ok(value) => value,
-            Err(error) => return report(&mut context, error),
+            Err(error) => return report_image(handle.image(), error),
         };
     if !colorspace.is_null() {
         unsafe { colorspace.write(preferred_colorspace) };
@@ -502,10 +512,11 @@ pub unsafe extern "C" fn heif_image_handle_get_thumbnail(
         return Error::NULL.into();
     }
     if !handle.image().thumbnails.contains(&id) {
-        return invalid_id(&handle.shared);
+        return invalid_id(handle.image());
     }
-    if handle.images[&id].error.is_some() {
+    if let Some(error) = &handle.images[&id].error {
         unsafe { out.write(ptr::null_mut()) };
+        return report_image(handle.image(), error.clone());
     }
     unsafe { create_handle_images(&handle.shared, &handle.images, id, out) }
 }
@@ -591,7 +602,7 @@ pub unsafe extern "C" fn heif_image_handle_get_metadata(
         return Error::NULL.into();
     };
     let Some(m) = handle.metadata(id) else {
-        return invalid_id(&handle.shared);
+        return invalid_id(handle.image());
     };
     if !m.data.is_empty() {
         if out.is_null() {

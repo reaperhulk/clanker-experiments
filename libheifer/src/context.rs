@@ -395,6 +395,7 @@ pub(crate) struct DecoderInput {
     pub _reservation: crate::security::Reservation,
 }
 pub struct ImageInfo {
+    pub last_error: std::sync::Mutex<CString>,
     pub(crate) decode_mutex: std::sync::Mutex<()>,
     pub related_images: Vec<u32>,
     #[cfg(feature = "hevc")]
@@ -530,6 +531,7 @@ impl Document {
             }
             let ispe = container.dimensions(item.id).unwrap_or((0, 0));
             let mut image = ImageInfo {
+                last_error: std::sync::Mutex::new(CString::new("Success").unwrap()),
                 decode_mutex: std::sync::Mutex::new(()),
                 related_images: Vec::new(),
                 #[cfg(feature = "hevc")]
