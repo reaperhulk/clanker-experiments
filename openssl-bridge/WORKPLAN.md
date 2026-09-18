@@ -27,6 +27,16 @@ with the incremental patch must not be described as a full openssl replacement.
 - OpenSSL descriptors are fetched and owned; fork lookup omissions are handled
   using their documented algorithm getters.
 
+## Remaining symmetric integration under validation
+
+- AEAD protocols (GCM, CCM, OCB, SIV, GCM-SIV, ChaCha20-Poly1305) use immutable
+  keys with per-operation native state. Failed authentication leaves caller
+  buffers unchanged; temporary output is erased.
+- Native Poly1305 state is held at a stable address and finalized once.
+- Fernet uses fallible copies of pristine HMAC and cipher key schedules.
+- Password-encrypted keys and the Rust key-wrapping loops use checked ciphers.
+- ML-DSA message representative hashing uses checked SHAKE256 contexts.
+
 ## Primary replacement backlog
 
 1. Unify Python error-stack records
@@ -34,9 +44,8 @@ with the incremental patch must not be described as a full openssl replacement.
 2. Finish validating the conventional cipher and streaming GCM integration across
    backends. Compare test identities and existing skips, including provider
    configurations; do not infer capability equivalence from a successful build.
-3. Implement CCM, OCB, SIV, GCM-SIV, ChaCha20-Poly1305 and backend-specific AEAD,
-   with correct order of configuration, tag handling, buffer bounds, and context
-   copying. Replace the raw `CipherCtx` usage in cryptography completely.
+3. Finish the symmetric integration test matrix, including configuration variants,
+   FIPS behavior, legacy key-encryption formats, and the minimum Rust version.
 4. Replace remaining asymmetric key operations: DSA, EC/ECDSA/ECDH,
    DH, Ed448/X448, ML-DSA, and ML-KEM. Constructors and operations must maintain
    native invariants and explicit algorithm/key-role distinctions.

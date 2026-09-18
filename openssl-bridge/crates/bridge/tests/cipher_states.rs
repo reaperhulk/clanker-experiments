@@ -155,3 +155,27 @@ fn xts_requires_one_complete_data_unit_and_distinct_keys() {
         .crypt_into(&[0; 15], &mut [0; 15])
         .is_err());
 }
+
+#[test]
+fn pristine_key_schedules_produce_independent_cipher_states() {
+    use openssl_bridge::cipher::CipherKey;
+    let key = CipherKey::new(Cipher::Aes128Cbc, &[3; 16], true).unwrap();
+    let mut first = key.start(Direction::Encrypt, &[1; 16]).unwrap();
+    let mut second = key.start(Direction::Encrypt, &[2; 16]).unwrap();
+    let mut a = [0; 48];
+    let mut b = [0; 48];
+    let an = first.update_into(&[9; 32], &mut a).unwrap();
+    let bn = second.update_into(&[9; 32], &mut b).unwrap();
+    a[an..].copy_from_slice(&first.finish().unwrap());
+    b[bn..].copy_from_slice(&second.finish().unwrap());
+    assert_ne!(a, b);
+    for (iv, encrypted) in [([1; 16], a), ([2; 16], b)] {
+        let mut decrypt = key.start(Direction::Decrypt, &iv).unwrap();
+        let mut output = [0; 64];
+        let written = decrypt.update_into(&encrypted, &mut output).unwrap();
+        let tail = decrypt.finish().unwrap();
+        output[written..written + tail.len()].copy_from_slice(&tail);
+        assert_eq!(written + tail.len(), 32);
+        assert_eq!(&output[..32], &[9; 32]);
+    }
+}

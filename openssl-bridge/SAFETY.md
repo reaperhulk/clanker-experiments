@@ -123,3 +123,25 @@ context. Fork descriptors are immutable static objects. Context `Sync` is sound
 because no shared-reference method accesses native state: metadata is cached in
 Rust, and every native operation requires an exclusive reference or consumes
 ownership. Inputs and outputs must be valid disjoint Rust borrows.
+
+## One-shot AEAD and Poly1305
+
+AEAD keys are owned and immutable. Cipher modes and tag lengths are validated
+before any operation, with separate CCM setup, SIV associated-data components,
+and BoringSSL/AWS-LC AEAD calls. Every operation owns its native context and
+keeps unauthenticated output in an erased-on-drop temporary buffer. Caller
+output is copied only after successful authentication. Descriptor parameters,
+nonce lengths, CCM size bounds, integer limits, and output lengths are checked.
+
+The native Poly1305 state uses bindgen's actual backend type inside a heap-owned
+`MaybeUninit` allocation. Its address does not change when the Rust wrapper
+moves; unused native storage is never assumed to contain initialized Rust
+values. Finalization consumes the wrapper, and Drop erases the whole allocation.
+OpenSSL uses the owned EVP_MAC API instead. Each Poly1305 key remains a one-time
+key: callers must not reuse its bytes to create another independent MAC.
+
+`CipherKey` retains pristine, immutable encryption and decryption key schedules.
+Starting an operation fallibly copies the appropriate native state and requires
+a full IV before returning a stream. Native copy reads a const source; all
+payload operations use a distinct context. Private scratch allocations used for
+password-encrypted keys are erased on both success and failure.

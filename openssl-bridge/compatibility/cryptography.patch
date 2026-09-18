@@ -312,7 +312,7 @@ index 9f7d181..ed6ec3b 100644
 +source = "registry+https://github.com/rust-lang/crates.io-index"
 +checksum = "f0805222e57f7521d6a62e36fa9163bc891acd422f971defe97d64e70d0a4fe5"
 diff --git a/Cargo.toml b/Cargo.toml
-index c9783a4..9246411 100644
+index c9783a4..6cbc90b 100644
 --- a/Cargo.toml
 +++ b/Cargo.toml
 @@ -21,6 +21,7 @@ rust-version = "1.83.0"
@@ -626,7 +626,7 @@ index 0f903a5..2916880 100644
 +    }
 +}
 diff --git a/src/rust/cryptography-key-parsing/src/pbe.rs b/src/rust/cryptography-key-parsing/src/pbe.rs
-index e0f1deb..61e6849 100644
+index e0f1deb..4f7c2cf 100644
 --- a/src/rust/cryptography-key-parsing/src/pbe.rs
 +++ b/src/rust/cryptography-key-parsing/src/pbe.rs
 @@ -91,7 +91,7 @@ impl EncryptionAlgorithm {
@@ -638,7 +638,7 @@ index e0f1deb..61e6849 100644
                  )?;
                  let iv = cryptography_crypto::pkcs12::kdf(
                      password,
-@@ -99,7 +99,7 @@ impl EncryptionAlgorithm {
+@@ -99,32 +99,37 @@ impl EncryptionAlgorithm {
                      cryptography_crypto::pkcs12::KDF_IV_ID,
                      cipher_kdf_iter,
                      8,
@@ -646,8 +646,14 @@ index e0f1deb..61e6849 100644
 +                    openssl_bridge::hash::Algorithm::from_name("sha1")?,
                  )?;
  
-                 Ok(openssl::symm::encrypt(
-@@ -110,14 +110,19 @@ impl EncryptionAlgorithm {
+-                Ok(openssl::symm::encrypt(
+-                    openssl::symm::Cipher::des_ede3_cbc(),
++                Ok(openssl_bridge::cipher::encrypt_padded(
++                    openssl_bridge::cipher::Cipher::TripleDesCbc,
+                     &key,
+-                    Some(&iv),
++                    &iv,
+                     data,
                  )?)
              }
              EncryptionAlgorithm::PBESv2SHA256AndAES256CBC => {
@@ -671,11 +677,34 @@ index e0f1deb..61e6849 100644
                      &mut key,
                  )?;
  
+-                Ok(openssl::symm::encrypt(
+-                    openssl::symm::Cipher::aes_256_cbc(),
++                Ok(openssl_bridge::cipher::encrypt_padded(
++                    openssl_bridge::cipher::Cipher::Aes256Cbc,
+                     &key,
+-                    Some(iv),
++                    iv,
+                     data,
+                 )?)
+             }
 diff --git a/src/rust/cryptography-key-parsing/src/pem.rs b/src/rust/cryptography-key-parsing/src/pem.rs
-index 26d7c9c..473c9fc 100644
+index 26d7c9c..f9bacf4 100644
 --- a/src/rust/cryptography-key-parsing/src/pem.rs
 +++ b/src/rust/cryptography-key-parsing/src/pem.rs
-@@ -46,7 +46,7 @@ pub fn decrypt_pem<'a>(
+@@ -36,9 +36,9 @@ pub fn decrypt_pem<'a>(
+             // There's no RFC that defines these, but these are the ones in
+             // very wide use that we support.
+             let cipher = match cipher_algorithm {
+-                "AES-128-CBC" => openssl::symm::Cipher::aes_128_cbc(),
+-                "AES-256-CBC" => openssl::symm::Cipher::aes_256_cbc(),
+-                "DES-EDE3-CBC" => openssl::symm::Cipher::des_ede3_cbc(),
++                "AES-128-CBC" => openssl_bridge::cipher::Cipher::Aes128Cbc,
++                "AES-256-CBC" => openssl_bridge::cipher::Cipher::Aes256Cbc,
++                "DES-EDE3-CBC" => openssl_bridge::cipher::Cipher::TripleDesCbc,
+                 _ => return Err(KeyParsingError::PemUnsupportedCipher),
+             };
+ 
+@@ -46,18 +46,19 @@ pub fn decrypt_pem<'a>(
                  .ok_or(KeyParsingError::PemInvalidIv)?;
  
              let key = cryptography_crypto::pbkdf1::openssl_kdf(
@@ -684,9 +713,29 @@ index 26d7c9c..473c9fc 100644
                  password,
                  iv.get(..8)
                      .ok_or(KeyParsingError::PemInvalidIv)?
-@@ -89,12 +89,12 @@ pub fn encrypt_pem(
-     let cipher = openssl::symm::Cipher::aes_256_cbc();
-     let iv_len = cipher.iv_len().unwrap();
+                     .try_into()
+                     .unwrap(),
+-                cipher.key_len(),
++                cipher.default_key_size()?,
+             )
+             .map_err(|_| KeyParsingError::PemUnableToDeriveKey)?;
+ 
+-            let decrypted = openssl::symm::decrypt(cipher, &key, Some(&iv), pem.contents())
+-                .map_err(|_| KeyParsingError::IncorrectPassword)?;
++            let decrypted =
++                openssl_bridge::cipher::decrypt_padded(cipher, &key, &iv, pem.contents())
++                    .map_err(|_| KeyParsingError::IncorrectPassword)?;
+ 
+             Ok((Cow::Owned(decrypted), true))
+         }
+@@ -86,22 +87,22 @@ pub fn encrypt_pem(
+         return Ok(pem::encode_config(&pem, ENCODE_CONFIG).into_bytes());
+     }
+ 
+-    let cipher = openssl::symm::Cipher::aes_256_cbc();
+-    let iv_len = cipher.iv_len().unwrap();
++    let cipher = openssl_bridge::cipher::Cipher::Aes256Cbc;
++    let iv_len = cipher.iv_size()?;
      let mut iv = vec![0u8; iv_len];
 -    cryptography_openssl::rand::rand_bytes(&mut iv)?;
 +    openssl_bridge::rand::fill_private(&mut iv)?;
@@ -698,66 +747,158 @@ index 26d7c9c..473c9fc 100644
 +        openssl_bridge::hash::Algorithm::from_name("md5")?,
          password,
          iv.get(..8).unwrap().try_into().unwrap(),
-         cipher.key_len(),
+-        cipher.key_len(),
++        cipher.default_key_size()?,
+     )?;
+ 
+     // Encrypt the DER data
+-    let encrypted = openssl::symm::encrypt(cipher, &key, Some(&iv), der_data)?;
++    let encrypted = openssl_bridge::cipher::encrypt_padded(cipher, &key, &iv, der_data)?;
+ 
+     let iv_hex = cryptography_crypto::encoding::hex_encode(&iv);
+ 
 diff --git a/src/rust/cryptography-key-parsing/src/pkcs8.rs b/src/rust/cryptography-key-parsing/src/pkcs8.rs
-index 7708505..ea1a5ac 100644
+index 7708505..a2c9a2e 100644
 --- a/src/rust/cryptography-key-parsing/src/pkcs8.rs
 +++ b/src/rust/cryptography-key-parsing/src/pkcs8.rs
-@@ -270,7 +270,7 @@ fn pkcs12_pbe_decrypt(
+@@ -269,8 +269,8 @@ fn parse_dh_private_key(
+ fn pkcs12_pbe_decrypt(
      data: &[u8],
      password: &[u8],
-     cipher: openssl::symm::Cipher,
+-    cipher: openssl::symm::Cipher,
 -    hash: openssl::hash::MessageDigest,
++    cipher: openssl_bridge::cipher::Cipher,
 +    hash: openssl_bridge::hash::Algorithm,
      params: &Pkcs12PbeParams<'_>,
  ) -> KeyParsingResult<Vec<u8>> {
      let Ok(password) = std::str::from_utf8(password) else {
-@@ -301,7 +301,7 @@ fn pkcs5_pbe_decrypt(
+@@ -281,7 +281,7 @@ fn pkcs12_pbe_decrypt(
+         params.salt,
+         cryptography_crypto::pkcs12::KDF_ENCRYPTION_KEY_ID,
+         params.iterations,
+-        cipher.key_len(),
++        cipher.default_key_size()?,
+         hash,
+     )?;
+     let iv = cryptography_crypto::pkcs12::kdf(
+@@ -289,24 +289,24 @@ fn pkcs12_pbe_decrypt(
+         params.salt,
+         cryptography_crypto::pkcs12::KDF_IV_ID,
+         params.iterations,
+-        cipher.block_size(),
++        cipher.iv_size()?,
+         hash,
+     )?;
+ 
+-    openssl::symm::decrypt(cipher, &key, Some(&iv), data)
++    openssl_bridge::cipher::decrypt_padded(cipher, &key, &iv, data)
+         .map_err(|_| KeyParsingError::IncorrectPassword)
+ }
+ 
+ fn pkcs5_pbe_decrypt(
      data: &[u8],
      password: &[u8],
-     cipher: openssl::symm::Cipher,
+-    cipher: openssl::symm::Cipher,
 -    hash: openssl::hash::MessageDigest,
++    cipher: openssl_bridge::cipher::Cipher,
 +    hash: openssl_bridge::hash::Algorithm,
      params: &PbeParams,
  ) -> KeyParsingResult<Vec<u8>> {
      // PKCS#5 v1.5 uses PBKDF1 with iteration count
-@@ -337,14 +337,14 @@ pub fn parse_encrypted_private_key(
+     // For PKCS#5 PBE, we need key + IV length
+-    let key_iv_len = cipher.key_len() + cipher.iv_len().unwrap();
++    let key_iv_len = cipher.default_key_size()? + cipher.iv_size()?;
+     let key_iv = cryptography_crypto::pbkdf1::pbkdf1(
+         hash,
+         password,
+@@ -315,10 +315,10 @@ fn pkcs5_pbe_decrypt(
+         key_iv_len,
+     )?;
+ 
+-    let key = &key_iv[..cipher.key_len()];
+-    let iv = &key_iv[cipher.key_len()..];
++    let key = &key_iv[..cipher.default_key_size()?];
++    let iv = &key_iv[cipher.default_key_size()?..];
+ 
+-    openssl::symm::decrypt(cipher, key, Some(iv), data)
++    openssl_bridge::cipher::decrypt_padded(cipher, key, iv, data)
+         .map_err(|_| KeyParsingError::IncorrectPassword)
+ }
+ 
+@@ -336,46 +336,46 @@ pub fn parse_encrypted_private_key(
+         AlgorithmParameters::PbeWithMd5AndDesCbc(params) => pkcs5_pbe_decrypt(
              epki.encrypted_data,
              password,
-             openssl::symm::Cipher::des_cbc(),
+-            openssl::symm::Cipher::des_cbc(),
 -            openssl::hash::MessageDigest::md5(),
++            openssl_bridge::cipher::Cipher::DesCbc,
 +            openssl_bridge::hash::Algorithm::from_name("md5")?,
              &params,
          )?,
          AlgorithmParameters::PbeWithShaAnd3KeyTripleDesCbc(params) => pkcs12_pbe_decrypt(
              epki.encrypted_data,
              password,
-             openssl::symm::Cipher::des_ede3_cbc(),
+-            openssl::symm::Cipher::des_ede3_cbc(),
 -            openssl::hash::MessageDigest::sha1(),
++            openssl_bridge::cipher::Cipher::TripleDesCbc,
 +            openssl_bridge::hash::Algorithm::from_name("sha1")?,
              &params,
          )?,
          #[cfg(not(CRYPTOGRAPHY_OSSLCONF = "OPENSSL_NO_RC2"))]
-@@ -352,7 +352,7 @@ pub fn parse_encrypted_private_key(
+         AlgorithmParameters::PbeWithShaAnd40BitRc2Cbc(params) => pkcs12_pbe_decrypt(
              epki.encrypted_data,
              password,
-             openssl::symm::Cipher::rc2_40_cbc(),
+-            openssl::symm::Cipher::rc2_40_cbc(),
 -            openssl::hash::MessageDigest::sha1(),
++            openssl_bridge::cipher::Cipher::Rc2_40Cbc,
 +            openssl_bridge::hash::Algorithm::from_name("sha1")?,
              &params,
          )?,
          #[cfg(not(CRYPTOGRAPHY_OSSLCONF = "OPENSSL_NO_RC4"))]
-@@ -360,7 +360,7 @@ pub fn parse_encrypted_private_key(
+         AlgorithmParameters::PbeWithShaAnd128BitRc4(params) => pkcs12_pbe_decrypt(
              epki.encrypted_data,
              password,
-             openssl::symm::Cipher::rc4(),
+-            openssl::symm::Cipher::rc4(),
 -            openssl::hash::MessageDigest::sha1(),
++            openssl_bridge::cipher::Cipher::Rc4,
 +            openssl_bridge::hash::Algorithm::from_name("sha1")?,
              &params,
          )?,
          AlgorithmParameters::Pbes2(params) => {
-@@ -398,19 +398,19 @@ pub fn parse_encrypted_private_key(
-                     let mut key = vec![0; cipher.key_len()];
+             let (cipher, iv) = match params.encryption_scheme.params {
+                 AlgorithmParameters::DesEde3Cbc(ref iv) => {
+-                    (openssl::symm::Cipher::des_ede3_cbc(), &iv[..])
++                    (openssl_bridge::cipher::Cipher::TripleDesCbc, &iv[..])
+                 }
+                 AlgorithmParameters::Aes128Cbc(ref iv) => {
+-                    (openssl::symm::Cipher::aes_128_cbc(), &iv[..])
++                    (openssl_bridge::cipher::Cipher::Aes128Cbc, &iv[..])
+                 }
+                 AlgorithmParameters::Aes192Cbc(ref iv) => {
+-                    (openssl::symm::Cipher::aes_192_cbc(), &iv[..])
++                    (openssl_bridge::cipher::Cipher::Aes192Cbc, &iv[..])
+                 }
+                 AlgorithmParameters::Aes256Cbc(ref iv) => {
+-                    (openssl::symm::Cipher::aes_256_cbc(), &iv[..])
++                    (openssl_bridge::cipher::Cipher::Aes256Cbc, &iv[..])
+                 }
+                 #[cfg(not(CRYPTOGRAPHY_OSSLCONF = "OPENSSL_NO_RC2"))]
+                 AlgorithmParameters::Rc2Cbc(ref params) => {
+@@ -384,7 +384,7 @@ pub fn parse_encrypted_private_key(
+                     if params.version.unwrap_or(32) != 58 {
+                         return Err(KeyParsingError::InvalidKey);
+                     }
+-                    (openssl::symm::Cipher::rc2_cbc(), &params.iv[..])
++                    (openssl_bridge::cipher::Cipher::Rc2Cbc, &params.iv[..])
+                 }
+                 _ => {
+                     return Err(KeyParsingError::UnsupportedEncryptionAlgorithm(
+@@ -395,22 +395,22 @@ pub fn parse_encrypted_private_key(
+ 
+             let key = match params.key_derivation_func.params {
+                 AlgorithmParameters::Pbkdf2(pbkdf2_params) => {
+-                    let mut key = vec![0; cipher.key_len()];
++                    let mut key = vec![0; cipher.default_key_size()?];
                      let md = match pbkdf2_params.prf.params {
                          AlgorithmParameters::HmacWithSha1(_) => {
 -                            openssl::hash::MessageDigest::sha1()
@@ -781,7 +922,7 @@ index 7708505..ea1a5ac 100644
                          }
                          _ => {
                              return Err(KeyParsingError::UnsupportedEncryptionAlgorithm(
-@@ -418,18 +418,16 @@ pub fn parse_encrypted_private_key(
+@@ -418,26 +418,24 @@ pub fn parse_encrypted_private_key(
                              ))
                          }
                      };
@@ -807,15 +948,25 @@ index 7708505..ea1a5ac 100644
                          &mut key,
                      )?;
                      key
-@@ -437,7 +435,7 @@ pub fn parse_encrypted_private_key(
+                 }
                  #[cfg(not(CRYPTOGRAPHY_IS_LIBRESSL))]
                  AlgorithmParameters::Scrypt(scrypt_params) => {
-                     let mut key = vec![0; cipher.key_len()];
+-                    let mut key = vec![0; cipher.key_len()];
 -                    openssl::pkcs5::scrypt(
++                    let mut key = vec![0; cipher.default_key_size()?];
 +                    openssl_bridge::kdf::scrypt(
                          password,
                          scrypt_params.salt,
                          scrypt_params.cost_parameter,
+@@ -455,7 +453,7 @@ pub fn parse_encrypted_private_key(
+                 }
+             };
+ 
+-            openssl::symm::decrypt(cipher, &key, Some(iv), epki.encrypted_data)
++            openssl_bridge::cipher::decrypt_padded(cipher, &key, iv, epki.encrypted_data)
+                 .map_err(|_| KeyParsingError::IncorrectPassword)?
+         }
+         _ => {
 @@ -645,8 +643,8 @@ pub fn serialize_encrypted_private_key(
  
      let mut salt = [0u8; 16];
@@ -827,6 +978,764 @@ index 7708505..ea1a5ac 100644
  
      let encrypted_data = e.encrypt(password, KDF_ITERATION_COUNT, &salt, &iv, &plaintext_der)?;
      let encryption_alg = e.algorithm_identifier(KDF_ITERATION_COUNT, &salt, &iv);
+diff --git a/src/rust/src/backend/aead.rs b/src/rust/src/backend/aead.rs
+index 2289d1c..06a0b13 100644
+--- a/src/rust/src/backend/aead.rs
++++ b/src/rust/src/backend/aead.rs
+@@ -46,11 +46,13 @@ fn extract_aad(aad: Option<Aad<'_>>) -> CryptographyResult<(ExtractedAad<'_>, us
+         }
+         Some(Aad::List(ads)) => {
+             let mut bufs = Vec::with_capacity(ads.len());
+-            let mut len = 0;
++            let mut len = 0usize;
+             for ad in ads.iter() {
+                 let buf = ad.extract::<CffiBuf<'_>>()?;
+                 check_length(buf.as_bytes())?;
+-                len += buf.as_bytes().len();
++                len = len.checked_add(buf.as_bytes().len()).ok_or_else(|| {
++                    pyo3::exceptions::PyOverflowError::new_err("associated data length overflow")
++                })?;
+                 bufs.push(buf);
+             }
+             Ok((ExtractedAad::List(bufs), len))
+@@ -58,229 +60,62 @@ fn extract_aad(aad: Option<Aad<'_>>) -> CryptographyResult<(ExtractedAad<'_>, us
+     }
+ }
+ 
+-pub(crate) enum AeadCipher {
+-    Static(&'static openssl::cipher::CipherRef),
+-    #[cfg(not(any(
+-        CRYPTOGRAPHY_IS_LIBRESSL,
+-        CRYPTOGRAPHY_IS_BORINGSSL,
+-        CRYPTOGRAPHY_IS_AWSLC
+-    )))]
+-    Fetched(openssl::cipher::Cipher),
+-}
+-
+-impl std::ops::Deref for AeadCipher {
+-    type Target = openssl::cipher::CipherRef;
+-
+-    fn deref(&self) -> &openssl::cipher::CipherRef {
+-        match self {
+-            AeadCipher::Static(c) => c,
+-            #[cfg(not(any(
+-                CRYPTOGRAPHY_IS_LIBRESSL,
+-                CRYPTOGRAPHY_IS_BORINGSSL,
+-                CRYPTOGRAPHY_IS_AWSLC
+-            )))]
+-            AeadCipher::Fetched(c) => c,
+-        }
+-    }
+-}
+-
+-/// Describes how a cipher's key schedule relates to the direction of
+-/// operation. This determines how many contexts we pre-key at construction
+-/// time.
+-pub(crate) enum KeySchedule {
+-    /// Key setup doesn't depend on direction (the cipher only uses the
+-    /// forward block cipher, or sets up both at once). A single keyed
+-    /// context serves both directions.
+-    DirectionIndependent,
+-    /// Key setup depends on direction. OpenSSL's OCB chooses its hardware
+-    /// stream routine at key-setup time based on it, so a context keyed for
+-    /// one direction cannot be used for the other. (OCB is the only user,
+-    /// and it's unsupported on the other backends.)
+-    #[cfg(not(any(
+-        CRYPTOGRAPHY_IS_LIBRESSL,
+-        CRYPTOGRAPHY_IS_BORINGSSL,
+-        CRYPTOGRAPHY_IS_AWSLC
+-    )))]
+-    PerDirection,
+-}
+-
+-/// Pre-keyed contexts with the cipher and key set, but no per-operation
+-/// state. Each operation copies the appropriate one and then sets the
+-/// direction and nonce on the copy, so the key schedule is computed only once
+-/// at construction time.
+-enum BaseCtxs {
+-    /// CCM requires the IV and tag lengths to be set before the key, so its
+-    /// contexts can't be pre-keyed. Every operation initializes a context
+-    /// from scratch.
+-    None,
+-    Shared(openssl::cipher_ctx::CipherCtx),
+-    #[cfg(not(any(
+-        CRYPTOGRAPHY_IS_LIBRESSL,
+-        CRYPTOGRAPHY_IS_BORINGSSL,
+-        CRYPTOGRAPHY_IS_AWSLC
+-    )))]
+-    PerDirection {
+-        encrypt: openssl::cipher_ctx::CipherCtx,
+-        decrypt: openssl::cipher_ctx::CipherCtx,
+-    },
++struct CheckedAead {
++    key: openssl_bridge::aead::Key,
++    tag_len: usize,
++    tag_first: bool,
+ }
+ 
+-impl BaseCtxs {
+-    fn for_encryption(&self) -> Option<&openssl::cipher_ctx::CipherCtx> {
+-        match self {
+-            BaseCtxs::None => None,
+-            BaseCtxs::Shared(ctx) => Some(ctx),
+-            #[cfg(not(any(
+-                CRYPTOGRAPHY_IS_LIBRESSL,
+-                CRYPTOGRAPHY_IS_BORINGSSL,
+-                CRYPTOGRAPHY_IS_AWSLC
+-            )))]
+-            BaseCtxs::PerDirection { encrypt, .. } => Some(encrypt),
+-        }
+-    }
+-
+-    fn for_decryption(&self) -> Option<&openssl::cipher_ctx::CipherCtx> {
++impl ExtractedAad<'_> {
++    fn slices(&self) -> Vec<&[u8]> {
+         match self {
+-            BaseCtxs::None => None,
+-            BaseCtxs::Shared(ctx) => Some(ctx),
+-            #[cfg(not(any(
+-                CRYPTOGRAPHY_IS_LIBRESSL,
+-                CRYPTOGRAPHY_IS_BORINGSSL,
+-                CRYPTOGRAPHY_IS_AWSLC
+-            )))]
+-            BaseCtxs::PerDirection { decrypt, .. } => Some(decrypt),
++            Self::None => vec![],
++            Self::Single(ad) => vec![ad.as_bytes()],
++            Self::List(ads) => ads.iter().map(|ad| ad.as_bytes()).collect(),
+         }
+     }
+ }
+ 
+-pub(crate) struct EvpCipherAead {
+-    cipher: AeadCipher,
+-    key: pyo3::Py<pyo3::PyAny>,
+-    base_ctxs: BaseCtxs,
+-    tag_len: usize,
+-    tag_first: bool,
+-    is_ccm: bool,
+-}
+-
+-impl EvpCipherAead {
+-    pub(crate) fn new(
++impl CheckedAead {
++    fn new(
+         py: pyo3::Python<'_>,
+-        cipher: AeadCipher,
++        algorithm: openssl_bridge::aead::Algorithm,
+         key: pyo3::Py<pyo3::PyAny>,
+         tag_len: usize,
+         tag_first: bool,
+-        is_ccm: bool,
+-        key_schedule: KeySchedule,
+-    ) -> CryptographyResult<EvpCipherAead> {
+-        let base_ctxs = if is_ccm {
+-            BaseCtxs::None
++    ) -> CryptographyResult<Self> {
++        let key_buf = key.extract::<CffiBuf<'_>>(py)?;
++        let key = if matches!(
++            algorithm,
++            openssl_bridge::aead::Algorithm::Aes128Ccm
++                | openssl_bridge::aead::Algorithm::Aes192Ccm
++                | openssl_bridge::aead::Algorithm::Aes256Ccm
++        ) {
++            openssl_bridge::aead::Key::ccm(key_buf.as_bytes(), tag_len)?
+         } else {
+-            let key_buf = key.extract::<CffiBuf<'_>>(py)?;
+-            match key_schedule {
+-                KeySchedule::DirectionIndependent => {
+-                    // The direction chosen here is arbitrary; each
+-                    // operation sets its own on the copy.
+-                    let mut ctx = openssl::cipher_ctx::CipherCtx::new()?;
+-                    ctx.encrypt_init(Some(&cipher), Some(key_buf.as_bytes()), None)?;
+-                    BaseCtxs::Shared(ctx)
+-                }
+-                #[cfg(not(any(
+-                    CRYPTOGRAPHY_IS_LIBRESSL,
+-                    CRYPTOGRAPHY_IS_BORINGSSL,
+-                    CRYPTOGRAPHY_IS_AWSLC
+-                )))]
+-                KeySchedule::PerDirection => {
+-                    let mut encrypt = openssl::cipher_ctx::CipherCtx::new()?;
+-                    encrypt.encrypt_init(Some(&cipher), Some(key_buf.as_bytes()), None)?;
+-                    let mut decrypt = openssl::cipher_ctx::CipherCtx::new()?;
+-                    decrypt.decrypt_init(Some(&cipher), Some(key_buf.as_bytes()), None)?;
+-                    BaseCtxs::PerDirection { encrypt, decrypt }
+-                }
+-            }
++            openssl_bridge::aead::Key::new(algorithm, key_buf.as_bytes())?
+         };
+-
+-        Ok(EvpCipherAead {
+-            cipher,
++        Ok(Self {
++            tag_len: key.tag_size(),
+             key,
+-            base_ctxs,
+-            tag_len,
+             tag_first,
+-            is_ccm,
+         })
+     }
+-
+-    fn process_aad(
+-        ctx: &mut openssl::cipher_ctx::CipherCtx,
+-        aad: &ExtractedAad<'_>,
+-    ) -> CryptographyResult<()> {
+-        match aad {
+-            ExtractedAad::None => {}
+-            ExtractedAad::Single(ad) => {
+-                ctx.cipher_update(ad.as_bytes(), None)?;
+-            }
+-            ExtractedAad::List(ads) => {
+-                for ad in ads {
+-                    ctx.cipher_update(ad.as_bytes(), None)?;
+-                }
+-            }
+-        }
+-
+-        Ok(())
+-    }
+-
+-    fn process_data(
+-        ctx: &mut openssl::cipher_ctx::CipherCtx,
+-        data: &[u8],
+-        out: &mut [u8],
+-        is_ccm: bool,
+-    ) -> CryptographyResult<()> {
+-        let bs = ctx.block_size();
+-
+-        // For AEADs that operate as if they are streaming there's an easy
+-        // path. For AEADs that are more like block ciphers (notably, OCB),
+-        // this is a bit more complicated.
+-        if bs == 1 {
+-            let n = ctx.cipher_update(data, Some(out))?;
+-            assert_eq!(n, data.len());
+-
+-            if !is_ccm {
+-                let mut final_block = [0];
+-                let n = ctx.cipher_final(&mut final_block)?;
+-                assert_eq!(n, 0);
+-            }
+-        } else {
+-            // Our algorithm here is: split the data into the full chunks, and
+-            // the remaining partial chunk. Feed the full chunks into OpenSSL
+-            // and let it write the results to `out`. Then feed the trailer
+-            // in, allowing it to write the results to a buffer on the
+-            // stack -- this never writes anything. Finally, finalize the AEAD
+-            // and let it write the results to the stack buffer, then copy
+-            // from the stack buffer over to `out`. The indirection via the
+-            // stack buffer is required because OpenSSL uses it as scratch
+-            // space, and `out` wouldn't be long enough.
+-            let (initial, trailer) = data.split_at((data.len() / bs) * bs);
+-
+-            let n =
+-                // SAFETY: `initial.len()` is a precise multiple of the block
+-                // size, which means the space required in the output is
+-                // exactly `initial.len()`.
+-                unsafe { ctx.cipher_update_unchecked(initial, Some(&mut out[..initial.len()]))? };
+-            assert_eq!(n, initial.len());
+-
+-            assert!(bs <= 16);
+-            let mut buf = [0; 32];
+-            let n = ctx.cipher_update(trailer, Some(&mut buf))?;
+-            assert_eq!(n, 0);
+-
+-            let n = ctx.cipher_final(&mut buf)?;
+-            assert_eq!(n, trailer.len());
+-            out[initial.len()..].copy_from_slice(&buf[..n]);
+-        }
+-
+-        Ok(())
++    #[cfg(any(CRYPTOGRAPHY_IS_BORINGSSL, CRYPTOGRAPHY_IS_AWSLC))]
++    fn from_bytes(
++        algorithm: openssl_bridge::aead::Algorithm,
++        key: &[u8],
++        tag_len: usize,
++    ) -> CryptographyResult<Self> {
++        let key = openssl_bridge::aead::Key::new(algorithm, key)?;
++        assert_eq!(tag_len, key.tag_size());
++        Ok(Self {
++            key,
++            tag_len,
++            tag_first: false,
++        })
+     }
+-
+-    pub(crate) fn encrypt_into(
++    fn encrypt_into(
+         &self,
+         py: pyo3::Python<'_>,
+         plaintext: &[u8],
+@@ -289,64 +124,36 @@ impl EvpCipherAead {
+         buf: &mut [u8],
+     ) -> CryptographyResult<()> {
+         check_length(plaintext)?;
+-
+-        let mut ctx = openssl::cipher_ctx::CipherCtx::new()?;
+-        let copied = match self.base_ctxs.for_encryption() {
+-            Some(base) => ctx.copy(base).is_ok(),
+-            None => false,
+-        };
+-        if !copied {
+-            // Copying a pre-keyed context isn't possible: either this is
+-            // CCM (which has none), or this OpenSSL doesn't support copying
+-            // AEAD contexts (providers prior to OpenSSL 3.2). Initialize a
+-            // new context from scratch.
+-            ctx = openssl::cipher_ctx::CipherCtx::new()?;
+-            let key_buf = self.key.extract::<CffiBuf<'_>>(py)?;
+-            if self.is_ccm {
+-                ctx.encrypt_init(Some(&self.cipher), None, None)?;
+-                ctx.set_iv_length(nonce.as_ref().unwrap().len())?;
+-                ctx.set_tag_length(self.tag_len)?;
+-                ctx.encrypt_init(None, Some(key_buf.as_bytes()), nonce)?;
+-            } else {
+-                ctx.encrypt_init(Some(&self.cipher), Some(key_buf.as_bytes()), None)?;
+-            }
+-        }
+-
+-        if self.is_ccm {
+-            ctx.set_data_len(plaintext.len())?;
+-        } else {
+-            if let Some(nonce) = nonce {
+-                ctx.set_iv_length(nonce.len())?;
+-            }
+-            ctx.encrypt_init(None, None, nonce)?;
+-        }
+-
+-        let ciphertext;
+-        let tag;
+-        if self.tag_first {
+-            (tag, ciphertext) = buf.split_at_mut(self.tag_len);
++        if buf.len() != plaintext.len() + self.tag_len {
++            return Err(pyo3::exceptions::PyValueError::new_err(
++                "incorrect AEAD output buffer length",
++            )
++            .into());
++        }
++        let (ciphertext, tag) = if self.tag_first {
++            let (tag, ciphertext) = buf.split_at_mut(self.tag_len);
++            (ciphertext, tag)
+         } else {
+-            (ciphertext, tag) = buf.split_at_mut(plaintext.len());
+-        }
+-
++            buf.split_at_mut(plaintext.len())
++        };
+         let (aad, aad_len) = extract_aad(aad)?;
+-
+-        let is_ccm = self.is_ccm;
++        let components = aad.slices();
+         crate::backend::run_with_gil_detached(
+             py,
+-            plaintext.len() + aad_len,
++            plaintext.len().saturating_add(aad_len),
+             || -> CryptographyResult<()> {
+-                Self::process_aad(&mut ctx, &aad)?;
+-                Self::process_data(&mut ctx, plaintext, ciphertext, is_ccm)?;
+-                ctx.tag(tag).map_err(CryptographyError::from)?;
++                self.key.seal_into(
++                    nonce.unwrap_or(&[]),
++                    &components,
++                    plaintext,
++                    ciphertext,
++                    tag,
++                )?;
+                 Ok(())
+             },
+-        )?;
+-
+-        Ok(())
++        )
+     }
+-
+-    pub(crate) fn decrypt_into(
++    fn decrypt_into(
+         &self,
+         py: pyo3::Python<'_>,
+         ciphertext: &[u8],
+@@ -354,143 +161,34 @@ impl EvpCipherAead {
+         nonce: Option<&[u8]>,
+         buf: &mut [u8],
+     ) -> CryptographyResult<()> {
+-        let tag;
+-        let ciphertext_data;
+-        if self.tag_first {
+-            // RFC 5297 defines the output as IV || C, where the tag we generate
+-            // is the "IV" and C is the ciphertext. This is the opposite of our
+-            // other AEADs, which are Ciphertext || Tag.
+-            (tag, ciphertext_data) = ciphertext.split_at(self.tag_len);
+-        } else {
+-            (ciphertext_data, tag) = ciphertext.split_at(ciphertext.len() - self.tag_len);
++        check_length(ciphertext)?;
++        if ciphertext.len() < self.tag_len {
++            return Err(exceptions::InvalidTag::new_err(()).into());
+         }
+-
+-        let mut ctx = openssl::cipher_ctx::CipherCtx::new()?;
+-        let copied = match self.base_ctxs.for_decryption() {
+-            Some(base) => ctx.copy(base).is_ok(),
+-            None => false,
+-        };
+-        if !copied {
+-            // Copying a pre-keyed context isn't possible: either this is
+-            // CCM (which has none), or this OpenSSL doesn't support copying
+-            // AEAD contexts (providers prior to OpenSSL 3.2). Initialize a
+-            // new context from scratch.
+-            ctx = openssl::cipher_ctx::CipherCtx::new()?;
+-            let key_buf = self.key.extract::<CffiBuf<'_>>(py)?;
+-            if self.is_ccm {
+-                ctx.decrypt_init(Some(&self.cipher), None, None)?;
+-                ctx.set_iv_length(nonce.as_ref().unwrap().len())?;
+-                ctx.set_tag(tag)?;
+-                ctx.decrypt_init(None, Some(key_buf.as_bytes()), nonce)?;
+-            } else {
+-                ctx.decrypt_init(Some(&self.cipher), Some(key_buf.as_bytes()), None)?;
+-            }
+-        }
+-
+-        if self.is_ccm {
+-            ctx.set_data_len(ciphertext_data.len())?;
++        let (data, tag) = if self.tag_first {
++            let (tag, data) = ciphertext.split_at(self.tag_len);
++            (data, tag)
+         } else {
+-            if let Some(nonce) = nonce {
+-                ctx.set_iv_length(nonce.len())?;
+-            }
+-
+-            // Re-initializing with no cipher or key sets the direction
+-            // (the copied context may have been keyed for encryption) and
+-            // nonce while retaining the key schedule.
+-            ctx.decrypt_init(None, None, nonce)?;
+-            ctx.set_tag(tag)?;
+-        }
+-
++            ciphertext.split_at(ciphertext.len() - self.tag_len)
++        };
+         let (aad, aad_len) = extract_aad(aad)?;
+-
+-        let is_ccm = self.is_ccm;
++        let components = aad.slices();
+         crate::backend::run_with_gil_detached(
+             py,
+-            ciphertext_data.len() + aad_len,
++            data.len().saturating_add(aad_len),
+             || -> CryptographyResult<()> {
+-                Self::process_aad(&mut ctx, &aad)?;
+-                Self::process_data(&mut ctx, ciphertext_data, buf, is_ccm)
++                self.key
++                    .open_into(nonce.unwrap_or(&[]), &components, data, tag, buf)
+                     .map_err(|_| exceptions::InvalidTag::new_err(()))?;
+                 Ok(())
+             },
+-        )?;
+-
+-        Ok(())
+-    }
+-}
+-
+-#[cfg(any(CRYPTOGRAPHY_IS_BORINGSSL, CRYPTOGRAPHY_IS_AWSLC))]
+-struct EvpAead {
+-    ctx: cryptography_openssl::aead::AeadCtx,
+-    tag_len: usize,
+-}
+-
+-#[cfg(any(CRYPTOGRAPHY_IS_BORINGSSL, CRYPTOGRAPHY_IS_AWSLC))]
+-impl EvpAead {
+-    fn new(
+-        algorithm: cryptography_openssl::aead::AeadType,
+-        key: &[u8],
+-        tag_len: usize,
+-    ) -> CryptographyResult<EvpAead> {
+-        Ok(EvpAead {
+-            ctx: cryptography_openssl::aead::AeadCtx::new(algorithm, key)?,
+-            tag_len,
+-        })
+-    }
+-
+-    fn encrypt_into(
+-        &self,
+-        _py: pyo3::Python<'_>,
+-        plaintext: &[u8],
+-        aad: Option<Aad<'_>>,
+-        nonce: Option<&[u8]>,
+-        buf: &mut [u8],
+-    ) -> CryptographyResult<()> {
+-        check_length(plaintext)?;
+-
+-        let ad = if let Some(Aad::Single(ad)) = &aad {
+-            check_length(ad.as_bytes())?;
+-            ad.as_bytes()
+-        } else {
+-            assert!(aad.is_none());
+-            b""
+-        };
+-        self.ctx
+-            .encrypt(plaintext, nonce.unwrap_or(b""), ad, buf)
+-            .map_err(CryptographyError::from)?;
+-        Ok(())
+-    }
+-
+-    fn decrypt_into(
+-        &self,
+-        _py: pyo3::Python<'_>,
+-        ciphertext: &[u8],
+-        aad: Option<Aad<'_>>,
+-        nonce: Option<&[u8]>,
+-        buf: &mut [u8],
+-    ) -> CryptographyResult<()> {
+-        let ad = if let Some(Aad::Single(ad)) = &aad {
+-            check_length(ad.as_bytes())?;
+-            ad.as_bytes()
+-        } else {
+-            assert!(aad.is_none());
+-            b""
+-        };
+-
+-        self.ctx
+-            .decrypt(ciphertext, nonce.unwrap_or(b""), ad, buf)
+-            .map_err(|_| exceptions::InvalidTag::new_err(()))?;
+-
+-        Ok(())
++        )
+     }
+ }
+ 
+ #[pyo3::pyclass(frozen, module = "cryptography.hazmat.bindings._rust.openssl.aead")]
+ pub(crate) struct ChaCha20Poly1305 {
+-    #[cfg(any(CRYPTOGRAPHY_IS_BORINGSSL, CRYPTOGRAPHY_IS_AWSLC))]
+-    ctx: EvpAead,
+-    #[cfg(not(any(CRYPTOGRAPHY_IS_BORINGSSL, CRYPTOGRAPHY_IS_AWSLC)))]
+-    ctx: EvpCipherAead,
++    ctx: CheckedAead,
+ }
+ 
+ #[pyo3::pymethods]
+@@ -518,22 +216,20 @@ impl ChaCha20Poly1305 {
+         cfg_if::cfg_if! {
+             if #[cfg(any(CRYPTOGRAPHY_IS_BORINGSSL, CRYPTOGRAPHY_IS_AWSLC))] {
+                 Ok(ChaCha20Poly1305 {
+-                    ctx: EvpAead::new(
+-                        cryptography_openssl::aead::AeadType::ChaCha20Poly1305,
++                    ctx: CheckedAead::from_bytes(
++                        openssl_bridge::aead::Algorithm::ChaCha20Poly1305,
+                         key_buf.as_bytes(),
+                         16,
+                     )?,
+                 })
+             } else {
+                 Ok(ChaCha20Poly1305 {
+-                    ctx: EvpCipherAead::new(
++                    ctx: CheckedAead::new(
+                         py,
+-                        AeadCipher::Static(openssl::cipher::Cipher::chacha20_poly1305()),
++                        openssl_bridge::aead::Algorithm::ChaCha20Poly1305,
+                         key,
+                         16,
+                         false,
+-                        false,
+-                        KeySchedule::DirectionIndependent,
+                     )?,
+                 })
+             }
+@@ -680,7 +376,7 @@ impl ChaCha20Poly1305 {
+ )]
+ // NO-COVERAGE-END
+ pub(crate) struct AesGcm {
+-    ctx: EvpCipherAead,
++    ctx: CheckedAead,
+ }
+ 
+ #[pyo3::pymethods]
+@@ -692,9 +388,9 @@ impl AesGcm {
+     ) -> CryptographyResult<AesGcm> {
+         let key_buf = key.extract::<CffiBuf<'_>>(py)?;
+         let cipher = match key_buf.as_bytes().len() {
+-            16 => openssl::cipher::Cipher::aes_128_gcm(),
+-            24 => openssl::cipher::Cipher::aes_192_gcm(),
+-            32 => openssl::cipher::Cipher::aes_256_gcm(),
++            16 => openssl_bridge::aead::Algorithm::Aes128Gcm,
++            24 => openssl_bridge::aead::Algorithm::Aes192Gcm,
++            32 => openssl_bridge::aead::Algorithm::Aes256Gcm,
+             _ => {
+                 return Err(CryptographyError::from(
+                     pyo3::exceptions::PyValueError::new_err(
+@@ -705,15 +401,7 @@ impl AesGcm {
+         };
+ 
+         Ok(AesGcm {
+-            ctx: EvpCipherAead::new(
+-                py,
+-                AeadCipher::Static(cipher),
+-                key,
+-                16,
+-                false,
+-                false,
+-                KeySchedule::DirectionIndependent,
+-            )?,
++            ctx: CheckedAead::new(py, cipher, key, 16, false)?,
+         })
+     }
+ 
+@@ -869,7 +557,7 @@ impl AesGcm {
+ )]
+ // NO-COVERAGE-END
+ struct AesCcm {
+-    ctx: EvpCipherAead,
++    ctx: CheckedAead,
+     tag_length: usize,
+ }
+ 
+@@ -896,9 +584,9 @@ impl AesCcm {
+             } else {
+                 let key_buf = key.extract::<CffiBuf<'_>>(py)?;
+                 let cipher = match key_buf.as_bytes().len() {
+-                    16 => openssl::cipher::Cipher::aes_128_ccm(),
+-                    24 => openssl::cipher::Cipher::aes_192_ccm(),
+-                    32 => openssl::cipher::Cipher::aes_256_ccm(),
++                    16 => openssl_bridge::aead::Algorithm::Aes128Ccm,
++                    24 => openssl_bridge::aead::Algorithm::Aes192Ccm,
++                    32 => openssl_bridge::aead::Algorithm::Aes256Ccm,
+                     _ => {
+                         return Err(CryptographyError::from(
+                             pyo3::exceptions::PyValueError::new_err(
+@@ -915,14 +603,12 @@ impl AesCcm {
+                 }
+ 
+                 Ok(AesCcm {
+-                    ctx: EvpCipherAead::new(
++                    ctx: CheckedAead::new(
+                         py,
+-                        AeadCipher::Static(cipher),
++                        cipher,
+                         key,
+                         tag_length,
+                         false,
+-                        true,
+-                        KeySchedule::DirectionIndependent,
+                     )?,
+                     tag_length
+                 })
+@@ -1104,7 +790,7 @@ impl AesCcm {
+ )]
+ // NO-COVERAGE-END
+ struct AesSiv {
+-    ctx: EvpCipherAead,
++    ctx: CheckedAead,
+ }
+ 
+ #[pyo3::pymethods]
+@@ -1136,16 +822,14 @@ impl AesSiv {
+                     ));
+                 }
+ 
+-                let cipher = openssl::cipher::Cipher::fetch(None, cipher_name, None)?;
++                let cipher = openssl_bridge::aead::Algorithm::from_name(cipher_name)?;
+                 Ok(AesSiv {
+-                    ctx: EvpCipherAead::new(
++                    ctx: CheckedAead::new(
+                         py,
+-                        AeadCipher::Fetched(cipher),
++                        cipher,
+                         key,
+                         16,
+                         true,
+-                        false,
+-                        KeySchedule::DirectionIndependent,
+                     )?,
+                 })
+             } else {
+@@ -1293,7 +977,7 @@ impl AesSiv {
+ )]
+ // NO-COVERAGE-END
+ struct AesOcb3 {
+-    ctx: EvpCipherAead,
++    ctx: CheckedAead,
+ }
+ 
+ #[pyo3::pymethods]
+@@ -1323,9 +1007,9 @@ impl AesOcb3 {
+                 }
+ 
+                 let cipher = match key_buf.as_bytes().len() {
+-                    16 => openssl::cipher::Cipher::aes_128_ocb(),
+-                    24 => openssl::cipher::Cipher::aes_192_ocb(),
+-                    32 => openssl::cipher::Cipher::aes_256_ocb(),
++                    16 => openssl_bridge::aead::Algorithm::Aes128Ocb,
++                    24 => openssl_bridge::aead::Algorithm::Aes192Ocb,
++                    32 => openssl_bridge::aead::Algorithm::Aes256Ocb,
+                     _ => {
+                         return Err(CryptographyError::from(
+                             pyo3::exceptions::PyValueError::new_err(
+@@ -1336,14 +1020,12 @@ impl AesOcb3 {
+                 };
+ 
+                 Ok(AesOcb3 {
+-                    ctx: EvpCipherAead::new(
++                    ctx: CheckedAead::new(
+                         py,
+-                        AeadCipher::Static(cipher),
++                        cipher,
+                         key,
+                         16,
+                         false,
+-                        false,
+-                        KeySchedule::PerDirection,
+                     )?,
+                 })
+             }
+@@ -1502,10 +1184,7 @@ impl AesOcb3 {
+ )]
+ // NO-COVERAGE-END
+ struct AesGcmSiv {
+-    #[cfg(any(CRYPTOGRAPHY_IS_BORINGSSL, CRYPTOGRAPHY_IS_AWSLC))]
+-    ctx: EvpAead,
+-    #[cfg(not(any(CRYPTOGRAPHY_IS_BORINGSSL, CRYPTOGRAPHY_IS_AWSLC)))]
+-    ctx: EvpCipherAead,
++    ctx: CheckedAead,
+ }
+ 
+ #[pyo3::pymethods]
+@@ -1530,8 +1209,8 @@ impl AesGcmSiv {
+             if #[cfg(any(CRYPTOGRAPHY_IS_BORINGSSL, CRYPTOGRAPHY_IS_AWSLC))] {
+                 let _ = cipher_name;
+                 let aead_type = match key_buf.as_bytes().len() {
+-                    16 => cryptography_openssl::aead::AeadType::Aes128GcmSiv,
+-                    32 => cryptography_openssl::aead::AeadType::Aes256GcmSiv,
++                    16 => openssl_bridge::aead::Algorithm::Aes128GcmSiv,
++                    32 => openssl_bridge::aead::Algorithm::Aes256GcmSiv,
+                     _ => return Err(CryptographyError::from(
+                         exceptions::UnsupportedAlgorithm::new_err((
+                             "Only 128-bit and 256-bit keys are supported for AES-GCM-SIV with AWS-LC or BoringSSL",
+@@ -1540,7 +1219,7 @@ impl AesGcmSiv {
+                     ))
+                 };
+                 Ok(AesGcmSiv {
+-                    ctx: EvpAead::new(aead_type, key_buf.as_bytes(), 16)?,
++                    ctx: CheckedAead::from_bytes(aead_type, key_buf.as_bytes(), 16)?,
+                 })
+             } else if #[cfg(not(CRYPTOGRAPHY_OPENSSL_320_OR_GREATER))] {
+                 let _ = cipher_name;
+@@ -1559,16 +1238,14 @@ impl AesGcmSiv {
+                         )),
+                     ));
+                 }
+-                let cipher = openssl::cipher::Cipher::fetch(None, cipher_name, None)?;
++                let cipher = openssl_bridge::aead::Algorithm::from_name(cipher_name)?;
+                 Ok(AesGcmSiv {
+-                    ctx: EvpCipherAead::new(
++                    ctx: CheckedAead::new(
+                         py,
+-                        AeadCipher::Fetched(cipher),
++                        cipher,
+                         key,
+                         16,
+                         false,
+-                        false,
+-                        KeySchedule::DirectionIndependent,
+                     )?,
+                 })
+             }
 diff --git a/src/rust/src/backend/cipher_registry.rs b/src/rust/src/backend/cipher_registry.rs
 index 2a2e5ed..fdad399 100644
 --- a/src/rust/src/backend/cipher_registry.rs
@@ -2339,8 +3248,172 @@ index 37b8dd7..db50050 100644
              .into_pyobject(py)?
              .into_any()),
          #[cfg(not(any(
+diff --git a/src/rust/src/backend/keywrap.rs b/src/rust/src/backend/keywrap.rs
+index eaf7d28..ba289e6 100644
+--- a/src/rust/src/backend/keywrap.rs
++++ b/src/rust/src/backend/keywrap.rs
+@@ -10,36 +10,30 @@ use crate::exceptions;
+ 
+ fn ecb_ctx(
+     wrapping_key: &[u8],
+-    side: openssl::symm::Mode,
+-) -> CryptographyResult<openssl::cipher_ctx::CipherCtx> {
++    side: openssl_bridge::cipher::Direction,
++) -> CryptographyResult<openssl_bridge::cipher::Stream> {
+     let cipher = match wrapping_key.len() {
+-        16 => openssl::cipher::Cipher::aes_128_ecb(),
+-        24 => openssl::cipher::Cipher::aes_192_ecb(),
+-        32 => openssl::cipher::Cipher::aes_256_ecb(),
++        16 => openssl_bridge::cipher::Cipher::Aes128Ecb,
++        24 => openssl_bridge::cipher::Cipher::Aes192Ecb,
++        32 => openssl_bridge::cipher::Cipher::Aes256Ecb,
+         _ => {
+-            return Err(CryptographyError::from(
+-                pyo3::exceptions::PyValueError::new_err(
+-                    "The wrapping key must be a valid AES key length",
+-                ),
+-            ))
++            return Err(pyo3::exceptions::PyValueError::new_err(
++                "The wrapping key must be a valid AES key length",
++            )
++            .into())
+         }
+     };
+-
+-    let mut ctx = openssl::cipher_ctx::CipherCtx::new()?;
+-    match side {
+-        openssl::symm::Mode::Encrypt => {
+-            ctx.encrypt_init(Some(cipher), Some(wrapping_key), None)?;
+-        }
+-        openssl::symm::Mode::Decrypt => {
+-            ctx.decrypt_init(Some(cipher), Some(wrapping_key), None)?;
+-        }
+-    }
+-    ctx.set_padding(false);
+-    Ok(ctx)
++    Ok(openssl_bridge::cipher::Stream::new(
++        cipher,
++        side,
++        wrapping_key,
++        &[],
++        false,
++    )?)
+ }
+ 
+ fn wrap_core(
+-    ctx: &mut openssl::cipher_ctx::CipherCtx,
++    ctx: &mut openssl_bridge::cipher::Stream,
+     mut a: [u8; 8],
+     r: &[u8],
+ ) -> CryptographyResult<Vec<u8>> {
+@@ -48,7 +42,7 @@ fn wrap_core(
+     let data = &mut result[8..];
+     data.copy_from_slice(r);
+     let mut block = [0u8; 16];
+-    // The safe `cipher_update` API requires room for an extra block, even
++    // The checked update API requires room for an extra block, even
+     // though ECB with padding disabled always writes exactly one block of
+     // output per block of input.
+     let mut out = [0u8; 32];
+@@ -56,7 +50,7 @@ fn wrap_core(
+         for i in 0..n {
+             block[..8].copy_from_slice(&a);
+             block[8..].copy_from_slice(&data[i * 8..i * 8 + 8]);
+-            let written = ctx.cipher_update(&block, Some(&mut out))?;
++            let written = ctx.update_into(&block, &mut out)?;
+             assert_eq!(written, 16);
+             let t = (n as u64) * j + (i as u64) + 1;
+             a = (u64::from_be_bytes(out[..8].try_into().unwrap()) ^ t).to_be_bytes();
+@@ -69,13 +63,13 @@ fn wrap_core(
+ }
+ 
+ fn unwrap_core(
+-    ctx: &mut openssl::cipher_ctx::CipherCtx,
++    ctx: &mut openssl_bridge::cipher::Stream,
+     mut a: [u8; 8],
+     r: &mut [u8],
+ ) -> CryptographyResult<[u8; 8]> {
+     let n = r.len() / 8;
+     let mut block = [0u8; 16];
+-    // The safe `cipher_update` API requires room for an extra block, even
++    // The checked update API requires room for an extra block, even
+     // though ECB with padding disabled always writes exactly one block of
+     // output per block of input.
+     let mut out = [0u8; 32];
+@@ -84,7 +78,7 @@ fn unwrap_core(
+             let t = (n as u64) * j + (i as u64) + 1;
+             block[..8].copy_from_slice(&(u64::from_be_bytes(a) ^ t).to_be_bytes());
+             block[8..].copy_from_slice(&r[i * 8..i * 8 + 8]);
+-            let written = ctx.cipher_update(&block, Some(&mut out))?;
++            let written = ctx.update_into(&block, &mut out)?;
+             assert_eq!(written, 16);
+             a.copy_from_slice(&out[..8]);
+             r[i * 8..i * 8 + 8].copy_from_slice(&out[8..16]);
+@@ -105,7 +99,10 @@ fn aes_key_wrap<'p>(
+     _ = backend;
+     let key_to_wrap = key_to_wrap.as_bytes();
+ 
+-    let mut ctx = ecb_ctx(wrapping_key.as_bytes(), openssl::symm::Mode::Encrypt)?;
++    let mut ctx = ecb_ctx(
++        wrapping_key.as_bytes(),
++        openssl_bridge::cipher::Direction::Encrypt,
++    )?;
+ 
+     if key_to_wrap.len() < 16 {
+         return Err(CryptographyError::from(
+@@ -146,7 +143,10 @@ fn aes_key_unwrap<'p>(
+         )));
+     }
+ 
+-    let mut ctx = ecb_ctx(wrapping_key.as_bytes(), openssl::symm::Mode::Decrypt)?;
++    let mut ctx = ecb_ctx(
++        wrapping_key.as_bytes(),
++        openssl_bridge::cipher::Direction::Decrypt,
++    )?;
+ 
+     let a = wrapped_key[..8].try_into().unwrap();
+     let mut r = wrapped_key[8..].to_vec();
+@@ -171,7 +171,10 @@ fn aes_key_wrap_with_padding<'p>(
+     _ = backend;
+     let key_to_wrap = key_to_wrap.as_bytes();
+ 
+-    let mut ctx = ecb_ctx(wrapping_key.as_bytes(), openssl::symm::Mode::Encrypt)?;
++    let mut ctx = ecb_ctx(
++        wrapping_key.as_bytes(),
++        openssl_bridge::cipher::Direction::Encrypt,
++    )?;
+ 
+     if key_to_wrap.is_empty() || key_to_wrap.len() as u64 >= (1 << 32) {
+         return Err(CryptographyError::from(
+@@ -194,7 +197,7 @@ fn aes_key_wrap_with_padding<'p>(
+         block[..8].copy_from_slice(&aiv);
+         block[8..].copy_from_slice(&r);
+         let mut out = [0u8; 32];
+-        let written = ctx.cipher_update(&block, Some(&mut out))?;
++        let written = ctx.update_into(&block, &mut out)?;
+         assert_eq!(written, 16);
+         Ok(pyo3::types::PyBytes::new(py, &out[..16]))
+     } else {
+@@ -225,12 +228,15 @@ fn aes_key_unwrap_with_padding<'p>(
+         )));
+     }
+ 
+-    let mut ctx = ecb_ctx(wrapping_key.as_bytes(), openssl::symm::Mode::Decrypt)?;
++    let mut ctx = ecb_ctx(
++        wrapping_key.as_bytes(),
++        openssl_bridge::cipher::Direction::Decrypt,
++    )?;
+ 
+     let (a, mut data) = if wrapped_key.len() == 16 {
+         // RFC 5649 - 4.2 - exactly two 64-bit blocks
+         let mut out = [0u8; 32];
+-        let written = ctx.cipher_update(wrapped_key, Some(&mut out))?;
++        let written = ctx.update_into(wrapped_key, &mut out)?;
+         assert_eq!(written, 16);
+         let a: [u8; 8] = out[..8].try_into().unwrap();
+         (a, out[8..16].to_vec())
 diff --git a/src/rust/src/backend/mldsa.rs b/src/rust/src/backend/mldsa.rs
-index 0fe421f..92a5a85 100644
+index 0fe421f..7585598 100644
 --- a/src/rust/src/backend/mldsa.rs
 +++ b/src/rust/src/backend/mldsa.rs
 @@ -49,7 +49,7 @@ pub(crate) fn mldsa44_public_key_from_pkey(
@@ -2370,6 +3443,82 @@ index 0fe421f..92a5a85 100644
      let pkey = cryptography_openssl::mldsa::new_raw_private_key(MlDsaVariant::MlDsa87, &seed)?;
      Ok(MlDsa87PrivateKey { pkey })
  }
+@@ -776,13 +776,15 @@ fn mldsa_public_key_raw(public_key: &pyo3::Bound<'_, pyo3::PyAny>) -> Cryptograp
+ /// absorbed later by [`MlDsaMuHasher::update`]. SHAKE256 is unavailable through
+ /// the EVP interface on BoringSSL/LibreSSL, so this is only compiled elsewhere.
+ #[cfg(not(any(CRYPTOGRAPHY_IS_LIBRESSL, CRYPTOGRAPHY_IS_BORINGSSL)))]
+-fn mu_hasher_init(raw_pk: &[u8], context: &[u8]) -> CryptographyResult<openssl::hash::Hasher> {
+-    let md = openssl::hash::MessageDigest::from_name("shake256")
+-        .ok_or_else(openssl::error::ErrorStack::get)?;
++fn mu_hasher_init(
++    raw_pk: &[u8],
++    context: &[u8],
++) -> CryptographyResult<openssl_bridge::hash::Hasher> {
++    let md = openssl_bridge::hash::Algorithm::from_name("shake256")?;
+     // tr = SHAKE256(pk, 64)
+-    let mut tr = [0u8; cryptography_openssl::mldsa::MLDSA_MU_BYTES];
+-    openssl::hash::hash_xof(md, raw_pk, &mut tr)?;
+-    let mut ctx = openssl::hash::Hasher::new(md)?;
++    let mut tr = [0; cryptography_openssl::mldsa::MLDSA_MU_BYTES];
++    openssl_bridge::hash::digest_xof(md, raw_pk, &mut tr)?;
++    let mut ctx = openssl_bridge::hash::Hasher::new(md)?;
+     ctx.update(&tr)?;
+     // Pure-ML-DSA M' prefix: domain separator 0x00, then the context.
+     ctx.update(&[0x00])?;
+@@ -797,19 +799,19 @@ fn mu_hasher_init(raw_pk: &[u8], context: &[u8]) -> CryptographyResult<openssl::
+ )]
+ pub(crate) struct MlDsaMuHasher {
+     #[cfg(not(any(CRYPTOGRAPHY_IS_LIBRESSL, CRYPTOGRAPHY_IS_BORINGSSL)))]
+-    ctx: Option<openssl::hash::Hasher>,
++    ctx: Option<openssl_bridge::hash::Hasher>,
+ }
+ 
+ #[cfg(not(any(CRYPTOGRAPHY_IS_LIBRESSL, CRYPTOGRAPHY_IS_BORINGSSL)))]
+ impl MlDsaMuHasher {
+-    fn get_mut_ctx(&mut self) -> CryptographyResult<&mut openssl::hash::Hasher> {
++    fn get_mut_ctx(&mut self) -> CryptographyResult<&mut openssl_bridge::hash::Hasher> {
+         if let Some(ctx) = self.ctx.as_mut() {
+             return Ok(ctx);
+         }
+         Err(exceptions::already_finalized_error())
+     }
+ 
+-    fn get_ctx(&self) -> CryptographyResult<&openssl::hash::Hasher> {
++    fn get_ctx(&self) -> CryptographyResult<&openssl_bridge::hash::Hasher> {
+         if let Some(ctx) = self.ctx.as_ref() {
+             return Ok(ctx);
+         }
+@@ -862,7 +864,7 @@ impl MlDsaMuHasher {
+     #[cfg(not(any(CRYPTOGRAPHY_IS_LIBRESSL, CRYPTOGRAPHY_IS_BORINGSSL)))]
+     fn copy(&self) -> CryptographyResult<MlDsaMuHasher> {
+         Ok(MlDsaMuHasher {
+-            ctx: Some(self.get_ctx()?.clone()),
++            ctx: Some(self.get_ctx()?.try_clone()?),
+         })
+     }
+ 
+@@ -871,14 +873,13 @@ impl MlDsaMuHasher {
+         &mut self,
+         py: pyo3::Python<'p>,
+     ) -> CryptographyResult<pyo3::Bound<'p, pyo3::types::PyBytes>> {
+-        let ctx = self.get_mut_ctx()?;
+-        let result =
+-            pyo3::types::PyBytes::new_with(py, cryptography_openssl::mldsa::MLDSA_MU_BYTES, |b| {
+-                ctx.finish_xof(b).unwrap();
+-                Ok(())
+-            })?;
+-        self.ctx = None;
+-        Ok(result)
++        let ctx = self
++            .ctx
++            .take()
++            .ok_or_else(exceptions::already_finalized_error)?;
++        let mut result = [0; cryptography_openssl::mldsa::MLDSA_MU_BYTES];
++        ctx.finish_xof(&mut result)?;
++        Ok(pyo3::types::PyBytes::new(py, &result))
+     }
+ }
+ 
 diff --git a/src/rust/src/backend/mlkem.rs b/src/rust/src/backend/mlkem.rs
 index 42195db..b4977b3 100644
 --- a/src/rust/src/backend/mlkem.rs
@@ -2392,6 +3541,196 @@ index 42195db..b4977b3 100644
      let pkey = cryptography_openssl::mlkem::new_raw_private_key(MlKemVariant::MlKem1024, &seed)?;
      Ok(MlKem1024PrivateKey { pkey })
  }
+diff --git a/src/rust/src/backend/poly1305.rs b/src/rust/src/backend/poly1305.rs
+index 9e9aa61..ba6bb03 100644
+--- a/src/rust/src/backend/poly1305.rs
++++ b/src/rust/src/backend/poly1305.rs
+@@ -9,138 +9,33 @@ use crate::buf::CffiBuf;
+ use crate::error::{CryptographyError, CryptographyResult};
+ use crate::exceptions;
+ 
+-#[cfg(any(
+-    CRYPTOGRAPHY_IS_BORINGSSL,
+-    CRYPTOGRAPHY_IS_LIBRESSL,
+-    CRYPTOGRAPHY_IS_AWSLC
+-))]
+-struct Poly1305Boring {
+-    context: cryptography_openssl::poly1305::Poly1305State,
+-}
+-
+-#[cfg(any(
+-    CRYPTOGRAPHY_IS_BORINGSSL,
+-    CRYPTOGRAPHY_IS_LIBRESSL,
+-    CRYPTOGRAPHY_IS_AWSLC
+-))]
+-impl Poly1305Boring {
+-    fn new(key: CffiBuf<'_>) -> CryptographyResult<Poly1305Boring> {
+-        if key.as_bytes().len() != 32 {
+-            return Err(CryptographyError::from(
+-                pyo3::exceptions::PyValueError::new_err("A poly1305 key is 32 bytes long"),
+-            ));
+-        }
+-        let ctx = cryptography_openssl::poly1305::Poly1305State::new(key.as_bytes());
+-        Ok(Poly1305Boring { context: ctx })
+-    }
+-
+-    fn update(&mut self, data: CffiBuf<'_>) -> CryptographyResult<()> {
+-        self.context.update(data.as_bytes());
+-        Ok(())
+-    }
+-    fn finalize<'p>(
+-        &mut self,
+-        py: pyo3::Python<'p>,
+-    ) -> CryptographyResult<pyo3::Bound<'p, pyo3::types::PyBytes>> {
+-        let result = pyo3::types::PyBytes::new_with(py, 16usize, |b| {
+-            self.context.finalize(b.as_mut());
+-            Ok(())
+-        })?;
+-        Ok(result)
+-    }
+-}
+-
+-#[cfg(not(any(
+-    CRYPTOGRAPHY_IS_LIBRESSL,
+-    CRYPTOGRAPHY_IS_BORINGSSL,
+-    CRYPTOGRAPHY_IS_AWSLC
+-)))]
+-struct Poly1305Open {
+-    signer: openssl::sign::Signer<'static>,
+-}
+-
+-#[cfg(not(any(
+-    CRYPTOGRAPHY_IS_LIBRESSL,
+-    CRYPTOGRAPHY_IS_BORINGSSL,
+-    CRYPTOGRAPHY_IS_AWSLC
+-)))]
+-impl Poly1305Open {
+-    fn new(key: CffiBuf<'_>) -> CryptographyResult<Poly1305Open> {
+-        if cryptography_openssl::fips::is_enabled() {
+-            return Err(CryptographyError::from(
+-                exceptions::UnsupportedAlgorithm::new_err((
+-                    "poly1305 is not supported by this version of OpenSSL.",
+-                    exceptions::Reasons::UNSUPPORTED_MAC,
+-                )),
+-            ));
+-        }
+-
+-        let pkey = openssl::pkey::PKey::private_key_from_raw_bytes(
+-            key.as_bytes(),
+-            openssl::pkey::Id::POLY1305,
+-        )
+-        .map_err(|_| pyo3::exceptions::PyValueError::new_err("A poly1305 key is 32 bytes long"))?;
+-
+-        Ok(Poly1305Open {
+-            signer: openssl::sign::Signer::new_without_digest(&pkey).map_err(|_| {
+-                pyo3::exceptions::PyValueError::new_err("A poly1305 key is 32 bytes long")
+-            })?,
+-        })
+-    }
+-    fn update(&mut self, data: CffiBuf<'_>) -> CryptographyResult<()> {
+-        let buf = data.as_bytes();
+-        self.signer.update(buf)?;
+-        Ok(())
+-    }
+-    fn finalize<'p>(
+-        &mut self,
+-        py: pyo3::Python<'p>,
+-    ) -> CryptographyResult<pyo3::Bound<'p, pyo3::types::PyBytes>> {
+-        let result = pyo3::types::PyBytes::new_with(py, self.signer.len()?, |b| {
+-            let n = self.signer.sign(b).unwrap();
+-            assert_eq!(n, b.len());
+-            Ok(())
+-        })?;
+-        Ok(result)
+-    }
+-}
+-
+ #[pyo3::pyclass(module = "cryptography.hazmat.bindings._rust.openssl.poly1305")]
+ struct Poly1305 {
+-    #[cfg(any(
+-        CRYPTOGRAPHY_IS_BORINGSSL,
+-        CRYPTOGRAPHY_IS_LIBRESSL,
+-        CRYPTOGRAPHY_IS_AWSLC
+-    ))]
+-    inner: Option<Poly1305Boring>,
+-    #[cfg(not(any(
+-        CRYPTOGRAPHY_IS_LIBRESSL,
+-        CRYPTOGRAPHY_IS_BORINGSSL,
+-        CRYPTOGRAPHY_IS_AWSLC
+-    )))]
+-    inner: Option<Poly1305Open>,
++    inner: Option<openssl_bridge::poly1305::Poly1305>,
+ }
+ 
+ #[pyo3::pymethods]
+ impl Poly1305 {
+     #[new]
+     fn new(key: CffiBuf<'_>) -> CryptographyResult<Poly1305> {
+-        #[cfg(any(
+-            CRYPTOGRAPHY_IS_BORINGSSL,
+-            CRYPTOGRAPHY_IS_LIBRESSL,
+-            CRYPTOGRAPHY_IS_AWSLC
+-        ))]
+-        return Ok(Poly1305 {
+-            inner: Some(Poly1305Boring::new(key)?),
+-        });
+         #[cfg(not(any(
+             CRYPTOGRAPHY_IS_LIBRESSL,
+             CRYPTOGRAPHY_IS_BORINGSSL,
+             CRYPTOGRAPHY_IS_AWSLC
+         )))]
+-        return Ok(Poly1305 {
+-            inner: Some(Poly1305Open::new(key)?),
+-        });
++        if cryptography_openssl::fips::is_enabled() {
++            return Err(exceptions::UnsupportedAlgorithm::new_err((
++                "poly1305 is not supported by this version of OpenSSL.",
++                exceptions::Reasons::UNSUPPORTED_MAC,
++            ))
++            .into());
++        }
++        let key = key.as_bytes().try_into().map_err(|_| {
++            pyo3::exceptions::PyValueError::new_err("A poly1305 key is 32 bytes long")
++        })?;
++        Ok(Self {
++            inner: Some(openssl_bridge::poly1305::Poly1305::new(key)?),
++        })
+     }
+ 
+     #[staticmethod]
+@@ -169,24 +64,20 @@ impl Poly1305 {
+     fn update(&mut self, data: CffiBuf<'_>) -> CryptographyResult<()> {
+         self.inner
+             .as_mut()
+-            .map_or(Err(exceptions::already_finalized_error()), |b| {
+-                b.update(data)
+-            })
++            .ok_or_else(exceptions::already_finalized_error)?
++            .update(data.as_bytes())?;
++        Ok(())
+     }
+-
+     fn finalize<'p>(
+         &mut self,
+         py: pyo3::Python<'p>,
+     ) -> CryptographyResult<pyo3::Bound<'p, pyo3::types::PyBytes>> {
+-        let res = self
++        let tag = self
+             .inner
+-            .as_mut()
+-            .map_or(Err(exceptions::already_finalized_error()), |b| {
+-                b.finalize(py)
+-            });
+-        self.inner = None;
+-
+-        res
++            .take()
++            .ok_or_else(exceptions::already_finalized_error)?
++            .finish()?;
++        Ok(pyo3::types::PyBytes::new(py, &tag))
+     }
+ 
+     fn verify(&mut self, py: pyo3::Python<'_>, signature: &[u8]) -> CryptographyResult<()> {
 diff --git a/src/rust/src/backend/rand.rs b/src/rust/src/backend/rand.rs
 index a5a9e62..73f2f54 100644
 --- a/src/rust/src/backend/rand.rs
@@ -3522,10 +4861,93 @@ index cd7c850..3906413 100644
                  CryptographyError::OpenSSL(e)
              }
 diff --git a/src/rust/src/fernet.rs b/src/rust/src/fernet.rs
-index 4900e44..531a40c 100644
+index 4900e44..d613795 100644
 --- a/src/rust/src/fernet.rs
 +++ b/src/rust/src/fernet.rs
-@@ -262,7 +262,7 @@ impl Fernet {
+@@ -8,9 +8,7 @@
+ use base64::engine::general_purpose::{GeneralPurpose, GeneralPurposeConfig, URL_SAFE};
+ use base64::engine::{DecodePaddingMode, Engine};
+ use cryptography_crypto::constant_time;
+-use cryptography_openssl::OpenSSLResult;
+-use openssl::hash::MessageDigest;
+-use openssl::symm::Mode;
++use openssl_bridge::cipher::Direction as Mode;
+ use pyo3::types::{PyAnyMethods, PyBytesMethods, PyStringMethods};
+ 
+ use crate::backend::run_with_gil_detached;
+@@ -102,29 +100,27 @@ fn unverified_token_data(
+ pub(crate) struct Fernet {
+     // Keyed contexts that every operation starts from a copy of. Keying a
+     // context is much more expensive than copying one.
+-    hmac: cryptography_openssl::hmac::Hmac,
+-    encryptor: openssl::cipher_ctx::CipherCtx,
+-    decryptor: openssl::cipher_ctx::CipherCtx,
++    hmac: openssl_bridge::mac::Hmac,
++    cipher: openssl_bridge::cipher::CipherKey,
+ }
+ 
+ impl Fernet {
+-    fn from_key(key: &[u8]) -> OpenSSLResult<Fernet> {
++    fn from_key(key: &[u8]) -> openssl_bridge::Result<Fernet> {
+         let (signing_key, encryption_key) = key.split_at(KEY_LEN / 2);
+-        let hmac = cryptography_openssl::hmac::Hmac::new(signing_key, MessageDigest::sha256())?;
+-        let cipher = openssl::cipher::Cipher::aes_128_cbc();
+-        let mut encryptor = openssl::cipher_ctx::CipherCtx::new()?;
+-        encryptor.encrypt_init(Some(cipher), Some(encryption_key), None)?;
+-        let mut decryptor = openssl::cipher_ctx::CipherCtx::new()?;
+-        decryptor.decrypt_init(Some(cipher), Some(encryption_key), None)?;
+-        Ok(Fernet {
+-            hmac,
+-            encryptor,
+-            decryptor,
+-        })
++        let hmac = openssl_bridge::mac::Hmac::new(
++            openssl_bridge::hash::Algorithm::from_name("sha256")?,
++            signing_key,
++        )?;
++        let cipher = openssl_bridge::cipher::CipherKey::new(
++            openssl_bridge::cipher::Cipher::Aes128Cbc,
++            encryption_key,
++            true,
++        )?;
++        Ok(Fernet { hmac, cipher })
+     }
+ 
+-    fn hmac(&self, data: &[u8]) -> OpenSSLResult<cryptography_openssl::hmac::DigestBytes> {
+-        let mut h = self.hmac.copy()?;
++    fn hmac(&self, data: &[u8]) -> openssl_bridge::Result<Vec<u8>> {
++        let mut h = self.hmac.try_clone()?;
+         h.update(data)?;
+         h.finish()
+     }
+@@ -137,20 +133,12 @@ impl Fernet {
+         iv: &[u8],
+         input: &[u8],
+         output: &mut [u8],
+-    ) -> OpenSSLResult<usize> {
+-        let mut ctx = openssl::cipher_ctx::CipherCtx::new()?;
+-        match mode {
+-            Mode::Encrypt => {
+-                ctx.copy(&self.encryptor)?;
+-                ctx.encrypt_init(None, None, Some(iv))?;
+-            }
+-            Mode::Decrypt => {
+-                ctx.copy(&self.decryptor)?;
+-                ctx.decrypt_init(None, None, Some(iv))?;
+-            }
+-        }
+-        let n = ctx.cipher_update(input, Some(output))?;
+-        Ok(n + ctx.cipher_final(&mut output[n..])?)
++    ) -> openssl_bridge::Result<usize> {
++        let mut ctx = self.cipher.start(mode, iv)?;
++        let n = ctx.update_into(input, output)?;
++        let tail: openssl_bridge::secret::SecretBytes = ctx.finish()?.into();
++        output[n..n + tail.as_ref().len()].copy_from_slice(tail.as_ref());
++        Ok(n + tail.as_ref().len())
+     }
+ 
+     /// Builds the raw (not yet base64-encoded) token.
+@@ -262,7 +250,7 @@ impl Fernet {
          cls: &pyo3::Bound<'p, pyo3::types::PyType>,
      ) -> CryptographyResult<pyo3::Bound<'p, pyo3::types::PyBytes>> {
          let mut key = [0u8; KEY_LEN];
@@ -3534,7 +4956,7 @@ index 4900e44..531a40c 100644
          b64encode(cls.py(), &key)
      }
  
-@@ -281,7 +281,7 @@ impl Fernet {
+@@ -281,7 +269,7 @@ impl Fernet {
          current_time: u64,
      ) -> CryptographyResult<pyo3::Bound<'p, pyo3::types::PyBytes>> {
          let mut iv = [0u8; IV_LEN];
@@ -3543,7 +4965,7 @@ index 4900e44..531a40c 100644
          let token = self.encrypt_from_parts(py, data.as_bytes(), current_time, &iv)?;
          b64encode(py, &token)
      }
-@@ -412,7 +412,7 @@ impl MultiFernet {
+@@ -412,7 +400,7 @@ impl MultiFernet {
              .ok_or_else(invalid_token)?;
  
          let mut iv = [0u8; IV_LEN];

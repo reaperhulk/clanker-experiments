@@ -12,6 +12,11 @@ impl AsRef<[u8]> for SecretBytes {
         &self.0
     }
 }
+impl AsMut<[u8]> for SecretBytes {
+    fn as_mut(&mut self) -> &mut [u8] {
+        &mut self.0
+    }
+}
 impl Drop for SecretBytes {
     fn drop(&mut self) {
         // SAFETY: This uniquely owns the initialized bytes of the allocation.

@@ -26,6 +26,9 @@
 #else
 #define OB_BACKEND_CODE 0
 #endif
+#if defined(LIBRESSL_VERSION_NUMBER)
+#include <openssl/poly1305.h>
+#endif
 #if defined(OPENSSL_IS_BORINGSSL) || defined(OPENSSL_IS_AWSLC)
 #include <openssl/aead.h>
 #include <openssl/poly1305.h>

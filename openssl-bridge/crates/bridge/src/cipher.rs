@@ -78,6 +78,7 @@ pub enum Cipher {
     IdeaOfb,
     IdeaCfb,
     Rc2Cbc,
+    Rc2_40Cbc,
     Rc4,
     ChaCha20,
 }
@@ -143,6 +144,7 @@ impl Cipher {
             "IDEA-OFB" => Ok(Self::IdeaOfb),
             "IDEA-CFB" => Ok(Self::IdeaCfb),
             "RC2-CBC" => Ok(Self::Rc2Cbc),
+            "RC2-40-CBC" => Ok(Self::Rc2_40Cbc),
             "RC4" => Ok(Self::Rc4),
             "CHACHA20" => Ok(Self::ChaCha20),
             _ => Err(Error::Unsupported("unsupported conventional cipher")),
@@ -208,12 +210,23 @@ impl Cipher {
             Self::IdeaOfb => c"IDEA-OFB",
             Self::IdeaCfb => c"IDEA-CFB",
             Self::Rc2Cbc => c"RC2-CBC",
+            Self::Rc2_40Cbc => c"RC2-40-CBC",
             Self::Rc4 => c"RC4",
             Self::ChaCha20 => c"ChaCha20",
         }
     }
     pub fn is_available(self) -> bool {
         Descriptor::lookup(self.name()).is_ok()
+    }
+
+    pub fn default_key_size(self) -> Result<usize> {
+        Ok(Descriptor::lookup(self.name())?.sizes()?.0)
+    }
+    pub fn iv_size(self) -> Result<usize> {
+        Ok(Descriptor::lookup(self.name())?.sizes()?.1)
+    }
+    pub fn block_size(self) -> Result<usize> {
+        Ok(Descriptor::lookup(self.name())?.sizes()?.2)
     }
 
     fn valid_key(self, actual: usize, required: usize) -> bool {
@@ -259,6 +272,13 @@ impl Descriptor {
                 b"AES-192-GCM" => ffi::EVP_aes_192_gcm(),
                 b"AES-256-GCM" => ffi::EVP_aes_256_gcm(),
                 b"DES-EDE3-ECB" => ffi::EVP_des_ede3_ecb(),
+                b"RC2-40-CBC" => ffi::EVP_rc2_40_cbc(),
+                #[cfg(not(backend = "boringssl"))]
+                b"AES-128-CCM" => ffi::EVP_aes_128_ccm(),
+                #[cfg(not(backend = "boringssl"))]
+                b"AES-192-CCM" => ffi::EVP_aes_192_ccm(),
+                #[cfg(not(backend = "boringssl"))]
+                b"AES-256-CCM" => ffi::EVP_aes_256_ccm(),
                 #[cfg(backend = "awslc")]
                 b"AES-128-CFB8" => ffi::EVP_aes_128_cfb8(),
                 #[cfg(backend = "awslc")]
@@ -310,7 +330,8 @@ impl Drop for Descriptor {
 pub(crate) struct Context(NonNull<ffi::EVP_CIPHER_CTX>);
 // SAFETY: A context is uniquely owned; all operations require exclusive access.
 unsafe impl Send for Context {}
-// SAFETY: Shared access never reads or mutates native context state.
+// SAFETY: Shared access only copies pristine key schedules through a const
+// native source; all other native operations require exclusive access.
 unsafe impl Sync for Context {}
 impl Context {
     pub(crate) fn new() -> Result<Self> {
@@ -330,7 +351,7 @@ impl Drop for Context {
 
 pub struct Stream {
     ctx: Context,
-    _descriptor: Descriptor,
+    _descriptor: std::sync::Arc<Descriptor>,
     cipher: Cipher,
     block_size: usize,
     iv_size: usize,
@@ -391,7 +412,7 @@ impl Stream {
         check(unsafe { ffi::EVP_CIPHER_CTX_set_padding(ctx.ptr(), padding as i32) })?;
         Ok(Self {
             ctx,
-            _descriptor: descriptor,
+            _descriptor: std::sync::Arc::new(descriptor),
             cipher,
             block_size,
             iv_size,
@@ -604,4 +625,84 @@ impl XtsDataUnit {
 pub(crate) fn cleanse(bytes: &mut [u8]) {
     // SAFETY: bytes is exclusively writable for the declared length.
     unsafe { ffi::OPENSSL_cleanse(bytes.as_mut_ptr().cast(), bytes.len()) };
+}
+
+/// An immutable key schedule for repeated conventional-cipher operations. Each
+/// `start` returns independent state and requires a complete IV; callers cannot
+/// obtain or operate on a context with only partial initialization.
+pub struct CipherKey {
+    encrypt: Stream,
+    decrypt: Stream,
+}
+impl CipherKey {
+    pub fn new(cipher: Cipher, key: &[u8], padding: bool) -> Result<Self> {
+        let initial_iv = vec![0; cipher.iv_size()?];
+        Ok(Self {
+            encrypt: Stream::new(cipher, Direction::Encrypt, key, &initial_iv, padding)?,
+            decrypt: Stream::new(cipher, Direction::Decrypt, key, &initial_iv, padding)?,
+        })
+    }
+    pub fn start(&self, direction: Direction, iv: &[u8]) -> Result<Stream> {
+        let base = match direction {
+            Direction::Encrypt => &self.encrypt,
+            Direction::Decrypt => &self.decrypt,
+        };
+        if iv.len() != base.iv_size {
+            return Err(Error::InvalidInput("incorrect IV length"));
+        }
+        let mut ctx = Context::new()?;
+        // SAFETY: Source is permanently held in its pristine keyed state. Native
+        // copy takes a const source and does not modify it; destination is unique.
+        check(unsafe { ffi::EVP_CIPHER_CTX_copy(ctx.ptr(), base.ctx.0.as_ptr()) })?;
+        // SAFETY: The copy has the selected cipher, key, direction, and padding.
+        // The IV has exactly the configured length. No partial state escapes.
+        check(unsafe {
+            ffi::EVP_CipherInit_ex(
+                ctx.ptr(),
+                ptr::null(),
+                ptr::null_mut(),
+                ptr::null(),
+                iv.as_ptr(),
+                -1,
+            )
+        })?;
+        Ok(Stream {
+            ctx,
+            _descriptor: base._descriptor.clone(),
+            cipher: base.cipher,
+            block_size: base.block_size,
+            iv_size: base.iv_size,
+            padding: base.padding,
+            poisoned: false,
+            remaining: Stream::counter_limit(base.cipher, iv),
+        })
+    }
+}
+
+/// Encrypt a complete conventional-cipher message, applying PKCS7 padding for
+/// block modes. This does not provide authentication.
+pub fn encrypt_padded(cipher: Cipher, key: &[u8], iv: &[u8], plaintext: &[u8]) -> Result<Vec<u8>> {
+    padded(cipher, Direction::Encrypt, key, iv, plaintext)
+}
+/// Decrypt legacy unauthenticated ciphertext with PKCS7 padding. Protocols must
+/// authenticate ciphertext separately where applicable; padding is not integrity.
+pub fn decrypt_padded(cipher: Cipher, key: &[u8], iv: &[u8], ciphertext: &[u8]) -> Result<Vec<u8>> {
+    padded(cipher, Direction::Decrypt, key, iv, ciphertext)
+}
+fn padded(
+    cipher: Cipher,
+    direction: Direction,
+    key: &[u8],
+    iv: &[u8],
+    input: &[u8],
+) -> Result<Vec<u8>> {
+    let mut stream = Stream::new(cipher, direction, key, iv, true)?;
+    let mut scratch: crate::secret::SecretBytes =
+        vec![0; stream.update_capacity(input.len())?].into();
+    let written = stream.update_into(input, scratch.as_mut())?;
+    let tail: crate::secret::SecretBytes = stream.finish()?.into();
+    let mut result = Vec::with_capacity(written + tail.as_ref().len());
+    result.extend_from_slice(&scratch.as_ref()[..written]);
+    result.extend_from_slice(tail.as_ref());
+    Ok(result)
 }

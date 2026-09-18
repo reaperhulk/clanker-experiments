@@ -4,7 +4,9 @@
 Place the patched cryptography checkout next to `clanker-experiments`, so the
 Cargo path dependency resolves to this experiment. It currently migrates hashes,
 HMAC/CMAC, PBKDF2/scrypt, random generation, constant-time comparison, and the
-Ed25519/X25519/RSA key operations. The pure Rust password-derivation helpers now
+Ed25519/X25519/RSA key operations. Conventional and authenticated ciphers,
+Poly1305, Fernet, key wrapping, password-based encryption, and ML-DSA message
+representative hashing now use the new layer as well. The pure Rust password-derivation helpers now
 depend solely on the new abstraction. Ed25519/X25519/RSA serialization still uses a
 temporary adapter to the old key parser and serializer. **It does not yet remove
 the original openssl or openssl-sys dependencies.**

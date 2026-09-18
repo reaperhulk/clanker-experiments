@@ -3,6 +3,7 @@
 //! No foreign pointer or raw context is exposed by the safe API. Mutable
 //! operations require exclusive access. Failed operations poison their context;
 //! finalization consumes it. Fallible allocation and cloning return errors.
+pub mod aead;
 pub mod cipher;
 pub mod curve25519;
 pub mod error;
@@ -10,6 +11,7 @@ pub mod gcm;
 pub mod hash;
 pub mod kdf;
 pub mod mac;
+pub mod poly1305;
 pub mod rand;
 pub mod rsa;
 pub mod secret;
