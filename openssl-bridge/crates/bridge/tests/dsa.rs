@@ -76,3 +76,58 @@ fn nist_signature_and_native_generation() {
     assert!(!public.verify_digest(md, &digest, &signature).unwrap());
     assert!(generated.sign_digest(md, &digest[..19]).is_err());
 }
+
+#[test]
+fn repeated_and_concurrent_imports_still_check_every_component() {
+    let (p, q, g) = parts();
+    Parameters::from_components(Components {
+        p: &p,
+        q: &q,
+        g: &g,
+    })
+    .unwrap();
+    std::thread::scope(|scope| {
+        for _ in 0..4 {
+            scope.spawn(|| {
+                for _ in 0..8 {
+                    let mut padded = vec![0, 0];
+                    padded.extend_from_slice(&p);
+                    let parameters = Parameters::from_components(Components {
+                        p: &padded,
+                        q: &q,
+                        g: &g,
+                    })
+                    .unwrap();
+                    assert_eq!(parameters.components().p, p);
+                    // A valid cached group cannot validate changed p, q, or g.
+                    let mut bad_p = p.clone();
+                    *bad_p.last_mut().unwrap() &= 0xfe;
+                    assert!(Parameters::from_components(Components {
+                        p: &bad_p,
+                        q: &q,
+                        g: &g
+                    })
+                    .is_err());
+                    let mut bad_q = q.clone();
+                    *bad_q.last_mut().unwrap() &= 0xfe;
+                    assert!(Parameters::from_components(Components {
+                        p: &p,
+                        q: &bad_q,
+                        g: &g
+                    })
+                    .is_err());
+                    // p - 1 has order two, not the odd prime subgroup order q.
+                    let mut bad_g = p.clone();
+                    *bad_g.last_mut().unwrap() -= 1;
+                    assert!(Parameters::from_components(Components {
+                        p: &p,
+                        q: &q,
+                        g: &bad_g
+                    })
+                    .is_err());
+                    assert!(PublicKey::from_components(parameters, &[1]).is_err());
+                }
+            });
+        }
+    });
+}

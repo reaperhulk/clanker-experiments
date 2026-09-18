@@ -13,3 +13,10 @@ The PKCS#12 and PKCS#7 fixtures are copied from the same pinned repository,
 under vectors/cryptography_vectors/{pkcs12,pkcs7}. pkcs12-ca.der is its
 pkcs12/ca/ca.pem certificate converted to DER. These exercise native container
 ownership, password failure, optional outputs, and certificate byte identity.
+
+`dsa-reimport.txt` contains the first valid signature (tcId 2) in the first
+group of the named Wycheproof DSA files at revision
+3fa63dd0344abb611f1fb1d77e119938603ea230. Columns are filename, p, q, g, y,
+message (a dash denotes empty), and DER signature, all values hex encoded.
+Wycheproof is licensed under Apache-2.0. These public values measure repeated
+parameter import and complete signature verification; no secret material is used.

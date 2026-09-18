@@ -69,6 +69,12 @@ def main() -> int:
     parser.add_argument("--openssl-dir", type=Path, required=True)
     parser.add_argument("--openssl-lib-dir", type=Path)
     parser.add_argument("--static", action="store_true")
+    parser.add_argument("--fips", action="store_true")
+    parser.add_argument("--no-legacy", choices=["0", "1"])
+    parser.add_argument(
+        "--baseline", action="store_true",
+        help="Require an unmodified cryptography checkout and omit wrapper checks",
+    )
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument(
         "--baseline-report",
@@ -101,26 +107,32 @@ def main() -> int:
     else:
         env.pop("OPENSSL_LIB_DIR", None)
     env.pop("OPENSSL_INCLUDE_DIR", None)
+    if args.no_legacy is not None:
+        env["CRYPTOGRAPHY_OPENSSL_NO_LEGACY"] = args.no_legacy
     env.setdefault("PYTEST_XDIST_AUTO_NUM_WORKERS", "4")
     env["CARGO_TARGET_DIR"] = str(output / "library-target")
     code_hash = source_hash()
     integration_diff = git(args.cryptography, "diff", "HEAD", "--binary")
+    if args.baseline and git(args.cryptography, "status", "--porcelain"):
+        raise SystemExit("Baseline checkout must have no tracked or untracked changes")
     report = {
         "backend": args.backend,
+        "baseline": args.baseline,
+        "fips_requested": args.fips,
+        "no_legacy": env.get("CRYPTOGRAPHY_OPENSSL_NO_LEGACY"),
+        "openssl_dir": str(args.openssl_dir.resolve()),
         "source_sha256": code_hash,
         "cryptography_commit": sources["cryptography"],
         "cryptography_patch_sha256": hashlib.sha256(integration_diff).hexdigest(),
         "complete_replacement": False,
         "checks": [],
     }
-    report["checks"].append(
-        run(
-            ["cargo", "test", "--workspace", "--locked"],
-            ROOT,
-            env,
-            output / "library.log",
-        )
-    )
+    if not args.baseline:
+        for name, command in [
+            ("library", ["cargo", "test", "--workspace", "--locked"]),
+            ("clippy", ["cargo", "clippy", "--workspace", "--all-targets", "--", "-D", "warnings"]),
+        ]:
+            report["checks"].append(run(command, ROOT, env, output / f"{name}.log"))
     env["CARGO_TARGET_DIR"] = str(output / "cryptography-target")
     junit = output / "python-tests.xml"
     report["checks"].append(
@@ -133,6 +145,7 @@ def main() -> int:
                 f"--wycheproof-root={args.wycheproof.resolve()}",
                 f"--x509-limbo-root={args.limbo.resolve()}",
                 f"--junitxml={junit}",
+                *(["--enable-fips=1"] if args.fips else []),
             ],
             args.cryptography.resolve(),
             env,
@@ -162,13 +175,16 @@ def main() -> int:
         before, after = baseline["test_outcomes"], report.get("test_outcomes", {})
         report["missing_tests"] = sorted(set(before) - set(after))
         report["new_skips"] = sorted(
-            k for k in after if after[k] == "skipped" and before.get(k) != "skipped"
+            k for k in set(before) & set(after)
+            if after[k] == "skipped" and before[k] != "skipped"
         )
+        report["added_tests"] = sorted(set(after) - set(before))
     report["validation_passed"] = (
         all(c["exit_code"] == 0 for c in report["checks"])
         and report["unchanged_during_run"]
         and not report.get("missing_tests")
         and not report.get("new_skips")
+        and (args.baseline or not report["remaining_original_dependencies"])
     )
     # Passing this development row never asserts API completeness or full matrix
     # coverage. The separate primary acceptance requirements still apply.

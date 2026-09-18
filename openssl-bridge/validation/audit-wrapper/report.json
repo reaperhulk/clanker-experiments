@@ -1,0 +1,79 @@
+{
+  "wrapper_commit": "bd286dc3c0bb4ddcb4a879dc6a4a221305661795",
+  "complete_replacement": false,
+  "scope": "Standalone wrapper only; does not establish cryptography integration or configuration matrix completion. Rust 1.90 except named MSRV rows using 1.83.0.",
+  "runs": [
+    {
+      "backend": "openssl",
+      "check": "test",
+      "exit": 0,
+      "log": "wrapper-audit-openssl-test.log.gz"
+    },
+    {
+      "backend": "openssl",
+      "check": "clippy",
+      "exit": 0,
+      "log": "wrapper-audit-openssl-clippy.log.gz"
+    },
+    {
+      "backend": "openssl4",
+      "check": "test",
+      "exit": 0,
+      "log": "wrapper-audit-openssl4-test.log.gz"
+    },
+    {
+      "backend": "openssl4",
+      "check": "clippy",
+      "exit": 0,
+      "log": "wrapper-audit-openssl4-clippy.log.gz"
+    },
+    {
+      "backend": "libressl",
+      "check": "test",
+      "exit": 0,
+      "log": "wrapper-audit-libressl-test.log.gz"
+    },
+    {
+      "backend": "libressl",
+      "check": "clippy",
+      "exit": 0,
+      "log": "wrapper-audit-libressl-clippy.log.gz"
+    },
+    {
+      "backend": "boringssl",
+      "check": "test",
+      "exit": 0,
+      "log": "wrapper-audit-boringssl-test.log.gz"
+    },
+    {
+      "backend": "boringssl",
+      "check": "clippy",
+      "exit": 0,
+      "log": "wrapper-audit-boringssl-clippy.log.gz"
+    },
+    {
+      "backend": "awslc",
+      "check": "test",
+      "exit": 0,
+      "log": "wrapper-audit-awslc-test.log.gz"
+    },
+    {
+      "backend": "awslc",
+      "check": "clippy",
+      "exit": 0,
+      "log": "wrapper-audit-awslc-clippy.log.gz"
+    },
+    {
+      "backend": "msrv-openssl4",
+      "check": "test",
+      "exit": 0,
+      "log": "wrapper-audit-msrv-openssl4-test.log.gz"
+    },
+    {
+      "backend": "msrv-openssl4",
+      "check": "clippy",
+      "exit": 0,
+      "log": "wrapper-audit-msrv-openssl4-clippy.log.gz"
+    }
+  ]
+}

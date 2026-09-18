@@ -8,8 +8,9 @@ use crate::{
     Error, Result,
 };
 use std::{
+    collections::VecDeque,
     ptr::{self, NonNull},
-    sync::Arc,
+    sync::{Arc, Mutex},
 };
 const MAX_BYTES: usize = 512;
 #[derive(Clone, Copy)]
@@ -18,6 +19,7 @@ pub struct Components<'a> {
     pub q: &'a [u8],
     pub g: &'a [u8],
 }
+#[derive(PartialEq, Eq)]
 struct ParameterData {
     p: Vec<u8>,
     q: Vec<u8>,
@@ -26,6 +28,37 @@ struct ParameterData {
 }
 #[derive(Clone)]
 pub struct Parameters(Arc<ParameterData>);
+// Public mathematical parameters only: no private key, native state, or provider
+// decision is retained. Exact canonical values avoid hash-collision assumptions.
+// At most 32 * (512 + 32 + 512) bytes of public component payload are retained.
+// Native validation happens outside this lock; duplicate concurrent misses may
+// do redundant checks but can never publish an unchecked group.
+static VALIDATED_GROUPS: Mutex<VecDeque<Arc<ParameterData>>> = Mutex::new(VecDeque::new());
+const GROUP_CACHE_LIMIT: usize = 32;
+
+fn cached_group(data: &ParameterData) -> Option<Parameters> {
+    // A poisoned cache is bypassed. It is an optimization, not validation state
+    // required to carry out the operation or a reason to panic in a public API.
+    let cache = VALIDATED_GROUPS.lock().ok()?;
+    cache
+        .iter()
+        .find(|entry| entry.as_ref() == data)
+        .map(|entry| Parameters(entry.clone()))
+}
+
+fn retain_validated_group(data: ParameterData) -> Parameters {
+    let data = Arc::new(data);
+    if let Ok(mut cache) = VALIDATED_GROUPS.lock() {
+        if let Some(existing) = cache.iter().find(|entry| entry.as_ref() == data.as_ref()) {
+            return Parameters(existing.clone());
+        }
+        if cache.len() == GROUP_CACHE_LIMIT {
+            cache.pop_front();
+        }
+        cache.push_back(data.clone());
+    }
+    Parameters(data)
+}
 struct Dsa(NonNull<ffi::DSA>);
 impl Dsa {
     fn new() -> Result<Self> {
@@ -105,6 +138,15 @@ impl Parameters {
                 "invalid DSA parameter sizes or generator",
             ));
         }
+        let data = ParameterData {
+            bits: p.bits(),
+            p: p.secret_bytes()?.as_ref().to_vec(),
+            q: q.secret_bytes()?.as_ref().to_vec(),
+            g: g.secret_bytes()?.as_ref().to_vec(),
+        };
+        if let Some(validated) = cached_group(&data) {
+            return Ok(validated);
+        }
         if !p.is_prime()?
             || !q.is_prime()?
             || !p.modulo(&q)?.is_one()
@@ -112,12 +154,7 @@ impl Parameters {
         {
             return Err(Error::InvalidInput("invalid DSA group"));
         }
-        Ok(Self(Arc::new(ParameterData {
-            bits: p.bits(),
-            p: p.secret_bytes()?.as_ref().to_vec(),
-            q: q.secret_bytes()?.as_ref().to_vec(),
-            g: g.secret_bytes()?.as_ref().to_vec(),
-        })))
+        Ok(retain_validated_group(data))
     }
     pub fn generate(bits: u32) -> Result<Self> {
         if ![1024, 2048, 3072, 4096].contains(&bits) {

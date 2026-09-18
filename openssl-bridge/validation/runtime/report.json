@@ -1,0 +1,21 @@
+{
+  "stage": "runtime",
+  "complete_replacement": false,
+  "wrapper_commit": "66cf812bc7010f65a99687286206e10043b82ca2",
+  "cryptography_commit": "19ff77880bbd485464849366122982cd3a04d94b",
+  "runs": [
+    {
+      "backend": "openssl",
+      "summary": "4226 passed, 486 skipped, 4 warnings in 733.42s (0:12:13)",
+      "canonical_nox_exit": 0,
+      "log": "integration-runtime-openssl.log.gz"
+    },
+    {
+      "backend": "openssl4",
+      "summary": "4689 passed, 23 skipped, 4 warnings in 631.35s (0:10:31)",
+      "canonical_nox_exit": 0,
+      "log": "integration-runtime-openssl4.log.gz"
+    }
+  ],
+  "scope": "Complete canonical nox local with pinned external vectors. Removes old Rust dependencies; final buffer changes, safety review and complete configuration matrix are not covered by this stage."
+}
