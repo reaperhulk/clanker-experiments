@@ -37,10 +37,10 @@ index 006a2e1..ca58192 100755
    fi
    popd
 diff --git a/CHANGELOG.rst b/CHANGELOG.rst
-index 025e676..8077280 100644
+index 025e676..2209890 100644
 --- a/CHANGELOG.rst
 +++ b/CHANGELOG.rst
-@@ -8,6 +8,19 @@ Changelog
+@@ -8,6 +8,23 @@ Changelog
  
  .. note:: This version is not yet released and is under active development.
  
@@ -56,6 +56,10 @@ index 025e676..8077280 100644
 +* XTS data units must be supplied in a single non-empty ``update()`` or
 +  ``update_into()`` call. XTS consistently rejects identical key halves on all
 +  supported backends.
++
++* ChaCha20 streams reject rollover of the low 32 counter bits, giving a
++  consistent bound across native backends. Start or reset a stream with a new
++  nonce and counter range before reaching that bound.
 +
  * :func:`~cryptography.hazmat.primitives.serialization.load_der_private_key`
    and :func:`~cryptography.hazmat.primitives.serialization.load_pem_private_key`
@@ -7662,7 +7666,7 @@ index 56363f4..46d9912 100644
  
      fn __eq__(
 diff --git a/src/rust/src/backend/ec.rs b/src/rust/src/backend/ec.rs
-index ca215ba..1881485 100644
+index ca215ba..5fa6312 100644
 --- a/src/rust/src/backend/ec.rs
 +++ b/src/rust/src/backend/ec.rs
 @@ -7,93 +7,83 @@ use std::hash::{Hash, Hasher};
@@ -7692,8 +7696,8 @@ index ca215ba..1881485 100644
      curve: pyo3::Py<pyo3::PyAny>,
  }
  
-+fn bytes_to_int<'p>(
-+    py: pyo3::Python<'p>,
++fn bytes_to_int(
++    py: pyo3::Python<'_>,
 +    bytes: &[u8],
 +) -> CryptographyResult<pyo3::Py<pyo3::types::PyInt>> {
 +    Ok(py
@@ -7762,6 +7766,15 @@ index ca215ba..1881485 100644
              exceptions::Reasons::UNSUPPORTED_ELLIPTIC_CURVE,
          ))
 -    })?)
+-}
+-
+-fn py_curve_from_curve<'p>(
+-    py: pyo3::Python<'p>,
+-    curve: &openssl::ec::EcGroupRef,
+-) -> CryptographyResult<pyo3::Bound<'p, pyo3::PyAny>> {
+-    assert!(curve.asn1_flag() != openssl::ec::Asn1Flag::EXPLICIT_CURVE);
+-
+-    let name = curve.curve_name().unwrap().short_name()?;
 +    };
 +    let curve = Curve::from_name(&name).map_err(|_| unsupported())?;
 +    // Preserve the existing Python capability set while the shared codecs
@@ -7773,25 +7786,14 @@ index ca215ba..1881485 100644
 +    ) {
 +        return Err(unsupported().into());
 +    }
-+
+ 
+-    Ok(types::CURVE_TYPES.get(py)?.get_item(name)?)
 +    if !curve.is_available() {
 +        return Err(unsupported().into());
 +    }
 +    Ok(curve)
  }
  
- fn py_curve_from_curve<'p>(
-     py: pyo3::Python<'p>,
--    curve: &openssl::ec::EcGroupRef,
-+    curve: Curve,
- ) -> CryptographyResult<pyo3::Bound<'p, pyo3::PyAny>> {
--    assert!(curve.asn1_flag() != openssl::ec::Asn1Flag::EXPLICIT_CURVE);
--
--    let name = curve.curve_name().unwrap().short_name()?;
--
--    Ok(types::CURVE_TYPES.get(py)?.get_item(name)?)
--}
--
 -fn check_key_infinity(
 -    ec: &openssl::ec::EcKeyRef<impl openssl::pkey::HasPublic>,
 -) -> CryptographyResult<()> {
@@ -7803,6 +7805,10 @@ index ca215ba..1881485 100644
 -        ));
 -    }
 -    Ok(())
++fn py_curve_from_curve(
++    py: pyo3::Python<'_>,
++    curve: Curve,
++) -> CryptographyResult<pyo3::Bound<'_, pyo3::PyAny>> {
 +    Ok(types::CURVE_TYPES.get(py)?.get_item(curve.name())?)
  }
  

@@ -35,6 +35,11 @@ OpenSSL FIPS properties must be configured before process startup using its
 configuration file. The integration's private activation hook now verifies this
 configuration instead of calling OpenSSL's non-thread-safe property setter.
 The cryptography patch also updates the upstream FIPS CI build configuration.
+When using `tools/validate.py --fips`, standalone wrapper vectors run in ordinary
+mode on that same native build, since they exercise non-FIPS algorithms too.
+The complete cryptography Python and Rust suite retains the startup FIPS
+configuration. Both configurations are recorded in the report. Its Rust PEM
+derivation test checks MD5 rejection under FIPS and SHA-256 success in both modes.
 Argon2 uses one worker, preserving the specified lane count and derived key,
 without changing the default context's global thread-pool limit.
 

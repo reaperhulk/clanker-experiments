@@ -120,6 +120,7 @@ def main() -> int:
         "baseline": args.baseline,
         "fips_requested": args.fips,
         "no_legacy": env.get("CRYPTOGRAPHY_OPENSSL_NO_LEGACY"),
+        "cryptography_openssl_conf": env.get("OPENSSL_CONF", "native default"),
         "openssl_dir": str(args.openssl_dir.resolve()),
         "source_sha256": code_hash,
         "cryptography_commit": sources["cryptography"],
@@ -128,11 +129,23 @@ def main() -> int:
         "checks": [],
     }
     if not args.baseline:
+        library_env = env.copy()
+        if args.fips:
+            # The standalone vector suite deliberately exercises non-FIPS
+            # algorithms too. Run it in ordinary mode on the same native build;
+            # the complete cryptography Python AND Rust suite below retains the
+            # startup FIPS configuration and checks its rejection behavior.
+            library_env["OPENSSL_CONF"] = os.devnull
+        report["library_openssl_conf"] = library_env.get(
+            "OPENSSL_CONF", "native default"
+        )
         for name, command in [
             ("library", ["cargo", "test", "--workspace", "--locked"]),
             ("clippy", ["cargo", "clippy", "--workspace", "--all-targets", "--", "-D", "warnings"]),
         ]:
-            report["checks"].append(run(command, ROOT, env, output / f"{name}.log"))
+            report["checks"].append(
+                run(command, ROOT, library_env, output / f"{name}.log")
+            )
     env["CARGO_TARGET_DIR"] = str(output / "cryptography-target")
     junit = output / "python-tests.xml"
     report["checks"].append(

@@ -1,0 +1,187 @@
+{
+  "platform": "Linux x86_64",
+  "python": "3.12.14",
+  "cryptography_command": "nox -e local -- --wycheproof-root=<pinned checkout> --x509-limbo-root=<pinned checkout> --junitxml=<row results>",
+  "fips_additional_argument": "--enable-fips=1",
+  "rows": [
+    {
+      "id": "system",
+      "backend": "openssl",
+      "version_or_revision": "3.0.13",
+      "extra_native_flags": [],
+      "rust": "1.90.0",
+      "fips": false,
+      "static": false
+    },
+    {
+      "id": "openssl4",
+      "backend": "openssl",
+      "version_or_revision": "4.0.2",
+      "extra_native_flags": [],
+      "rust": "1.90.0",
+      "fips": false,
+      "static": true
+    },
+    {
+      "id": "libressl",
+      "backend": "libressl",
+      "version_or_revision": "4.3.2",
+      "extra_native_flags": [],
+      "rust": "1.90.0",
+      "fips": false,
+      "static": true
+    },
+    {
+      "id": "boringssl",
+      "backend": "boringssl",
+      "version_or_revision": "8626998e7fdd6d779f37b7ba0b726631bbb76266",
+      "extra_native_flags": [],
+      "rust": "1.90.0",
+      "fips": false,
+      "static": true
+    },
+    {
+      "id": "awslc",
+      "backend": "awslc",
+      "version_or_revision": "5.9.0",
+      "extra_native_flags": [],
+      "rust": "1.90.0",
+      "fips": false,
+      "static": true
+    },
+    {
+      "id": "libressl421",
+      "backend": "libressl",
+      "version_or_revision": "4.2.1",
+      "extra_native_flags": [],
+      "rust": "1.90.0",
+      "fips": false,
+      "static": true
+    },
+    {
+      "id": "openssl3022",
+      "backend": "openssl",
+      "version_or_revision": "3.0.22",
+      "extra_native_flags": [],
+      "rust": "1.90.0",
+      "fips": false,
+      "static": true
+    },
+    {
+      "id": "openssl347",
+      "backend": "openssl",
+      "version_or_revision": "3.4.7",
+      "extra_native_flags": [],
+      "rust": "1.90.0",
+      "fips": false,
+      "static": true
+    },
+    {
+      "id": "openssl358",
+      "backend": "openssl",
+      "version_or_revision": "3.5.8",
+      "extra_native_flags": [],
+      "rust": "1.90.0",
+      "fips": false,
+      "static": true
+    },
+    {
+      "id": "minimal",
+      "backend": "openssl",
+      "version_or_revision": "4.0.2",
+      "extra_native_flags": [
+        "no-engine",
+        "no-rc2",
+        "no-srtp",
+        "no-ct",
+        "no-psk"
+      ],
+      "rust": "1.90.0",
+      "fips": false,
+      "static": true
+    },
+    {
+      "id": "no-legacy0",
+      "backend": "openssl",
+      "version_or_revision": "4.0.2",
+      "extra_native_flags": [
+        "no-legacy"
+      ],
+      "rust": "1.90.0",
+      "fips": false,
+      "static": true,
+      "CRYPTOGRAPHY_OPENSSL_NO_LEGACY": "0"
+    },
+    {
+      "id": "no-legacy1",
+      "backend": "openssl",
+      "version_or_revision": "4.0.2",
+      "extra_native_flags": [
+        "no-legacy"
+      ],
+      "rust": "1.90.0",
+      "fips": false,
+      "static": true,
+      "CRYPTOGRAPHY_OPENSSL_NO_LEGACY": "1"
+    },
+    {
+      "id": "main",
+      "backend": "openssl",
+      "version_or_revision": "7c234e584350f623083e0c52c02c4bb5e7c836ff",
+      "extra_native_flags": [],
+      "rust": "1.90.0",
+      "fips": false,
+      "static": true
+    },
+    {
+      "id": "fips",
+      "backend": "openssl",
+      "version_or_revision": "3.6.4",
+      "extra_native_flags": [
+        "enable-fips"
+      ],
+      "rust": "1.90.0",
+      "fips": true,
+      "static": true
+    },
+    {
+      "id": "openssl364",
+      "backend": "openssl",
+      "version_or_revision": "3.6.4",
+      "extra_native_flags": [
+        "enable-fips"
+      ],
+      "rust": "1.90.0",
+      "fips": false,
+      "static": true,
+      "OPENSSL_CONF": "/dev/null"
+    },
+    {
+      "id": "msrv-boringssl",
+      "backend": "boringssl",
+      "version_or_revision": "8626998e7fdd6d779f37b7ba0b726631bbb76266",
+      "extra_native_flags": [],
+      "rust": "1.83.0",
+      "fips": false,
+      "static": true
+    },
+    {
+      "id": "msrv-awslc",
+      "backend": "awslc",
+      "version_or_revision": "5.9.0",
+      "extra_native_flags": [],
+      "rust": "1.83.0",
+      "fips": false,
+      "static": true
+    }
+  ],
+  "wrapper_rows": [
+    "system",
+    "openssl4",
+    "libressl",
+    "boringssl",
+    "awslc"
+  ],
+  "wrapper_msrv": "1.83.0 against OpenSSL 4.0.2",
+  "scope": "Native backend/version/configuration coverage on the stated host; not the full upstream Python/OS matrix."
+}
