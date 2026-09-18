@@ -94,3 +94,32 @@ Configuration discovery checks final preprocessor state, including macros that
 were defined empty or later undefined. Clippy exceptions for bindgen bitfield
 patterns are confined to generated bindings. ABI-dependent integer conversions
 remain checked even on forks where the source and destination types coincide.
+
+## Conventional ciphers and GCM
+
+Cipher selection is a closed enum. Arbitrary provider names, TLS composite
+ciphers, AEAD, and XTS cannot be passed to `Stream`. Key and IV sizes are checked
+before native initialization, with explicit bounds for legacy variable-key
+algorithms. The context cannot be reconfigured except for a checked CTR/ChaCha20
+nonce reset. ChaCha20 refuses 32-bit counter carry. XTS consumes the context in
+one data-unit operation, bounds the unit to 2^20 AES blocks, and rejects equal
+key halves on all backends.
+
+Unpadded block updates reserve input length plus block size minus one. Padded
+updates reserve an entire additional block, covering LibreSSL's withheld-block
+write even on empty input. Limits cover native signed output lengths before C
+is called. Finalization consumes the context and cleanses unused scratch bytes.
+
+GCM accepts only its own algorithm enum. AAD must precede payload, byte limits
+are checked, and failed operations poison the context. Encryption finalization
+returns a 128-bit tag. `UnverifiedGcmDecrypt` explicitly exposes untrusted output
+for cryptography's existing streaming protocol; it cannot be finalized without
+an expected tag. Authentication failure cannot revoke bytes already observed by
+a streaming caller. The one-shot `AesGcm::open` interface withholds plaintext
+and erases it on authentication failure.
+
+OpenSSL cipher descriptors own a fetched reference and remain alive with the
+context. Fork descriptors are immutable static objects. Context `Sync` is sound
+because no shared-reference method accesses native state: metadata is cached in
+Rust, and every native operation requires an exclusive reference or consumes
+ownership. Inputs and outputs must be valid disjoint Rust borrows.

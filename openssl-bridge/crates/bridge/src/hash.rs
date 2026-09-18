@@ -18,6 +18,7 @@ unsafe impl Sync for Algorithm {}
 
 impl Algorithm {
     pub fn from_name(name: &str) -> Result<Self> {
+        crate::initialize()?;
         let name =
             CString::new(name).map_err(|_| Error::InvalidInput("digest name contains NUL"))?;
         // SAFETY: name is a live, NUL-terminated string; lookup retains no borrow.

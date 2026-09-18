@@ -6,6 +6,7 @@
 pub mod cipher;
 pub mod curve25519;
 pub mod error;
+pub mod gcm;
 pub mod hash;
 pub mod kdf;
 pub mod mac;
@@ -51,3 +52,22 @@ pub const BACKEND: Backend = {
     }
 };
 use openssl_bridge_sys as ffi;
+
+/// Initialize native crypto and error strings exactly once. Disabling native
+/// atexit cleanup keeps process-lifetime Rust descriptors valid during shutdown.
+/// This does not load providers or change the process's FIPS configuration.
+pub fn initialize() -> Result<()> {
+    static INITIALIZED: std::sync::OnceLock<Result<()>> = std::sync::OnceLock::new();
+    INITIALIZED
+        .get_or_init(|| {
+            // SAFETY: Native initialization is serialized here (and internally by
+            // each backend). These flags have no pointer-valued settings.
+            error::check(unsafe {
+                ffi::OPENSSL_init_crypto(
+                    u64::from(ffi::OPENSSL_INIT_LOAD_CRYPTO_STRINGS | ffi::OPENSSL_INIT_NO_ATEXIT),
+                    std::ptr::null_mut(),
+                )
+            })
+        })
+        .clone()
+}

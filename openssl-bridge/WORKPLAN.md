@@ -16,17 +16,24 @@ with the incremental patch must not be described as a full openssl replacement.
   checked decryption buffers are erased on failure. The structural validation
   mode preserves cryptography's explicit mathematical-validation opt-out.
 
-## Implemented, not yet integrated
+## Cipher integration under validation
 
-- AES CBC/CTR/ECB contexts; one-shot AES-GCM with authenticated plaintext release.
+- Conventional CBC/CTR/ECB/CFB/CFB8/OFB/stream ciphers with fixed setup, checked
+  variable key lengths, and guarded nonce reset. The registry no longer uses
+  rust-openssl cipher descriptors.
+- XTS consumes one complete data unit and rejects equal key halves on every fork.
+- Streaming GCM separates encryption from explicitly unverified decryption;
+  finalization always requires a tag. One-shot AES-GCM withholds plaintext.
+- OpenSSL descriptors are fetched and owned; fork lookup omissions are handled
+  using their documented algorithm getters.
 
 ## Primary replacement backlog
 
 1. Unify Python error-stack records
    and preserve native reason text, library/reason codes, and exception behavior.
-2. Implement the remaining conventional modes and legacy algorithms used in
-   `cipher_registry.rs`, preserving backend capability discovery. Support variable
-   key lengths, nonce reset, and streaming GCM through explicit operation APIs.
+2. Finish validating the conventional cipher and streaming GCM integration across
+   backends. Compare test identities and existing skips, including provider
+   configurations; do not infer capability equivalence from a successful build.
 3. Implement CCM, OCB, SIV, GCM-SIV, ChaCha20-Poly1305 and backend-specific AEAD,
    with correct order of configuration, tag handling, buffer bounds, and context
    copying. Replace the raw `CipherCtx` usage in cryptography completely.
@@ -40,7 +47,11 @@ with the incremental patch must not be described as a full openssl replacement.
    `cryptography-openssl` usage. Check the dependency graph, not just imports.
 7. Exercise every backend/version/configuration in the pinned upstream CI matrix,
    comparing against unmodified baselines, including Rust 1.83 and external vectors.
-8. Review all unsafe blocks and ownership/state contracts, regenerate the patch
+8. Review the Python buffer boundary as well as all native unsafe blocks. The
+   upstream `CffiBuf`/`CffiMutBuf` currently assume non-overlapping, non-concurrently
+   mutated memory without enforcing it. Valid Rust borrows are a prerequisite of
+   the safe abstraction; that existing integration limitation needs explicit review.
+9. Review all unsafe blocks and ownership/state contracts, regenerate the patch
    from the tested checkout, and only then submit the primary PR.
 
 ## Subsequent stage
