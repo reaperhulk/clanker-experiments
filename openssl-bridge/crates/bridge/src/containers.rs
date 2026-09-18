@@ -88,9 +88,9 @@ pub fn parse_pkcs12(
         .try_into()
         .map_err(|_| Pkcs12Error::Encoding(Error::InvalidInput("PKCS#12 input is too long")))?;
     let mut cursor = data.as_ptr();
-    // SAFETY: The decoder reads at most length bytes; NULL requests a fresh
-    // object. It may accept trailing bytes, matching native BER compatibility.
     let p12 = NativePkcs12(
+        // SAFETY: The decoder reads at most length bytes; NULL requests a fresh
+        // object. It may accept trailing bytes, matching native BER compatibility.
         pointer(unsafe { ffi::d2i_PKCS12(ptr::null_mut(), &mut cursor, length) })
             .map_err(Pkcs12Error::Encoding)?
             .as_ptr(),
@@ -249,9 +249,9 @@ pub fn parse_pkcs7_certificates(data: &[u8]) -> Result<Pkcs7Certificates> {
         .try_into()
         .map_err(|_| Error::InvalidInput("PKCS#7 input is too long"))?;
     let mut cursor = data.as_ptr();
-    // SAFETY: Decoder has a readable length-bounded input and allocates a fresh
-    // object. No native pointer escapes this function.
     let p7 = NativePkcs7(
+        // SAFETY: Decoder has a readable length-bounded input and allocates a fresh
+        // object. No native pointer escapes this function.
         pointer(unsafe { ffi::d2i_PKCS7(ptr::null_mut(), &mut cursor, length) })?.as_ptr(),
     );
     // SAFETY: Read type and discriminated union through the selected C headers.
@@ -264,8 +264,8 @@ pub fn parse_pkcs7_certificates(data: &[u8]) -> Result<Pkcs7Certificates> {
     let certificates = if certs.is_null() {
         None
     } else {
-        // SAFETY: The stack is borrowed from the live, exclusively owned p7.
         Some(
+            // SAFETY: The stack is borrowed from the live, exclusively owned p7.
             unsafe { export_stack(certs) }?
                 .into_iter()
                 .map(|cert| cert.der)

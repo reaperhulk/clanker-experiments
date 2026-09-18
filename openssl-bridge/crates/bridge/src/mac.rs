@@ -182,6 +182,7 @@ unsafe impl Sync for Cmac {}
 
 impl Cmac {
     pub fn new(cipher: CmacCipher, key: &[u8]) -> Result<Self> {
+        crate::initialize()?;
         let descriptor = cipher.descriptor();
         if descriptor.is_null() {
             return Err(Error::Unsupported("CMAC cipher is unavailable"));

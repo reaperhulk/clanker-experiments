@@ -57,14 +57,15 @@ pub fn verify(
         .len()
         .try_into()
         .map_err(|_| Error::InvalidInput("PKCS#7 signature is too long"))?;
-    // SAFETY: Explicit nonnegative length, readable signature; this BIO is
-    // dropped before signature's borrow ends. It does not own the slice.
-    let input =
-        Bio(pointer(unsafe { ffi::BIO_new_mem_buf(signature.as_ptr().cast(), length) })?.as_ptr());
+    let input = Bio(
+        // SAFETY: Explicit nonnegative length, readable signature; this BIO is
+        // dropped before signature's borrow ends. It does not own the slice.
+        pointer(unsafe { ffi::BIO_new_mem_buf(signature.as_ptr().cast(), length) })?.as_ptr(),
+    );
     // The detached S/MIME body is also an owned output, including on failure.
     let mut smime_body = Bio(ptr::null_mut());
-    // SAFETY: Live input BIO; fresh output objects; no password callback is used.
     let message = Pkcs7(
+        // SAFETY: Live input BIO; fresh output objects; no password callback is used.
         pointer(unsafe {
             match encoding {
                 Encoding::Der => ffi::d2i_PKCS7_bio(input.0, ptr::null_mut()),
@@ -84,8 +85,8 @@ pub fn verify(
             .len()
             .try_into()
             .map_err(|_| Error::InvalidInput("certificate is too long"))?;
-        // SAFETY: The decoder reads the bounded DER input and creates a new object.
         let cert = Certificate(
+            // SAFETY: The decoder reads the bounded DER input and creates a new object.
             pointer(unsafe { ffi::d2i_X509(ptr::null_mut(), &mut cursor, length) })?.as_ptr(),
         );
         // SAFETY: Both objects are live and exclusively owned. The store retains

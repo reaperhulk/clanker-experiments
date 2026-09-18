@@ -1,6 +1,7 @@
 use crate::{error::check, ffi, Result};
 
 pub fn fill(output: &mut [u8]) -> Result<()> {
+    crate::initialize()?;
     // The common API uses int on OpenSSL and size_t on some forks. Chunking
     // avoids truncation and works for both, including unusually large slices.
     for chunk in output.chunks_mut(i32::MAX as usize) {
@@ -13,6 +14,7 @@ pub fn fill(output: &mut [u8]) -> Result<()> {
 /// Fill secret key material using OpenSSL's separate private DRBG where it is
 /// available. Forks use their cryptographic RAND_bytes implementation.
 pub fn fill_private(output: &mut [u8]) -> Result<()> {
+    crate::initialize()?;
     #[cfg(backend = "openssl")]
     {
         for chunk in output.chunks_mut(i32::MAX as usize) {

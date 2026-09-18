@@ -55,6 +55,7 @@ pub fn scrypt(
     max_memory: u64,
     output: &mut [u8],
 ) -> Result<()> {
+    crate::initialize()?;
     if n < 2 || !n.is_power_of_two() || r == 0 || p == 0 {
         return Err(Error::InvalidInput("invalid scrypt work parameters"));
     }

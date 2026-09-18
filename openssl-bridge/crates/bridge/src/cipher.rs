@@ -335,6 +335,7 @@ unsafe impl Send for Context {}
 unsafe impl Sync for Context {}
 impl Context {
     pub(crate) fn new() -> Result<Self> {
+        crate::initialize()?;
         // SAFETY: The allocator has no preconditions.
         pointer(unsafe { ffi::EVP_CIPHER_CTX_new() }).map(Self)
     }

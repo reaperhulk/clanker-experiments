@@ -47,6 +47,7 @@ impl Drop for Number {
 struct Rsa(NonNull<ffi::RSA>);
 impl Rsa {
     fn new() -> Result<Self> {
+        crate::initialize()?;
         // SAFETY: The allocator has no preconditions.
         pointer(unsafe { ffi::RSA_new() }).map(Self)
     }

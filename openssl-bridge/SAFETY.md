@@ -34,22 +34,25 @@ Slice lengths are checked against native integer types before FFI. Digest and
 MAC output sizes come from the selected algorithm. Native in/out size parameters
 receive the actual destination capacity; returned lengths are checked as well.
 
-Conventional cipher output capacity includes a **full block** of slack, except
-for stream modes. This covers intermediate writes, not just reported output.
+Padded conventional cipher output capacity includes a **full block** of slack,
+except for stream modes. Unpadded block modes reserve block size minus one. This covers intermediate writes, not just reported output.
 The regression test enumerates partial-block splits in padded CBC decryption and
 checks canaries around the exact supplied output slice. LibreSSL writes the
 withheld block before determining the returned length, including on an empty
 update. Using only `input.len() + block_size - 1` failed that test.
 
-The AEAD implementation uses only GCM, whose update writes exactly the input
-length, and checks the reported length. Authentication failure erases the pending
-plaintext; callers only receive plaintext after successful tag verification.
+One-shot AEAD dispatches through a closed algorithm set and separate protocol
+paths. GCM writes exactly the input length; buffered protocols reserve additional
+block space. Authentication failure erases pending plaintext; callers receive
+plaintext only after successful verification. The explicitly named unverified
+streaming GCM interface has a different contract, described below.
 
 ## Concurrency and secrets
 
 Explicit Send/Sync implementations are limited to descriptors and contexts whose
 shared methods do not mutate native state. Operation methods requiring mutation
-take `&mut self` or consume the owner. Mutable cipher contexts are not Sync.
+take `&mut self` or consume the owner. Sharing a context permits metadata reads
+and the explicitly reviewed native copy operations, never concurrent mutation.
 
 Secret Curve25519 exports and shared secrets erase their storage on drop and
 implement neither Debug nor Clone. X25519 rejects an all-zero shared secret even
@@ -120,9 +123,10 @@ and erases it on authentication failure.
 
 OpenSSL cipher descriptors own a fetched reference and remain alive with the
 context. Fork descriptors are immutable static objects. Context `Sync` is sound
-because no shared-reference method accesses native state: metadata is cached in
-Rust, and every native operation requires an exclusive reference or consumes
-ownership. Inputs and outputs must be valid disjoint Rust borrows.
+because metadata is cached in Rust and shared native access is limited to
+copying pristine `CipherKey` schedules through a const source. Mutating native
+operations require exclusive access or consume ownership. Inputs and outputs
+must be valid disjoint Rust borrows.
 
 ## One-shot AEAD and Poly1305
 
@@ -240,3 +244,49 @@ to form passive material; that calculation does not grant operational validity.
 Unsupported MAC keys and arbitrary curves cannot inhabit the serialization view.
 The old internal panic tests are replaced by compile-fail coverage and explicit
 unsupported-algorithm parser checks; Python capability skips are unchanged.
+
+
+## Container decoding and runtime
+
+PKCS#12 and legacy BER PKCS#7 decoding publish owned encodings, never native
+handles or borrowed stack members. Partially populated parse outputs enter RAII
+owners before the status is checked. Password pointers originate from `CStr`;
+Python adapters reject embedded NUL before making that value. PKCS#7 verification
+uses explicit trust anchors and a fixed flag set with no verification bypass.
+
+Private PKCS#8 output uses erased Rust buffers. OpenSSL and LibreSSL erase the
+intermediate PKCS8_PRIV_KEY_INFO through their native ASN.1 destructor callback.
+The other forks marshal directly into bounded caller-owned CBB storage because
+their generic PKCS#8 destructor does not erase the private octets. A failed CBB
+is only cleaned up, never queried or flushed; the entire output allocation is
+erased before retry or return.
+
+Every standalone operation that needs algorithm registration explicitly enters
+the shared initialization routine. The CMAC first-operation test runs in its own
+executable so another test cannot mask initialization-order dependencies.
+Fetched provider references are retained for process lifetime. There is no safe
+provider unload or default FIPS property setter. Configure FIPS before process
+startup: OpenSSL documents default-property mutation as incompatible with
+concurrent native operations, including operations in other libraries.
+
+Argon2 validates lane, memory, salt, and output limits. Writable OSSL_PARAM data
+has owned erased backing storage for the complete synchronous call. Using one
+worker preserves lane semantics without mutating a process-wide thread pool.
+Error records copy the calling thread's native diagnostic queue into Rust data.
+
+## Python buffer boundary
+
+The integration's crypto backend, key codecs, and buffer adapter forbid unsafe
+Rust. Python bytes are immutable and may be borrowed. Other input buffers,
+including readonly views of mutable storage, are copied through memoryview into
+immutable Python bytes before Rust obtains a slice. A snapshot is not guaranteed
+to be atomic under external mutation; buffer exporters retain their own protocol
+and synchronization obligations.
+
+Python output views pin their exports. Native operations write exclusively owned,
+erased Rust staging buffers. Only the successfully produced prefix is published
+through the interpreter after the operation succeeds. This permits overlapping
+Python input/output views without creating aliased Rust references. One-shot
+AEAD commits only after authentication; failed or abandoned operations leave
+Python destinations unchanged. Explicit streaming GCM remains unverified until
+its final tag check, as required by the existing Python API.
