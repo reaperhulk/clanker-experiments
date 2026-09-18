@@ -4,7 +4,7 @@ This starts a pure Rust libheif replacement with an optional compatible C ABI.
 The reference contract is libheif 1.23.4. Native code is used only by independent
 test oracles; the candidate's resolved implementation dependencies are Rust.
 
-The PR is **not complete** and must remain draft. It implements 131 of 465
+The PR is **not complete** and must remain draft. It implements 144 of 465
 functions, plus the public success object. The strict completion check fails on
 missing and unvalidated APIs. Unsupported-operation stubs and libheif forwarding
 are not used to inflate coverage.
@@ -27,10 +27,13 @@ Changes:
   empty, missing and reordered parameter-set behavior.
 - Add twelve auxiliary/depth APIs, owned auxiliary type strings, exact depth SEI
   values, filters and retained child handles. They also work with codecs disabled.
+- Add thirteen item-property APIs, raw/UUID ownership, descriptions, transform queries,
+  insertion/deduplication and partial-read state. Preserve malformed optional
+  descriptions as error properties and decoding warnings.
 - Keep error-message buffers on their owning image objects; reproduce and fix a
   cross-handle use-after-free with an independent sanitizer client.
 - Add context/handle ownership, reload state, metadata, thumbnails and color queries.
-- Validate eleven public struct layouts and reject thirteen deliberately mutated
+- Validate twelve public struct layouts and reject deliberately mutated
   implementations (enums, errors, pixels, coordinates, item IDs, reload state, worker callbacks, warning text, mask samples, overlay alpha, resource budgets and field order).
 - Add dependency auditing, ABI checks, CI development checks, and an intentionally
   failing full-completion gate.
@@ -60,3 +63,13 @@ remain open.
 Performance is not yet a success: the candidate's median is higher in the initial
 single-file benchmark, and timing variation is substantial. See docs/RESULTS.md
 and its raw evidence for scope, numbers and remaining work.
+
+The item-property increment adds 960 matching query/insertion transcripts,
+including C-client ASan/UBSan and codec-free builds, plus 3,772 matching decode
+comparisons on that corpus. The preceding auxiliary/depth
+commit passed every development CI step and all sixteen mutations; the strict
+full-API gate remains failing, with 321 functions still missing. Optimization
+remains deferred until compatibility is complete.
+
+Four additional deliberate property defects are rejected; the default mutation
+set now includes twenty defects. Every added API remains marked partial.

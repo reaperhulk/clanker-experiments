@@ -42,6 +42,26 @@ impl From<ParseError> for ContextError {
     fn from(e: ParseError) -> Self {
         match e {
             ParseError::Truncated => Self::truncated(),
+            ParseError::MissingItemProperties(id) => Self::invalid(
+                116,
+                &format!(
+                    "No properties assigned to item: Item (ID={id}) has no properties assigned to it in ipma box"
+                ),
+            ),
+            ParseError::InvalidPropertyIndex { item, index } => Self::invalid(
+                115,
+                &format!(
+                    "'ipma' box references a non-existing property: Nonexisting property (index={index}) for item  ID={item} referenced in ipma box"
+                ),
+            ),
+            ParseError::UnsupportedBoxVersion { kind, version } => Self::new(
+                4,
+                3002,
+                format!(
+                    "Unsupported feature: Unsupported data version: {} box data version {version} is not implemented yet",
+                    String::from_utf8_lossy(&kind)
+                ),
+            ),
             ParseError::Security { invalid, message } => Self::new(
                 if invalid { 2 } else { 6 },
                 1000,
@@ -180,7 +200,8 @@ fn validate_property(kind: [u8; 4], p: &[u8]) -> Result<()> {
                     4,
                     3002,
                     format!(
-                        "Unsupported feature: Unsupported data version: auxC box data version {} is not implemented yet",
+                        "Unsupported feature: Unsupported data version: {} box data version {} is not implemented yet",
+                        String::from_utf8_lossy(&kind),
                         p[0]
                     ),
                 ));
@@ -188,9 +209,6 @@ fn validate_property(kind: [u8; 4], p: &[u8]) -> Result<()> {
         }
         b"mskC" if p.len() < 5 => return Err(ContextError::truncated()),
         b"ispe" if p.len() < 12 => return Err(ContextError::truncated()),
-        b"clap" => {
-            crate::geometry::CleanAperture::parse(p)?;
-        }
         b"hvcC" => {
             if p.len() < 23 {
                 return Err(ContextError::truncated());
@@ -274,7 +292,11 @@ fn validate_limit_boxes(
 
 /// Match the layout reader's lazy scanning: media boxes are skipped by size,
 /// and a partial trailing header is accepted once metadata has been read.
-fn metadata<'a>(data: &'a [u8], limits: &crate::security::Limits) -> Result<&'a [u8]> {
+fn metadata<'a>(
+    data: &'a [u8],
+    limits: &crate::security::Limits,
+    properties: Option<&mut crate::properties::PropertyStore>,
+) -> Result<&'a [u8]> {
     if data.len() < 32 {
         return Err(ContextError::invalid(
             0,
@@ -383,12 +405,41 @@ fn metadata<'a>(data: &'a [u8], limits: &crate::security::Limits) -> Result<&'a 
     }
     validate_limit_boxes(&meta[4..], *b"meta", limits)?;
     let boxes = children(&meta[4..])?;
+    // Box parsing precedes assignment of the file's mandatory-box pointers.
+    // Preserve those assignment stages so property queries after failed reads
+    // expose exactly the portion of the new file that was installed.
+    let mut parsed = crate::properties::PropertyStore {
+        read_only: true,
+        ..Default::default()
+    };
+    if let Some((_, iprp)) = boxes.iter().find(|(k, _)| k == b"iprp") {
+        let props = children(iprp)?;
+        if let Some((_, ipco)) = props.iter().find(|(k, _)| k == b"ipco") {
+            for (kind, p) in children(ipco)? {
+                validate_property(kind, p)?;
+            }
+            if properties.is_some() {
+                parsed.boxes = crate::container::property_boxes(ipco)?;
+            }
+            parsed.has_ipco = true;
+        }
+        for (_, ipma) in props.iter().filter(|(k, _)| k == b"ipma") {
+            for (id, (indices, essential)) in crate::container::parse_associations(ipma, *limits)? {
+                if let std::collections::btree_map::Entry::Vacant(entry) = parsed.items.entry(id) {
+                    entry.insert(indices);
+                    parsed.essential.insert(id, essential);
+                }
+            }
+            parsed.has_ipma = true;
+        }
+    }
     required(&boxes, *b"iinf", 111)?;
     if has_images(&boxes) {
         required(&boxes, *b"pitm", 107)?;
         let props = children(required(&boxes, *b"iprp", 112)?)?;
-        for (kind, p) in children(required(&props, *b"ipco", 108)?)? {
-            validate_property(kind, p)?;
+        required(&props, *b"ipco", 108)?;
+        if let Some(properties) = properties {
+            *properties = parsed;
         }
         required(&props, *b"ipma", 109)?;
     }
@@ -410,6 +461,7 @@ pub(crate) struct DecoderInput {
     pub _reservation: crate::security::Reservation,
 }
 pub struct ImageInfo {
+    pub warnings: Vec<crate::image::DecodingWarning>,
     pub auxiliary: crate::auxiliary::Auxiliary,
     pub last_error: std::sync::Mutex<CString>,
     pub(crate) decode_mutex: std::sync::Mutex<()>,
@@ -515,7 +567,7 @@ impl Document {
     pub fn container(&self) -> Result<Container<'_>> {
         let mut container = Container::parse_meta_with_limits(
             self.input.bytes(),
-            metadata(self.input.bytes(), &self.read_limits)?,
+            metadata(self.input.bytes(), &self.read_limits, None)?,
             self.read_limits,
         )?;
         container.limits = self.current_limits();
@@ -547,6 +599,7 @@ impl Document {
             }
             let ispe = container.dimensions(item.id).unwrap_or((0, 0));
             let mut image = ImageInfo {
+                warnings: Vec::new(),
                 auxiliary: crate::auxiliary::Auxiliary::default(),
                 last_error: std::sync::Mutex::new(CString::new("Success").unwrap()),
                 decode_mutex: std::sync::Mutex::new(()),
@@ -573,7 +626,9 @@ impl Document {
                 metadata: Vec::new(),
                 error: None,
             };
-            if item.kind == *b"hvc1" {
+            if let Err(e) = container.properties(item.id) {
+                image.error = Some(e.into());
+            } else if item.kind == *b"hvc1" {
                 if let Ok(config) = container.property(item.id, *b"hvcC") {
                     if config.len() < 23 {
                         return Err(ContextError::truncated());
@@ -637,11 +692,23 @@ impl Document {
             if image.error.is_some() {
                 continue;
             }
-            if container
-                .properties(item.id)?
-                .any(|(kind, p)| (kind == *b"irot" || kind == *b"imir") && p.is_empty())
-            {
-                return Err(ContextError::truncated());
+            if let Some(kind) = container.unknown_essential_property(item.id)? {
+                return Err(ContextError::new(
+                    4,
+                    3007,
+                    format!(
+                        "Unsupported feature: Unsupported essential item property: could not parse item property '{kind}'"
+                    ),
+                ));
+            }
+            for (kind, p) in container.properties(item.id)? {
+                if let Some((error, optional)) = crate::properties::parse_error(kind, p) {
+                    if optional {
+                        image.warnings.push(error.into());
+                    } else {
+                        return Err(error);
+                    }
+                }
             }
             if container.property(item.id, *b"ispe").is_ok() {
                 if image.ispe.0 == 0 || image.ispe.1 == 0 {
@@ -836,6 +903,7 @@ impl Document {
     }
 }
 pub struct Context {
+    pub properties: crate::properties::PropertyStore,
     pub budget: Arc<crate::security::Budget>,
     pub limits: Arc<RwLock<crate::security::Limits>>,
     pub max_decoding_threads: i32,
@@ -846,6 +914,7 @@ impl Default for Context {
     fn default() -> Self {
         let limits = Arc::new(RwLock::new(crate::security::Limits::default()));
         Self {
+            properties: crate::properties::PropertyStore::default(),
             budget: Arc::new(crate::security::Budget::new(limits.clone())),
             document: None,
             last_error: CString::default(),
@@ -856,13 +925,17 @@ impl Default for Context {
 }
 impl Context {
     pub fn read(&mut self, input: Arc<dyn Input>) -> Result<()> {
+        self.properties = crate::properties::PropertyStore {
+            read_only: true,
+            ..Default::default()
+        };
         // File parsing failures preserve the previous image model. Once image
         // interpretation begins, even a failed load exposes its partial model.
         let read_limits = *self
             .limits
             .read()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let meta = metadata(input.bytes(), &read_limits)?;
+        let meta = metadata(input.bytes(), &read_limits, Some(&mut self.properties))?;
         if !has_images(&children(&meta[4..])?) {
             if self.document.is_none() {
                 self.document = Some(Arc::new(Document {

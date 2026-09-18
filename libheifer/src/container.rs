@@ -15,6 +15,9 @@ pub enum ParseError {
     MissingItem,
     MissingProperty,
     EmptyReferences,
+    MissingItemProperties(u32),
+    InvalidPropertyIndex { item: u32, index: usize },
+    UnsupportedBoxVersion { kind: [u8; 4], version: u8 },
     DoubleReferences,
     Security { invalid: bool, message: String },
 }
@@ -29,6 +32,7 @@ type Result<T> = std::result::Result<T, ParseError>;
 #[derive(Clone, Copy, Debug)]
 struct BoxView<'a> {
     kind: [u8; 4],
+    uuid: Option<[u8; 16]>,
     data: &'a [u8],
 }
 
@@ -46,9 +50,11 @@ fn boxes(mut data: &[u8], limit: usize) -> Result<Vec<BoxView<'_>>> {
             1 => reader.number(8)?,
             n => n,
         };
-        if kind == *b"uuid" {
-            reader.take(16)?;
-        }
+        let uuid = if kind == *b"uuid" {
+            Some(reader.take(16)?.try_into().unwrap())
+        } else {
+            None
+        };
         let header = data.len() - reader.0.len();
         let size = usize::try_from(size).map_err(|_| ParseError::InvalidSize)?;
         if size < header {
@@ -57,11 +63,72 @@ fn boxes(mut data: &[u8], limit: usize) -> Result<Vec<BoxView<'_>>> {
         let whole = data.get(..size).ok_or(ParseError::Truncated)?;
         result.push(BoxView {
             kind,
+            uuid,
             data: &whole[header..],
         });
         data = &data[size..];
     }
     Ok(result)
+}
+
+type Associations = BTreeMap<u32, (Vec<usize>, Vec<bool>)>;
+
+pub(crate) fn parse_associations(data: &[u8], limits: Limits) -> Result<Associations> {
+    let mut r = Reader(data);
+    let (version, flags) = r.fullbox()?;
+    if version > 1 {
+        return Err(ParseError::UnsupportedBoxVersion {
+            kind: *b"ipma",
+            version,
+        });
+    }
+    let count = r.number(4)? as usize;
+    if limits.max_items != 0 && count as u64 > u64::from(limits.max_items) {
+        return Err(ParseError::Security {
+            invalid: true,
+            message: format!(
+                "ipma box wants to define properties for {count} items, but the security limit has been set to {} items",
+                limits.max_items
+            ),
+        });
+    }
+    let mut entries = BTreeMap::new();
+    for _ in 0..count {
+        // Native ipma parsing accepts EOF between complete entries, even when
+        // the declared entry count is larger than the number actually present.
+        if r.0.is_empty() {
+            break;
+        }
+        let id = r.id(version == 1)?;
+        let count = r.number(1)? as usize;
+        let mut properties = Vec::new();
+        let mut essential = Vec::new();
+        for _ in 0..count {
+            let raw = r.number(if flags & 1 != 0 { 2 } else { 1 })?;
+            let mask = if flags & 1 != 0 { 0x8000 } else { 0x80 };
+            let index = (raw & (mask - 1)) as usize;
+            if index != 0 {
+                properties.push(index - 1);
+                essential.push(raw & mask != 0);
+            }
+        }
+        // Lookup uses the first entry for an item, including across ipma boxes.
+        entries.entry(id).or_insert((properties, essential));
+    }
+    Ok(entries)
+}
+
+pub(crate) fn property_boxes(
+    data: &[u8],
+) -> Result<Vec<std::sync::Arc<crate::properties::Property>>> {
+    boxes(data, usize::MAX)?
+        .into_iter()
+        .map(|p| {
+            Ok(std::sync::Arc::new(crate::properties::Property::parsed(
+                p.kind, p.uuid, p.data,
+            )))
+        })
+        .collect()
 }
 
 struct Reader<'a>(&'a [u8]);
@@ -110,6 +177,8 @@ pub struct Item {
     pub content_encoding: Vec<u8>,
     pub uri_type: Vec<u8>,
     properties: Vec<usize>,
+    has_properties: bool,
+    essential_properties: Vec<bool>,
     extents: Vec<(bool, Range<usize>)>,
     pub references: BTreeMap<[u8; 4], Vec<u32>>,
 }
@@ -233,6 +302,8 @@ impl<'a> Container<'a> {
                         content_encoding,
                         uri_type,
                         properties: Vec::new(),
+                        has_properties: false,
+                        essential_properties: Vec::new(),
                         extents: Vec::new(),
                         references: BTreeMap::new(),
                     },
@@ -364,38 +435,13 @@ impl<'a> Container<'a> {
     }
 
     fn parse_associations(&mut self, data: &[u8]) -> Result<()> {
-        let mut r = Reader(data);
-        let (version, flags) = r.fullbox()?;
-        if version > 1 {
-            return Err(ParseError::Unsupported);
-        }
-        let count = r.number(4)? as usize;
-        if self.limits.max_items != 0 && count as u64 > u64::from(self.limits.max_items) {
-            return Err(ParseError::Security {
-                invalid: true,
-                message: format!(
-                    "ipma box wants to define properties for {count} items, but the security limit has been set to {} items",
-                    self.limits.max_items
-                ),
-            });
-        }
-        for _ in 0..count {
-            let id = r.id(version == 1)?;
-            let count = r.number(1)? as usize;
-            let item = self.items.get_mut(&id).ok_or(ParseError::MissingItem)?;
-            for _ in 0..count {
-                let index = if flags & 1 != 0 {
-                    r.number(2)? & 0x7fff
-                } else {
-                    r.number(1)? & 0x7f
-                } as usize;
-                if index == 0 {
-                    continue;
-                }
-                if index > self.properties.len() {
-                    return Err(ParseError::MissingProperty);
-                }
-                item.properties.push(index - 1);
+        for (id, (properties, essential)) in parse_associations(data, self.limits)? {
+            if let Some(item) = self.items.get_mut(&id)
+                && !item.has_properties
+            {
+                item.has_properties = true;
+                item.properties = properties;
+                item.essential_properties = essential;
             }
         }
         Ok(())
@@ -423,6 +469,7 @@ impl<'a> Container<'a> {
     }
     pub fn property(&self, id: u32, kind: [u8; 4]) -> Result<&'a [u8]> {
         let item = self.items.get(&id).ok_or(ParseError::MissingItem)?;
+        self.check_properties(item)?;
         item.properties
             .iter()
             .map(|i| self.properties[*i])
@@ -432,10 +479,53 @@ impl<'a> Container<'a> {
     }
     pub fn properties(&self, id: u32) -> Result<impl Iterator<Item = ([u8; 4], &'a [u8])> + '_> {
         let item = self.items.get(&id).ok_or(ParseError::MissingItem)?;
+        self.check_properties(item)?;
         Ok(item.properties.iter().map(|i| {
             let p = self.properties[*i];
             (p.kind, p.data)
         }))
+    }
+    fn check_properties(&self, item: &Item) -> Result<()> {
+        if !item.has_properties {
+            return Err(ParseError::MissingItemProperties(item.id));
+        }
+        for index in &item.properties {
+            if *index >= self.properties.len() {
+                return Err(ParseError::InvalidPropertyIndex {
+                    item: item.id,
+                    index: index + 1,
+                });
+            }
+        }
+        Ok(())
+    }
+    pub(crate) fn unknown_essential_property(&self, id: u32) -> Result<Option<String>> {
+        let item = self.items.get(&id).ok_or(ParseError::MissingItem)?;
+        self.check_properties(item)?;
+        let mut seen = std::collections::BTreeSet::new();
+        for (&index, &essential) in item.properties.iter().zip(&item.essential_properties) {
+            if !seen.insert(index) || !essential {
+                continue;
+            }
+            let property = self.properties[index];
+            if crate::properties::parsed_raw(property.kind, property.uuid) {
+                let name = if let Some(uuid) = property.uuid {
+                    let mut name = String::new();
+                    use std::fmt::Write;
+                    for (i, byte) in uuid.iter().enumerate() {
+                        if matches!(i, 4 | 6 | 8 | 10) {
+                            name.push('-');
+                        }
+                        write!(name, "{byte:02x}").unwrap();
+                    }
+                    name
+                } else {
+                    String::from_utf8_lossy(&property.kind).into_owned()
+                };
+                return Ok(Some(name));
+            }
+        }
+        Ok(None)
     }
     pub fn dimensions(&self, id: u32) -> Result<(u32, u32)> {
         let mut r = Reader(self.property(id, *b"ispe")?);

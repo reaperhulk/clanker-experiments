@@ -17,8 +17,10 @@ mod color;
 mod context;
 mod decoding;
 mod image;
+mod properties;
 mod security;
 pub use decoding::DecodingOptions;
+pub use properties::UserDescription;
 pub use security::SecurityLimits;
 
 #[repr(C)]

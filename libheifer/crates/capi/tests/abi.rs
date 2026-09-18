@@ -28,7 +28,7 @@ fn public_structs_match_original_header_layouts() {
     let source = work.join("layout.c");
     let binary = work.join("layout");
     let mut c = String::from(
-        "#include <libheif/heif.h>\n#include <stddef.h>\n#include <stdio.h>\nint main(void) {\n",
+        "#include <libheif/heif.h>\n#include <libheif/heif_properties.h>\n#include <stddef.h>\n#include <stdio.h>\nint main(void) {\n",
     );
     let mut expected = String::new();
     macro_rules! layout {
@@ -82,6 +82,15 @@ fn public_structs_match_original_header_layouts() {
         disparity_reference_view,
         depth_nonlinear_representation_model_size,
         depth_nonlinear_representation_model
+    );
+    layout!(
+        heif_property_user_description,
+        heifer::UserDescription,
+        version,
+        lang,
+        name,
+        description,
+        tags
     );
     layout!(heif_error, heifer::HeifError, code, subcode, message);
     layout!(

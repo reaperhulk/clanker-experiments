@@ -1,0 +1,30 @@
+{
+  "scope": "Exact original-header decode comparisons, including metadata, alpha and callbacks.",
+  "cases": 3772,
+  "mismatches": 0,
+  "client_sha256": "d4ad345b1922864871807371faca3c529db0479520662cfec15b4de5541fe460",
+  "reference_sha256": "5d70927cded8be6d1b4da912971aed75d426ba079c84d0b8462785ec5b9c92f7",
+  "candidate_sha256": "fe8f08d750baa9ab6e7953b465ed964e203d39741e0cf91fd374c26e55ec699a",
+  "case_reports": [
+    {
+      "file": "decode-properties-cases-0.json",
+      "sha256": "2490f0992d95034c01d244e059a9b64b7fe2b63073c77cfe0bc584bf5cf5d74d",
+      "cases": 943
+    },
+    {
+      "file": "decode-properties-cases-1.json",
+      "sha256": "14d2a22183570f07974adda0aa357ca05f00b451964c5aa782416a905e0d1b2e",
+      "cases": 943
+    },
+    {
+      "file": "decode-properties-cases-2.json",
+      "sha256": "84825556822738c909fc29378213ef5cf91bf74de54822b7f07f9548c72b0b49",
+      "cases": 943
+    },
+    {
+      "file": "decode-properties-cases-3.json",
+      "sha256": "97d7b1f521eeebcf35ed74da1f22971cbf0102377a64fe70f7835ad7d23f201d",
+      "cases": 943
+    }
+  ]
+}

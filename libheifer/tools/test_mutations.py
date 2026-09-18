@@ -29,6 +29,10 @@ MUTATIONS = [
     ("live_memory_budget", "src/security.rs", ".checked_add(amount)", ".checked_add(0)", "security"),
     ("auxiliary_filter", "crates/capi/src/auxiliary.rs", "filter & 2 == 0", "filter & 1 == 0", "auxiliary"),
     ("depth_value", "src/auxiliary.rs", "exponent - 31", "exponent - 30", "auxiliary"),
+    ("property_ids", "crates/capi/src/properties.rs", "out.add(n as usize).write(index as u32 + 1)", "out.add(n as usize).write(index as u32 + 2)", "properties"),
+    ("property_raw_class", "src/properties.rs", "None => p.raw,", "None => true,", "properties"),
+    ("description_terminator", "src/properties.rs", ".unwrap_or(data.len().saturating_sub(1))", ".unwrap_or(data.len())", "properties"),
+    ("property_crop_origin", "crates/capi/src/properties.rs", "l as c_int,", "(l + 1) as c_int,", "properties"),
     ("coded_size_limit", "src/decoding.rs", ".max(65536)", ".max(65535)", "hevc_limits"),
     ("error_field_order", "crates/capi/src/lib.rs", "pub code: c_int,\n    pub subcode: c_int,", "pub subcode: c_int,\n    pub code: c_int,", "abi"),
 ]

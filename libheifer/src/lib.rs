@@ -19,6 +19,7 @@ pub mod hevc_config;
 pub mod image;
 pub mod mask;
 pub mod overlay;
+pub mod properties;
 pub mod security;
 
 /// The API contract version, not the completeness of this implementation.

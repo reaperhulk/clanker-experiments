@@ -76,7 +76,7 @@ pub fn decode(
         ids: BTreeSet::new(),
         count: Arc::new(AtomicU32::new(0)),
     };
-    let image = decode_native(document, id, &options, &mut visiting)?;
+    let mut image = decode_native(document, id, &options, &mut visiting)?;
     let target_cs = if colorspace == 99 {
         image.colorspace
     } else {
@@ -105,7 +105,7 @@ pub fn decode(
         || (options.convert_hdr_to_8bit && image.plane(0).is_some_and(|p| p.bit_depth > 8))
         || (!passthrough && requested != source_profile)
     {
-        return crate::conversion::convert(
+        image = crate::conversion::convert(
             image,
             target_cs,
             target_chroma,
@@ -113,8 +113,9 @@ pub fn decode(
             if options.convert_hdr_to_8bit { 8 } else { 0 },
             options.color_conversion,
         )
-        .map_err(Into::into);
+        .map_err(ContextError::from)?;
     }
+    image.warnings.extend(document.images[&id].warnings.clone());
     Ok(image)
 }
 

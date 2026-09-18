@@ -1,0 +1,46 @@
+{
+  "scope": "4 deliberate defects; not comprehensive mutation coverage",
+  "mutations": [
+    {
+      "mutation": "property_ids",
+      "suite": "properties",
+      "source": "crates/capi/src/properties.rs",
+      "before": "out.add(n as usize).write(index as u32 + 1)",
+      "after": "out.add(n as usize).write(index as u32 + 2)",
+      "candidate_sha256": "4366a0b2cf4e347c20ed56ea5773931c722f4b713e74bea7439aaf6b490c6138",
+      "mismatches": 921,
+      "detected": true
+    },
+    {
+      "mutation": "property_raw_class",
+      "suite": "properties",
+      "source": "src/properties.rs",
+      "before": "None => p.raw,",
+      "after": "None => true,",
+      "candidate_sha256": "9e980fab1282572bd873372f3f3d2762123776636ae21a2040a3050662111631",
+      "mismatches": 921,
+      "detected": true
+    },
+    {
+      "mutation": "description_terminator",
+      "suite": "properties",
+      "source": "src/properties.rs",
+      "before": ".unwrap_or(data.len().saturating_sub(1))",
+      "after": ".unwrap_or(data.len())",
+      "candidate_sha256": "d76b8bde9bd4c937412b80987f5ff624d234d5a0060bf195bfc7256e3298a2e9",
+      "mismatches": 21,
+      "detected": true
+    },
+    {
+      "mutation": "property_crop_origin",
+      "suite": "properties",
+      "source": "crates/capi/src/properties.rs",
+      "before": "l as c_int,",
+      "after": "(l + 1) as c_int,",
+      "candidate_sha256": "1e589b93605a5521030114d71ea97258d72accf6a4891b0fbf8e3af3a9a1a1c9",
+      "mismatches": 15,
+      "detected": true
+    }
+  ],
+  "all_detected": true
+}

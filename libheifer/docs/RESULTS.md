@@ -8,8 +8,8 @@ with VUI unspecified-color, monochrome-decoding and typed missing-parameter fixe
 
 ## Implemented scope
 
-131 of 465 public functions are exported, plus `heif_error_success`.
-334 functions are missing. Even the exported functions are marked **partial**:
+144 of 465 public functions are exported, plus `heif_error_success`.
+321 functions are missing. Even the exported functions are marked **partial**:
 coverage is finite, platform coverage is incomplete, and one malformed-box
 behavior gap is explicitly retained. There is no claim of a compatible library.
 
@@ -24,6 +24,8 @@ behavior gap is explicitly retained. There is no claim of a compatible library.
   mirroring, clean apertures, versioned options and profile conversion. Crop/scale also export C APIs.
   Grids, identity images, overlays and 8/16-bit raw masks use Rust composition and decoding;
   mask and derived decoding also work with all optional codec features disabled.
+- Item-property enumeration, typed/raw/UUID queries, owned user descriptions,
+  transforms, in-memory insertion and serialized-data deduplication.
 - Context allocation and memory reads; shared image handles, primary/top-level IDs,
   HEVC/derived/mask descriptions, thumbnails, uncompressed metadata and color queries.
   Handles retain their images after context release/reload; alpha lookup follows
@@ -39,11 +41,14 @@ behavior gap is explicitly retained. There is no claim of a compatible library.
 | Color/HDR differential | 198,932 transcripts, 0 mismatches | All uint16 NCLX setter inputs, all uint8 option-version pairs, all chromaticity coordinates, exact floating-point bits, ICC ownership, HDR boundaries and output sentinels; no image-handle APIs or color transforms |
 | Context/handle differential | 1,786 transcripts, 0 mismatches | Copied/borrowed input, destroyed input copies, aliases, handles after free/reload, early and late read failures, primary/hidden/boundary IDs, metadata bytes/filters, thumbnails, alpha references, color profiles, rotations, every synthetic-file/property truncation; no C decoding |
 | C client sanitizers | ASan/UBSan clients pass the context corpus | Libraries are not sanitizer-instrumented; local LeakSanitizer could not run under ptrace, so leak detection was explicitly disabled |
-| ABI | Eleven structs match original-header size, alignment and every field offset; struct-return and data-symbol clients pass | Linux x86_64 only |
+| ABI | Twelve structs match original-header size, alignment and every field offset; struct-return and data-symbol clients pass | Linux x86_64 only |
 | Mutation checks | Thirteen deliberately wrong implementations rejected | Wrong filetype enum, error code, plane samples, primary coordinate, primary item ID, alpha reload state, worker callbacks, warning text, mask samples, overlay alpha, decode-operation/total-memory budgets and ABI field order; isolated builds, successful baselines, compiler/crash failures do not count |
 | HEVC configuration | 400 cases, 0 mismatches | SPS prefixes, coded-size limits, crop/depth/chroma bounds, sub-layer flags, empty/reordered/missing parameter sets and recovery after early slices |
 | Auxiliary/depth APIs | 512 file transcripts, 0 mismatches; C-client ASan/UBSan pass | Twelve APIs; every auxiliary-box version, filters/counts/output sentinels, copied type strings, typed child errors, exact depth float bits, malformed SEI and handles after reload/free. Also passes with optional codecs disabled |
 | Auxiliary/depth mutations | Both defects rejected | Wrong alpha-filter bit (4 mismatches) and exponent (148 mismatches), independently passing baselines; the default mutation set now contains sixteen defects |
+| Item-property APIs | 960 transcripts, 0 mismatches; C-client ASan/UBSan pass | Thirteen APIs, item-local IDs/order, raw/UUID copies, typed/raw deduplication, descriptions after context release, all rotation/mirror bytes, crop fractions, missing boxes, duplicate/invalid associations, essential flags and failed reload state. Also passes with optional codecs disabled |
+| Property decoding | 3,772 comparisons, 0 mismatches | 943 property fixtures across native, transformed, RGB and strict decode modes; optional warning text, item errors, essential properties, pixels and metadata are compared |
+| Property mutations | Four additional defects rejected | Wrong item-local IDs (921 mismatches), raw-class selection (921), unterminated descriptions (21) and crop origins (15); independently passing baselines and isolated builds |
 | Error-buffer lifetimes | 144 cases, 0 mismatches; C-client ASan/UBSan pass | Unrelated handles/context errors, aliases and releases; the pre-fix candidate use-after-free was reproduced under ASan |
 | Coded-size mutation | One additional defect rejected (138 mismatches) | Independent baseline passed; changed the tightened limit floor from 65,536 to 65,535; the full default mutation set now contains fourteen defects |
 | HEVC native output | 5/5 fixtures match exactly | Y/Cb/Cr data, image IDs/order, dimensions, depths and strides; transformations disabled, native NCLX passthrough; **alpha not compared** |
@@ -82,8 +87,8 @@ precedes this overlay/mask/security iteration.
 
 The context corpus is a finite tested subset, not full parser equivalence. It
 includes five real HEIC fixtures and generated containers. All 38 added exports
-remain partial. Unsupported image types, compressed metadata, duplicate-box and
-essential-property behavior, complete clean-aperture coverage, budgets for remaining formats,
+remain partial. Unsupported image types, compressed metadata, remaining duplicate-box/property behavior,
+complete clean-aperture coverage, budgets for remaining formats,
 file/reader callbacks and complete decoding orchestration remain open. `context-report.json` records
 exact binary, client and corpus hashes. `context-sanitized-report.json` records
 the limited sanitizer scope; mutation evidence rejects wrong reload semantics.
@@ -114,7 +119,7 @@ malformed-stream checks, not full HEVC conformance or codec allocation accountin
 
 Errors returned through image handles now use the image's shared error buffer.
 The independent sanitizer client reproduced a use-after-free before the fix and
-passes after it. The latest completed CI (`15646d9`) passes all development checks,
+passes after it. The earlier security CI (`15646d9`) passed all development checks,
 including thirteen mutations and sanitizer clients with leak checking enabled,
 and Linux/macOS/Windows Rust builds. Only its full completion gate fails. That CI
 run predates these SPS and error-lifetime additions; their local evidence is separate.
@@ -178,3 +183,17 @@ stable speed estimate.
    full API gates before making a compatibility claim.
 5. Only after full compatibility, profile and optimize with repeated output-checked
    A/B results across representative workloads before marking the PR ready.
+
+The auxiliary/depth CI at `1742c94` passed all development steps, all sixteen
+then-present mutations and Rust builds on Linux, macOS and Windows. Its sole
+failing step is the strict completion gate (`results/ci-auxiliary-report.json`).
+
+Item properties now distinguish the file's property table from retained image
+handles: even an early failed reload clears the table, while later failures expose
+the newly installed boxes. Malformed descriptions remain error properties and
+produce decode warnings. Malformed transforms retain their property indices while
+image interpretation reports their error. Unknown essential raw/UUID properties
+are rejected, and duplicate associations preserve the first essential flag.
+The independent tests also cover insertion into a fresh context; libheif rejects
+insertion after reading a file, which this implementation preserves. Remaining
+property classes, serialization and allocation-failure behavior remain open.

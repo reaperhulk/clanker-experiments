@@ -159,7 +159,9 @@
       "tests/context.c",
       "tools/test_context.py",
       "tools/test_decode_derived.py",
-      "tools/test_derived_handles.py"
+      "tools/test_derived_handles.py",
+      "tools/test_properties.py",
+      "tools/test_decode_properties.py"
     ]
   },
   "heif_context_read_from_memory_without_copy": {
@@ -169,7 +171,9 @@
       "tests/context.c",
       "tools/test_context.py",
       "tools/test_decode_derived.py",
-      "tools/test_derived_handles.py"
+      "tools/test_derived_handles.py",
+      "tools/test_properties.py",
+      "tools/test_decode_properties.py"
     ]
   },
   "heif_context_set_max_decoding_threads": {
@@ -217,7 +221,9 @@
       "tools/test_decode_graphs.py",
       "tests/error_lifetimes.c",
       "tools/test_error_lifetimes.py",
-      "tools/test_hevc_limits.py"
+      "tools/test_hevc_limits.py",
+      "tools/test_properties.py",
+      "tools/test_decode_properties.py"
     ]
   },
   "heif_decoding_options_alloc": {
@@ -248,13 +254,13 @@
     ]
   },
   "heif_depth_representation_info_free": {
+    "notes": "512 original-header file transcripts including filters, flags, type ownership, depth SEI values, partial reloads and aliases. Finite Linux x86_64 evidence; broader platform and malformed-file coverage remains open.",
     "status": "partial",
     "tests": [
       "tests/auxiliary.c",
       "tools/test_auxiliary.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "512 original-header file transcripts including filters, flags, type ownership, depth SEI values, partial reloads and aliases. Finite Linux x86_64 evidence; broader platform and malformed-file coverage remains open."
+    ]
   },
   "heif_error_success": {
     "notes": "Direct upstream-header C client reads the exported struct. Other architectures pending.",
@@ -597,31 +603,31 @@
     ]
   },
   "heif_image_handle_free_auxiliary_types": {
+    "notes": "512 original-header file transcripts including filters, flags, type ownership, depth SEI values, partial reloads and aliases. Finite Linux x86_64 evidence; broader platform and malformed-file coverage remains open.",
     "status": "partial",
     "tests": [
       "tests/auxiliary.c",
       "tools/test_auxiliary.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "512 original-header file transcripts including filters, flags, type ownership, depth SEI values, partial reloads and aliases. Finite Linux x86_64 evidence; broader platform and malformed-file coverage remains open."
+    ]
   },
   "heif_image_handle_get_auxiliary_image_handle": {
+    "notes": "512 original-header file transcripts including filters, flags, type ownership, depth SEI values, partial reloads and aliases. Finite Linux x86_64 evidence; broader platform and malformed-file coverage remains open.",
     "status": "partial",
     "tests": [
       "tests/auxiliary.c",
       "tools/test_auxiliary.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "512 original-header file transcripts including filters, flags, type ownership, depth SEI values, partial reloads and aliases. Finite Linux x86_64 evidence; broader platform and malformed-file coverage remains open."
+    ]
   },
   "heif_image_handle_get_auxiliary_type": {
+    "notes": "512 original-header file transcripts including filters, flags, type ownership, depth SEI values, partial reloads and aliases. Finite Linux x86_64 evidence; broader platform and malformed-file coverage remains open.",
     "status": "partial",
     "tests": [
       "tests/auxiliary.c",
       "tools/test_auxiliary.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "512 original-header file transcripts including filters, flags, type ownership, depth SEI values, partial reloads and aliases. Finite Linux x86_64 evidence; broader platform and malformed-file coverage remains open."
+    ]
   },
   "heif_image_handle_get_chroma_bits_per_pixel": {
     "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open. Derived and mask handle queries also cover cyclic/missing references and partial reloads.",
@@ -651,22 +657,22 @@
     ]
   },
   "heif_image_handle_get_depth_image_handle": {
+    "notes": "512 original-header file transcripts including filters, flags, type ownership, depth SEI values, partial reloads and aliases. Finite Linux x86_64 evidence; broader platform and malformed-file coverage remains open.",
     "status": "partial",
     "tests": [
       "tests/auxiliary.c",
       "tools/test_auxiliary.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "512 original-header file transcripts including filters, flags, type ownership, depth SEI values, partial reloads and aliases. Finite Linux x86_64 evidence; broader platform and malformed-file coverage remains open."
+    ]
   },
   "heif_image_handle_get_depth_image_representation_info": {
+    "notes": "512 original-header file transcripts including filters, flags, type ownership, depth SEI values, partial reloads and aliases. Finite Linux x86_64 evidence; broader platform and malformed-file coverage remains open.",
     "status": "partial",
     "tests": [
       "tests/auxiliary.c",
       "tools/test_auxiliary.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "512 original-header file transcripts including filters, flags, type ownership, depth SEI values, partial reloads and aliases. Finite Linux x86_64 evidence; broader platform and malformed-file coverage remains open."
+    ]
   },
   "heif_image_handle_get_height": {
     "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open. Derived and mask handle queries also cover cyclic/missing references and partial reloads.",
@@ -705,22 +711,22 @@
     ]
   },
   "heif_image_handle_get_list_of_auxiliary_image_IDs": {
+    "notes": "512 original-header file transcripts including filters, flags, type ownership, depth SEI values, partial reloads and aliases. Finite Linux x86_64 evidence; broader platform and malformed-file coverage remains open.",
     "status": "partial",
     "tests": [
       "tests/auxiliary.c",
       "tools/test_auxiliary.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "512 original-header file transcripts including filters, flags, type ownership, depth SEI values, partial reloads and aliases. Finite Linux x86_64 evidence; broader platform and malformed-file coverage remains open."
+    ]
   },
   "heif_image_handle_get_list_of_depth_image_IDs": {
+    "notes": "512 original-header file transcripts including filters, flags, type ownership, depth SEI values, partial reloads and aliases. Finite Linux x86_64 evidence; broader platform and malformed-file coverage remains open.",
     "status": "partial",
     "tests": [
       "tests/auxiliary.c",
       "tools/test_auxiliary.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "512 original-header file transcripts including filters, flags, type ownership, depth SEI values, partial reloads and aliases. Finite Linux x86_64 evidence; broader platform and malformed-file coverage remains open."
+    ]
   },
   "heif_image_handle_get_list_of_metadata_block_IDs": {
     "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open. Derived and mask handle queries also cover cyclic/missing references and partial reloads.",
@@ -806,22 +812,22 @@
     ]
   },
   "heif_image_handle_get_number_of_auxiliary_images": {
+    "notes": "512 original-header file transcripts including filters, flags, type ownership, depth SEI values, partial reloads and aliases. Finite Linux x86_64 evidence; broader platform and malformed-file coverage remains open.",
     "status": "partial",
     "tests": [
       "tests/auxiliary.c",
       "tools/test_auxiliary.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "512 original-header file transcripts including filters, flags, type ownership, depth SEI values, partial reloads and aliases. Finite Linux x86_64 evidence; broader platform and malformed-file coverage remains open."
+    ]
   },
   "heif_image_handle_get_number_of_depth_images": {
+    "notes": "512 original-header file transcripts including filters, flags, type ownership, depth SEI values, partial reloads and aliases. Finite Linux x86_64 evidence; broader platform and malformed-file coverage remains open.",
     "status": "partial",
     "tests": [
       "tests/auxiliary.c",
       "tools/test_auxiliary.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "512 original-header file transcripts including filters, flags, type ownership, depth SEI values, partial reloads and aliases. Finite Linux x86_64 evidence; broader platform and malformed-file coverage remains open."
+    ]
   },
   "heif_image_handle_get_number_of_metadata_blocks": {
     "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open. Derived and mask handle queries also cover cyclic/missing references and partial reloads.",
@@ -909,13 +915,13 @@
     ]
   },
   "heif_image_handle_has_depth_image": {
+    "notes": "512 original-header file transcripts including filters, flags, type ownership, depth SEI values, partial reloads and aliases. Finite Linux x86_64 evidence; broader platform and malformed-file coverage remains open.",
     "status": "partial",
     "tests": [
       "tests/auxiliary.c",
       "tools/test_auxiliary.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "512 original-header file transcripts including filters, flags, type ownership, depth SEI values, partial reloads and aliases. Finite Linux x86_64 evidence; broader platform and malformed-file coverage remains open."
+    ]
   },
   "heif_image_handle_is_premultiplied_alpha": {
     "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open. Derived and mask handle queries also cover cyclic/missing references and partial reloads.",
@@ -945,13 +951,13 @@
     ]
   },
   "heif_image_handle_release_auxiliary_type": {
+    "notes": "512 original-header file transcripts including filters, flags, type ownership, depth SEI values, partial reloads and aliases. Finite Linux x86_64 evidence; broader platform and malformed-file coverage remains open.",
     "status": "partial",
     "tests": [
       "tests/auxiliary.c",
       "tools/test_auxiliary.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "512 original-header file transcripts including filters, flags, type ownership, depth SEI values, partial reloads and aliases. Finite Linux x86_64 evidence; broader platform and malformed-file coverage remains open."
+    ]
   },
   "heif_image_has_ambient_viewing_environment": {
     "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open.",
@@ -1091,6 +1097,126 @@
       "crates/capi/tests/abi.rs"
     ]
   },
+  "heif_item_add_property_user_description": {
+    "notes": "Linux x86_64 original-header differential queries/insertion, item-local IDs, raw/UUID ownership, descriptions, transforms, partial read state and malformed associations. Insertion after file reads matches the pinned restriction. Other box classes, writers, allocation failures and cross-platform ABI remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/properties.c",
+      "tools/test_properties.py",
+      "tools/test_decode_properties.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_item_add_raw_property": {
+    "notes": "Linux x86_64 original-header differential queries/insertion, item-local IDs, raw/UUID ownership, descriptions, transforms, partial read state and malformed associations. Insertion after file reads matches the pinned restriction. Other box classes, writers, allocation failures and cross-platform ABI remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/properties.c",
+      "tools/test_properties.py",
+      "tools/test_decode_properties.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_item_get_properties_of_type": {
+    "notes": "Linux x86_64 original-header differential queries/insertion, item-local IDs, raw/UUID ownership, descriptions, transforms, partial read state and malformed associations. Insertion after file reads matches the pinned restriction. Other box classes, writers, allocation failures and cross-platform ABI remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/properties.c",
+      "tools/test_properties.py",
+      "tools/test_decode_properties.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_item_get_property_raw_data": {
+    "notes": "Linux x86_64 original-header differential queries/insertion, item-local IDs, raw/UUID ownership, descriptions, transforms, partial read state and malformed associations. Insertion after file reads matches the pinned restriction. Other box classes, writers, allocation failures and cross-platform ABI remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/properties.c",
+      "tools/test_properties.py",
+      "tools/test_decode_properties.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_item_get_property_raw_size": {
+    "notes": "Linux x86_64 original-header differential queries/insertion, item-local IDs, raw/UUID ownership, descriptions, transforms, partial read state and malformed associations. Insertion after file reads matches the pinned restriction. Other box classes, writers, allocation failures and cross-platform ABI remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/properties.c",
+      "tools/test_properties.py",
+      "tools/test_decode_properties.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_item_get_property_transform_crop_borders": {
+    "notes": "Linux x86_64 original-header differential queries/insertion, item-local IDs, raw/UUID ownership, descriptions, transforms, partial read state and malformed associations. Insertion after file reads matches the pinned restriction. Other box classes, writers, allocation failures and cross-platform ABI remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/properties.c",
+      "tools/test_properties.py",
+      "tools/test_decode_properties.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_item_get_property_transform_mirror": {
+    "notes": "Linux x86_64 original-header differential queries/insertion, item-local IDs, raw/UUID ownership, descriptions, transforms, partial read state and malformed associations. Insertion after file reads matches the pinned restriction. Other box classes, writers, allocation failures and cross-platform ABI remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/properties.c",
+      "tools/test_properties.py",
+      "tools/test_decode_properties.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_item_get_property_transform_rotation_ccw": {
+    "notes": "Linux x86_64 original-header differential queries/insertion, item-local IDs, raw/UUID ownership, descriptions, transforms, partial read state and malformed associations. Insertion after file reads matches the pinned restriction. Other box classes, writers, allocation failures and cross-platform ABI remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/properties.c",
+      "tools/test_properties.py",
+      "tools/test_decode_properties.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_item_get_property_type": {
+    "notes": "Linux x86_64 original-header differential queries/insertion, item-local IDs, raw/UUID ownership, descriptions, transforms, partial read state and malformed associations. Insertion after file reads matches the pinned restriction. Other box classes, writers, allocation failures and cross-platform ABI remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/properties.c",
+      "tools/test_properties.py",
+      "tools/test_decode_properties.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_item_get_property_user_description": {
+    "notes": "Linux x86_64 original-header differential queries/insertion, item-local IDs, raw/UUID ownership, descriptions, transforms, partial read state and malformed associations. Insertion after file reads matches the pinned restriction. Other box classes, writers, allocation failures and cross-platform ABI remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/properties.c",
+      "tools/test_properties.py",
+      "tools/test_decode_properties.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_item_get_property_uuid_type": {
+    "notes": "Linux x86_64 original-header differential queries/insertion, item-local IDs, raw/UUID ownership, descriptions, transforms, partial read state and malformed associations. Insertion after file reads matches the pinned restriction. Other box classes, writers, allocation failures and cross-platform ABI remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/properties.c",
+      "tools/test_properties.py",
+      "tools/test_decode_properties.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_item_get_transformation_properties": {
+    "notes": "Linux x86_64 original-header differential queries/insertion, item-local IDs, raw/UUID ownership, descriptions, transforms, partial read state and malformed associations. Insertion after file reads matches the pinned restriction. Other box classes, writers, allocation failures and cross-platform ABI remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/properties.c",
+      "tools/test_properties.py",
+      "tools/test_decode_properties.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
   "heif_list_compatible_brands": {
     "notes": "Tested on Linux x86_64; cross-platform ABI and exhaustive input coverage pending.",
     "status": "partial",
@@ -1158,6 +1284,16 @@
     "tests": [
       "tests/color.c",
       "tools/test_color.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_property_user_description_release": {
+    "notes": "Linux x86_64 original-header differential queries/insertion, item-local IDs, raw/UUID ownership, descriptions, transforms, partial read state and malformed associations. Insertion after file reads matches the pinned restriction. Other box classes, writers, allocation failures and cross-platform ABI remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/properties.c",
+      "tools/test_properties.py",
+      "tools/test_decode_properties.py",
       "crates/capi/tests/abi.rs"
     ]
   },

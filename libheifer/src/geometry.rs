@@ -89,7 +89,7 @@ impl CleanAperture {
     pub fn dimensions(&self) -> (u32, u32) {
         (self.width.round() as u32, self.height.round() as u32)
     }
-    pub fn crop(&self, width: u32, height: u32) -> Result<(u32, u32, u32, u32)> {
+    pub fn unclamped_crop(&self, width: u32, height: u32) -> Result<(i64, i64, i64, i64)> {
         if width == 0 || height == 0 {
             return Err(ContextError::invalid(
                 120,
@@ -116,6 +116,10 @@ impl CleanAperture {
             .round();
         let right = self.width.integer(-1).integer(left).round();
         let bottom = self.height.integer(-1).integer(top).round();
+        Ok((left, right, top, bottom))
+    }
+    pub fn crop(&self, width: u32, height: u32) -> Result<(u32, u32, u32, u32)> {
+        let (left, right, top, bottom) = self.unclamped_crop(width, height)?;
         let (left, top) = (left.max(0), top.max(0));
         // Upstream compares the right/bottom endpoints after unsigned conversion.
         let right = if right < 0 || right >= i64::from(width) {

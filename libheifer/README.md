@@ -49,6 +49,9 @@ python tools/test_brands.py --reference-build .build/reference
 python tools/test_images.py --reference-build .build/reference
 python tools/test_color.py --reference-build .build/reference
 python tools/test_context.py --reference-build .build/reference
+python tools/test_auxiliary.py --reference-build .build/reference
+python tools/test_properties.py --reference-build .build/reference
+python tools/test_decode_properties.py --reference-build .build/reference
 python tools/test_context.py --reference-build .build/reference --sanitize --output .build/context-sanitized-report.json
 python tools/test_decoding_options.py --reference-build .build/reference
 python tools/test_transforms.py --reference-build .build/reference
@@ -102,3 +105,10 @@ Versioned security-limit APIs and safe plane allocation now track image/decoder/
 memory, including old handles across context reloads.
 `--sanitize` instruments the C test clients, not the Rust or reference libraries;
 use `--no-leak-check` only where LeakSanitizer cannot run (for example under ptrace).
+
+Item properties support raw/UUID data, user descriptions, transform queries and
+in-memory insertion. File property tables follow partial-read and reload state
+independently of retained image handles; optional description errors propagate
+as decode warnings. The new public description layout is checked against the
+original header. These APIs remain partial while other property classes and
+serialization are implemented.
