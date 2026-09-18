@@ -12,9 +12,10 @@ incremental development and performance evidence; the final report is the primar
 acceptance gate. No existing Python test was removed or given a new skip or xfail.
 The unmodified FIPS baseline's MD5 fixture failure is explicitly documented.
 
-## Subsequent stage
+## Subsequent stage complete
 
-Replace the CFFI/TLS surface used by pyOpenSSL, preserving the operation-specific
-safe API boundary. Validate the pinned pyOpenSSL suite against each supported
-backend and record its integration patch and test evidence separately. This stage
-is not implemented or claimed complete by the primary acceptance report.
+The CFFI/TLS implementation and both integration patches pass the final CI gate:
+17 full cryptography rows, eight standalone crate jobs, and all five core
+pyOpenSSL suites without CFFI. See [the separate acceptance report](validation/tls/acceptance/README.md)
+for counts, exact source identities, supported scope, intentional API changes,
+and the recorded replacement of the deleted private module import test.

@@ -26,8 +26,8 @@ a copy is not a promise of an atomic snapshot under external mutation.
 See [the final report](../validation/acceptance/README.md) for per-row counts,
 source identities, baseline comparisons, and the scope of validation.
 The current patch also removes the CFFI/TLS layer. The historical primary patch
-is preserved in `cryptography-primary.patch`. The subsequent migration is under
-validation; see [its status](../validation/tls/PROGRESS.md).
+is preserved in `cryptography-primary.patch`. The subsequent migration also
+passes; see [its acceptance report](../validation/tls/acceptance/README.md).
 
 Apply `pyopenssl.patch` to the pyOpenSSL revision in `sources.json`. It replaces
 CFFI with typed X.509 and TLS adapters provided by the patched cryptography
@@ -76,6 +76,7 @@ The CFFI/TLS replacement has its own pyOpenSSL patch and test evidence. Its
 acceptance requires full cryptography regressions and all five core pyOpenSSL
 backend runs, with no omitted tests or added skips masking regressions.
 
-The final primary report establishes complete migration of the pinned Rust API
-surface and the stated test matrix. It does not claim an independent security
-audit or completion of the later pyOpenSSL CFFI/TLS stage.
+The final primary report establishes migration of the pinned Rust API surface.
+The subsequent CFFI/TLS acceptance report establishes the pyOpenSSL migration and
+full cryptography regressions. Both state their platform scope; neither claims
+an independent security audit.

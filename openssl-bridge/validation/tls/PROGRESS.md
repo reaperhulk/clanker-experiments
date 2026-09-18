@@ -1,5 +1,9 @@
 # CFFI/TLS migration validation
 
+**Final status: complete.** All final CI gates passed; see
+[the acceptance report](acceptance/README.md). The notes below preserve the
+development history and do not describe the final status.
+
 The primary replacement and its CI are complete in PR #2: all 17 full
 cryptography rows and eight standalone library jobs passed. This branch holds
 the subsequent CFFI/TLS implementation. Its final acceptance is still pending.

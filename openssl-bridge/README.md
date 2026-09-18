@@ -65,7 +65,8 @@ It includes Wycheproof and X.509 Limbo, rejects missing tests and new upstream
 skips, and uploads logs, source identities, and JUnit results even after failure.
 Native sources, test inputs, and action revisions are pinned; native installations
 are cached by their source and build recipe. The aggregate `openssl-bridge CI`
-check passes only when both matrices pass.
+check passes only when both matrices pass. The five core integration rows
+also require the full pyOpenSSL suite with CFFI physically uninstalled.
 
 Apply [cryptography.patch](compatibility/cryptography.patch) to the pinned
 revision in [sources.json](compatibility/sources.json). Keep the two repositories
@@ -75,7 +76,8 @@ The migration includes its API changes, changelog entries, and regression tests.
 [SAFETY.md](SAFETY.md) describes ownership, state, bounds, secret storage,
 concurrency, and backend assumptions. The checked-in tests and integration
 results provide evidence for these invariants; they are not an independent audit.
-The subsequent CFFI/TLS implementation and pyOpenSSL migration patch are now
-included, with their current validation status recorded in
-[the TLS progress report](validation/tls/PROGRESS.md). The original primary
+The subsequent CFFI/TLS replacement also passes its complete acceptance gate:
+all 17 cryptography rows, eight standalone crate jobs, and five full pyOpenSSL
+suites with CFFI removed. See [the TLS acceptance report](validation/tls/acceptance/README.md)
+and [pyopenssl.patch](compatibility/pyopenssl.patch). The original primary
 acceptance patch is preserved as `compatibility/cryptography-primary.patch`.

@@ -1,0 +1,1410 @@
+{
+  "validated_commit": "9cf3ada840fe06c8370ef3525934cb7199a04754",
+  "validated_tree": "1b510c3d8c81334f941799eb7a053616c8a3d838",
+  "ci_run": "https://github.com/reaperhulk/clanker-experiments/actions/runs/35374605612",
+  "ci_run_id": 35374605612,
+  "platform": "GitHub Actions ubuntu-24.04 x86_64",
+  "source_sha256": "7e5b06299bf82b3916cbf320f5f8a25766f9c958c1e11515900945d2f6b2b380",
+  "portable_patches": {
+    "cryptography": "d0a931829ce6f80f44e405ea3550be3063883a87e8067e4aa4a783a38ae6a510",
+    "pyopenssl": "2d7a6e9f9c9af8bc8457c525f1dd7c67826c668ac586c6e0744c1575765e4c10"
+  },
+  "pins": {
+    "cryptography": "19ff77880bbd485464849366122982cd3a04d94b",
+    "pyopenssl": "567808adb4d859323424c3a6bc183e13a1ac59e8",
+    "wycheproof": "3fa63dd0344abb611f1fb1d77e119938603ea230",
+    "x509-limbo": "118721335e675edde10015df89b138cf292d7554"
+  },
+  "jobs": [
+    {
+      "id": 105696221089,
+      "name": "matrix",
+      "conclusion": "success"
+    },
+    {
+      "id": 105696268628,
+      "name": "Rust / libressl / 1.90.0",
+      "conclusion": "success"
+    },
+    {
+      "id": 105696268662,
+      "name": "Rust / openssl4 / 1.90.0",
+      "conclusion": "success"
+    },
+    {
+      "id": 105696268712,
+      "name": "Rust / awslc / 1.90.0",
+      "conclusion": "success"
+    },
+    {
+      "id": 105696268736,
+      "name": "Rust / msrv-boringssl / 1.83.0",
+      "conclusion": "success"
+    },
+    {
+      "id": 105696268767,
+      "name": "Rust / boringssl / 1.90.0",
+      "conclusion": "success"
+    },
+    {
+      "id": 105696268825,
+      "name": "Rust / system / 1.90.0",
+      "conclusion": "success"
+    },
+    {
+      "id": 105696268859,
+      "name": "Rust / msrv-awslc / 1.83.0",
+      "conclusion": "success"
+    },
+    {
+      "id": 105696268942,
+      "name": "cryptography / libressl / 1.90.0",
+      "conclusion": "success"
+    },
+    {
+      "id": 105696268953,
+      "name": "cryptography / libressl421 / 1.90.0",
+      "conclusion": "success"
+    },
+    {
+      "id": 105696268958,
+      "name": "cryptography / system / 1.90.0",
+      "conclusion": "success"
+    },
+    {
+      "id": 105696268966,
+      "name": "cryptography / no-legacy1 / 1.90.0",
+      "conclusion": "success"
+    },
+    {
+      "id": 105696268981,
+      "name": "cryptography / boringssl / 1.90.0",
+      "conclusion": "success"
+    },
+    {
+      "id": 105696268984,
+      "name": "cryptography / openssl358 / 1.90.0",
+      "conclusion": "success"
+    },
+    {
+      "id": 105696268985,
+      "name": "cryptography / fips / 1.90.0",
+      "conclusion": "success"
+    },
+    {
+      "id": 105696268986,
+      "name": "cryptography / awslc / 1.90.0",
+      "conclusion": "success"
+    },
+    {
+      "id": 105696268995,
+      "name": "cryptography / msrv-awslc / 1.83.0",
+      "conclusion": "success"
+    },
+    {
+      "id": 105696269015,
+      "name": "cryptography / openssl364 / 1.90.0",
+      "conclusion": "success"
+    },
+    {
+      "id": 105696269031,
+      "name": "cryptography / openssl3022 / 1.90.0",
+      "conclusion": "success"
+    },
+    {
+      "id": 105696269037,
+      "name": "cryptography / openssl347 / 1.90.0",
+      "conclusion": "success"
+    },
+    {
+      "id": 105696269060,
+      "name": "cryptography / main / 1.90.0",
+      "conclusion": "success"
+    },
+    {
+      "id": 105696269099,
+      "name": "cryptography / openssl4 / 1.90.0",
+      "conclusion": "success"
+    },
+    {
+      "id": 105696269133,
+      "name": "cryptography / minimal / 1.90.0",
+      "conclusion": "success"
+    },
+    {
+      "id": 105696269136,
+      "name": "Rust / msrv-openssl4 / 1.83.0",
+      "conclusion": "success"
+    },
+    {
+      "id": 105696269150,
+      "name": "cryptography / no-legacy0 / 1.90.0",
+      "conclusion": "success"
+    },
+    {
+      "id": 105696269213,
+      "name": "cryptography / msrv-boringssl / 1.83.0",
+      "conclusion": "success"
+    },
+    {
+      "id": 105698367853,
+      "name": "openssl-bridge CI",
+      "conclusion": "success"
+    }
+  ],
+  "cryptography": [
+    {
+      "row": "awslc",
+      "python_counts": {
+        "passed": 4321,
+        "skipped": 392
+      },
+      "rust_test_passes": 108,
+      "missing_tests": [],
+      "new_skips": [],
+      "replaced_tests": {
+        "tests.test_meta::test_no_circular_imports[cryptography.hazmat.bindings.openssl._conditional]": "tests.test_meta::test_removed_cffi_binding"
+      },
+      "added_tests": [
+        "tests.hazmat.primitives.test_aes.TestAESModeXTS::test_xts_requires_single_data_unit",
+        "tests.hazmat.primitives.test_ciphers.TestCipherUpdateInto::test_update_into_overlapping_views",
+        "tests.test_meta::test_removed_cffi_binding"
+      ],
+      "applied_patch_sha256": "72b61f330e3ed2faa3d0107912a46c26a89247b25e06b050d081029486259dcb",
+      "artifacts": {
+        "cryptography.log": {
+          "file": "cryptography-awslc-cryptography.log.gz",
+          "uncompressed_sha256": "c7ce147f57ce10d52c4613d3db7d554be86636d9444d3585889e12c1c413889a"
+        },
+        "native-build.log": {
+          "file": "cryptography-awslc-native-build.log.gz",
+          "uncompressed_sha256": "895fa0e95b5db102de1ec504c99a46210324792ebcfe29068f5957c1b25c1098"
+        },
+        "pyopenssl-dependencies.log": {
+          "file": "cryptography-awslc-pyopenssl-dependencies.log.gz",
+          "uncompressed_sha256": "753965760e132b8045a69623ea16f072661872ed8556b61b2ce755179b1b1340"
+        },
+        "pyopenssl-format.log": {
+          "file": "cryptography-awslc-pyopenssl-format.log.gz",
+          "uncompressed_sha256": "7ff2df5e4a19c344d6ea2dfc25c25d2370159894cbac570f392753b22180e09c"
+        },
+        "pyopenssl-mypy.log": {
+          "file": "cryptography-awslc-pyopenssl-mypy.log.gz",
+          "uncompressed_sha256": "ca16d6d1a06c6903f5407ba5268cb8b5eb5d8c7811b7532282916ec31807c328"
+        },
+        "pyopenssl-remove-cffi.log": {
+          "file": "cryptography-awslc-pyopenssl-remove-cffi.log.gz",
+          "uncompressed_sha256": "0ff0351972cff0a0ac44548ec52e2ebee0052eeccb0b075d14558243f12272b7"
+        },
+        "pyopenssl-report.json": {
+          "file": "cryptography-awslc-pyopenssl-report.json.gz",
+          "uncompressed_sha256": "6ee7763d878c5abe93c15540c32050fae2e261ccd7c42319ee3086091c2fcec8"
+        },
+        "pyopenssl-ruff.log": {
+          "file": "cryptography-awslc-pyopenssl-ruff.log.gz",
+          "uncompressed_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+        },
+        "pyopenssl-runtime.log": {
+          "file": "cryptography-awslc-pyopenssl-runtime.log.gz",
+          "uncompressed_sha256": "d9357b96dbc08e02dc8f07b4d0f24c03f31275052567ea5b675d61d9e886d7c7"
+        },
+        "pyopenssl-tests.log": {
+          "file": "cryptography-awslc-pyopenssl-tests.log.gz",
+          "uncompressed_sha256": "0942b81d2557ee943a1ae92b91b4088e704bb3e57ac055b93893e717ba3d16fb"
+        },
+        "pyopenssl-tests.xml": {
+          "file": "cryptography-awslc-pyopenssl-tests.xml.gz",
+          "uncompressed_sha256": "85de5e5b8a76bffe4a6567c59329606889abed916612a2ba0593af75722d89bd"
+        },
+        "python-tests.xml": {
+          "file": "cryptography-awslc-python-tests.xml.gz",
+          "uncompressed_sha256": "f11745dedac63a077b94e65b31a996d8ec7ab9a1df8276d8dae2cf410f7f1a8f"
+        },
+        "report.json": {
+          "file": "cryptography-awslc-report.json.gz",
+          "uncompressed_sha256": "fb354576880ea657d94cdeeb98caac7f69b6412cedbd6a5eab72311a0fa24594"
+        }
+      }
+    },
+    {
+      "row": "boringssl",
+      "python_counts": {
+        "passed": 3806,
+        "skipped": 907
+      },
+      "rust_test_passes": 108,
+      "missing_tests": [],
+      "new_skips": [],
+      "replaced_tests": {
+        "tests.test_meta::test_no_circular_imports[cryptography.hazmat.bindings.openssl._conditional]": "tests.test_meta::test_removed_cffi_binding"
+      },
+      "added_tests": [
+        "tests.hazmat.primitives.test_aes.TestAESModeXTS::test_xts_requires_single_data_unit",
+        "tests.hazmat.primitives.test_ciphers.TestCipherUpdateInto::test_update_into_overlapping_views",
+        "tests.test_meta::test_removed_cffi_binding"
+      ],
+      "applied_patch_sha256": "72b61f330e3ed2faa3d0107912a46c26a89247b25e06b050d081029486259dcb",
+      "artifacts": {
+        "cryptography.log": {
+          "file": "cryptography-boringssl-cryptography.log.gz",
+          "uncompressed_sha256": "2ade8b788b0fdf35c772d21db3a8398b19404fd396a090b09838f867c93a872d"
+        },
+        "native-build.log": {
+          "file": "cryptography-boringssl-native-build.log.gz",
+          "uncompressed_sha256": "72e16c67e99b8527bb0057bbe1b75ef8486a17ef9b6da163c4b5344a2d0c78b1"
+        },
+        "pyopenssl-dependencies.log": {
+          "file": "cryptography-boringssl-pyopenssl-dependencies.log.gz",
+          "uncompressed_sha256": "8a3866d91acb6a4255b3826515d7b1c532975a4bad7ae84fe3fe774818ea63a9"
+        },
+        "pyopenssl-format.log": {
+          "file": "cryptography-boringssl-pyopenssl-format.log.gz",
+          "uncompressed_sha256": "7ff2df5e4a19c344d6ea2dfc25c25d2370159894cbac570f392753b22180e09c"
+        },
+        "pyopenssl-mypy.log": {
+          "file": "cryptography-boringssl-pyopenssl-mypy.log.gz",
+          "uncompressed_sha256": "ca16d6d1a06c6903f5407ba5268cb8b5eb5d8c7811b7532282916ec31807c328"
+        },
+        "pyopenssl-remove-cffi.log": {
+          "file": "cryptography-boringssl-pyopenssl-remove-cffi.log.gz",
+          "uncompressed_sha256": "0ff0351972cff0a0ac44548ec52e2ebee0052eeccb0b075d14558243f12272b7"
+        },
+        "pyopenssl-report.json": {
+          "file": "cryptography-boringssl-pyopenssl-report.json.gz",
+          "uncompressed_sha256": "6e60c4157cab8cf5391564bdb7742accb3bfa1c4f5b1af5c03e2e1259dc0b7b0"
+        },
+        "pyopenssl-ruff.log": {
+          "file": "cryptography-boringssl-pyopenssl-ruff.log.gz",
+          "uncompressed_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+        },
+        "pyopenssl-runtime.log": {
+          "file": "cryptography-boringssl-pyopenssl-runtime.log.gz",
+          "uncompressed_sha256": "cdd522180fdaaf830a3159f598409ec50af7c5578a0010d216f8cd7063e0ccf0"
+        },
+        "pyopenssl-tests.log": {
+          "file": "cryptography-boringssl-pyopenssl-tests.log.gz",
+          "uncompressed_sha256": "9b512e3aa4709f32378dc7f2062331065fc8f5650a756cf445d8fcb25daec759"
+        },
+        "pyopenssl-tests.xml": {
+          "file": "cryptography-boringssl-pyopenssl-tests.xml.gz",
+          "uncompressed_sha256": "7b24e63b1a193e54d9a69be270e03144410dd3c8a02fddeb719af9c5df78d0e4"
+        },
+        "python-tests.xml": {
+          "file": "cryptography-boringssl-python-tests.xml.gz",
+          "uncompressed_sha256": "43f14fd3399cfc713b8482763740cad88d9dc3acfe796167d8205fed78d7b82c"
+        },
+        "report.json": {
+          "file": "cryptography-boringssl-report.json.gz",
+          "uncompressed_sha256": "052475c3ff08e9c0837b8b911ea721377f820dcc813b264daa8c987b96b0ef6b"
+        }
+      }
+    },
+    {
+      "row": "fips",
+      "python_counts": {
+        "passed": 3376,
+        "skipped": 1337
+      },
+      "rust_test_passes": 108,
+      "missing_tests": [],
+      "new_skips": [],
+      "replaced_tests": {
+        "tests.test_meta::test_no_circular_imports[cryptography.hazmat.bindings.openssl._conditional]": "tests.test_meta::test_removed_cffi_binding"
+      },
+      "added_tests": [
+        "tests.hazmat.primitives.test_aes.TestAESModeXTS::test_xts_requires_single_data_unit",
+        "tests.hazmat.primitives.test_ciphers.TestCipherUpdateInto::test_update_into_overlapping_views",
+        "tests.test_meta::test_removed_cffi_binding"
+      ],
+      "applied_patch_sha256": "72b61f330e3ed2faa3d0107912a46c26a89247b25e06b050d081029486259dcb",
+      "artifacts": {
+        "cryptography.log": {
+          "file": "cryptography-fips-cryptography.log.gz",
+          "uncompressed_sha256": "4966827a1f417db6ed937b3ebdb0f56fc4ccd21d89e69e81413bbb69d4b61fc6"
+        },
+        "native-build.log": {
+          "file": "cryptography-fips-native-build.log.gz",
+          "uncompressed_sha256": "39a07f29d591e56323da918357ef02fd7b851ddfc02e81b1b1445b5c01ca6ae1"
+        },
+        "python-tests.xml": {
+          "file": "cryptography-fips-python-tests.xml.gz",
+          "uncompressed_sha256": "01dc09324a2deda7dfefd1e05d6d8abd0badb33ac43efba1ec037e50d49a12ee"
+        },
+        "report.json": {
+          "file": "cryptography-fips-report.json.gz",
+          "uncompressed_sha256": "690378dc69402cfcc192802183bf548217cd197eec9671b3394734871ecb4bc2"
+        }
+      }
+    },
+    {
+      "row": "libressl",
+      "python_counts": {
+        "passed": 3972,
+        "skipped": 741
+      },
+      "rust_test_passes": 108,
+      "missing_tests": [],
+      "new_skips": [],
+      "replaced_tests": {
+        "tests.test_meta::test_no_circular_imports[cryptography.hazmat.bindings.openssl._conditional]": "tests.test_meta::test_removed_cffi_binding"
+      },
+      "added_tests": [
+        "tests.hazmat.primitives.test_aes.TestAESModeXTS::test_xts_requires_single_data_unit",
+        "tests.hazmat.primitives.test_ciphers.TestCipherUpdateInto::test_update_into_overlapping_views",
+        "tests.test_meta::test_removed_cffi_binding"
+      ],
+      "applied_patch_sha256": "72b61f330e3ed2faa3d0107912a46c26a89247b25e06b050d081029486259dcb",
+      "artifacts": {
+        "cryptography.log": {
+          "file": "cryptography-libressl-cryptography.log.gz",
+          "uncompressed_sha256": "f158899d9ad0322d3f5759c46841859a392e9902998f59027edb8547728a4742"
+        },
+        "native-build.log": {
+          "file": "cryptography-libressl-native-build.log.gz",
+          "uncompressed_sha256": "8d47618e507808b3f806a7b6e810e30734eb78e87f8ac3eaa817ee8bd6bc30f2"
+        },
+        "pyopenssl-dependencies.log": {
+          "file": "cryptography-libressl-pyopenssl-dependencies.log.gz",
+          "uncompressed_sha256": "c023bd7acdc95d96c2e4ce619878c982776c8b39a4e713a09d8097497acb8925"
+        },
+        "pyopenssl-format.log": {
+          "file": "cryptography-libressl-pyopenssl-format.log.gz",
+          "uncompressed_sha256": "7ff2df5e4a19c344d6ea2dfc25c25d2370159894cbac570f392753b22180e09c"
+        },
+        "pyopenssl-mypy.log": {
+          "file": "cryptography-libressl-pyopenssl-mypy.log.gz",
+          "uncompressed_sha256": "ca16d6d1a06c6903f5407ba5268cb8b5eb5d8c7811b7532282916ec31807c328"
+        },
+        "pyopenssl-remove-cffi.log": {
+          "file": "cryptography-libressl-pyopenssl-remove-cffi.log.gz",
+          "uncompressed_sha256": "0ff0351972cff0a0ac44548ec52e2ebee0052eeccb0b075d14558243f12272b7"
+        },
+        "pyopenssl-report.json": {
+          "file": "cryptography-libressl-pyopenssl-report.json.gz",
+          "uncompressed_sha256": "12237ad725c81112fe09441aea0c7bc19cc8d1203af24b8d07a52e9c531dbb37"
+        },
+        "pyopenssl-ruff.log": {
+          "file": "cryptography-libressl-pyopenssl-ruff.log.gz",
+          "uncompressed_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+        },
+        "pyopenssl-runtime.log": {
+          "file": "cryptography-libressl-pyopenssl-runtime.log.gz",
+          "uncompressed_sha256": "488078c419bc173508180a6383c9d93dd1a3f5e13966c42fca2b2876cdf6e72c"
+        },
+        "pyopenssl-tests.log": {
+          "file": "cryptography-libressl-pyopenssl-tests.log.gz",
+          "uncompressed_sha256": "8cde9740d6bcc5579ff048ebd3d540f05736490319ac6d0167289eb1d83be965"
+        },
+        "pyopenssl-tests.xml": {
+          "file": "cryptography-libressl-pyopenssl-tests.xml.gz",
+          "uncompressed_sha256": "0f64e08a79fe6efea9d634e3cb1348d8edb822964e0216ce554dc852b23dd98f"
+        },
+        "python-tests.xml": {
+          "file": "cryptography-libressl-python-tests.xml.gz",
+          "uncompressed_sha256": "45d09225a0eaea26e293b92fa658fea24bfe71744c073ede62e36c7ef83275fa"
+        },
+        "report.json": {
+          "file": "cryptography-libressl-report.json.gz",
+          "uncompressed_sha256": "7d48d5cc5524349acd38a9137d3f0fbed104144c6d34a67cc62c735789f721b0"
+        }
+      }
+    },
+    {
+      "row": "libressl421",
+      "python_counts": {
+        "passed": 3972,
+        "skipped": 741
+      },
+      "rust_test_passes": 108,
+      "missing_tests": [],
+      "new_skips": [],
+      "replaced_tests": {
+        "tests.test_meta::test_no_circular_imports[cryptography.hazmat.bindings.openssl._conditional]": "tests.test_meta::test_removed_cffi_binding"
+      },
+      "added_tests": [
+        "tests.hazmat.primitives.test_aes.TestAESModeXTS::test_xts_requires_single_data_unit",
+        "tests.hazmat.primitives.test_ciphers.TestCipherUpdateInto::test_update_into_overlapping_views",
+        "tests.test_meta::test_removed_cffi_binding"
+      ],
+      "applied_patch_sha256": "72b61f330e3ed2faa3d0107912a46c26a89247b25e06b050d081029486259dcb",
+      "artifacts": {
+        "cryptography.log": {
+          "file": "cryptography-libressl421-cryptography.log.gz",
+          "uncompressed_sha256": "264f86e23036c39b79afaa89cf37de279f9a4fae24ccbc325c0bde1e5b0f93d5"
+        },
+        "native-build.log": {
+          "file": "cryptography-libressl421-native-build.log.gz",
+          "uncompressed_sha256": "2cbd546993df9a2f64fbb15498db0d93575641ce2724c2f6ab93f1f11ab60825"
+        },
+        "python-tests.xml": {
+          "file": "cryptography-libressl421-python-tests.xml.gz",
+          "uncompressed_sha256": "4949367902c3dcca5f6cc5918c975773af4ab8eab2582f3bfe39502fa8324a39"
+        },
+        "report.json": {
+          "file": "cryptography-libressl421-report.json.gz",
+          "uncompressed_sha256": "1a1701f1aa55e86e4a3549227f87d00f8283648c09b361401cb0952ddb247837"
+        }
+      }
+    },
+    {
+      "row": "main",
+      "python_counts": {
+        "passed": 4690,
+        "skipped": 23
+      },
+      "rust_test_passes": 108,
+      "missing_tests": [],
+      "new_skips": [],
+      "replaced_tests": {
+        "tests.test_meta::test_no_circular_imports[cryptography.hazmat.bindings.openssl._conditional]": "tests.test_meta::test_removed_cffi_binding"
+      },
+      "added_tests": [
+        "tests.hazmat.primitives.test_aes.TestAESModeXTS::test_xts_requires_single_data_unit",
+        "tests.hazmat.primitives.test_ciphers.TestCipherUpdateInto::test_update_into_overlapping_views",
+        "tests.test_meta::test_removed_cffi_binding"
+      ],
+      "applied_patch_sha256": "72b61f330e3ed2faa3d0107912a46c26a89247b25e06b050d081029486259dcb",
+      "artifacts": {
+        "cryptography.log": {
+          "file": "cryptography-main-cryptography.log.gz",
+          "uncompressed_sha256": "8de35cbcfdc11768bb829df8c24c36f61b44e10fcc52e1d884b7a5bb5a6443cc"
+        },
+        "python-tests.xml": {
+          "file": "cryptography-main-python-tests.xml.gz",
+          "uncompressed_sha256": "4e46916f4f4e1179f3984c4b4700b3c704794e296de404efb57164f5684da71e"
+        },
+        "native-build.log": {
+          "file": "cryptography-main-native-build.log.gz",
+          "uncompressed_sha256": "e1f647b994734d6460eff83e633f6ae72b6e954b6de9fb02084caefaa56a49d5"
+        },
+        "report.json": {
+          "file": "cryptography-main-report.json.gz",
+          "uncompressed_sha256": "59c3d332a3d6b30e4bb3fd897f7bf1a203d44950dc31ce804eb17585636d92de"
+        }
+      }
+    },
+    {
+      "row": "minimal",
+      "python_counts": {
+        "passed": 4684,
+        "skipped": 29
+      },
+      "rust_test_passes": 108,
+      "missing_tests": [],
+      "new_skips": [],
+      "replaced_tests": {
+        "tests.test_meta::test_no_circular_imports[cryptography.hazmat.bindings.openssl._conditional]": "tests.test_meta::test_removed_cffi_binding"
+      },
+      "added_tests": [
+        "tests.hazmat.primitives.test_aes.TestAESModeXTS::test_xts_requires_single_data_unit",
+        "tests.hazmat.primitives.test_ciphers.TestCipherUpdateInto::test_update_into_overlapping_views",
+        "tests.test_meta::test_removed_cffi_binding"
+      ],
+      "applied_patch_sha256": "72b61f330e3ed2faa3d0107912a46c26a89247b25e06b050d081029486259dcb",
+      "artifacts": {
+        "cryptography.log": {
+          "file": "cryptography-minimal-cryptography.log.gz",
+          "uncompressed_sha256": "fc62cb30302faa8a2edca654458fc758629ac58e318d2456980b710c2cf134b5"
+        },
+        "native-build.log": {
+          "file": "cryptography-minimal-native-build.log.gz",
+          "uncompressed_sha256": "32205b0fa79342051697b831a04e2aa004d12429f3c8b5cf8a92697226e3af0c"
+        },
+        "python-tests.xml": {
+          "file": "cryptography-minimal-python-tests.xml.gz",
+          "uncompressed_sha256": "e2899e3df126a9a1a1ca4ad70a556136805a8571c0337e2acf9977e35b229a72"
+        },
+        "report.json": {
+          "file": "cryptography-minimal-report.json.gz",
+          "uncompressed_sha256": "52900c04be78ef6d05488f556be84e6a20e81107de6c8285d83e07ef7c9ac519"
+        }
+      }
+    },
+    {
+      "row": "msrv-awslc",
+      "python_counts": {
+        "passed": 4321,
+        "skipped": 392
+      },
+      "rust_test_passes": 108,
+      "missing_tests": [],
+      "new_skips": [],
+      "replaced_tests": {
+        "tests.test_meta::test_no_circular_imports[cryptography.hazmat.bindings.openssl._conditional]": "tests.test_meta::test_removed_cffi_binding"
+      },
+      "added_tests": [
+        "tests.hazmat.primitives.test_aes.TestAESModeXTS::test_xts_requires_single_data_unit",
+        "tests.hazmat.primitives.test_ciphers.TestCipherUpdateInto::test_update_into_overlapping_views",
+        "tests.test_meta::test_removed_cffi_binding"
+      ],
+      "applied_patch_sha256": "72b61f330e3ed2faa3d0107912a46c26a89247b25e06b050d081029486259dcb",
+      "artifacts": {
+        "cryptography.log": {
+          "file": "cryptography-msrv-awslc-cryptography.log.gz",
+          "uncompressed_sha256": "8c5cb540e583d3052529f49945f7a84e38f35adb2e9eacb720aa1c7c7fc23db6"
+        },
+        "native-build.log": {
+          "file": "cryptography-msrv-awslc-native-build.log.gz",
+          "uncompressed_sha256": "fa4c3fcd39719ff4ecc5892dd8566b52479d2ab90bf629458d7323a1c96a849e"
+        },
+        "python-tests.xml": {
+          "file": "cryptography-msrv-awslc-python-tests.xml.gz",
+          "uncompressed_sha256": "afd6397f25184ef50b21f8cd075642f10b08a949fbf4727e881eec971a6aa1d4"
+        },
+        "report.json": {
+          "file": "cryptography-msrv-awslc-report.json.gz",
+          "uncompressed_sha256": "b58a7a4206c3a008cbb29eef39cc9c4a606329745c178cefdd1327c16341a3a1"
+        }
+      }
+    },
+    {
+      "row": "msrv-boringssl",
+      "python_counts": {
+        "skipped": 907,
+        "passed": 3806
+      },
+      "rust_test_passes": 108,
+      "missing_tests": [],
+      "new_skips": [],
+      "replaced_tests": {
+        "tests.test_meta::test_no_circular_imports[cryptography.hazmat.bindings.openssl._conditional]": "tests.test_meta::test_removed_cffi_binding"
+      },
+      "added_tests": [
+        "tests.hazmat.primitives.test_aes.TestAESModeXTS::test_xts_requires_single_data_unit",
+        "tests.hazmat.primitives.test_ciphers.TestCipherUpdateInto::test_update_into_overlapping_views",
+        "tests.test_meta::test_removed_cffi_binding"
+      ],
+      "applied_patch_sha256": "72b61f330e3ed2faa3d0107912a46c26a89247b25e06b050d081029486259dcb",
+      "artifacts": {
+        "cryptography.log": {
+          "file": "cryptography-msrv-boringssl-cryptography.log.gz",
+          "uncompressed_sha256": "9c0103d74a81db9603ffa29bd864634c01cef80c5f9acd4d6257baf2ddcec527"
+        },
+        "native-build.log": {
+          "file": "cryptography-msrv-boringssl-native-build.log.gz",
+          "uncompressed_sha256": "da57a717f0cdd236951b98a17e748ccd7e88c5d516da3617be59acbf61aa396b"
+        },
+        "python-tests.xml": {
+          "file": "cryptography-msrv-boringssl-python-tests.xml.gz",
+          "uncompressed_sha256": "8fce83ec743b191ac97e8ac1653eeafad2b92e2e870bb5eaae6f75924a36da9f"
+        },
+        "report.json": {
+          "file": "cryptography-msrv-boringssl-report.json.gz",
+          "uncompressed_sha256": "c109603b5bc5993928197a6f62f2c8842d544a03724c5bec7ab863dcae311263"
+        }
+      }
+    },
+    {
+      "row": "no-legacy0",
+      "python_counts": {
+        "passed": 4664,
+        "skipped": 49
+      },
+      "rust_test_passes": 108,
+      "missing_tests": [],
+      "new_skips": [],
+      "replaced_tests": {
+        "tests.test_meta::test_no_circular_imports[cryptography.hazmat.bindings.openssl._conditional]": "tests.test_meta::test_removed_cffi_binding"
+      },
+      "added_tests": [
+        "tests.hazmat.primitives.test_aes.TestAESModeXTS::test_xts_requires_single_data_unit",
+        "tests.hazmat.primitives.test_ciphers.TestCipherUpdateInto::test_update_into_overlapping_views",
+        "tests.test_meta::test_removed_cffi_binding"
+      ],
+      "applied_patch_sha256": "72b61f330e3ed2faa3d0107912a46c26a89247b25e06b050d081029486259dcb",
+      "artifacts": {
+        "cryptography.log": {
+          "file": "cryptography-no-legacy0-cryptography.log.gz",
+          "uncompressed_sha256": "5f4c26f13a6c303e0c4ab58939e01ba08968613b302a1520942b7e5d703fb38b"
+        },
+        "native-build.log": {
+          "file": "cryptography-no-legacy0-native-build.log.gz",
+          "uncompressed_sha256": "b376fec456865ab3497e32cc4c558eee29c33e6cde43f305cef45b34c80045f4"
+        },
+        "python-tests.xml": {
+          "file": "cryptography-no-legacy0-python-tests.xml.gz",
+          "uncompressed_sha256": "89b331dded1444c6dd4b9b039ce9bd17e59dc10321d7554773815f7cb3506e27"
+        },
+        "report.json": {
+          "file": "cryptography-no-legacy0-report.json.gz",
+          "uncompressed_sha256": "b375668edf13ada6465b14273378f25b18a0d5c37dd6e095932c5d3d065bbd61"
+        }
+      }
+    },
+    {
+      "row": "no-legacy1",
+      "python_counts": {
+        "passed": 4664,
+        "skipped": 49
+      },
+      "rust_test_passes": 108,
+      "missing_tests": [],
+      "new_skips": [],
+      "replaced_tests": {
+        "tests.test_meta::test_no_circular_imports[cryptography.hazmat.bindings.openssl._conditional]": "tests.test_meta::test_removed_cffi_binding"
+      },
+      "added_tests": [
+        "tests.hazmat.primitives.test_aes.TestAESModeXTS::test_xts_requires_single_data_unit",
+        "tests.hazmat.primitives.test_ciphers.TestCipherUpdateInto::test_update_into_overlapping_views",
+        "tests.test_meta::test_removed_cffi_binding"
+      ],
+      "applied_patch_sha256": "72b61f330e3ed2faa3d0107912a46c26a89247b25e06b050d081029486259dcb",
+      "artifacts": {
+        "cryptography.log": {
+          "file": "cryptography-no-legacy1-cryptography.log.gz",
+          "uncompressed_sha256": "d4df3861e5eed5b0f04ea39d66cceae232552050bef48dcf56efbd133f242d73"
+        },
+        "native-build.log": {
+          "file": "cryptography-no-legacy1-native-build.log.gz",
+          "uncompressed_sha256": "3bd90b328317d0ae6aaf21945ec431f1eed40a046e26ca323f9cf897d12009d9"
+        },
+        "python-tests.xml": {
+          "file": "cryptography-no-legacy1-python-tests.xml.gz",
+          "uncompressed_sha256": "906545eaaa531bad5db68f0c96e3f853718ec612ee16247b9c74416be3a90871"
+        },
+        "report.json": {
+          "file": "cryptography-no-legacy1-report.json.gz",
+          "uncompressed_sha256": "cb3c37f4f13835082c1572eea83ef26bb27a633d85a6a5aae168399d2565b7b8"
+        }
+      }
+    },
+    {
+      "row": "openssl3022",
+      "python_counts": {
+        "passed": 4232,
+        "skipped": 481
+      },
+      "rust_test_passes": 108,
+      "missing_tests": [],
+      "new_skips": [],
+      "replaced_tests": {
+        "tests.test_meta::test_no_circular_imports[cryptography.hazmat.bindings.openssl._conditional]": "tests.test_meta::test_removed_cffi_binding"
+      },
+      "added_tests": [
+        "tests.hazmat.primitives.test_aes.TestAESModeXTS::test_xts_requires_single_data_unit",
+        "tests.hazmat.primitives.test_ciphers.TestCipherUpdateInto::test_update_into_overlapping_views",
+        "tests.test_meta::test_removed_cffi_binding"
+      ],
+      "applied_patch_sha256": "72b61f330e3ed2faa3d0107912a46c26a89247b25e06b050d081029486259dcb",
+      "artifacts": {
+        "cryptography.log": {
+          "file": "cryptography-openssl3022-cryptography.log.gz",
+          "uncompressed_sha256": "16fb3d8b5cde56461267280013d242aacb042b44ca4dd1f55358ce6eff5c505d"
+        },
+        "python-tests.xml": {
+          "file": "cryptography-openssl3022-python-tests.xml.gz",
+          "uncompressed_sha256": "6115474766362053441d17372026071edbcad05edecef04712a50d83e3adf911"
+        },
+        "native-build.log": {
+          "file": "cryptography-openssl3022-native-build.log.gz",
+          "uncompressed_sha256": "8fad08ea67b1401fed3a28ee2571df7c8a39e2af109d749fc3ba4cc8447225aa"
+        },
+        "report.json": {
+          "file": "cryptography-openssl3022-report.json.gz",
+          "uncompressed_sha256": "35dab0f1e18beec0219a3e6a09ebbfd1c48b2bcf7fb7043ebc1fc289d6b50575"
+        }
+      }
+    },
+    {
+      "row": "openssl347",
+      "python_counts": {
+        "skipped": 365,
+        "passed": 4348
+      },
+      "rust_test_passes": 108,
+      "missing_tests": [],
+      "new_skips": [],
+      "replaced_tests": {
+        "tests.test_meta::test_no_circular_imports[cryptography.hazmat.bindings.openssl._conditional]": "tests.test_meta::test_removed_cffi_binding"
+      },
+      "added_tests": [
+        "tests.hazmat.primitives.test_aes.TestAESModeXTS::test_xts_requires_single_data_unit",
+        "tests.hazmat.primitives.test_ciphers.TestCipherUpdateInto::test_update_into_overlapping_views",
+        "tests.test_meta::test_removed_cffi_binding"
+      ],
+      "applied_patch_sha256": "72b61f330e3ed2faa3d0107912a46c26a89247b25e06b050d081029486259dcb",
+      "artifacts": {
+        "cryptography.log": {
+          "file": "cryptography-openssl347-cryptography.log.gz",
+          "uncompressed_sha256": "43951c2c0b593266d8de58c846cc07f610cb67cae6f449966407d1d336cff538"
+        },
+        "native-build.log": {
+          "file": "cryptography-openssl347-native-build.log.gz",
+          "uncompressed_sha256": "6a97c5b4f7d86e699459b3c3b1d31f047cf363cde1d4f832a02736d8fe2797f8"
+        },
+        "python-tests.xml": {
+          "file": "cryptography-openssl347-python-tests.xml.gz",
+          "uncompressed_sha256": "7e3c715610050820a63ebc18cbd51338b11008740ff5156ec39eac8523492d20"
+        },
+        "report.json": {
+          "file": "cryptography-openssl347-report.json.gz",
+          "uncompressed_sha256": "9dd5d20cc09e48155544a0f2c6a38a235d9170ec490c458451ed2536da98e97d"
+        }
+      }
+    },
+    {
+      "row": "openssl358",
+      "python_counts": {
+        "passed": 4690,
+        "skipped": 23
+      },
+      "rust_test_passes": 108,
+      "missing_tests": [],
+      "new_skips": [],
+      "replaced_tests": {
+        "tests.test_meta::test_no_circular_imports[cryptography.hazmat.bindings.openssl._conditional]": "tests.test_meta::test_removed_cffi_binding"
+      },
+      "added_tests": [
+        "tests.hazmat.primitives.test_aes.TestAESModeXTS::test_xts_requires_single_data_unit",
+        "tests.hazmat.primitives.test_ciphers.TestCipherUpdateInto::test_update_into_overlapping_views",
+        "tests.test_meta::test_removed_cffi_binding"
+      ],
+      "applied_patch_sha256": "72b61f330e3ed2faa3d0107912a46c26a89247b25e06b050d081029486259dcb",
+      "artifacts": {
+        "native-build.log": {
+          "file": "cryptography-openssl358-native-build.log.gz",
+          "uncompressed_sha256": "3945c76b776ee4c04dc3b04fe8b6d484ac99675c0b8ded48616e99d41726e318"
+        },
+        "python-tests.xml": {
+          "file": "cryptography-openssl358-python-tests.xml.gz",
+          "uncompressed_sha256": "64771398efbd0c3b0f1b98a6168d96371b79b0fe4a6ced68163fc800e9d36ba0"
+        },
+        "cryptography.log": {
+          "file": "cryptography-openssl358-cryptography.log.gz",
+          "uncompressed_sha256": "0d5e08848ed171ee05a370a772fcd0052ef484ddd2b650945fa3d815185e1f65"
+        },
+        "report.json": {
+          "file": "cryptography-openssl358-report.json.gz",
+          "uncompressed_sha256": "455b4148a062e7e3434b69a7eb9969c5ed1fb92489d696d1efeb6f137a3ac235"
+        }
+      }
+    },
+    {
+      "row": "openssl364",
+      "python_counts": {
+        "passed": 4690,
+        "skipped": 23
+      },
+      "rust_test_passes": 108,
+      "missing_tests": [],
+      "new_skips": [],
+      "replaced_tests": {
+        "tests.test_meta::test_no_circular_imports[cryptography.hazmat.bindings.openssl._conditional]": "tests.test_meta::test_removed_cffi_binding"
+      },
+      "added_tests": [
+        "tests.hazmat.primitives.test_aes.TestAESModeXTS::test_xts_requires_single_data_unit",
+        "tests.hazmat.primitives.test_ciphers.TestCipherUpdateInto::test_update_into_overlapping_views",
+        "tests.test_meta::test_removed_cffi_binding"
+      ],
+      "applied_patch_sha256": "72b61f330e3ed2faa3d0107912a46c26a89247b25e06b050d081029486259dcb",
+      "artifacts": {
+        "cryptography.log": {
+          "file": "cryptography-openssl364-cryptography.log.gz",
+          "uncompressed_sha256": "0fa6a390f6949fb1503f9aab8b387f9415bd69b7fa5f957f4fc837bf2f242bca"
+        },
+        "native-build.log": {
+          "file": "cryptography-openssl364-native-build.log.gz",
+          "uncompressed_sha256": "dea46b91797e1c5544d585e52416a391152c035e00d71295faf70c966c964864"
+        },
+        "python-tests.xml": {
+          "file": "cryptography-openssl364-python-tests.xml.gz",
+          "uncompressed_sha256": "a4a5763f7b1d369343681d2ff8910597ed1406e0b23c8da08e86fd2a16c6e166"
+        },
+        "report.json": {
+          "file": "cryptography-openssl364-report.json.gz",
+          "uncompressed_sha256": "d6216ae92ef9641819da5968732b8a4a2b55c1c5792f61e02379ccc3e67da379"
+        }
+      }
+    },
+    {
+      "row": "openssl4",
+      "python_counts": {
+        "passed": 4690,
+        "skipped": 23
+      },
+      "rust_test_passes": 108,
+      "missing_tests": [],
+      "new_skips": [],
+      "replaced_tests": {
+        "tests.test_meta::test_no_circular_imports[cryptography.hazmat.bindings.openssl._conditional]": "tests.test_meta::test_removed_cffi_binding"
+      },
+      "added_tests": [
+        "tests.hazmat.primitives.test_aes.TestAESModeXTS::test_xts_requires_single_data_unit",
+        "tests.hazmat.primitives.test_ciphers.TestCipherUpdateInto::test_update_into_overlapping_views",
+        "tests.test_meta::test_removed_cffi_binding"
+      ],
+      "applied_patch_sha256": "72b61f330e3ed2faa3d0107912a46c26a89247b25e06b050d081029486259dcb",
+      "artifacts": {
+        "cryptography.log": {
+          "file": "cryptography-openssl4-cryptography.log.gz",
+          "uncompressed_sha256": "f43d6d3a6cb7d721a22873a81b9f71be8a0fecd1487c25f25c33486c9c6d03bb"
+        },
+        "native-build.log": {
+          "file": "cryptography-openssl4-native-build.log.gz",
+          "uncompressed_sha256": "1e34d5e5aedf697293b6a9003d44b26dfdcb6cc2182221f39a9b445365dd15b6"
+        },
+        "pyopenssl-dependencies.log": {
+          "file": "cryptography-openssl4-pyopenssl-dependencies.log.gz",
+          "uncompressed_sha256": "82d79ad9a3e0e8c6e0024523b15b05b115bec9c2fcc541dc5fada1257d6029f3"
+        },
+        "pyopenssl-format.log": {
+          "file": "cryptography-openssl4-pyopenssl-format.log.gz",
+          "uncompressed_sha256": "7ff2df5e4a19c344d6ea2dfc25c25d2370159894cbac570f392753b22180e09c"
+        },
+        "pyopenssl-mypy.log": {
+          "file": "cryptography-openssl4-pyopenssl-mypy.log.gz",
+          "uncompressed_sha256": "ca16d6d1a06c6903f5407ba5268cb8b5eb5d8c7811b7532282916ec31807c328"
+        },
+        "pyopenssl-remove-cffi.log": {
+          "file": "cryptography-openssl4-pyopenssl-remove-cffi.log.gz",
+          "uncompressed_sha256": "0ff0351972cff0a0ac44548ec52e2ebee0052eeccb0b075d14558243f12272b7"
+        },
+        "pyopenssl-report.json": {
+          "file": "cryptography-openssl4-pyopenssl-report.json.gz",
+          "uncompressed_sha256": "ab289491d4bb6b9e544bab9823777ed0a5d29ced5fc43d0ef51926bd75bc8c8b"
+        },
+        "pyopenssl-ruff.log": {
+          "file": "cryptography-openssl4-pyopenssl-ruff.log.gz",
+          "uncompressed_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+        },
+        "pyopenssl-runtime.log": {
+          "file": "cryptography-openssl4-pyopenssl-runtime.log.gz",
+          "uncompressed_sha256": "443085502303bdeec5b8f5ac5c595c51ac87ff062cedbaa82b7d0090b4df2c6f"
+        },
+        "pyopenssl-tests.log": {
+          "file": "cryptography-openssl4-pyopenssl-tests.log.gz",
+          "uncompressed_sha256": "bae8c428595e1832359daefe28385d8dbfffe9e273844c17a6cbbfb111185389"
+        },
+        "pyopenssl-tests.xml": {
+          "file": "cryptography-openssl4-pyopenssl-tests.xml.gz",
+          "uncompressed_sha256": "181ebab6c310d559677b540e69a50370d3f0e7013d156c3a4f81475d85f50140"
+        },
+        "python-tests.xml": {
+          "file": "cryptography-openssl4-python-tests.xml.gz",
+          "uncompressed_sha256": "7430ebb04dc9070f226f0c0ca436179c0fed5ba543bdcc6554ca30875db71abc"
+        },
+        "report.json": {
+          "file": "cryptography-openssl4-report.json.gz",
+          "uncompressed_sha256": "5c0d3344886119d3d2c357dd68930141a81fbe0ec44902e90dfacff08dccebe1"
+        }
+      }
+    },
+    {
+      "row": "system",
+      "python_counts": {
+        "passed": 4227,
+        "skipped": 486
+      },
+      "rust_test_passes": 108,
+      "missing_tests": [],
+      "new_skips": [],
+      "replaced_tests": {
+        "tests.test_meta::test_no_circular_imports[cryptography.hazmat.bindings.openssl._conditional]": "tests.test_meta::test_removed_cffi_binding"
+      },
+      "added_tests": [
+        "tests.hazmat.primitives.test_aes.TestAESModeXTS::test_xts_requires_single_data_unit",
+        "tests.hazmat.primitives.test_ciphers.TestCipherUpdateInto::test_update_into_overlapping_views",
+        "tests.test_meta::test_removed_cffi_binding"
+      ],
+      "applied_patch_sha256": "72b61f330e3ed2faa3d0107912a46c26a89247b25e06b050d081029486259dcb",
+      "artifacts": {
+        "cryptography.log": {
+          "file": "cryptography-system-cryptography.log.gz",
+          "uncompressed_sha256": "84cc34495b3519618a4f876990b54e39bfdeda7ac6f020504cd088d44c598717"
+        },
+        "native-build.log": {
+          "file": "cryptography-system-native-build.log.gz",
+          "uncompressed_sha256": "39e43d8d78378ec30f458038d86da4ade9d1cb03614faadf58019fc1afacccbc"
+        },
+        "pyopenssl-dependencies.log": {
+          "file": "cryptography-system-pyopenssl-dependencies.log.gz",
+          "uncompressed_sha256": "bb33e30a35193d8b41854c32b383b8b138d38c4f7d6ea9b8b78ec3e7de726d97"
+        },
+        "pyopenssl-format.log": {
+          "file": "cryptography-system-pyopenssl-format.log.gz",
+          "uncompressed_sha256": "7ff2df5e4a19c344d6ea2dfc25c25d2370159894cbac570f392753b22180e09c"
+        },
+        "pyopenssl-mypy.log": {
+          "file": "cryptography-system-pyopenssl-mypy.log.gz",
+          "uncompressed_sha256": "ca16d6d1a06c6903f5407ba5268cb8b5eb5d8c7811b7532282916ec31807c328"
+        },
+        "pyopenssl-remove-cffi.log": {
+          "file": "cryptography-system-pyopenssl-remove-cffi.log.gz",
+          "uncompressed_sha256": "0ff0351972cff0a0ac44548ec52e2ebee0052eeccb0b075d14558243f12272b7"
+        },
+        "pyopenssl-report.json": {
+          "file": "cryptography-system-pyopenssl-report.json.gz",
+          "uncompressed_sha256": "d54c764043324f763abbaa4f0ee5959b221bc33085734a8f965dfb2b18fb4a94"
+        },
+        "pyopenssl-ruff.log": {
+          "file": "cryptography-system-pyopenssl-ruff.log.gz",
+          "uncompressed_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+        },
+        "pyopenssl-runtime.log": {
+          "file": "cryptography-system-pyopenssl-runtime.log.gz",
+          "uncompressed_sha256": "b75ed897975f300b8dd67f7b7dd06b6c629953b1eb5f60d34ae9bdd6836bbcc2"
+        },
+        "pyopenssl-tests.log": {
+          "file": "cryptography-system-pyopenssl-tests.log.gz",
+          "uncompressed_sha256": "d280e8d8f7a9d79f645092dfb79f985f14244f1a0380f9113e198a4cc94021e5"
+        },
+        "pyopenssl-tests.xml": {
+          "file": "cryptography-system-pyopenssl-tests.xml.gz",
+          "uncompressed_sha256": "0972aac91e8d82705dc9c298d415c1452678e86af074c234dc89341ac68bce18"
+        },
+        "python-tests.xml": {
+          "file": "cryptography-system-python-tests.xml.gz",
+          "uncompressed_sha256": "1b2b92b225f830a14b5c2f7d2ba370a4aad2c3863272023d5f604fd7bf40fe95"
+        },
+        "report.json": {
+          "file": "cryptography-system-report.json.gz",
+          "uncompressed_sha256": "157eff83f2b490d2e49dad9193c2984087225c12af2633296743265041584d54"
+        }
+      }
+    }
+  ],
+  "library": [
+    {
+      "row": "awslc",
+      "rust_test_passes": 59,
+      "artifacts": {
+        "clippy.log": {
+          "file": "library-awslc-clippy.log.gz",
+          "uncompressed_sha256": "d25190730900ab076c3cf88af98c45efe8c1dbaf2a16bf7cec3f2060797898fc"
+        },
+        "library.log": {
+          "file": "library-awslc-library.log.gz",
+          "uncompressed_sha256": "8f352000c498e4b3fb8e150f035b96601772f0a70009ccb40a74067bdc226be2"
+        },
+        "native-build.log": {
+          "file": "library-awslc-native-build.log.gz",
+          "uncompressed_sha256": "b7f82eec48d9885c42bf9757e0834b6159b4be8fe5c9a02b287c3b4d773d5f89"
+        }
+      }
+    },
+    {
+      "row": "boringssl",
+      "rust_test_passes": 58,
+      "artifacts": {
+        "clippy.log": {
+          "file": "library-boringssl-clippy.log.gz",
+          "uncompressed_sha256": "3ff742c7b22d1c4a2bb92d394bdff8c7a92b04e2a9326a0f69b7ba632ea7ebc3"
+        },
+        "library.log": {
+          "file": "library-boringssl-library.log.gz",
+          "uncompressed_sha256": "30b61602f21984840b0520eb26705614ea8855908ada8a8d5324d4240bd4da3c"
+        },
+        "native-build.log": {
+          "file": "library-boringssl-native-build.log.gz",
+          "uncompressed_sha256": "1f8d1194837b994e3749517ed49c3e0d3f4add3873d51300001d0da692343f1c"
+        }
+      }
+    },
+    {
+      "row": "libressl",
+      "rust_test_passes": 57,
+      "artifacts": {
+        "clippy.log": {
+          "file": "library-libressl-clippy.log.gz",
+          "uncompressed_sha256": "b72159eb44a1e234b64a743afa74d51c50653c8593a6c622f1a90351514e6a74"
+        },
+        "native-build.log": {
+          "file": "library-libressl-native-build.log.gz",
+          "uncompressed_sha256": "9e78b902e282b84b19d2c4a66285ff75156eabd8f713cc7c05e765ba3a0645f7"
+        },
+        "library.log": {
+          "file": "library-libressl-library.log.gz",
+          "uncompressed_sha256": "a7d138b6bdb7af27a7faba7ef837a00e34960d23efa0e180b0e8ed10836106be"
+        }
+      }
+    },
+    {
+      "row": "msrv-awslc",
+      "rust_test_passes": 59,
+      "artifacts": {
+        "clippy.log": {
+          "file": "library-msrv-awslc-clippy.log.gz",
+          "uncompressed_sha256": "f80f994c37ab98e790f25ecf659bbbe75fb194fd57f8f2af88a433dceb57e326"
+        },
+        "library.log": {
+          "file": "library-msrv-awslc-library.log.gz",
+          "uncompressed_sha256": "669665adfb10c20a1ca557d0707e3bb1a32d4aa28243b3b24c4b348f2346142b"
+        },
+        "native-build.log": {
+          "file": "library-msrv-awslc-native-build.log.gz",
+          "uncompressed_sha256": "61e7b6023d2928ebe7e64104088c58407d8efdef411fad45d94576d4e6baeb33"
+        }
+      }
+    },
+    {
+      "row": "msrv-boringssl",
+      "rust_test_passes": 58,
+      "artifacts": {
+        "clippy.log": {
+          "file": "library-msrv-boringssl-clippy.log.gz",
+          "uncompressed_sha256": "2ebe5c77eedcabc2b86c6f4cacf67a8f21de9f5a1754920737acd77635adb4e7"
+        },
+        "library.log": {
+          "file": "library-msrv-boringssl-library.log.gz",
+          "uncompressed_sha256": "0271b15f43b57273c514fd574c1f3e423954facb5591a7e0c815da7193b1397e"
+        },
+        "native-build.log": {
+          "file": "library-msrv-boringssl-native-build.log.gz",
+          "uncompressed_sha256": "d0ad6dc8067c335ebc91be8445bf8b3c99d4456ec5059252f380269538400b39"
+        }
+      }
+    },
+    {
+      "row": "msrv-openssl4",
+      "rust_test_passes": 67,
+      "artifacts": {
+        "clippy.log": {
+          "file": "library-msrv-openssl4-clippy.log.gz",
+          "uncompressed_sha256": "bea82aa89a06c0ee7ead824c6736d4065cf16f7f828b4de2adc99363c00fd81b"
+        },
+        "library.log": {
+          "file": "library-msrv-openssl4-library.log.gz",
+          "uncompressed_sha256": "5e17550d3d242ba1fd25bc86bfabe7aed120241ccc41516ed75e51c1e40df5ce"
+        },
+        "native-build.log": {
+          "file": "library-msrv-openssl4-native-build.log.gz",
+          "uncompressed_sha256": "c32b2674c2ca741d3965b5a7aa01166a3cc7e2d0b68ba41d44fb2b81b20cd1c6"
+        }
+      }
+    },
+    {
+      "row": "openssl4",
+      "rust_test_passes": 67,
+      "artifacts": {
+        "clippy.log": {
+          "file": "library-openssl4-clippy.log.gz",
+          "uncompressed_sha256": "1a6465b4eade6147c534ea0d17f3a03db9e0aa6f2e8bda71dba9a6f4daa5e25d"
+        },
+        "library.log": {
+          "file": "library-openssl4-library.log.gz",
+          "uncompressed_sha256": "7d584dd353beeaebd5ae41c1404c16c76c4420271012b206531ac279aa0b71f1"
+        },
+        "native-build.log": {
+          "file": "library-openssl4-native-build.log.gz",
+          "uncompressed_sha256": "433239cf81f868dfbcdb8aabd9ece6e4d058ad65a8a6efe72fbc88b1b071346c"
+        }
+      }
+    },
+    {
+      "row": "system",
+      "rust_test_passes": 60,
+      "artifacts": {
+        "clippy.log": {
+          "file": "library-system-clippy.log.gz",
+          "uncompressed_sha256": "1c3e20cf2070d39ff4138759c2a66c39a86d2fbbd5fe2bfeb9f30dea236a81a1"
+        },
+        "library.log": {
+          "file": "library-system-library.log.gz",
+          "uncompressed_sha256": "26ed85f18ae2ee51cabfb284d9ccc8dc3f91cd5985ef8e59251b963b5b2c99d6"
+        },
+        "native-build.log": {
+          "file": "library-system-native-build.log.gz",
+          "uncompressed_sha256": "39e43d8d78378ec30f458038d86da4ade9d1cb03614faadf58019fc1afacccbc"
+        }
+      }
+    }
+  ],
+  "pyopenssl": [
+    {
+      "row": "awslc",
+      "counts": {
+        "passed": 431,
+        "skipped": 10
+      },
+      "missing_tests": [],
+      "new_skips": [],
+      "added_tests": [
+        "tests.test_native_tls::test_blocking_socket_handshakes_release_gil_and_own_descriptors",
+        "tests.test_native_tls::test_callback_exception_stays_with_its_connection",
+        "tests.test_native_tls::test_callback_reentry_is_rejected_and_owner_is_collectible",
+        "tests.test_native_tls::test_context_store_proxy_cannot_mutate_a_live_factory",
+        "tests.test_native_tls::test_sendall_retry_does_not_repeat_already_written_bytes",
+        "tests.test_ssl.TestContext::test_client_ca_names_require_supported_protocol"
+      ],
+      "applied_patch_sha256": {
+        "cryptography": "72b61f330e3ed2faa3d0107912a46c26a89247b25e06b050d081029486259dcb",
+        "pyopenssl": "2d7a6e9f9c9af8bc8457c525f1dd7c67826c668ac586c6e0744c1575765e4c10"
+      },
+      "artifacts": {
+        "pyopenssl-dependencies.log": {
+          "file": "cryptography-awslc-pyopenssl-dependencies.log.gz",
+          "uncompressed_sha256": "753965760e132b8045a69623ea16f072661872ed8556b61b2ce755179b1b1340"
+        },
+        "pyopenssl-format.log": {
+          "file": "cryptography-awslc-pyopenssl-format.log.gz",
+          "uncompressed_sha256": "7ff2df5e4a19c344d6ea2dfc25c25d2370159894cbac570f392753b22180e09c"
+        },
+        "pyopenssl-mypy.log": {
+          "file": "cryptography-awslc-pyopenssl-mypy.log.gz",
+          "uncompressed_sha256": "ca16d6d1a06c6903f5407ba5268cb8b5eb5d8c7811b7532282916ec31807c328"
+        },
+        "pyopenssl-remove-cffi.log": {
+          "file": "cryptography-awslc-pyopenssl-remove-cffi.log.gz",
+          "uncompressed_sha256": "0ff0351972cff0a0ac44548ec52e2ebee0052eeccb0b075d14558243f12272b7"
+        },
+        "pyopenssl-report.json": {
+          "file": "cryptography-awslc-pyopenssl-report.json.gz",
+          "uncompressed_sha256": "6ee7763d878c5abe93c15540c32050fae2e261ccd7c42319ee3086091c2fcec8"
+        },
+        "pyopenssl-ruff.log": {
+          "file": "cryptography-awslc-pyopenssl-ruff.log.gz",
+          "uncompressed_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+        },
+        "pyopenssl-runtime.log": {
+          "file": "cryptography-awslc-pyopenssl-runtime.log.gz",
+          "uncompressed_sha256": "d9357b96dbc08e02dc8f07b4d0f24c03f31275052567ea5b675d61d9e886d7c7"
+        },
+        "pyopenssl-tests.log": {
+          "file": "cryptography-awslc-pyopenssl-tests.log.gz",
+          "uncompressed_sha256": "0942b81d2557ee943a1ae92b91b4088e704bb3e57ac055b93893e717ba3d16fb"
+        },
+        "pyopenssl-tests.xml": {
+          "file": "cryptography-awslc-pyopenssl-tests.xml.gz",
+          "uncompressed_sha256": "85de5e5b8a76bffe4a6567c59329606889abed916612a2ba0593af75722d89bd"
+        }
+      }
+    },
+    {
+      "row": "boringssl",
+      "counts": {
+        "passed": 437,
+        "skipped": 4
+      },
+      "missing_tests": [],
+      "new_skips": [],
+      "added_tests": [
+        "tests.test_native_tls::test_blocking_socket_handshakes_release_gil_and_own_descriptors",
+        "tests.test_native_tls::test_callback_exception_stays_with_its_connection",
+        "tests.test_native_tls::test_callback_reentry_is_rejected_and_owner_is_collectible",
+        "tests.test_native_tls::test_context_store_proxy_cannot_mutate_a_live_factory",
+        "tests.test_native_tls::test_sendall_retry_does_not_repeat_already_written_bytes",
+        "tests.test_ssl.TestContext::test_client_ca_names_require_supported_protocol"
+      ],
+      "applied_patch_sha256": {
+        "cryptography": "72b61f330e3ed2faa3d0107912a46c26a89247b25e06b050d081029486259dcb",
+        "pyopenssl": "2d7a6e9f9c9af8bc8457c525f1dd7c67826c668ac586c6e0744c1575765e4c10"
+      },
+      "artifacts": {
+        "pyopenssl-dependencies.log": {
+          "file": "cryptography-boringssl-pyopenssl-dependencies.log.gz",
+          "uncompressed_sha256": "8a3866d91acb6a4255b3826515d7b1c532975a4bad7ae84fe3fe774818ea63a9"
+        },
+        "pyopenssl-format.log": {
+          "file": "cryptography-boringssl-pyopenssl-format.log.gz",
+          "uncompressed_sha256": "7ff2df5e4a19c344d6ea2dfc25c25d2370159894cbac570f392753b22180e09c"
+        },
+        "pyopenssl-mypy.log": {
+          "file": "cryptography-boringssl-pyopenssl-mypy.log.gz",
+          "uncompressed_sha256": "ca16d6d1a06c6903f5407ba5268cb8b5eb5d8c7811b7532282916ec31807c328"
+        },
+        "pyopenssl-remove-cffi.log": {
+          "file": "cryptography-boringssl-pyopenssl-remove-cffi.log.gz",
+          "uncompressed_sha256": "0ff0351972cff0a0ac44548ec52e2ebee0052eeccb0b075d14558243f12272b7"
+        },
+        "pyopenssl-report.json": {
+          "file": "cryptography-boringssl-pyopenssl-report.json.gz",
+          "uncompressed_sha256": "6e60c4157cab8cf5391564bdb7742accb3bfa1c4f5b1af5c03e2e1259dc0b7b0"
+        },
+        "pyopenssl-ruff.log": {
+          "file": "cryptography-boringssl-pyopenssl-ruff.log.gz",
+          "uncompressed_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+        },
+        "pyopenssl-runtime.log": {
+          "file": "cryptography-boringssl-pyopenssl-runtime.log.gz",
+          "uncompressed_sha256": "cdd522180fdaaf830a3159f598409ec50af7c5578a0010d216f8cd7063e0ccf0"
+        },
+        "pyopenssl-tests.log": {
+          "file": "cryptography-boringssl-pyopenssl-tests.log.gz",
+          "uncompressed_sha256": "9b512e3aa4709f32378dc7f2062331065fc8f5650a756cf445d8fcb25daec759"
+        },
+        "pyopenssl-tests.xml": {
+          "file": "cryptography-boringssl-pyopenssl-tests.xml.gz",
+          "uncompressed_sha256": "7b24e63b1a193e54d9a69be270e03144410dd3c8a02fddeb719af9c5df78d0e4"
+        }
+      }
+    },
+    {
+      "row": "libressl",
+      "counts": {
+        "passed": 438,
+        "skipped": 3
+      },
+      "missing_tests": [],
+      "new_skips": [],
+      "added_tests": [
+        "tests.test_native_tls::test_blocking_socket_handshakes_release_gil_and_own_descriptors",
+        "tests.test_native_tls::test_callback_exception_stays_with_its_connection",
+        "tests.test_native_tls::test_callback_reentry_is_rejected_and_owner_is_collectible",
+        "tests.test_native_tls::test_context_store_proxy_cannot_mutate_a_live_factory",
+        "tests.test_native_tls::test_sendall_retry_does_not_repeat_already_written_bytes",
+        "tests.test_ssl.TestContext::test_client_ca_names_require_supported_protocol"
+      ],
+      "applied_patch_sha256": {
+        "cryptography": "72b61f330e3ed2faa3d0107912a46c26a89247b25e06b050d081029486259dcb",
+        "pyopenssl": "2d7a6e9f9c9af8bc8457c525f1dd7c67826c668ac586c6e0744c1575765e4c10"
+      },
+      "artifacts": {
+        "pyopenssl-dependencies.log": {
+          "file": "cryptography-libressl-pyopenssl-dependencies.log.gz",
+          "uncompressed_sha256": "c023bd7acdc95d96c2e4ce619878c982776c8b39a4e713a09d8097497acb8925"
+        },
+        "pyopenssl-format.log": {
+          "file": "cryptography-libressl-pyopenssl-format.log.gz",
+          "uncompressed_sha256": "7ff2df5e4a19c344d6ea2dfc25c25d2370159894cbac570f392753b22180e09c"
+        },
+        "pyopenssl-mypy.log": {
+          "file": "cryptography-libressl-pyopenssl-mypy.log.gz",
+          "uncompressed_sha256": "ca16d6d1a06c6903f5407ba5268cb8b5eb5d8c7811b7532282916ec31807c328"
+        },
+        "pyopenssl-remove-cffi.log": {
+          "file": "cryptography-libressl-pyopenssl-remove-cffi.log.gz",
+          "uncompressed_sha256": "0ff0351972cff0a0ac44548ec52e2ebee0052eeccb0b075d14558243f12272b7"
+        },
+        "pyopenssl-report.json": {
+          "file": "cryptography-libressl-pyopenssl-report.json.gz",
+          "uncompressed_sha256": "12237ad725c81112fe09441aea0c7bc19cc8d1203af24b8d07a52e9c531dbb37"
+        },
+        "pyopenssl-ruff.log": {
+          "file": "cryptography-libressl-pyopenssl-ruff.log.gz",
+          "uncompressed_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+        },
+        "pyopenssl-runtime.log": {
+          "file": "cryptography-libressl-pyopenssl-runtime.log.gz",
+          "uncompressed_sha256": "488078c419bc173508180a6383c9d93dd1a3f5e13966c42fca2b2876cdf6e72c"
+        },
+        "pyopenssl-tests.log": {
+          "file": "cryptography-libressl-pyopenssl-tests.log.gz",
+          "uncompressed_sha256": "8cde9740d6bcc5579ff048ebd3d540f05736490319ac6d0167289eb1d83be965"
+        },
+        "pyopenssl-tests.xml": {
+          "file": "cryptography-libressl-pyopenssl-tests.xml.gz",
+          "uncompressed_sha256": "0f64e08a79fe6efea9d634e3cb1348d8edb822964e0216ce554dc852b23dd98f"
+        }
+      }
+    },
+    {
+      "row": "openssl4",
+      "counts": {
+        "passed": 441
+      },
+      "missing_tests": [],
+      "new_skips": [],
+      "added_tests": [
+        "tests.test_native_tls::test_blocking_socket_handshakes_release_gil_and_own_descriptors",
+        "tests.test_native_tls::test_callback_exception_stays_with_its_connection",
+        "tests.test_native_tls::test_callback_reentry_is_rejected_and_owner_is_collectible",
+        "tests.test_native_tls::test_context_store_proxy_cannot_mutate_a_live_factory",
+        "tests.test_native_tls::test_sendall_retry_does_not_repeat_already_written_bytes",
+        "tests.test_ssl.TestContext::test_client_ca_names_require_supported_protocol"
+      ],
+      "applied_patch_sha256": {
+        "cryptography": "72b61f330e3ed2faa3d0107912a46c26a89247b25e06b050d081029486259dcb",
+        "pyopenssl": "2d7a6e9f9c9af8bc8457c525f1dd7c67826c668ac586c6e0744c1575765e4c10"
+      },
+      "artifacts": {
+        "pyopenssl-dependencies.log": {
+          "file": "cryptography-openssl4-pyopenssl-dependencies.log.gz",
+          "uncompressed_sha256": "82d79ad9a3e0e8c6e0024523b15b05b115bec9c2fcc541dc5fada1257d6029f3"
+        },
+        "pyopenssl-format.log": {
+          "file": "cryptography-openssl4-pyopenssl-format.log.gz",
+          "uncompressed_sha256": "7ff2df5e4a19c344d6ea2dfc25c25d2370159894cbac570f392753b22180e09c"
+        },
+        "pyopenssl-mypy.log": {
+          "file": "cryptography-openssl4-pyopenssl-mypy.log.gz",
+          "uncompressed_sha256": "ca16d6d1a06c6903f5407ba5268cb8b5eb5d8c7811b7532282916ec31807c328"
+        },
+        "pyopenssl-remove-cffi.log": {
+          "file": "cryptography-openssl4-pyopenssl-remove-cffi.log.gz",
+          "uncompressed_sha256": "0ff0351972cff0a0ac44548ec52e2ebee0052eeccb0b075d14558243f12272b7"
+        },
+        "pyopenssl-report.json": {
+          "file": "cryptography-openssl4-pyopenssl-report.json.gz",
+          "uncompressed_sha256": "ab289491d4bb6b9e544bab9823777ed0a5d29ced5fc43d0ef51926bd75bc8c8b"
+        },
+        "pyopenssl-ruff.log": {
+          "file": "cryptography-openssl4-pyopenssl-ruff.log.gz",
+          "uncompressed_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+        },
+        "pyopenssl-runtime.log": {
+          "file": "cryptography-openssl4-pyopenssl-runtime.log.gz",
+          "uncompressed_sha256": "443085502303bdeec5b8f5ac5c595c51ac87ff062cedbaa82b7d0090b4df2c6f"
+        },
+        "pyopenssl-tests.log": {
+          "file": "cryptography-openssl4-pyopenssl-tests.log.gz",
+          "uncompressed_sha256": "bae8c428595e1832359daefe28385d8dbfffe9e273844c17a6cbbfb111185389"
+        },
+        "pyopenssl-tests.xml": {
+          "file": "cryptography-openssl4-pyopenssl-tests.xml.gz",
+          "uncompressed_sha256": "181ebab6c310d559677b540e69a50370d3f0e7013d156c3a4f81475d85f50140"
+        }
+      }
+    },
+    {
+      "row": "system",
+      "counts": {
+        "passed": 438,
+        "skipped": 3
+      },
+      "missing_tests": [],
+      "new_skips": [],
+      "added_tests": [
+        "tests.test_native_tls::test_blocking_socket_handshakes_release_gil_and_own_descriptors",
+        "tests.test_native_tls::test_callback_exception_stays_with_its_connection",
+        "tests.test_native_tls::test_callback_reentry_is_rejected_and_owner_is_collectible",
+        "tests.test_native_tls::test_context_store_proxy_cannot_mutate_a_live_factory",
+        "tests.test_native_tls::test_sendall_retry_does_not_repeat_already_written_bytes",
+        "tests.test_ssl.TestContext::test_client_ca_names_require_supported_protocol"
+      ],
+      "applied_patch_sha256": {
+        "cryptography": "72b61f330e3ed2faa3d0107912a46c26a89247b25e06b050d081029486259dcb",
+        "pyopenssl": "2d7a6e9f9c9af8bc8457c525f1dd7c67826c668ac586c6e0744c1575765e4c10"
+      },
+      "artifacts": {
+        "pyopenssl-dependencies.log": {
+          "file": "cryptography-system-pyopenssl-dependencies.log.gz",
+          "uncompressed_sha256": "bb33e30a35193d8b41854c32b383b8b138d38c4f7d6ea9b8b78ec3e7de726d97"
+        },
+        "pyopenssl-format.log": {
+          "file": "cryptography-system-pyopenssl-format.log.gz",
+          "uncompressed_sha256": "7ff2df5e4a19c344d6ea2dfc25c25d2370159894cbac570f392753b22180e09c"
+        },
+        "pyopenssl-mypy.log": {
+          "file": "cryptography-system-pyopenssl-mypy.log.gz",
+          "uncompressed_sha256": "ca16d6d1a06c6903f5407ba5268cb8b5eb5d8c7811b7532282916ec31807c328"
+        },
+        "pyopenssl-remove-cffi.log": {
+          "file": "cryptography-system-pyopenssl-remove-cffi.log.gz",
+          "uncompressed_sha256": "0ff0351972cff0a0ac44548ec52e2ebee0052eeccb0b075d14558243f12272b7"
+        },
+        "pyopenssl-report.json": {
+          "file": "cryptography-system-pyopenssl-report.json.gz",
+          "uncompressed_sha256": "d54c764043324f763abbaa4f0ee5959b221bc33085734a8f965dfb2b18fb4a94"
+        },
+        "pyopenssl-ruff.log": {
+          "file": "cryptography-system-pyopenssl-ruff.log.gz",
+          "uncompressed_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+        },
+        "pyopenssl-runtime.log": {
+          "file": "cryptography-system-pyopenssl-runtime.log.gz",
+          "uncompressed_sha256": "b75ed897975f300b8dd67f7b7dd06b6c629953b1eb5f60d34ae9bdd6836bbcc2"
+        },
+        "pyopenssl-tests.log": {
+          "file": "cryptography-system-pyopenssl-tests.log.gz",
+          "uncompressed_sha256": "d280e8d8f7a9d79f645092dfb79f985f14244f1a0380f9113e198a4cc94021e5"
+        },
+        "pyopenssl-tests.xml": {
+          "file": "cryptography-system-pyopenssl-tests.xml.gz",
+          "uncompressed_sha256": "0972aac91e8d82705dc9c298d415c1452678e86af074c234dc89341ac68bce18"
+        }
+      }
+    }
+  ],
+  "matrix_passed": true,
+  "complete_cffi_tls_migration": true
+}
