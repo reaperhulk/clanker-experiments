@@ -2605,10 +2605,10 @@ index 872d13f..84f383d 100644
      }
  }
 diff --git a/src/rust/src/backend/ec.rs b/src/rust/src/backend/ec.rs
-index ca215ba..9dd3ee5 100644
+index ca215ba..922b7ed 100644
 --- a/src/rust/src/backend/ec.rs
 +++ b/src/rust/src/backend/ec.rs
-@@ -7,69 +7,66 @@ use std::hash::{Hash, Hasher};
+@@ -7,69 +7,73 @@ use std::hash::{Hash, Hasher};
  
  use pyo3::types::PyAnyMethods;
  
@@ -2707,6 +2707,13 @@ index ca215ba..9dd3ee5 100644
 -    })?)
 +    };
 +    let curve = Curve::from_name(&name).map_err(|_| unsupported())?;
++    // Preserve the existing Python capability set while the shared codecs
++    // retain their backend-specific curve support.
++    #[cfg(any(CRYPTOGRAPHY_IS_BORINGSSL, CRYPTOGRAPHY_IS_AWSLC))]
++    if matches!(curve, Curve::BrainpoolP256r1 | Curve::BrainpoolP384r1 | Curve::BrainpoolP512r1) {
++        return Err(unsupported().into());
++    }
++
 +    if !curve.is_available() {
 +        return Err(unsupported().into());
 +    }
@@ -2714,7 +2721,7 @@ index ca215ba..9dd3ee5 100644
  }
  
  fn py_curve_from_curve<'p>(
-@@ -110,8 +107,24 @@ pub(crate) fn private_key_from_pkey(
+@@ -110,8 +114,24 @@ pub(crate) fn private_key_from_pkey(
          .map_err(|_| pyo3::exceptions::PyValueError::new_err("Invalid EC key"))?;
      let curve = py_curve_from_curve(py, ec_key.group())?;
      check_key_infinity(&ec_key)?;
@@ -2740,7 +2747,7 @@ index ca215ba..9dd3ee5 100644
          curve: curve.into(),
      })
  }
-@@ -123,7 +136,14 @@ pub(crate) fn public_key_from_pkey(
+@@ -123,7 +143,14 @@ pub(crate) fn public_key_from_pkey(
      let ec = pkey.ec_key()?;
      let curve = py_curve_from_curve(py, ec.group())?;
  
@@ -2756,7 +2763,7 @@ index ca215ba..9dd3ee5 100644
  }
  
  #[pyo3::pyfunction]
-@@ -135,13 +155,14 @@ pub(crate) fn generate_private_key(
+@@ -135,13 +162,14 @@ pub(crate) fn generate_private_key(
  ) -> CryptographyResult<ECPrivateKey> {
      let _ = backend;
  
@@ -2776,7 +2783,7 @@ index ca215ba..9dd3ee5 100644
      })
  }
  
-@@ -154,16 +175,10 @@ fn derive_private_key(
+@@ -154,16 +182,10 @@ fn derive_private_key(
      let curve = curve_from_py_curve(py, py_curve.clone())?;
      let private_value = utils::py_int_to_bn(py, py_private_value)?;
  
@@ -2795,7 +2802,7 @@ index ca215ba..9dd3ee5 100644
      Ok(ECPrivateKey {
          pkey,
          curve: py_curve.into(),
-@@ -178,13 +193,12 @@ pub(crate) fn from_public_bytes(
+@@ -178,13 +200,12 @@ pub(crate) fn from_public_bytes(
  ) -> CryptographyResult<ECPublicKey> {
      let curve = curve_from_py_curve(py, py_curve.clone())?;
  
@@ -2814,7 +2821,7 @@ index ca215ba..9dd3ee5 100644
  }
  
  #[pyo3::pymethods]
-@@ -212,38 +226,10 @@ impl ECPrivateKey {
+@@ -212,38 +233,10 @@ impl ECPrivateKey {
              ));
          }
  
@@ -2829,9 +2836,7 @@ index ca215ba..9dd3ee5 100644
 -        )))]
 -        deriver
 -            .set_peer_ex(&peer_public_key.pkey, false)
-+        let secret = py
-+            .detach(|| self.pkey.exchange(&peer_public_key.pkey))
-             .map_err(|_| pyo3::exceptions::PyValueError::new_err("Error computing shared key."))?;
+-            .map_err(|_| pyo3::exceptions::PyValueError::new_err("Error computing shared key."))?;
 -
 -        #[cfg(any(
 -            CRYPTOGRAPHY_IS_LIBRESSL,
@@ -2840,7 +2845,9 @@ index ca215ba..9dd3ee5 100644
 -        ))]
 -        deriver
 -            .set_peer(&peer_public_key.pkey)
--            .map_err(|_| pyo3::exceptions::PyValueError::new_err("Error computing shared key."))?;
++        let secret = py
++            .detach(|| self.pkey.exchange(&peer_public_key.pkey))
+             .map_err(|_| pyo3::exceptions::PyValueError::new_err("Error computing shared key."))?;
 -
 -        let len = deriver.len()?;
 -        Ok(pyo3::types::PyBytes::new_with(py, len, |b| {
@@ -2856,7 +2863,7 @@ index ca215ba..9dd3ee5 100644
      }
  
      fn sign<'p>(
-@@ -264,50 +250,23 @@ impl ECPrivateKey {
+@@ -264,50 +257,23 @@ impl ECPrivateKey {
          let (data, algo) =
              utils::calculate_digest_and_algorithm(py, data.as_bytes(), &bound_algorithm)?;
  
@@ -2920,7 +2927,7 @@ index ca215ba..9dd3ee5 100644
              curve: self.curve.clone_ref(py),
          })
      }
-@@ -316,26 +275,11 @@ impl ECPrivateKey {
+@@ -316,26 +282,11 @@ impl ECPrivateKey {
          &self,
          py: pyo3::Python<'_>,
      ) -> CryptographyResult<EllipticCurvePrivateNumbers> {
@@ -2951,7 +2958,7 @@ index ca215ba..9dd3ee5 100644
              public_numbers: pyo3::Py::new(py, public_numbers)?,
          })
      }
-@@ -350,7 +294,7 @@ impl ECPrivateKey {
+@@ -350,7 +301,7 @@ impl ECPrivateKey {
          utils::pkey_private_bytes(
              py,
              slf,
@@ -2960,7 +2967,7 @@ index ca215ba..9dd3ee5 100644
              encoding,
              format,
              encryption_algorithm,
-@@ -371,21 +315,38 @@ impl ECPrivateKey {
+@@ -371,21 +322,38 @@ impl ECPrivateKey {
      }
  }
  
@@ -3013,7 +3020,7 @@ index ca215ba..9dd3ee5 100644
      }
  }
  
-@@ -415,17 +376,16 @@ impl ECPublicKey {
+@@ -415,17 +383,16 @@ impl ECPublicKey {
              ));
          }
  
@@ -3034,7 +3041,7 @@ index ca215ba..9dd3ee5 100644
          if !valid {
              return Err(CryptographyError::from(
                  exceptions::InvalidSignature::new_err(()),
-@@ -439,19 +399,10 @@ impl ECPublicKey {
+@@ -439,19 +406,10 @@ impl ECPublicKey {
          &self,
          py: pyo3::Python<'_>,
      ) -> CryptographyResult<EllipticCurvePublicNumbers> {
@@ -3057,7 +3064,7 @@ index ca215ba..9dd3ee5 100644
              curve: self.curve.clone_ref(py),
          })
      }
-@@ -462,11 +413,21 @@ impl ECPublicKey {
+@@ -462,11 +420,21 @@ impl ECPublicKey {
          encoding: crate::serialization::Encoding,
          format: crate::serialization::PublicFormat,
      ) -> CryptographyResult<pyo3::Bound<'p, pyo3::types::PyBytes>> {
@@ -3082,7 +3089,7 @@ index ca215ba..9dd3ee5 100644
      }
  
      fn __copy__(slf: pyo3::PyRef<'_, Self>) -> pyo3::PyRef<'_, Self> {
-@@ -502,8 +463,8 @@ struct EllipticCurvePublicNumbers {
+@@ -502,8 +470,8 @@ struct EllipticCurvePublicNumbers {
  fn public_key_from_numbers(
      py: pyo3::Python<'_>,
      numbers: &EllipticCurvePublicNumbers,
@@ -3093,7 +3100,7 @@ index ca215ba..9dd3ee5 100644
      if numbers.x.bind(py).lt(0)? || numbers.y.bind(py).lt(0)? {
          return Err(CryptographyError::from(
              pyo3::exceptions::PyValueError::new_err(
-@@ -515,17 +476,13 @@ fn public_key_from_numbers(
+@@ -515,17 +483,13 @@ fn public_key_from_numbers(
      let x = utils::py_int_to_bn(py, numbers.x.bind(py))?;
      let y = utils::py_int_to_bn(py, numbers.y.bind(py))?;
  
@@ -3115,7 +3122,7 @@ index ca215ba..9dd3ee5 100644
  }
  
  #[pyo3::pymethods]
-@@ -550,27 +507,17 @@ impl EllipticCurvePrivateNumbers {
+@@ -550,27 +514,17 @@ impl EllipticCurvePrivateNumbers {
          let _ = backend;
  
          let curve = curve_from_py_curve(py, self.public_numbers.get().curve.bind(py).clone())?;
@@ -3151,15 +3158,15 @@ index ca215ba..9dd3ee5 100644
          Ok(ECPrivateKey {
              pkey,
              curve: self.public_numbers.get().curve.clone_ref(py),
-@@ -631,11 +578,12 @@ impl EllipticCurvePublicNumbers {
+@@ -631,11 +585,12 @@ impl EllipticCurvePublicNumbers {
          let _ = backend;
  
          let curve = curve_from_py_curve(py, self.curve.bind(py).clone())?;
 -        let public_key = public_key_from_numbers(py, self, &curve)?;
+-
+-        let pkey = openssl::pkey::PKey::from_ec_key(public_key)?;
 +        let public_key = public_key_from_numbers(py, self, curve)?;
  
--        let pkey = openssl::pkey::PKey::from_ec_key(public_key)?;
--
 -        ECPublicKey::new(pkey, self.curve.clone_ref(py))
 +        Ok(ECPublicKey {
 +            pkey: public_key,
