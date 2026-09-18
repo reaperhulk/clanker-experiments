@@ -2,8 +2,10 @@
 
 Independent Rust abstractions for the OpenSSL operations used by
 `pyca/cryptography`, using header-generated FFI for OpenSSL, LibreSSL, AWS-LC,
-and BoringSSL. This is an incomplete implementation in development, not a
-drop-in replacement or an audited cryptographic library.
+and BoringSSL. The included patch replaces both Rust OpenSSL crates throughout
+the pinned cryptography Rust implementation. The full acceptance matrix passes;
+see [the results and exact scope](validation/acceptance/README.md). The API is
+operation-oriented rather than a drop-in copy of rust-openssl.
 
 ## Acceptance requirements
 
@@ -41,3 +43,15 @@ Set `OPENSSL_DIR`, optionally `OPENSSL_INCLUDE_DIR`, `OPENSSL_LIB_DIR`, and
 
 The baseline cryptography revision is recorded in `compatibility/sources.json`.
 Cryptography's `AGENTS.md` requires builds and checks through nox sessions.
+
+## Integration and results
+
+Apply [cryptography.patch](compatibility/cryptography.patch) to the pinned
+revision in [sources.json](compatibility/sources.json). Keep the two repositories
+next to one another as described in [the integration instructions](compatibility/README.md).
+The migration includes its API changes, changelog entries, and regression tests.
+
+[SAFETY.md](SAFETY.md) describes ownership, state, bounds, secret storage,
+concurrency, and backend assumptions. The checked-in tests and integration
+results provide evidence for these invariants; they are not an independent audit.
+The CFFI/TLS surface used by pyOpenSSL is the subsequent stage.

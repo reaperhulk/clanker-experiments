@@ -22,7 +22,9 @@ prefix. Readonly views are also copied because their underlying owner may be
 mutable. This permits overlap without aliased Rust references. Python buffer
 exporters remain responsible for their own protocol and synchronization rules;
 a copy is not a promise of an atomic snapshot under external mutation.
-**The full backend matrix and final safety review are still in progress.**
+**The primary replacement passes the full pinned acceptance matrix.**
+See [the final report](../validation/acceptance/README.md) for per-row counts,
+source identities, baseline comparisons, and the scope of validation.
 The CFFI/TLS layer is retained for the subsequent pyOpenSSL stage; its build
 metadata comes from the new sys crate.
 
@@ -53,7 +55,7 @@ including configuration variants. Passing a few backend versions does not satisf
 the full acceptance requirement. Preserve existing capability skips and compare
 test outcomes against an unmodified baseline of the same backend and configuration.
 
-Before a PR may be opened:
+The primary acceptance gate verifies:
 
 - `cargo tree` for cryptography must contain neither `openssl` nor `openssl-sys`.
 - All used operations must go through the independent safe abstraction.
@@ -62,8 +64,10 @@ Before a PR may be opened:
 - No new skips or xfails may conceal integration regressions.
 - The cryptography patch must be regenerated from the tested source tree and
   apply cleanly to the pinned revision.
-- The later CFFI/TLS replacement must be validated with pyOpenSSL; record that
-  patch and its test evidence separately.
 
-Current code and test results are incremental development evidence, not proof
-that the replacement is complete or that the public API has been fully audited.
+The later CFFI/TLS replacement will be validated with pyOpenSSL and recorded
+with its own integration patch and test evidence.
+
+The final primary report establishes complete migration of the pinned Rust API
+surface and the stated test matrix. It does not claim an independent security
+audit or completion of the later pyOpenSSL CFFI/TLS stage.

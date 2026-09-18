@@ -5,13 +5,15 @@
     "bridge_source_sha256": "5d7ee9c9a15a3c3527e8bb747dadc14da188e5f1a8eded7373dafea511d465eb",
     "portable_patch_sha256": "2265ee6317fa71c43b6976e04d8b4683de0e8f1c1db17b06c658e7517e5bb9aa",
     "cryptography_baseline": "19ff77880bbd485464849366122982cd3a04d94b",
-    "integration_code_patch_sha256": "b6a597b2a4b5349ad27b9755593e4087a875ff72477f60ca82f718fe213ac663"
+    "integration_code_patch_sha256": "b6a597b2a4b5349ad27b9755593e4087a875ff72477f60ca82f718fe213ac663",
+    "remote_source_commit": "a1e6254fcbf59b7a59bdd29f4d0c71ca4f058aac",
+    "remote_source_tree": "786220dd8e530ccd2dec238082c4c26e081100ac"
   },
   "platform": "Linux x86_64",
   "python": "3.12.14",
   "rust_default": "1.90.0",
   "rust_msrv": "1.83.0",
-  "complete_replacement": false,
+  "complete_replacement": true,
   "rows": [
     {
       "label": "system",
@@ -494,9 +496,12 @@
       "label": "minimal",
       "log": {
         "file": "integration-acceptance-minimal.log.gz",
-        "uncompressed_sha256": "4511aff3c492fe9715088841600e4ca08f6a9a0cd93d0d4b48dac37ff72e6c2a"
+        "uncompressed_sha256": "c35515d4a55472ba15e6d3a38eeb8009f24973a178f30d03a2ce548856d54cf2"
       },
-      "junit": null,
+      "junit": {
+        "file": "integration-acceptance-minimal.xml.gz",
+        "uncompressed_sha256": "123a5a134246f39f743fdefce6a385917d1aae38f77b4a6e2d5d9df8ebc7db39"
+      },
       "baseline_log": {
         "file": "baseline-full-minimal.log.gz",
         "uncompressed_sha256": "a7dd2c7115e40704ee31125e823fa43287436ca35399ca8ae980dfb0ad8d74a9"
@@ -509,25 +514,47 @@
       "baseline_preexisting_fips_md5_failure": false,
       "receipt": {
         "file": "integration-acceptance-minimal.json.gz",
-        "uncompressed_sha256": "e0b28901a5405a998a999c8ee933167b00c9c8e913fcfb23266162a99ba18784"
+        "uncompressed_sha256": "19891534a1e8648791de4df76cf9fc1e21530886c0cf98e9cdd8b4789942989d"
       },
-      "receipt_matches": false,
-      "canonical_session_passed": false,
-      "native_version": [],
-      "fips_enabled": [],
-      "rust_test_passes": 0,
-      "baseline_comparison_passed": false,
+      "receipt_matches": true,
+      "canonical_session_passed": true,
+      "native_version": [
+        "OpenSSL 4.0.2 25 Aug 2026"
+      ],
+      "fips_enabled": [
+        "False"
+      ],
+      "rust_test_passes": 108,
+      "counts": {
+        "passed": 4684,
+        "skipped": 29,
+        "xfailed": 0,
+        "failed": 0
+      },
+      "missing_tests": [],
+      "new_skips_or_xfails": [],
+      "added_tests": {
+        "tests.hazmat.primitives.test_aes.TestAESModeXTS::test_xts_requires_single_data_unit": "passed",
+        "tests.hazmat.primitives.test_ciphers.TestCipherUpdateInto::test_update_into_overlapping_views": "passed"
+      },
+      "baseline_comparison_passed": true,
       "portable_patch_sha256": "2265ee6317fa71c43b6976e04d8b4683de0e8f1c1db17b06c658e7517e5bb9aa",
       "patch_matches": true,
       "integration_code_patch_sha256": "b6a597b2a4b5349ad27b9755593e4087a875ff72477f60ca82f718fe213ac663",
       "code_matches": true,
       "original_dependencies": [],
-      "passed": false
+      "passed": true
     },
     {
       "label": "no-legacy0",
-      "log": null,
-      "junit": null,
+      "log": {
+        "file": "integration-acceptance-no-legacy0.log.gz",
+        "uncompressed_sha256": "1f7d2837918da2ab0fc0527da6dc2339d7fedd04ffbffb8c69377f6fa87a5873"
+      },
+      "junit": {
+        "file": "integration-acceptance-no-legacy0.xml.gz",
+        "uncompressed_sha256": "53e9c377b40ae336c9f381d65f76ba8f87667c54b00fc53ec7afea78664c5bc3"
+      },
       "baseline_log": {
         "file": "baseline-full-no-legacy0.log.gz",
         "uncompressed_sha256": "5dfecb49d061fb292712be261f7214c534ddab907b8f39428ecd0e13fc8d981f"
@@ -538,66 +565,155 @@
       },
       "baseline_canonical_session_passed": true,
       "baseline_preexisting_fips_md5_failure": false,
-      "canonical_session_passed": false,
-      "native_version": [],
-      "fips_enabled": [],
-      "rust_test_passes": 0,
-      "baseline_comparison_passed": false,
-      "passed": false
-    },
-    {
-      "label": "no-legacy1",
-      "log": {
-        "file": "integration-acceptance-no-legacy1.log.gz",
-        "uncompressed_sha256": "8298a914e41e9b89130cbc0cec2ec107348d653b32bb118ef68943b778ef1771"
-      },
-      "junit": null,
-      "baseline_log": {
-        "file": "baseline-full-no-legacy1.log.gz",
-        "uncompressed_sha256": "40e506a080b6d7abd27f70a8f8de24e229d999424f3986fdc18df00345c65d7a"
-      },
-      "baseline_junit": null,
-      "baseline_canonical_session_passed": false,
-      "baseline_preexisting_fips_md5_failure": false,
       "receipt": {
-        "file": "integration-acceptance-no-legacy1.json.gz",
-        "uncompressed_sha256": "94a7cb533cb6ec7549b727f7043e004441152dfe63339b815f5e6216efd83e84"
+        "file": "integration-acceptance-no-legacy0.json.gz",
+        "uncompressed_sha256": "794f3dce657bd21331ad7dbcaa85f36d3ba44540cb136a0c322d561ae8d65b3e"
       },
-      "receipt_matches": false,
-      "canonical_session_passed": false,
-      "native_version": [],
-      "fips_enabled": [],
-      "rust_test_passes": 0,
-      "baseline_comparison_passed": false,
+      "receipt_matches": true,
+      "canonical_session_passed": true,
+      "native_version": [
+        "OpenSSL 4.0.2 25 Aug 2026"
+      ],
+      "fips_enabled": [
+        "False"
+      ],
+      "rust_test_passes": 108,
+      "counts": {
+        "passed": 4664,
+        "skipped": 49,
+        "xfailed": 0,
+        "failed": 0
+      },
+      "missing_tests": [],
+      "new_skips_or_xfails": [],
+      "added_tests": {
+        "tests.hazmat.primitives.test_aes.TestAESModeXTS::test_xts_requires_single_data_unit": "passed",
+        "tests.hazmat.primitives.test_ciphers.TestCipherUpdateInto::test_update_into_overlapping_views": "passed"
+      },
+      "baseline_comparison_passed": true,
       "portable_patch_sha256": "2265ee6317fa71c43b6976e04d8b4683de0e8f1c1db17b06c658e7517e5bb9aa",
       "patch_matches": true,
       "integration_code_patch_sha256": "b6a597b2a4b5349ad27b9755593e4087a875ff72477f60ca82f718fe213ac663",
       "code_matches": true,
       "original_dependencies": [],
-      "passed": false
+      "passed": true
+    },
+    {
+      "label": "no-legacy1",
+      "log": {
+        "file": "integration-acceptance-no-legacy1.log.gz",
+        "uncompressed_sha256": "ec5a8107edc0c4f4222645e0b7f9e6d0fa6feb84d1f36d86e15457ee64e332ef"
+      },
+      "junit": {
+        "file": "integration-acceptance-no-legacy1.xml.gz",
+        "uncompressed_sha256": "a51bda73a0e907a2332935872c783597aa9f338779c0e470291dd61ea92dee20"
+      },
+      "baseline_log": {
+        "file": "baseline-full-no-legacy1.log.gz",
+        "uncompressed_sha256": "259586b8e54df4aa2e30599f35b92b34771f67d2c8d2cbf02045898e06f523f9"
+      },
+      "baseline_junit": {
+        "file": "baseline-full-no-legacy1.xml.gz",
+        "uncompressed_sha256": "f52df6feab1bb33ab1965157a064d19672cdf32d6b27ac700407906395e245f5"
+      },
+      "baseline_canonical_session_passed": true,
+      "baseline_preexisting_fips_md5_failure": false,
+      "receipt": {
+        "file": "integration-acceptance-no-legacy1.json.gz",
+        "uncompressed_sha256": "3117924f6c1c4aa482926b587beff787663757a368dbb909b1dc83d56343c488"
+      },
+      "receipt_matches": true,
+      "canonical_session_passed": true,
+      "native_version": [
+        "OpenSSL 4.0.2 25 Aug 2026"
+      ],
+      "fips_enabled": [
+        "False"
+      ],
+      "rust_test_passes": 108,
+      "counts": {
+        "passed": 4664,
+        "skipped": 49,
+        "xfailed": 0,
+        "failed": 0
+      },
+      "missing_tests": [],
+      "new_skips_or_xfails": [],
+      "added_tests": {
+        "tests.hazmat.primitives.test_aes.TestAESModeXTS::test_xts_requires_single_data_unit": "passed",
+        "tests.hazmat.primitives.test_ciphers.TestCipherUpdateInto::test_update_into_overlapping_views": "passed"
+      },
+      "baseline_comparison_passed": true,
+      "portable_patch_sha256": "2265ee6317fa71c43b6976e04d8b4683de0e8f1c1db17b06c658e7517e5bb9aa",
+      "patch_matches": true,
+      "integration_code_patch_sha256": "b6a597b2a4b5349ad27b9755593e4087a875ff72477f60ca82f718fe213ac663",
+      "code_matches": true,
+      "original_dependencies": [],
+      "passed": true
     },
     {
       "label": "main",
-      "log": null,
-      "junit": null,
-      "baseline_log": null,
-      "baseline_junit": null,
-      "baseline_canonical_session_passed": false,
+      "log": {
+        "file": "integration-acceptance-main.log.gz",
+        "uncompressed_sha256": "a37cc6a4ad4d53fb921cae3c9728518645df81bc0f466154376037244454755f"
+      },
+      "junit": {
+        "file": "integration-acceptance-main.xml.gz",
+        "uncompressed_sha256": "9d56e7eb9514b573d75c5093cb95804f3f09d1c357028b265e3947d4c8a4980f"
+      },
+      "baseline_log": {
+        "file": "baseline-full-main.log.gz",
+        "uncompressed_sha256": "e8c7b6011cb621d47de0b91f82d9b8fb1dab0e787d2a1356d8927e522a0a111a"
+      },
+      "baseline_junit": {
+        "file": "baseline-full-main.xml.gz",
+        "uncompressed_sha256": "49e93538adc2c880852c33bb24be59d8b23dd884411ad1fc56d22a419f7db8ac"
+      },
+      "baseline_canonical_session_passed": true,
       "baseline_preexisting_fips_md5_failure": false,
-      "canonical_session_passed": false,
-      "native_version": [],
-      "fips_enabled": [],
-      "rust_test_passes": 0,
-      "baseline_comparison_passed": false,
-      "passed": false
+      "receipt": {
+        "file": "integration-acceptance-main.json.gz",
+        "uncompressed_sha256": "ae78dc5dfd56a420ef50756e878cac4423588cb0d73d72640bcbf19ce393e478"
+      },
+      "receipt_matches": true,
+      "canonical_session_passed": true,
+      "native_version": [
+        "OpenSSL 4.2.0-dev "
+      ],
+      "fips_enabled": [
+        "False"
+      ],
+      "rust_test_passes": 108,
+      "counts": {
+        "passed": 4690,
+        "skipped": 23,
+        "xfailed": 0,
+        "failed": 0
+      },
+      "missing_tests": [],
+      "new_skips_or_xfails": [],
+      "added_tests": {
+        "tests.hazmat.primitives.test_aes.TestAESModeXTS::test_xts_requires_single_data_unit": "passed",
+        "tests.hazmat.primitives.test_ciphers.TestCipherUpdateInto::test_update_into_overlapping_views": "passed"
+      },
+      "baseline_comparison_passed": true,
+      "portable_patch_sha256": "2265ee6317fa71c43b6976e04d8b4683de0e8f1c1db17b06c658e7517e5bb9aa",
+      "patch_matches": true,
+      "integration_code_patch_sha256": "b6a597b2a4b5349ad27b9755593e4087a875ff72477f60ca82f718fe213ac663",
+      "code_matches": true,
+      "original_dependencies": [],
+      "passed": true
     },
     {
       "label": "fips",
       "log": {
         "file": "integration-acceptance-fips.log.gz",
-        "uncompressed_sha256": "f267e9112efe493b1a471a4ff181c907fdc8305a19a564b634795dccaa8f949f"
+        "uncompressed_sha256": "095cd5743bb7c4793bd149eeb2eaeba186e891aaee03804c5522ff6cd74db2f7"
       },
-      "junit": null,
+      "junit": {
+        "file": "integration-acceptance-fips.xml.gz",
+        "uncompressed_sha256": "4825302696ebce32b468c583243c2603b9d43da0c39289d39a1ce6baad31f64d"
+      },
       "baseline_log": {
         "file": "baseline-full-fips.log.gz",
         "uncompressed_sha256": "6015c3e4577171529bfd057fcd1f3ada35494b0b92a50c646d3a8d0a5c07bb64"
@@ -610,29 +726,47 @@
       "baseline_preexisting_fips_md5_failure": true,
       "receipt": {
         "file": "integration-acceptance-fips.json.gz",
-        "uncompressed_sha256": "94a846786de567b88174e56f2ba858a22d6d342ecf78e6c45e72556a9a28cfa2"
+        "uncompressed_sha256": "fff9ab9a2698a0c0db827839f332bcc8a4c855c8fbc156bb883de93510ada5d4"
       },
-      "receipt_matches": false,
-      "canonical_session_passed": false,
+      "receipt_matches": true,
+      "canonical_session_passed": true,
       "native_version": [
         "OpenSSL 3.6.4 25 Aug 2026"
       ],
       "fips_enabled": [
         "True"
       ],
-      "rust_test_passes": 0,
-      "baseline_comparison_passed": false,
+      "rust_test_passes": 108,
+      "counts": {
+        "passed": 3376,
+        "skipped": 1337,
+        "xfailed": 0,
+        "failed": 0
+      },
+      "missing_tests": [],
+      "new_skips_or_xfails": [],
+      "added_tests": {
+        "tests.hazmat.primitives.test_aes.TestAESModeXTS::test_xts_requires_single_data_unit": "passed",
+        "tests.hazmat.primitives.test_ciphers.TestCipherUpdateInto::test_update_into_overlapping_views": "passed"
+      },
+      "baseline_comparison_passed": true,
       "portable_patch_sha256": "2265ee6317fa71c43b6976e04d8b4683de0e8f1c1db17b06c658e7517e5bb9aa",
       "patch_matches": true,
       "integration_code_patch_sha256": "b6a597b2a4b5349ad27b9755593e4087a875ff72477f60ca82f718fe213ac663",
       "code_matches": true,
       "original_dependencies": [],
-      "passed": false
+      "passed": true
     },
     {
       "label": "openssl364",
-      "log": null,
-      "junit": null,
+      "log": {
+        "file": "integration-acceptance-openssl364.log.gz",
+        "uncompressed_sha256": "60c994b164d9a8a4b4cda2f4e68927581cb42233c6408fbd8ef2f492d0f09f6d"
+      },
+      "junit": {
+        "file": "integration-acceptance-openssl364.xml.gz",
+        "uncompressed_sha256": "985763c4ce3175529925f1389b036c9a7cf53c3981ac23725a0c9d45f4a549b0"
+      },
       "baseline_log": {
         "file": "baseline-full-openssl364.log.gz",
         "uncompressed_sha256": "b98b12a1dfdb7b6c52c18bfb6344bdba115a41c83df8a8decc03275435715f06"
@@ -643,12 +777,38 @@
       },
       "baseline_canonical_session_passed": true,
       "baseline_preexisting_fips_md5_failure": false,
-      "canonical_session_passed": false,
-      "native_version": [],
-      "fips_enabled": [],
-      "rust_test_passes": 0,
-      "baseline_comparison_passed": false,
-      "passed": false
+      "receipt": {
+        "file": "integration-acceptance-openssl364.json.gz",
+        "uncompressed_sha256": "4932a05dc26c5eb2f6c02efa17be802713298a7adfeff59b1f9f8387abc6e2c7"
+      },
+      "receipt_matches": true,
+      "canonical_session_passed": true,
+      "native_version": [
+        "OpenSSL 3.6.4 25 Aug 2026"
+      ],
+      "fips_enabled": [
+        "False"
+      ],
+      "rust_test_passes": 108,
+      "counts": {
+        "passed": 4690,
+        "skipped": 23,
+        "xfailed": 0,
+        "failed": 0
+      },
+      "missing_tests": [],
+      "new_skips_or_xfails": [],
+      "added_tests": {
+        "tests.hazmat.primitives.test_aes.TestAESModeXTS::test_xts_requires_single_data_unit": "passed",
+        "tests.hazmat.primitives.test_ciphers.TestCipherUpdateInto::test_update_into_overlapping_views": "passed"
+      },
+      "baseline_comparison_passed": true,
+      "portable_patch_sha256": "2265ee6317fa71c43b6976e04d8b4683de0e8f1c1db17b06c658e7517e5bb9aa",
+      "patch_matches": true,
+      "integration_code_patch_sha256": "b6a597b2a4b5349ad27b9755593e4087a875ff72477f60ca82f718fe213ac663",
+      "code_matches": true,
+      "original_dependencies": [],
+      "passed": true
     },
     {
       "label": "msrv-boringssl",
@@ -851,5 +1011,14 @@
   },
   "integration_hash_scope": "The code patch includes every changed tracked file except CHANGELOG.rst. The full portable patch hash is recorded separately.",
   "source_matches": true,
-  "matrix_passed": false
+  "matrix_passed": true,
+  "scope": "The complete Rust surface used by pinned cryptography; the subsequent pyOpenSSL CFFI/TLS stage is separate.",
+  "pyopenssl_cffi_tls_replaced": false,
+  "manual_review": {
+    "old_dependencies_absent": true,
+    "old_adapter_files_deleted": 12,
+    "portable_patch_applies": true,
+    "invariants": "../../SAFETY.md",
+    "independent_security_audit": false
+  }
 }
