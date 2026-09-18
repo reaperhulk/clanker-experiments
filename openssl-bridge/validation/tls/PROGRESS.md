@@ -35,6 +35,15 @@ the wrapper now rejects missing public keys/signatures consistently. Its X.509
 tests pass all four native families. A safety-comment placement fix addresses
 the Rust 1.83 standalone lint failure. Final CI must pass with these corrections.
 
+The corrected run passed all eight standalone jobs and all 17 complete
+cryptography checks. The pyOpenSSL stage found an error-translation mismatch
+for incomplete certificates; its public API now keeps `crypto.Error`/`SSL.Error`
+while the Rust boundary rejects the invalid state. Four path-encoding tests
+retain their upstream parameter IDs after replacing CFFI NULL with Python None.
+Custom-prefix native builds have no populated default CA bundle, so CI explicitly
+supplies the host's CA file for the upstream external-server verification test.
+Verification remains enabled; the test report records the CA file and hash.
+
 CI applies both portable patches to pinned upstream checkouts. In addition to
 the existing matrix, five core integration rows run the full pyOpenSSL suite,
 format/lint/types, physical CFFI removal and import checks. They compare every

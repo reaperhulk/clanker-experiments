@@ -133,7 +133,8 @@ jobs:
           BRIDGE_ROW: ${{ matrix.id }}
         run: |
           python clanker-experiments/openssl-bridge/tools/validate_pyopenssl.py \
-            --cryptography cryptography --pyopenssl pyopenssl --row "$BRIDGE_ROW" --out ci-results
+            --cryptography cryptography --pyopenssl pyopenssl --row "$BRIDGE_ROW" --out ci-results \
+            --ca-file /etc/ssl/certs/ca-certificates.crt
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         if: always()
         with:

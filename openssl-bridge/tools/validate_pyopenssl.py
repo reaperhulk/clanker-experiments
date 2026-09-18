@@ -25,6 +25,11 @@ def main() -> int:
         required=True,
     )
     parser.add_argument("--out", type=Path, required=True)
+    parser.add_argument(
+        "--ca-file",
+        type=Path,
+        help="Host trust bundle for backends installed outside platform prefixes",
+    )
     args = parser.parse_args()
     crypto, upstream, output = (
         args.cryptography.resolve(),
@@ -79,6 +84,13 @@ def main() -> int:
     )
     for name in ("SSL_CERT_FILE", "SSL_CERT_DIR"):
         env.pop(name, None)
+    if args.ca_file:
+        ca_file = args.ca_file.resolve(strict=True)
+        if not ca_file.is_file():
+            raise SystemExit(f"not a CA bundle: {ca_file}")
+        env["SSL_CERT_FILE"] = str(ca_file)
+        report["test_ca_file"] = str(ca_file)
+        report["test_ca_file_sha256"] = hashlib.sha256(ca_file.read_bytes()).hexdigest()
     runtime = check(
         "runtime",
         [
