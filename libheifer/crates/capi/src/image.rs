@@ -12,6 +12,76 @@ fn dimension(value: u32) -> c_int {
     }
 }
 
+fn image_error(image: &Image, error: Error) -> HeifError {
+    let mut text = image
+        .last_error
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    *text = error.message.into_owned();
+    HeifError {
+        code: error.code,
+        subcode: error.subcode,
+        message: text.as_ptr(),
+    }
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn heif_image_extend_padding_to_size(
+    image: *mut Image,
+    width: c_int,
+    height: c_int,
+) -> HeifError {
+    let Some(image) = (unsafe { image.as_mut() }) else {
+        return Error::NULL.into();
+    };
+    match image.extend_padding(width as u32, height as u32) {
+        Ok(()) => SUCCESS,
+        Err(e) => image_error(image, e),
+    }
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn heif_image_extend_to_size_fill_with_zero(
+    image: *mut Image,
+    width: u32,
+    height: u32,
+) -> HeifError {
+    let Some(image) = (unsafe { image.as_mut() }) else {
+        return Error::NULL.into();
+    };
+    match image.extend_with_zero(width, height) {
+        Ok(()) => SUCCESS,
+        Err(e) => image_error(image, e),
+    }
+}
+
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn heif_image_extract_area(
+    image: *const Image,
+    x: u32,
+    y: u32,
+    width: u32,
+    height: u32,
+    limits: *const super::SecurityLimits,
+    output: *mut *mut Image,
+) -> HeifError {
+    let Some(image) = (unsafe { image.as_ref() }) else {
+        return Error::NULL.into();
+    };
+    if output.is_null() {
+        return Error::NULL.into();
+    }
+    match image.extract_area(x, y, width, height, unsafe {
+        super::security::allocation_budget(limits)
+    }) {
+        Ok(out) => {
+            unsafe { output.write(Box::into_raw(Box::new(out))) };
+            SUCCESS
+        }
+        Err(e) => image_error(image, e),
+    }
+}
+
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn heif_image_create(
     width: c_int,

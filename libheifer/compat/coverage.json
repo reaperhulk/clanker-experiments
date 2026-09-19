@@ -615,6 +615,33 @@
       "tools/test_transforms.py"
     ]
   },
+  "heif_image_extend_padding_to_size": {
+    "notes": "Linux x86_64 original-header differential cases compare complete pixel streams, physical padding, exact errors and outputs, odd chroma coordinates, plane/component dimensions, duplicate channels, typed/reference components, retained metadata, repeated calls and resource limits. Undefined native shrinking writes are excluded; whole-library sanitizers, allocation failures and cross-platform ABI remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/image_area.c",
+      "tests/transforms.c",
+      "tools/test_image_area.py"
+    ]
+  },
+  "heif_image_extend_to_size_fill_with_zero": {
+    "notes": "Linux x86_64 original-header differential cases compare complete pixel streams, physical padding, exact errors and outputs, odd chroma coordinates, plane/component dimensions, duplicate channels, typed/reference components, retained metadata, repeated calls and resource limits. Undefined native shrinking writes are excluded; whole-library sanitizers, allocation failures and cross-platform ABI remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/image_area.c",
+      "tests/transforms.c",
+      "tools/test_image_area.py"
+    ]
+  },
+  "heif_image_extract_area": {
+    "notes": "Linux x86_64 original-header differential cases compare complete pixel streams, physical padding, exact errors and outputs, odd chroma coordinates, plane/component dimensions, duplicate channels, typed/reference components, retained metadata, repeated calls and resource limits. Undefined native shrinking writes are excluded; whole-library sanitizers, allocation failures and cross-platform ABI remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/image_area.c",
+      "tests/transforms.c",
+      "tools/test_image_area.py"
+    ]
+  },
   "heif_image_get_ambient_viewing_environment": {
     "notes": "Linux x86_64: independent exhaustive uint16 NCLX setter and chromaticity cases, uint8 option-version pairs, ICC ownership and HDR boundaries. Other architectures, handles, transforms and allocation-failure injection remain open.",
     "status": "partial",

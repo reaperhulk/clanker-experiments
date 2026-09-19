@@ -8,8 +8,8 @@ with VUI unspecified-color, monochrome-decoding and typed missing-parameter fixe
 
 ## Implemented scope
 
-260 of 465 public functions are exported, plus `heif_error_success`.
-205 functions are missing. Even the exported functions are marked **partial**:
+263 of 465 public functions are exported, plus `heif_error_success`.
+202 functions are missing. Even the exported functions are marked **partial**:
 coverage is finite, platform coverage is incomplete, and one malformed-box
 behavior gap is explicitly retained. There is no claim of a compatible library.
 
@@ -435,3 +435,35 @@ inputs, allocation failures and cross-platform ABI remain required work.
 The preceding timestamp commit `7350505` passed all development CI steps,
 46 mutations and Rust builds on Linux, macOS and Windows. Only the full-API
 completion gate failed; see `docs/results/ci-tai-report.json`.
+
+## Image extraction and extension
+
+Three additional APIs implement area extraction, replicated physical padding and
+zero-filled visible extension. Independent original-header clients match 3,365
+cases and the complete pixel byte stream (SHA-256
+`12e8f2d8da3518b181f6773d87cf2b56ea580f8360e829fa9a38bed03a99b8d8`).
+The same cases pass C-client ASan/UBSan with local leak checking disabled.
+
+Coverage includes odd subsampled offsets, clipped/extended areas, zero extents,
+64-pixel allocation boundaries, repeated calls, partial mutation on failure,
+duplicate channels, 1–128-bit typed/reference components, component ID sequences,
+HDR/ICC/NCLX/TAI/aspect metadata, warning propagation, source release and
+registered/parent/unregistered allocation limits. Native undefined shrinking-width
+writes, invalid pointers and unbounded allocations are excluded.
+
+The implementation preserves libheif's observable reallocation behavior:
+padding leaves image dimensions unchanged but exposes larger plane dimensions
+after reallocation, while component-description dimensions remain unchanged.
+Zero extension synchronizes plane and component dimensions, and fills 8-bit
+Cb/Cr bytes with 128. Extraction uses ceiling chroma coordinates and preserves
+component IDs, including reference-only descriptions.
+
+Five new mutations are rejected: floor chroma offsets (60 mismatches), hidden
+reallocation dimensions (147), wrong neutral chroma bytes (102), reset component
+IDs (1,021), and skipped extension allocation limits (32). The default suite
+now contains 58 deliberate defects. The existing 12,240 crop/scale and 2,927
+security cases also pass; all new exports remain partial.
+
+The metadata commit `c038b1c` passed all development CI steps, 49 mutation checks,
+and Rust builds on Linux, macOS and Windows. Only the strict full-API completion
+gate failed; see `docs/results/ci-metadata-report.json`.

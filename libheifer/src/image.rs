@@ -2,6 +2,9 @@
 // Layout/validation semantics adapted from libheif, Copyright Dirk Farin and contributors.
 use crate::error::Error;
 
+#[path = "image_area.rs"]
+mod area;
+
 #[derive(Debug)]
 pub struct Plane {
     pub component_ids: Vec<u32>,
@@ -12,6 +15,8 @@ pub struct Plane {
     pub bit_depth: u8,
     pub bytes_per_pixel: usize,
     pub stride: usize,
+    mem_width: u32,
+    mem_height: u32,
     storage: Vec<u8>,
     offset: usize,
     _reservation: Option<crate::security::Reservation>,
@@ -100,6 +105,8 @@ impl Plane {
             bit_depth: depth as u8,
             bytes_per_pixel,
             stride,
+            mem_width: mem_width as u32,
+            mem_height: mem_height as u32,
             storage,
             offset,
         })
