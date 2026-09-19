@@ -589,15 +589,15 @@ impl Image {
     pub fn paste(&mut self, source: &Self, x: u32, y: u32) -> Result<(), Error> {
         for p in &source.planes {
             let (sx, sy) = self.subsampling(p.channel);
-            let (x, y) = (x / sx, y / sy);
+            let (x, y) = (x.div_ceil(sx), y.div_ceil(sy));
             let Some(dest) = self.plane_mut(p.channel) else {
                 continue;
             };
-            if dest.bytes_per_pixel != p.bytes_per_pixel {
+            if dest.bit_depth != p.bit_depth || dest.bytes_per_pixel != p.bytes_per_pixel {
                 return Err(Error::new(
-                    4,
-                    3003,
-                    c"Unsupported feature: Unsupported color conversion",
+                    2,
+                    128,
+                    c"Invalid input: Wrong tile image pixel depth",
                 ));
             }
             if x >= dest.width || y >= dest.height {

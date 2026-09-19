@@ -32,6 +32,7 @@ pub fn decode(
             "Unspecified: Mask image data is too short",
         ));
     }
+    container.limits.check_image_size(width, height)?;
     let mut image = Image::new(width, height, 2, 0)
         .map_err(|e| ContextError::new(e.code, e.subcode, e.message.to_string_lossy()))?;
     image.budget = budget;

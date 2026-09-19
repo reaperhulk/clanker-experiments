@@ -28,7 +28,7 @@ fn public_structs_match_original_header_layouts() {
     let source = work.join("layout.c");
     let binary = work.join("layout");
     let mut c = String::from(
-        "#include <libheif/heif.h>\n#include <libheif/heif_properties.h>\n#include <libheif/heif_components.h>\n#include <libheif/heif_tai_timestamps.h>\n#include <libheif/heif_sequences.h>\n#include <libheif/heif_uncompressed.h>\n#include <libheif/heif_entity_groups.h>\n#include <libheif/heif_plugin.h>\n#include <stddef.h>\n#include <stdio.h>\nint main(void) {\n",
+        "#include <libheif/heif.h>\n#include <libheif/heif_properties.h>\n#include <libheif/heif_components.h>\n#include <libheif/heif_tai_timestamps.h>\n#include <libheif/heif_sequences.h>\n#include <libheif/heif_uncompressed.h>\n#include <libheif/heif_entity_groups.h>\n#include <libheif/heif_plugin.h>\n#include <libheif/heif_tiling.h>\n#include <stddef.h>\n#include <stdio.h>\nint main(void) {\n",
     );
     let mut expected = String::new();
     macro_rules! layout {
@@ -43,6 +43,21 @@ fn public_structs_match_original_header_layouts() {
             expected.push('\n');
         }};
     }
+    layout!(
+        heif_image_tiling,
+        heifer::Tiling,
+        version,
+        num_columns,
+        num_rows,
+        tile_width,
+        tile_height,
+        image_width,
+        image_height,
+        top_offset,
+        left_offset,
+        number_of_extra_dimensions,
+        extra_dimension_size
+    );
     layout!(
         heif_encoder_plugin,
         heifer::EncoderPlugin,

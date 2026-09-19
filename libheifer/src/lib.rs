@@ -52,3 +52,6 @@ pub mod writing;
 
 pub mod encoding;
 mod uncompressed_encode;
+
+pub mod tile_encoding;
+pub mod tiling;

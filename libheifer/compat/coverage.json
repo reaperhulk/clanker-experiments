@@ -104,6 +104,15 @@
       "crates/capi/tests/abi.rs"
     ]
   },
+  "heif_context_add_empty_unci_image": {
+    "notes": "Original-header incremental/full grids and empty uncompressed images, tile replacement/order, exact serialized bytes and read-back pixels, dense/byte-aligned masks/uncompressed data, zlib/deflate units, orientations, historical options, component compatibility and incomplete property-box output. External codec integration, custom/sensor configurations, allocation failures and cross-platform behavior remain open; native undefined zero-tile dimensions/out-of-range grid writes are not parity targets.",
+    "status": "partial",
+    "tests": [
+      "tests/tile_encoding.c",
+      "tests/encoding.c",
+      "tools/test_tile_encoding.py"
+    ]
+  },
   "heif_context_add_exif_metadata": {
     "notes": "Linux x86_64 original-header differential: Exif signature offsets, XMP compression branches and exact bytes, invalid generic types, URI behavior, foreign handles, reloads, references, resource limits and unchanged handle metadata. File serialization, allocation-failure behavior and cross-platform ABI remain open.",
     "status": "partial",
@@ -129,6 +138,24 @@
       "tests/add_metadata.c",
       "tests/items.c",
       "tools/test_add_metadata.py"
+    ]
+  },
+  "heif_context_add_grid_image": {
+    "notes": "Original-header incremental/full grids and empty uncompressed images, tile replacement/order, exact serialized bytes and read-back pixels, dense/byte-aligned masks/uncompressed data, zlib/deflate units, orientations, historical options, component compatibility and incomplete property-box output. External codec integration, custom/sensor configurations, allocation failures and cross-platform behavior remain open; native undefined zero-tile dimensions/out-of-range grid writes are not parity targets.",
+    "status": "partial",
+    "tests": [
+      "tests/tile_encoding.c",
+      "tests/encoding.c",
+      "tools/test_tile_encoding.py"
+    ]
+  },
+  "heif_context_add_image_tile": {
+    "notes": "Original-header incremental/full grids and empty uncompressed images, tile replacement/order, exact serialized bytes and read-back pixels, dense/byte-aligned masks/uncompressed data, zlib/deflate units, orientations, historical options, component compatibility and incomplete property-box output. External codec integration, custom/sensor configurations, allocation failures and cross-platform behavior remain open; native undefined zero-tile dimensions/out-of-range grid writes are not parity targets.",
+    "status": "partial",
+    "tests": [
+      "tests/tile_encoding.c",
+      "tests/encoding.c",
+      "tools/test_tile_encoding.py"
     ]
   },
   "heif_context_add_item": {
@@ -168,8 +195,8 @@
     ]
   },
   "heif_context_add_overlay_image": {
-    "status": "partial",
     "notes": "Independent original-header mask and uncompressed encoding, exact file bytes and all active decoded plane bytes, orientations, versioned options, ICC/NCLX/HDR/GIMI metadata, primary flags, overlays, thumbnail scaling/assignment/output sentinels, and repeated region/text writes. Native freshly encoded uncompressed alpha queries and encoded timestamp ownership fail in isolated ASan probes and are excluded from parity counts; candidate safety probes pass. External codec-plugin integration, other encoders/codecs, custom/sensor configurations, large/resource-failure cases and non-Linux behavior remain open.",
+    "status": "partial",
     "tests": [
       "tests/encoding.c",
       "tests/encoding_oracle_failures.c",
@@ -204,17 +231,26 @@
     ]
   },
   "heif_context_assign_thumbnail": {
-    "status": "partial",
     "notes": "Independent original-header mask and uncompressed encoding, exact file bytes and all active decoded plane bytes, orientations, versioned options, ICC/NCLX/HDR/GIMI metadata, primary flags, overlays, thumbnail scaling/assignment/output sentinels, and repeated region/text writes. Native freshly encoded uncompressed alpha queries and encoded timestamp ownership fail in isolated ASan probes and are excluded from parity counts; candidate safety probes pass. External codec-plugin integration, other encoders/codecs, custom/sensor configurations, large/resource-failure cases and non-Linux behavior remain open.",
+    "status": "partial",
     "tests": [
       "tests/encoding.c",
       "tests/encoding_oracle_failures.c",
       "tools/test_encoding.py"
     ]
   },
-  "heif_context_encode_image": {
+  "heif_context_encode_grid": {
+    "notes": "Original-header incremental/full grids and empty uncompressed images, tile replacement/order, exact serialized bytes and read-back pixels, dense/byte-aligned masks/uncompressed data, zlib/deflate units, orientations, historical options, component compatibility and incomplete property-box output. External codec integration, custom/sensor configurations, allocation failures and cross-platform behavior remain open; native undefined zero-tile dimensions/out-of-range grid writes are not parity targets.",
     "status": "partial",
+    "tests": [
+      "tests/tile_encoding.c",
+      "tests/encoding.c",
+      "tools/test_tile_encoding.py"
+    ]
+  },
+  "heif_context_encode_image": {
     "notes": "Independent original-header mask and uncompressed encoding, exact file bytes and all active decoded plane bytes, orientations, versioned options, ICC/NCLX/HDR/GIMI metadata, primary flags, overlays, thumbnail scaling/assignment/output sentinels, and repeated region/text writes. Native freshly encoded uncompressed alpha queries and encoded timestamp ownership fail in isolated ASan probes and are excluded from parity counts; candidate safety probes pass. External codec-plugin integration, other encoders/codecs, custom/sensor configurations, large/resource-failure cases and non-Linux behavior remain open.",
+    "status": "partial",
     "tests": [
       "tests/encoding.c",
       "tests/encoding_oracle_failures.c",
@@ -222,8 +258,8 @@
     ]
   },
   "heif_context_encode_thumbnail": {
-    "status": "partial",
     "notes": "Independent original-header mask and uncompressed encoding, exact file bytes and all active decoded plane bytes, orientations, versioned options, ICC/NCLX/HDR/GIMI metadata, primary flags, overlays, thumbnail scaling/assignment/output sentinels, and repeated region/text writes. Native freshly encoded uncompressed alpha queries and encoded timestamp ownership fail in isolated ASan probes and are excluded from parity counts; candidate safety probes pass. External codec-plugin integration, other encoders/codecs, custom/sensor configurations, large/resource-failure cases and non-Linux behavior remain open.",
+    "status": "partial",
     "tests": [
       "tests/encoding.c",
       "tests/encoding_oracle_failures.c",
@@ -455,8 +491,8 @@
     ]
   },
   "heif_context_set_primary_image": {
-    "status": "partial",
     "notes": "Independent original-header mask and uncompressed encoding, exact file bytes and all active decoded plane bytes, orientations, versioned options, ICC/NCLX/HDR/GIMI metadata, primary flags, overlays, thumbnail scaling/assignment/output sentinels, and repeated region/text writes. Native freshly encoded uncompressed alpha queries and encoded timestamp ownership fail in isolated ASan probes and are excluded from parity counts; candidate safety probes pass. External codec-plugin integration, other encoders/codecs, custom/sensor configurations, large/resource-failure cases and non-Linux behavior remain open.",
+    "status": "partial",
     "tests": [
       "tests/encoding.c",
       "tests/encoding_oracle_failures.c",
@@ -1804,6 +1840,14 @@
       "tools/test_text.py"
     ]
   },
+  "heif_image_handle_decode_image_tile": {
+    "notes": "Original-header coded/displayed tile geometry, ordered inverse rotation/mirror/crop, output sentinels and tile-local security limits; exact mask, grid and uncompressed tile pixels, compressed-unit layouts, malformed cmpC/icef, and out-of-range coordinates. Non-Linux C ABI, all custom components/codecs, reader callbacks and exhaustive resource behavior remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/tiling.c",
+      "tools/test_tiling.py"
+    ]
+  },
   "heif_image_handle_free_auxiliary_types": {
     "notes": "512 original-header file transcripts including filters, flags, type ownership, depth SEI values, partial reloads and aliases. Finite Linux x86_64 evidence; broader platform and malformed-file coverage remains open.",
     "status": "partial",
@@ -1980,6 +2024,14 @@
       "tools/test_gimi.py"
     ]
   },
+  "heif_image_handle_get_grid_image_tile_id": {
+    "notes": "Original-header coded/displayed tile geometry, ordered inverse rotation/mirror/crop, output sentinels and tile-local security limits; exact mask, grid and uncompressed tile pixels, compressed-unit layouts, malformed cmpC/icef, and out-of-range coordinates. Non-Linux C ABI, all custom components/codecs, reader callbacks and exhaustive resource behavior remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/tiling.c",
+      "tools/test_tiling.py"
+    ]
+  },
   "heif_image_handle_get_height": {
     "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open. Derived and mask handle queries also cover cyclic/missing references and partial reloads.",
     "status": "partial",
@@ -1987,6 +2039,14 @@
       "tests/context.c",
       "tools/test_context.py",
       "tools/test_derived_handles.py"
+    ]
+  },
+  "heif_image_handle_get_image_tiling": {
+    "notes": "Original-header coded/displayed tile geometry, ordered inverse rotation/mirror/crop, output sentinels and tile-local security limits; exact mask, grid and uncompressed tile pixels, compressed-unit layouts, malformed cmpC/icef, and out-of-range coordinates. Non-Linux C ABI, all custom components/codecs, reader callbacks and exhaustive resource behavior remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/tiling.c",
+      "tools/test_tiling.py"
     ]
   },
   "heif_image_handle_get_ispe_height": {

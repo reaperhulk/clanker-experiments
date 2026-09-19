@@ -115,7 +115,7 @@ The derived-image iteration adds grids/identity, cycle/MIAF checks, scoped tile
 workers and four warning/thread-control exports. Overlay composition, raw masks,
 shared-graph decode-operation budgets and dynamic derived queries follow in the next iteration. Six security-limit/allocation exports follow, including context-wide
 allocation accounting and object-specific resource lifetimes. Auxiliary/depth, item-property, six camera-matrix, twenty-two sensor-metadata and thirty-nine component APIs, generic items/compression, twelve TAI timestamp APIs, five metadata writers nine text-item APIs three image-area APIs thirteen handle color/aspect APIs and three component-definition queries bring the total to
-407 partial functions, with 58 functions missing. Compatibility work comes first;
+414 partial functions, with 51 functions missing. Compatibility work comes first;
 performance optimization is deferred until the complete compatibility gate passes.
 The full header contract, finite behavioral reports, known differences and
 performance evidence are retained in `compat/` and `docs/results/`.
@@ -203,3 +203,12 @@ completion gate remains false at 407 partial APIs and 58 missing APIs. Continue
 with tile queries/decode, grid/unci construction and sequence tracks.
 
 All ten encoding mutations are detected by transcript mismatches (not crashes or compilation failures): encode_mask_stride 350, encode_orientation 115, encode_primary_flag 24, encode_profile_fallback 16, encode_unc_component_endian 230, encode_unc_compression_flag 280, encode_thumbnail_noop 12, encode_thumbnail_direction 14, encode_overlay_background 8, encode_repeated_extent 24. The default mutation suite contains 147 defects.
+
+
+Tiling checkpoint: seven further APIs have Rust implementations, with 11,602
+geometry/decode and 966 construction cases passing regular, sanitizer-client and
+codec-free comparisons. Twelve new semantic mutations and the repaired historical
+ID-allocation mutation are detected. Default mutation inventory: 159. The current
+inventory is 414 partial functions and 51 missing; next are the 43 track/sequence,
+three context input and five dynamic-plugin APIs, followed by the remaining
+behavioral gaps and acceptance gates. Symbol coverage alone is not completion.

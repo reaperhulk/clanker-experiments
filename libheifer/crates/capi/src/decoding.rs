@@ -146,12 +146,36 @@ pub unsafe extern "C" fn heif_decode_image(
     chroma: c_int,
     input_options: *const DecodingOptions,
 ) -> super::HeifError {
+    unsafe { decode_requested(handle, out, colorspace, chroma, input_options, None) }
+}
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn heif_image_handle_decode_image_tile(
+    handle: *const super::context::HeifHandle,
+    out: *mut *mut libheifer::image::Image,
+    colorspace: c_int,
+    chroma: c_int,
+    input_options: *const DecodingOptions,
+    x: u32,
+    y: u32,
+) -> super::HeifError {
+    unsafe { decode_requested(handle, out, colorspace, chroma, input_options, Some((x, y))) }
+}
+unsafe fn decode_requested(
+    handle: *const super::context::HeifHandle,
+    out: *mut *mut libheifer::image::Image,
+    colorspace: c_int,
+    chroma: c_int,
+    input_options: *const DecodingOptions,
+    tile: Option<(u32, u32)>,
+) -> super::HeifError {
     use libheifer::{context::ContextError, error::Error};
     if out.is_null() || handle.is_null() {
         return Error::NULL.into();
     }
-    unsafe {
-        out.write(ptr::null_mut());
+    if tile.is_none() {
+        unsafe {
+            out.write(ptr::null_mut());
+        }
     }
     let handle = unsafe { &*handle };
     let mut options = DecodingOptions::default();
@@ -194,27 +218,33 @@ pub unsafe extern "C" fn heif_decode_image(
                     full_range: p.full_range_flag != 0,
                 }
             });
-            libheifer::decoding::decode(
-                &document,
-                handle.id,
-                colorspace,
-                chroma,
-                libheifer::decoding::DecodeOptions {
-                    callbacks: Some(&callbacks),
-                    max_decoding_threads,
-                    decoder_id: if options.decoder_id.is_null() {
-                        None
-                    } else {
-                        Some(unsafe { std::ffi::CStr::from_ptr(options.decoder_id) }.to_bytes())
-                    },
-                    ignore_transformations: options.ignore_transformations != 0,
-                    strict: options.strict_decoding != 0,
-                    output_nclx,
-                    profile_passthrough: options.output_image_nclx_profile_passthrough != 0,
-                    convert_hdr_to_8bit: options.convert_hdr_to_8bit != 0,
-                    color_conversion: options.color_conversion_options,
+            let core_options = libheifer::decoding::DecodeOptions {
+                callbacks: Some(&callbacks),
+                max_decoding_threads,
+                decoder_id: if options.decoder_id.is_null() {
+                    None
+                } else {
+                    Some(unsafe { std::ffi::CStr::from_ptr(options.decoder_id) }.to_bytes())
                 },
-            )
+                ignore_transformations: options.ignore_transformations != 0,
+                strict: options.strict_decoding != 0,
+                output_nclx,
+                profile_passthrough: options.output_image_nclx_profile_passthrough != 0,
+                convert_hdr_to_8bit: options.convert_hdr_to_8bit != 0,
+                color_conversion: options.color_conversion_options,
+            };
+            if let Some(pos) = tile {
+                libheifer::decoding::decode_tile(
+                    &document,
+                    handle.id,
+                    colorspace,
+                    chroma,
+                    core_options,
+                    pos,
+                )
+            } else {
+                libheifer::decoding::decode(&document, handle.id, colorspace, chroma, core_options)
+            }
         }
     }));
     match result {
@@ -226,7 +256,11 @@ pub unsafe extern "C" fn heif_decode_image(
             unsafe {
                 out.write(image);
             }
-            super::SUCCESS
+            if tile.is_some() {
+                super::context::report_image(handle.image(), ContextError::new(0, 0, "Success"))
+            } else {
+                super::SUCCESS
+            }
         }
         Ok(Err(error)) => super::context::report_image(handle.image(), error),
         Err(_) => super::context::report_image(

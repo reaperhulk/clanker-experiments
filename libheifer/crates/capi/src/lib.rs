@@ -251,3 +251,6 @@ mod writing;
 pub use writing::Writer;
 
 mod encoding;
+
+mod tiling;
+pub use libheifer::tiling::Tiling;

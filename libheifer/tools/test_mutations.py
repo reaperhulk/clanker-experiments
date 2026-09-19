@@ -15,6 +15,19 @@ import sys
 import tempfile
 
 MUTATIONS = [
+    ('grid_copy_error_propagation', 'src/decoding.rs', 'let _ = out.paste(&image, x, y);', 'out.paste(&image, x, y)?;', 'tile_encoding'),
+    ('tiling_coded_width', 'src/tiling.rs', 't.tile_width = w;', 't.tile_width = w.wrapping_add(1);', 'tiling'),
+    ('tiling_inverse_rotation', 'src/tiling.rs', '1 => (self.num_rows - 1 - y, x),', '1 => (y, x),', 'tiling'),
+    ('tiling_crop_offset', 'src/tiling.rs', 'left = left.wrapping_add(l);', 'left = left.wrapping_add(l+1);', 'tiling'),
+    ('tile_decode_output_sentinel', 'crates/capi/src/decoding.rs', 'if tile.is_none() {\n        unsafe {', 'if true {\n        unsafe {', 'tiling'),
+    ('tile_decode_payload_index', 'src/uncompressed_decode.rs', 'u64::from((ty as u32).wrapping_mul(c.columns).wrapping_add(tx as u32))', 'u64::from((ty as u32).wrapping_mul(c.columns))', 'tiling'),
+    ('grid_tile_hidden', 'src/tile_encoding.rs', 'self.items.items.get_mut(&tile.id).unwrap().hidden = true;', 'self.items.items.get_mut(&tile.id).unwrap().hidden = false;', 'tile_encoding'),
+    ('grid_orientation', 'src/tile_encoding.rs', 'self.add_orientation(grid.id, orientation)?;', 'self.add_orientation(grid.id, 1)?;', 'tile_encoding'),
+    ('unci_tile_compression_essential', 'src/tile_encoding.rs', 'self.retained_property(&info, property(*b"cmpC", d), true)?;', 'self.retained_property(&info, property(*b"cmpC", d), false)?;', 'tile_encoding'),
+    ('unci_tile_unit_offset', 'src/tile_encoding.rs', 'units[index] = (*next_offset, size);', 'units[index] = (0, size);', 'tile_encoding'),
+    ('unci_tile_replace_offset', 'src/tile_encoding.rs', 'let start = index * *tile_size;', 'let start = 0 * *tile_size;', 'tile_encoding'),
+    ('unci_tile_incomplete_properties', 'src/writing.rs', 'incomplete = true;', 'incomplete = false;', 'tile_encoding'),
+
     ('encode_mask_stride', 'src/encoding.rs', '.get(y * plane.stride..y * plane.stride + image.width as usize)', '.get(0..image.width as usize)', 'encoding'),
     ('encode_orientation', 'src/encoding.rs', '6 => (3, None)', '6 => (1, None)', 'encoding'),
     ('encode_primary_flag', 'src/encoding.rs', 'old.primary.store(false, Ordering::Relaxed);', 'old.primary.store(true, Ordering::Relaxed);', 'encoding'),
@@ -109,7 +122,7 @@ MUTATIONS = [
     ("brand_box_truncation", "src/box_probe.rs", "matches!(read_box(&mut r, 0), Err((Failure::End, _)))", "matches!(read_box(&mut r, 0), Err((Failure::Other, _)))", "brand_boxes"),
     ("brand_optional_child", "src/box_probe.rs", "if let Err((error, false)) = read_box(r, level)", "if let Err((error, _)) = read_box(r, level)", "brand_boxes"),
     ("brand_parent_boundary", "src/box_probe.rs", "if end > r.input.len() as u64", "if end > r.end as u64", "brand_boxes"),
-    ("item_failed_add_id", "src/items.rs", "self.items.remove(&id);", "self.items.remove(&id);\n                self.next = id;", "items"),
+    ("item_failed_add_id", "src/items.rs", "self.items.remove(&id);", "self.items.remove(&id);\n                let _ = self.mint();", "items"),
     ("item_reference_order", "crates/capi/src/items.rs", ".filter(|r| r.from == from)\n        .nth(index as usize)", ".filter(|r| r.from == from)\n        .rev()\n        .nth(index as usize)", "items"),
     ("item_error_compression", "crates/capi/src/items.rs", "&& method == 0\n        && !compression.is_null()", "&& false\n        && !compression.is_null()", "items"),
     ("deflate_tree_tiebreak", "src/deflate_compat.rs", "nodes[a].depth <= nodes[b].depth", "nodes[a].depth < nodes[b].depth", "items"),

@@ -8,8 +8,8 @@ with VUI unspecified-color, monochrome-decoding and typed missing-parameter fixe
 
 ## Implemented scope
 
-407 of 465 public functions are exported, plus `heif_error_success`.
-58 functions are missing. Even the exported functions are marked **partial**:
+414 of 465 public functions are exported, plus `heif_error_success`.
+51 functions are missing. Even the exported functions are marked **partial**:
 coverage is finite, platform coverage is incomplete, and one malformed-box
 behavior gap is explicitly retained. There is no claim of a compatible library.
 
@@ -818,3 +818,34 @@ custom/sensor encoder configurations, large/resource-failure cases and non-Linux
 C validation remain open. No full compatibility or performance claim is made.
 
 All ten encoding mutations are detected by transcript mismatches (not crashes or compilation failures): encode_mask_stride 350, encode_orientation 115, encode_primary_flag 24, encode_profile_fallback 16, encode_unc_component_endian 230, encode_unc_compression_flag 280, encode_thumbnail_noop 12, encode_thumbnail_direction 14, encode_overlay_background 8, encode_repeated_extent 24. The default mutation suite contains 147 defects.
+
+
+## Tiling checkpoint (414 partial APIs, 51 missing)
+
+Seven APIs now implement tile geometry and ID lookup, direct tile decoding,
+incremental/full grid encoding and tiled uncompressed image construction. The
+original-header geometry/decode corpus has 11,602 cases, including 6,579 compressed
+unit tile reads; the construction corpus has 966 cases. Both match in regular,
+codec-free and C-client ASan/UBSan configurations. The tests compare ordered
+transforms, coordinates, output sentinels, resource limits, tile pixels, exact
+serialized bytes, repeated/omitted/replaced tiles, packed depths, profiles and
+zlib/deflate units. Mixed-depth grids preserve the reference's ignored copy error;
+the oracle uses one worker to make canvas-depth selection deterministic.
+
+All twelve new mutations are detected by semantic mismatches. The old
+`item_failed_add_id` mutation was repaired after writer CI exposed its stale field
+reference; it now compiles and produces 15 mismatches. Compiler errors and crashes
+still do not count as mutation detection. The default suite contains 159 defects.
+Eight regression suites pass 11,273 cases: encoding, writing, uncompressed pixels
+and units, derived images, masks, adversarial graphs and security limits. Both Rust feature
+configurations pass unit/ABI tests and strict Clippy. Exact binaries and corpus
+hashes are retained in `docs/results/tiling-*.json` and `tile-encoding-*.json`.
+
+Writer CI run 35424658609 passed regular, C-client sanitizer/leak, codec-free and
+platform build checks, then failed on the stale mutation compilation. Development
+inventory and strict completion were skipped. The workflow now includes hidden
+`.build` reports and mutation logs in its artifact upload. Later CI is tracked
+separately. Local leak checking remains disabled under tracing, while CI requests
+it. Whole-library instrumentation, full codecs/plugins, sequence tracks, streaming
+input, custom/sensor formats, allocation failures, platform ABI and fuzzing remain
+open. The strict completion gate remains unchanged and fails.

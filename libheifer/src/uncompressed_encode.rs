@@ -20,6 +20,12 @@ fn invalid(message: &str) -> ContextError {
 }
 type CodedImage = (Vec<u8>, Vec<(Property, bool)>);
 pub fn encode(image: &Image, compression: i32) -> Result<CodedImage> {
+    encode_layout(image, compression, 1, 1)
+}
+pub fn encode_tiled(image: &Image, columns: u32, rows: u32) -> Result<CodedImage> {
+    encode_layout(image, 0, columns, rows)
+}
+fn encode_layout(image: &Image, compression: i32, columns: u32, rows: u32) -> Result<CodedImage> {
     let mut descriptions: Vec<_> = image.component_ids.descriptions.iter().collect();
     descriptions.sort_by_key(|d| d.id);
     let planes: Vec<_> = descriptions
@@ -190,6 +196,9 @@ pub fn encode(image: &Image, compression: i32) -> Result<CodedImage> {
             }
         }
     }
+    if columns != 1 || rows != 1 {
+        config.version = 0;
+    }
     let mut unc = vec![config.version, 0, 0, 0];
     unc.extend(config.profile);
     let mut props = Vec::new();
@@ -205,7 +214,7 @@ pub fn encode(image: &Image, compression: i32) -> Result<CodedImage> {
             config.block_size,
             config.flags,
         ]);
-        for n in [config.pixel_size, 0, 0, 0, 0] {
+        for n in [config.pixel_size, 0, 0, columns - 1, rows - 1] {
             unc.extend(n.to_be_bytes());
         }
     }

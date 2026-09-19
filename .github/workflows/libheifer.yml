@@ -62,7 +62,11 @@ jobs:
       - run: python tools/test_encoder_parameters.py --reference-build .build/reference
       - run: python tools/test_plugins.py --reference-build .build/reference
       - run: python tools/test_encoding.py --reference-build .build/reference
+      - run: python tools/test_tiling.py --reference-build .build/reference
+      - run: python tools/test_tile_encoding.py --reference-build .build/reference
       - run: python tools/test_encoding.py --reference-build .build/reference --sanitize --output .build/encoding-sanitized-report.json
+      - run: python tools/test_tiling.py --reference-build .build/reference --sanitize --output .build/tiling-sanitized-report.json
+      - run: python tools/test_tile_encoding.py --reference-build .build/reference --sanitize --output .build/tile-encoding-sanitized-report.json
       - run: python tools/test_writing.py --reference-build .build/reference
       - run: python tools/test_writing.py --reference-build .build/reference --sanitize --output .build/writing-sanitized-report.json
       - run: python tools/test_plugins.py --reference-build .build/reference --sanitize --output .build/plugins-sanitized-report.json
@@ -122,6 +126,8 @@ jobs:
       - run: python tools/test_encoder_parameters.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --output .build/no-codecs-encoder-parameters-report.json
       - run: python tools/test_plugins.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --output .build/no-codecs-plugins-report.json
       - run: python tools/test_encoding.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --output .build/no-codecs-encoding-report.json
+      - run: python tools/test_tiling.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --output .build/no-codecs-tiling-report.json
+      - run: python tools/test_tile_encoding.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --output .build/no-codecs-tile-encoding-report.json
       - run: python tools/test_writing.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --output .build/no-codecs-writing-report.json
       - run: python tools/test_entity_groups.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --output .build/no-codecs-entity-groups-report.json
       - run: python tools/test_regions.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --output .build/no-codecs-regions-report.json
@@ -160,10 +166,13 @@ jobs:
         if: always()
         with:
           name: libheifer-development-evidence
+          include-hidden-files: true
           path: |
             libheifer/.build/*report.json
             libheifer/.build/coverage.json
             libheifer/.build/dependencies.json
+            libheifer/.build/mutations/*.json
+            libheifer/.build/mutations/*.log
       # Intentionally fail until the complete contract is implemented. Passing
       # the preceding development tests must never imply a compatible replacement.
       - name: Full API completion (expected to fail during implementation)

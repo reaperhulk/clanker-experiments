@@ -528,13 +528,30 @@ pub fn decode(
     id: u32,
     budget: Option<std::sync::Arc<crate::security::Budget>>,
 ) -> Result<Image> {
+    decode_requested(container, id, budget, None)
+}
+pub fn decode_tile(
+    container: &Container<'_>,
+    id: u32,
+    budget: Option<std::sync::Arc<crate::security::Budget>>,
+    position: (u32, u32),
+) -> Result<Image> {
+    decode_requested(container, id, budget, Some(position))
+}
+fn decode_requested(
+    container: &Container<'_>,
+    id: u32,
+    budget: Option<std::sync::Arc<crate::security::Budget>>,
+    requested: Option<(u32, u32)>,
+) -> Result<Image> {
     let (c, defs) = Configuration::load(container, id)?;
     let (w, h) = container.dimensions(id)?;
     if w == 0 || h == 0 {
         container.limits.check_image_size(w, h)?;
     }
     c.header(defs.as_deref(), Some((w, h)))?;
-    if c.pixel_size > 0
+    if requested.is_none()
+        && c.pixel_size > 0
         && u64::from(c.pixel_size) * u64::from(w) * u64::from(h) > u64::from(u32::MAX)
     {
         return Err(unspecified(
@@ -549,18 +566,23 @@ pub fn decode(
     hard_limits(&c)?;
     let (cs, ch, _) = c.color(defs.as_deref())?;
     let defs = defs.unwrap();
-    let mut image = Image::new(w, h, cs, if cs == 0 && ch == 99 { 3 } else { ch })?;
+    let (tw, th) = (w / c.columns, h / c.rows);
+    let (ow, oh) = if requested.is_some() {
+        (tw, th)
+    } else {
+        (w, h)
+    };
+    let mut image = Image::new(ow, oh, cs, if cs == 0 && ch == 99 { 3 } else { ch })?;
     image.chroma = ch;
     image.budget = budget;
-    let (tw, th) = (w / c.columns, h / c.rows);
     let mut entries = Vec::new();
     for comp in &c.components {
         let kind = defs[comp.index as usize].kind;
         let channel = crate::components::channel_for_type(kind);
         let subx = matches!(channel, 1 | 2) && matches!(ch, 1 | 2);
         let suby = matches!(channel, 1 | 2) && ch == 1;
-        let pw = if subx { w.div_ceil(2) } else { w };
-        let ph = if suby { h.div_ceil(2) } else { h };
+        let pw = if subx { ow.div_ceil(2) } else { ow };
+        let ph = if suby { oh.div_ceil(2) } else { oh };
         let id = image.add_component(pw, ph, kind, i32::from(comp.format), i32::from(comp.bits))?;
         entries.push(Entry {
             config: comp.clone(),
@@ -574,9 +596,18 @@ pub fn decode(
     let sizes = sizes(&c, &entries, layout, tw, th)?;
     let source = super::compression::Source::new(container, id, image.budget.clone())?;
     let count = u64::from(c.columns) * u64::from(c.rows);
-    for ty in 0..c.rows {
-        for tx in 0..c.columns {
-            let index = u64::from(ty) * u64::from(c.columns) + u64::from(tx);
+    let (xs, xe, ys, ye) =
+        requested.map_or((0, u64::from(c.columns), 0, u64::from(c.rows)), |(x, y)| {
+            (
+                u64::from(x),
+                u64::from(x) + 1,
+                u64::from(y),
+                u64::from(y) + 1,
+            )
+        });
+    for ty in ys..ye {
+        for tx in xs..xe {
+            let index = u64::from((ty as u32).wrapping_mul(c.columns).wrapping_add(tx as u32));
             let mut tile_data = Vec::new();
             let mut base = 0u64;
             for size in &sizes {
@@ -600,7 +631,11 @@ pub fn decode(
                 &entries,
                 layout,
                 &mut image,
-                (tx, ty),
+                if requested.is_some() {
+                    (0, 0)
+                } else {
+                    (tx as u32, ty as u32)
+                },
                 (tw, th),
             )?;
         }

@@ -316,7 +316,18 @@ impl Context {
                 }
                 b"iprp" => {
                     let mut ipco = Vec::new();
+                    let mut incomplete = false;
                     for prop in &self.properties.boxes {
+                        if prop.kind == *b"icef"
+                            && !prop.raw
+                            && crate::uncompressed::compression::units(&prop.data, None)
+                                .is_ok_and(|units| units.iter().any(|&(_, size)| size == 0))
+                        {
+                            // Native container writers preserve the already written prefix
+                            // when an icef child rejects an undefined compressed tile.
+                            incomplete = true;
+                            break;
+                        }
                         let mut p = Vec::new();
                         if prop.kind == *b"uuid" {
                             p.extend(prop.uuid.unwrap_or([0; 16]));
@@ -325,6 +336,10 @@ impl Context {
                         ipco.extend(boxed(prop.kind, &p));
                     }
                     let mut iprp = boxed(*b"ipco", &ipco);
+                    if incomplete {
+                        children.extend(boxed(*kind, &iprp));
+                        continue;
+                    }
                     let wide = self.properties.items.keys().any(|id| *id > 65535);
                     let large = self.properties.items.values().flatten().any(|i| *i >= 127);
                     let mut p = Vec::new();

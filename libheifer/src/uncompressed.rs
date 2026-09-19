@@ -348,7 +348,7 @@ impl crate::context::ImageInfo {
 
 #[path = "uncompressed_decode.rs"]
 mod decoder;
-pub use decoder::decode;
+pub use decoder::{decode, decode_tile};
 
 fn unspecified(message: impl Into<String>) -> ContextError {
     ContextError::invalid(0, &format!("Unspecified: {}", message.into()))

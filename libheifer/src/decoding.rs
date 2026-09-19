@@ -71,12 +71,32 @@ pub fn decode(
     chroma: i32,
     options: DecodeOptions,
 ) -> Result<Image, ContextError> {
+    decode_requested(document, id, colorspace, chroma, options, None)
+}
+pub fn decode_tile(
+    document: &Document,
+    id: u32,
+    colorspace: i32,
+    chroma: i32,
+    options: DecodeOptions,
+    position: (u32, u32),
+) -> Result<Image, ContextError> {
+    decode_requested(document, id, colorspace, chroma, options, Some(position))
+}
+fn decode_requested(
+    document: &Document,
+    id: u32,
+    colorspace: i32,
+    chroma: i32,
+    options: DecodeOptions,
+    tile: Option<(u32, u32)>,
+) -> Result<Image, ContextError> {
     verify_references(document, id)?;
     let mut visiting = DecodeState {
         ids: BTreeSet::new(),
         count: Arc::new(AtomicU32::new(0)),
     };
-    let mut image = decode_native(document, id, &options, &mut visiting)?;
+    let mut image = decode_native_mode(document, id, &options, &mut visiting, tile, false)?;
     image.apply_descriptions(&document.images[&id].components);
     let target_cs = if colorspace == 99 {
         image.colorspace
@@ -234,6 +254,16 @@ pub(crate) fn decode_native(
     options: &DecodeOptions,
     visiting: &mut DecodeState,
 ) -> Result<Image, ContextError> {
+    decode_native_mode(document, id, options, visiting, None, false)
+}
+fn decode_native_mode(
+    document: &Document,
+    id: u32,
+    options: &DecodeOptions,
+    visiting: &mut DecodeState,
+    tile: Option<(u32, u32)>,
+    raw: bool,
+) -> Result<Image, ContextError> {
     if !visiting.ids.insert(id) {
         return Err(ContextError::invalid(
             0,
@@ -261,14 +291,74 @@ pub(crate) fn decode_native(
         .decode_mutex
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner);
-    if info.ispe.0 != 0 && info.ispe.1 != 0 {
+    if tile.is_none() && !raw && info.ispe.0 != 0 && info.ispe.1 != 0 {
         limits.check_image_size(info.ispe.0, info.ispe.1)?;
     }
     let container = document.container()?;
+    let tile = if let Some((x, y)) = tile {
+        if !options.ignore_transformations {
+            let props: Vec<_> = container
+                .properties(id)?
+                .map(|(kind, data)| crate::encoding::property(kind, data.to_vec()))
+                .collect();
+            Some(
+                crate::tiling::Tiling::for_image(document, info)?.original_position(
+                    &props.iter().collect::<Vec<_>>(),
+                    x,
+                    y,
+                )?,
+            )
+        } else {
+            Some((x, y))
+        }
+    } else {
+        None
+    };
     let mut image = match &container.items[&id].kind {
-        b"unci" => crate::uncompressed::decode(&container, id, Some(document.budget.clone()))?,
+        b"unci" => {
+            if let Some(pos) = tile {
+                crate::uncompressed::decode_tile(
+                    &container,
+                    id,
+                    Some(document.budget.clone()),
+                    pos,
+                )?
+            } else {
+                crate::uncompressed::decode(&container, id, Some(document.budget.clone()))?
+            }
+        }
         b"mski" => crate::mask::decode(&container, id, Some(document.budget.clone()))?,
-        b"grid" => decode_grid(document, id, options, visiting)?,
+        b"grid" => {
+            if let Some((x, y)) = tile {
+                let grid = info.grid.ok_or_else(|| {
+                    ContextError::invalid(
+                        119,
+                        "Missing grid images: Grid tile coordinate out of range",
+                    )
+                })?;
+                let child = info
+                    .grid_tiles
+                    .lock()
+                    .unwrap_or_else(std::sync::PoisonError::into_inner)
+                    .get(y.wrapping_mul(grid.columns).wrapping_add(x) as usize)
+                    .copied()
+                    .ok_or_else(|| {
+                        ContextError::invalid(
+                            119,
+                            "Missing grid images: Grid tile coordinate out of range",
+                        )
+                    })?;
+                if !document.images.contains_key(&child) {
+                    return Err(ContextError::invalid(
+                        119,
+                        "Missing grid images: Grid tile references a non-existent item",
+                    ));
+                }
+                decode_native_mode(document, child, options, visiting, None, true)?
+            } else {
+                decode_grid(document, id, options, visiting)?
+            }
+        }
         b"iovl" => crate::overlay::decode(document, id, options, visiting)?,
         b"iden" => {
             if !container.has_references {
@@ -393,7 +483,21 @@ pub(crate) fn decode_native(
             ));
         }
     };
-    if info.ispe.0 != 0 && info.ispe.1 != 0 && (image.width, image.height) != info.ispe {
+    if raw {
+        visiting.ids.remove(&id);
+        return Ok(image);
+    }
+    let expected = if tile.is_some() {
+        let t = crate::tiling::Tiling::for_image(document, info)?;
+        if matches!(&info.kind, b"grid" | b"unci") {
+            (t.tile_width, t.tile_height)
+        } else {
+            (info.width, info.height)
+        }
+    } else {
+        info.ispe
+    };
+    if expected.0 != 0 && expected.1 != 0 && (image.width, image.height) != expected {
         return Err(ContextError::invalid(
             129,
             "Invalid image size: Decoded image does not have the size signaled in the file.",
@@ -408,7 +512,7 @@ pub(crate) fn decode_native(
                 b"imir" if !p.is_empty() => {
                     image.mirror(p[0] & 1 != 0)?;
                 }
-                b"clap" => {
+                b"clap" if tile.is_none() => {
                     let (l, r, t, b) = crate::geometry::CleanAperture::parse(p)?
                         .crop(image.width, image.height)?;
                     image = image.crop(l, r, t, b)?;
@@ -578,7 +682,9 @@ fn decode_grid(
                         "Wrong tile image chroma format: Image tile has different chroma format than combined image",
                     ));
                 }
-                out.paste(&image, x, y)?;
+                // The native grid composer ignores copy_image_to errors; an
+                // incompatible plane leaves the remaining tile region untouched.
+                let _ = out.paste(&image, x, y);
             }
             Err(error) => {
                 if options.strict {

@@ -22,7 +22,7 @@ pub fn property(kind: [u8; 4], data: Vec<u8>) -> Property {
         gimi_components: None,
     }
 }
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub struct Options {
     pub orientation: i32,
     pub nclx: Option<Nclx>,

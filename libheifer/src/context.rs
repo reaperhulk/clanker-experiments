@@ -528,6 +528,8 @@ pub struct ImageInfo {
     pub(crate) miaf: bool,
     pub kind: [u8; 4],
     pub grid: Option<crate::derived::Grid>,
+    pub grid_tiles: std::sync::Mutex<Vec<u32>>,
+    pub tile_encoder: std::sync::Mutex<Option<crate::tile_encoding::TileEncoder>>,
     pub overlay: Option<crate::overlay::Overlay>,
     pub id: u32,
     pub primary: std::sync::atomic::AtomicBool,
@@ -575,6 +577,8 @@ impl ImageInfo {
             miaf: true,
             kind,
             grid: None,
+            grid_tiles: std::sync::Mutex::new(Vec::new()),
+            tile_encoder: std::sync::Mutex::new(None),
             overlay: None,
             id,
             primary: std::sync::atomic::AtomicBool::new(false),
@@ -769,7 +773,11 @@ impl Document {
                 image.chroma_bits = 0;
             } else if item.kind == *b"grid" {
                 match crate::derived::Grid::load(container, item.id) {
-                    Ok(grid) => image.grid = Some(grid),
+                    Ok(grid) => {
+                        image.grid = Some(grid);
+                        *image.grid_tiles.get_mut().unwrap() =
+                            item.references.get(b"dimg").cloned().unwrap_or_default();
+                    }
                     Err(error) => image.error = Some(error),
                 }
             } else if item.kind == *b"iovl" {
