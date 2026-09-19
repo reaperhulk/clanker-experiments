@@ -15,6 +15,11 @@ import sys
 import tempfile
 
 MUTATIONS = [
+    ("file_snapshot_origin", "src/input.rs", "|(start, offset, _)| offset + (at - start) as u64", "|(start, offset, _)| offset + (at - start) as u64 + 1", "file_input"),
+    ("file_source_boundary", "src/input.rs", "is_none_or(|n| n > self.length())", "is_none_or(|n| n >= self.length())", "file_sequence_reading"),
+    ("file_failed_open_state", "crates/capi/src/input.rs", "    let _ = state.read(Arc::new(Vec::<u8>::new()));", "    // deliberately retain the old file tables", "file_input"),
+    ("file_header_origin", "src/input.rs", "let prefix = take(source, 0, length.min(32))?;", "let prefix = take(source, 1, length.min(32))?;", "file_input"),
+    ("file_open_error_class", "crates/capi/src/input.rs", "                    1,\n                    0,\n                    format!(", "                    2,\n                    0,\n                    format!(", "file_input"),
     ('dynamic_trailing_directory', 'crates/capi/src/dynamic_plugins.rs', '            v.pop();', '            // keep the trailing segment', 'dynamic_plugins'),
     ('dynamic_encoder_version', 'crates/capi/src/dynamic_plugins.rs', 'if field!(p, plugin_api_version) < 4 {', 'if field!(p, plugin_api_version) < 3 {', 'dynamic_plugins'),
     ('dynamic_repeated_load', 'crates/capi/src/dynamic_plugins.rs', '            p.count += 1;', '            // forget the duplicate reference', 'dynamic_plugins'),

@@ -58,6 +58,7 @@ jobs:
       - run: python tools/test_file_sequence_reading.py --reference-build .build/reference --sanitize --work .build/file_sequence_reading-sanitized --output .build/file_sequence_reading-sanitized-report.json
       - run: python tools/test_file_sparse.py --reference-build .build/reference --work .build/file_sparse-normal --output .build/file_sparse-normal-report.json
       - run: python tools/test_file_sparse.py --reference-build .build/reference --sanitize --work .build/file_sparse-sanitized --output .build/file_sparse-sanitized-report.json
+      - run: python tools/test_mutations.py --reference-build .build/reference --output .build/file-input-mutations-report.json --only file_snapshot_origin --only file_source_boundary --only file_failed_open_state --only file_header_origin --only file_open_error_class
       - run: python tools/test_context.py --reference-build .build/reference
       - run: python tools/test_items.py --reference-build .build/reference
       - run: python tools/test_add_metadata.py --reference-build .build/reference
