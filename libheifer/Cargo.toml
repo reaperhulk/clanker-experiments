@@ -1,0 +1,56 @@
+[workspace]
+members = ["crates/capi"]
+exclude = ["vendor/rusty_h265", "vendor/zlib-rs", "vendor/rav1d", "vendor/jpeg-decoder", "vendor/hayro-jpeg2000"]
+resolver = "3"
+
+[package]
+name = "libheifer"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.90"
+license = "LGPL-3.0-or-later"
+description = "Rust HEIF implementation (in development; not yet a libheif replacement)"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[dependencies]
+hayro-jpeg2000 = { version = "=0.4.0", optional = true, default-features = false, features = ["std"] }
+jpeg-decoder = { version = "=0.3.2", optional = true, default-features = false, features = ["platform_independent"] }
+rav1d = { version = "=1.1.0", optional = true, default-features = false, features = ["bitdepth_8", "bitdepth_16"] }
+rusty_h265 = { version = "=0.6.0", optional = true }
+zlib-rs = { version = "=0.6.8", default-features = false, features = ["std"] }
+
+[features]
+jpeg2000 = ["dep:hayro-jpeg2000"]
+jpeg = ["dep:jpeg-decoder"]
+av1 = ["dep:rav1d"]
+hevc = ["dep:rusty_h265"]
+hevc-profile = ["hevc", "rusty_h265/prof"]
+
+[[example]]
+name = "hevc_probe"
+required-features = ["hevc"]
+
+[[example]]
+name = "bench_hevc"
+required-features = ["hevc"]
+
+[[example]]
+name = "profile_hevc"
+required-features = ["hevc-profile"]
+
+[patch.crates-io]
+hayro-jpeg2000 = { path = "vendor/hayro-jpeg2000" }
+jpeg-decoder = { path = "vendor/jpeg-decoder" }
+rav1d = { path = "vendor/rav1d" }
+rusty_h265 = { path = "vendor/rusty_h265" }
+zlib-rs = { path = "vendor/zlib-rs" }
+
+[[example]]
+name = "inspect_hevc"
+required-features = ["hevc"]

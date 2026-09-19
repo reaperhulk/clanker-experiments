@@ -1,0 +1,56 @@
+{
+  "scope": "5 deliberate defects; not comprehensive mutation coverage",
+  "mutations": [
+    {
+      "mutation": "parameter_raw_range_flag",
+      "suite": "encoder_parameters",
+      "source": "crates/capi/src/encoder_parameters.rs",
+      "before": "have.write(have_range.into())",
+      "after": "have.write(i32::from(have_range != 0))",
+      "candidate_sha256": "80063f12c52189fc13f13c92657c1ab3af73456598f78e74a5b2dd238078af14",
+      "mismatches": 496,
+      "detected": true
+    },
+    {
+      "mutation": "parameter_empty_array",
+      "suite": "encoder_parameters",
+      "source": "crates/capi/src/encoder_parameters.rs",
+      "before": "if num_values > 0 && !array.is_null()",
+      "after": "if num_values >= 0 && !array.is_null()",
+      "candidate_sha256": "87bf495979ba06780b99b920f9a9a7abc3d21820f2f767f1baf6eb921592cfd2",
+      "mismatches": 312,
+      "detected": true
+    },
+    {
+      "mutation": "parameter_signed_count",
+      "suite": "encoder_parameters",
+      "source": "crates/capi/src/encoder_parameters.rs",
+      "before": "count.write(num_values)",
+      "after": "count.write(num_values.max(0))",
+      "candidate_sha256": "2cde9e9ff1040a98a260b9a21a61a478e2b0afbb2fd6255cc71ca516759433eb",
+      "mismatches": 77,
+      "detected": true
+    },
+    {
+      "mutation": "parameter_string_values",
+      "suite": "encoder_parameters",
+      "source": "crates/capi/src/encoder_parameters.rs",
+      "before": "array.write(ptr::addr_of!((*p).value.string.valid_values).read())",
+      "after": "array.write(ptr::null())",
+      "candidate_sha256": "94079a497fa9ec5a9613d1709829ad7d4420dcacdc429e38cfe4482e27616f13",
+      "mismatches": 328,
+      "detected": true
+    },
+    {
+      "mutation": "parameter_alias_order",
+      "suite": "encoder_parameters",
+      "source": "crates/capi/src/encoder_parameters.rs",
+      "before": "have_max.write(have_range.into())",
+      "after": "have_max.write(have_range.into()); if !minimum.is_null() { minimum.write(ptr::addr_of!((*p).value.integer.minimum).read()); }",
+      "candidate_sha256": "5e68178b547b3e7e6d703446511ac90c021632930e2b4f31ec1916552176f50d",
+      "mismatches": 3,
+      "detected": true
+    }
+  ],
+  "all_detected": true
+}

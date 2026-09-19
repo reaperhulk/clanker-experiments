@@ -1,0 +1,86 @@
+{
+  "scope": "8 deliberate defects; not comprehensive mutation coverage",
+  "mutations": [
+    {
+      "mutation": "region_signed_coordinates",
+      "suite": "regions",
+      "source": "src/regions.rs",
+      "before": "value as i16 as i32",
+      "after": "value as i32",
+      "candidate_sha256": "d69036435ee96302570067a6481b7d60f9b22467e4fdef6a0a0c9fa0acad23fc",
+      "mismatches": 742,
+      "detected": true
+    },
+    {
+      "mutation": "region_polygon_minimum",
+      "suite": "regions",
+      "source": "src/regions.rs",
+      "before": "if kind == 3 { 3 } else { 2 }",
+      "after": "if kind == 3 { 4 } else { 2 }",
+      "candidate_sha256": "55f5114e15544f617130c0d1c05be70f6a7d75fffb7733b970aa01098d556066",
+      "mismatches": 734,
+      "detected": true
+    },
+    {
+      "mutation": "region_partial_parse",
+      "suite": "regions",
+      "source": "src/regions.rs",
+      "before": "let Some(g) = r.geometry(kind, limits, budget) else {\n                break;",
+      "after": "let Some(g) = r.geometry(kind, limits, budget) else {\n                item.regions.clear(); break;",
+      "candidate_sha256": "0d67191c2b8f44c00308ad3d0fa97cde545f2478253fae5f79fdfadce5f4cb95",
+      "mismatches": 201,
+      "detected": true
+    },
+    {
+      "mutation": "region_transform_x",
+      "suite": "regions",
+      "source": "src/regions.rs",
+      "before": "f64::from(x) * self.a + f64::from(x) * self.b + self.tx",
+      "after": "f64::from(x) * self.a + f64::from(y) * self.b + self.tx",
+      "candidate_sha256": "069851c4eaba28807c24e814a4813241fb126e451911b6ecaa702328871c7d1b",
+      "mismatches": 24,
+      "detected": true
+    },
+    {
+      "mutation": "region_mask_default_size",
+      "suite": "regions",
+      "source": "src/context.rs",
+      "before": "geometry.width = image.ispe.0;",
+      "after": "geometry.width = image.ispe.1;",
+      "candidate_sha256": "206eb7239d5c748f90c76fe2b22a70cdc3bf5a67be56332d604ee4c9f9351f96",
+      "mismatches": 697,
+      "detected": true
+    },
+    {
+      "mutation": "region_reload_registry",
+      "suite": "regions",
+      "source": "src/context.rs",
+      "before": "self.items = crate::items::ItemStore::reading(input.clone());",
+      "after": "self.region_items.clear();\n        self.items = crate::items::ItemStore::reading(input.clone());",
+      "candidate_sha256": "cac65278f1e50d22f63767adc1ce258858b2110cf257df4f62d0f314305c2bdf",
+      "mismatches": 2330,
+      "detected": true
+    },
+    {
+      "mutation": "region_mask_pixels",
+      "suite": "regions",
+      "source": "crates/capi/src/regions.rs",
+      "before": "255\n            } else {",
+      "after": "254\n            } else {",
+      "candidate_sha256": "a218cd709aa3a94868309f1822705f98f3d81f8619b90227c0bdf19fea142e7f",
+      "mismatches": 995,
+      "detected": true
+    },
+    {
+      "mutation": "region_mask_high_bit",
+      "suite": "regions",
+      "source": "crates/capi/src/regions.rs",
+      "before": "& 0x80)",
+      "after": "& 0x40)",
+      "candidate_sha256": "846e1f3cd1be3241f0f70884148ac22e26739b22ed55199c151dac85570b737c",
+      "mismatches": 222,
+      "detected": true
+    }
+  ],
+  "all_detected": true
+}

@@ -1,0 +1,116 @@
+{
+  "scope": "10 deliberate JPEG defects; successful builds and completed independent clients; not comprehensive mutation coverage",
+  "mutations": [
+    {
+      "mutation": "jpeg_idct_rounding",
+      "suite": "jpeg_pixels",
+      "source": "vendor/jpeg-decoder/src/idct.rs",
+      "before": "const X_SCALE: i32 = 131072 + (128 << 18);",
+      "after": "const X_SCALE: i32 = 0 + (128 << 18);",
+      "candidate_sha256": "1fc844c907fe8b7e59ee4c51e58023054736f0e25f5a8b7bc5d7e7fc34c8780b",
+      "mismatches": 736,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "jpeg_horizontal_rounding",
+      "suite": "jpeg_pixels",
+      "source": "vendor/jpeg-decoder/src/upsampler.rs",
+      "before": "((sample + input[i - 1] as u32 + 1) >> 2)",
+      "after": "((sample + input[i - 1] as u32 + 2) >> 2)",
+      "candidate_sha256": "7921a4b6e2023b71d33b5622bfb66304e54203dff37a2b3a176790f76ed4dd92",
+      "mismatches": 128,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "jpeg_vertical_rounding",
+      "suite": "jpeg_pixels",
+      "source": "vendor/jpeg-decoder/src/upsampler.rs",
+      "before": "((3 * t1 + t0 + 8) >> 4)",
+      "after": "((3 * t1 + t0 + 7) >> 4)",
+      "candidate_sha256": "cbafa66248682206520c23d3c98e90eb1a8008daa07d8b288b64f91579e9db8f",
+      "mismatches": 176,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "jpeg_narrow_upsampling",
+      "suite": "jpeg_pixels",
+      "source": "vendor/jpeg-decoder/src/upsampler.rs",
+      "before": "h2 && input_width <= 2",
+      "after": "h2 && input_width <= 1",
+      "candidate_sha256": "ba570597ba6c95500f923d2a4e025f0bb1e127cff5b2a28882c6253890b9b7e7",
+      "mismatches": 16,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "jpeg_chroma_scanline",
+      "suite": "jpeg_pixels",
+      "source": "src/jpeg.rs",
+      "before": "let sy = if channel == 0 { y } else { y * 2 };",
+      "after": "let sy = if channel == 0 { y } else { (y * 2 + 1).min(height as usize - 1) };",
+      "candidate_sha256": "eb5b6f5ac0eec7a2a077f44bc99676cb876649a7e710163b389870754376f273",
+      "mismatches": 540,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "jpeg_progressive_smoothing",
+      "suite": "jpeg_recovery",
+      "source": "vendor/jpeg-decoder/src/smoothing.rs",
+      "before": "bits[0]>=0 && POS.iter().all(|&p|q[p]!=0)",
+      "after": "false && bits[0]>=0 && POS.iter().all(|&p|q[p]!=0)",
+      "candidate_sha256": "bb555a6cc88feb7d7fe5377384b9cdacf65e31e93c5a99ba6a381f1a611d60c3",
+      "mismatches": 3,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "jpeg_entropy_recovery",
+      "suite": "jpeg_recovery",
+      "source": "vendor/jpeg-decoder/src/decoder.rs",
+      "before": "if skip_mcu { continue; }",
+      "after": "if false && skip_mcu { continue; }",
+      "candidate_sha256": "71881aa43b447501c489b214e11d9cc0d5048ec2f349c36c10ea462ff6b120da",
+      "mismatches": 15,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "jpeg_eof_marker",
+      "suite": "jpeg_recovery",
+      "source": "src/jpeg.rs",
+      "before": "let mut decoder = Decoder::new(PaddedInput { data: &data, at: 0 });",
+      "after": "let mut decoder = Decoder::new(data.as_slice());",
+      "candidate_sha256": "44fc6245860bb413d5b74c2d18c1624ded1d5c67079f9a137e14c7d35149acd2",
+      "mismatches": 33,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "jpeg_decoder_input_replacement",
+      "suite": "jpeg_limits",
+      "source": "src/decoding.rs",
+      "before": "    *cached = None;",
+      "after": "    // omit prior decoder-input release",
+      "candidate_sha256": "94d446bf9dd802957a99611859f97654e421dce454ad1d70cfc789ef7fd686ff",
+      "mismatches": 15,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "jpeg_decode_memory_estimate",
+      "suite": "jpeg_limits",
+      "source": "src/jpeg.rs",
+      "before": "let estimated = pixels * info.pixel_format.pixel_bytes() as u64 * 3;",
+      "after": "let estimated = pixels * info.pixel_format.pixel_bytes() as u64 * 2;",
+      "candidate_sha256": "3e588b049e60f5af3ecf8598e1174b64ef4e66d29c8ab8222ae3235cea86704d",
+      "mismatches": 4,
+      "process_failures": [],
+      "detected": true
+    }
+  ],
+  "all_detected": true
+}

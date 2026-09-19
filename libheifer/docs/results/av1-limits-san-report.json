@@ -1,0 +1,12 @@
+{
+  "scope": "Original-header AV1/mini resource-limit boundaries during read and decode.",
+  "cases": 3089,
+  "mismatches": 0,
+  "client_sanitizers": true,
+  "leak_check": false,
+  "client_sha256": "9b6cafe33f096a88507a0545fed6de411d22f794c392ef2b2b93de624e6c77e4",
+  "corpus_sha256": "e8302de98dc5a287b4892bb567c625edc8f53ebfc8d52ecd23d0d94ef8181692",
+  "reference_sha256": "106032850898152a6e341888bc925220ecf782571befad152092d6234b27a43f",
+  "candidate_sha256": "b52526a476b6c7b76154f9693580d4400f0b15922a7409d4265e4879e38131b4",
+  "differences": []
+}

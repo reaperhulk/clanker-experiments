@@ -1,0 +1,20 @@
+{
+  "scope": "Full-byte original-header uncompressed pixels, component IDs, errors, callbacks and retained handles.",
+  "successful_decodes": {
+    "reference": 2632,
+    "candidate": 2632
+  },
+  "cases": 2448,
+  "mismatches": 0,
+  "client_sanitizers": false,
+  "leak_check": false,
+  "client_sha256": "b30c3b1437b6c799c7182231b89ce2bb1f06f9d876106543ddcacf64d9c6606a",
+  "corpus_sha256": "48b1c0f462520d6250c1c91279a61122f39a18bde96e7ce8a2a52df4434c2ad5",
+  "transcript_sha256": {
+    "reference": "e67280ffd6a60243bbf2ba442f02b876a0a0b9720383846ecb193f835b3825c0",
+    "candidate": "e67280ffd6a60243bbf2ba442f02b876a0a0b9720383846ecb193f835b3825c0"
+  },
+  "differences": [],
+  "reference_sha256": "5d70927cded8be6d1b4da912971aed75d426ba079c84d0b8462785ec5b9c92f7",
+  "candidate_sha256": "05416802d254efc4d1f59e27290998f8f257e6fc79b1b74f1e373a1333f7112a"
+}

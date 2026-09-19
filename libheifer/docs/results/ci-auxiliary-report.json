@@ -1,0 +1,468 @@
+{
+  "commit": "1742c94ea64fa0e699ee7df624b25702b5961572",
+  "run_id": 35386351936,
+  "url": "https://github.com/reaperhulk/clanker-experiments/actions/runs/35386351936",
+  "scope": "Auxiliary/depth increment; all development steps and three-platform Rust builds passed. The strict full-API completion gate is the sole failing step.",
+  "jobs": [
+    {
+      "id": 105734081630,
+      "name": "Independent C clients (Linux)",
+      "status": "completed",
+      "conclusion": "failure",
+      "run_id": 35386351936,
+      "logs_url": null,
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2
+        },
+        {
+          "name": "Run dtolnay/rust-toolchain@1.90.0",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3
+        },
+        {
+          "name": "Run python -m pip install libclang==18.1.1",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4
+        },
+        {
+          "name": "Run cargo fmt --all --check",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5
+        },
+        {
+          "name": "Run cargo clippy --locked --workspace --all-targets --all-features -- -D warnings",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6
+        },
+        {
+          "name": "Run cargo test --locked --workspace --no-default-features",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7
+        },
+        {
+          "name": "Run cargo test --locked --workspace --all-features",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 8
+        },
+        {
+          "name": "Run python tools/inventory.py --check",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 9
+        },
+        {
+          "name": "Run python tools/audit_dependencies.py",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 10
+        },
+        {
+          "name": "Run python tools/build_reference.py --hevc",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11
+        },
+        {
+          "name": "Run cargo build --locked --release -p libheifer-capi",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 12
+        },
+        {
+          "name": "Run cargo build --locked --release --features hevc --example hevc_probe",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13
+        },
+        {
+          "name": "Run python tools/test_brands.py --reference-build .build/reference",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 14
+        },
+        {
+          "name": "Run python tools/test_images.py --reference-build .build/reference",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 15
+        },
+        {
+          "name": "Run python tools/test_color.py --reference-build .build/reference",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 16
+        },
+        {
+          "name": "Run python tools/test_context.py --reference-build .build/reference",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 17
+        },
+        {
+          "name": "Run python tools/test_auxiliary.py --reference-build .build/reference",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 18
+        },
+        {
+          "name": "Run python tools/test_auxiliary.py --reference-build .build/reference --sanitize --output .build/auxiliary-sanitized-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 19
+        },
+        {
+          "name": "Run python tools/test_context.py --reference-build .build/reference --sanitize --output .build/context-sanitized-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 20
+        },
+        {
+          "name": "Run python tools/test_decoding_options.py --reference-build .build/reference",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 21
+        },
+        {
+          "name": "Run python tools/test_decoding_options.py --reference-build .build/reference --sanitize --output .build/decoding-options-sanitized-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 22
+        },
+        {
+          "name": "Run python tools/test_transforms.py --reference-build .build/reference",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 23
+        },
+        {
+          "name": "Run python tools/test_decode.py --reference-build .build/reference",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 24
+        },
+        {
+          "name": "Run python tools/test_hevc_limits.py --reference-build .build/reference",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 25
+        },
+        {
+          "name": "Run python tools/test_error_lifetimes.py --reference-build .build/reference",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 26
+        },
+        {
+          "name": "Run python tools/test_error_lifetimes.py --reference-build .build/reference --sanitize --output .build/error-lifetimes-sanitized-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 27
+        },
+        {
+          "name": "Run python tools/test_decode_geometry.py --reference-build .build/reference",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 28
+        },
+        {
+          "name": "Run python tools/test_decode_derived.py --reference-build .build/reference",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 29
+        },
+        {
+          "name": "Run python tools/test_decode_overlay.py --reference-build .build/reference",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 30
+        },
+        {
+          "name": "Run python tools/test_decode_mask.py --reference-build .build/reference",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 31
+        },
+        {
+          "name": "Run CARGO_TARGET_DIR=.build/no-codecs cargo build --locked --release -p libheifer-capi --no-default-features",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 32
+        },
+        {
+          "name": "Run python tools/test_auxiliary.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --output .build/no-codecs-auxiliary-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 33
+        },
+        {
+          "name": "Run python tools/test_decode_mask.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --work .build/no-codecs-decode --output .build/no-codecs-mask-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 34
+        },
+        {
+          "name": "Run python tools/test_decode_graphs.py --reference-build .build/reference",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 35
+        },
+        {
+          "name": "Run python tools/test_derived_handles.py --reference-build .build/reference",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 36
+        },
+        {
+          "name": "Run python tools/test_derived_handles.py --reference-build .build/reference --sanitize --output .build/derived-handles-sanitized-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 37
+        },
+        {
+          "name": "Run python tools/test_security.py --reference-build .build/reference",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 38
+        },
+        {
+          "name": "Run python tools/test_security.py --reference-build .build/reference --sanitize --output .build/security-sanitized-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 39
+        },
+        {
+          "name": "Run python tools/test_security_lifetimes.py --reference-build .build/reference",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 40
+        },
+        {
+          "name": "Run python tools/test_warnings.py --reference-build .build/reference",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 41
+        },
+        {
+          "name": "Run python tools/test_warnings.py --reference-build .build/reference --sanitize --output .build/warnings-sanitized-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 42
+        },
+        {
+          "name": "Run python tools/test_hevc.py --reference-build .build/reference --require-default-output",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 43
+        },
+        {
+          "name": "Run python tools/test_mutations.py --reference-build .build/reference",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 44
+        },
+        {
+          "name": "Run python tools/check_coverage.py --reference .build/reference/libheif/libheif.so --development",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 45
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 46
+        },
+        {
+          "name": "Full API completion (expected to fail during implementation)",
+          "status": "completed",
+          "conclusion": "failure",
+          "number": 47
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 94
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 95
+        }
+      ]
+    },
+    {
+      "id": 105734082046,
+      "name": "Rust build (ubuntu-latest)",
+      "status": "completed",
+      "conclusion": "success",
+      "run_id": 35386351936,
+      "logs_url": null,
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2
+        },
+        {
+          "name": "Run dtolnay/rust-toolchain@1.90.0",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3
+        },
+        {
+          "name": "Run cargo test --locked -p libheifer --all-features",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4
+        },
+        {
+          "name": "Run cargo build --locked --release -p libheifer-capi",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 10
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11
+        }
+      ]
+    },
+    {
+      "id": 105734082092,
+      "name": "Rust build (macos-latest)",
+      "status": "completed",
+      "conclusion": "success",
+      "run_id": 35386351936,
+      "logs_url": null,
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2
+        },
+        {
+          "name": "Run dtolnay/rust-toolchain@1.90.0",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3
+        },
+        {
+          "name": "Run cargo test --locked -p libheifer --all-features",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4
+        },
+        {
+          "name": "Run cargo build --locked --release -p libheifer-capi",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 10
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11
+        }
+      ]
+    },
+    {
+      "id": 105734082144,
+      "name": "Rust build (windows-latest)",
+      "status": "completed",
+      "conclusion": "success",
+      "run_id": 35386351936,
+      "logs_url": null,
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2
+        },
+        {
+          "name": "Run dtolnay/rust-toolchain@1.90.0",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3
+        },
+        {
+          "name": "Run cargo test --locked -p libheifer --all-features",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4
+        },
+        {
+          "name": "Run cargo build --locked --release -p libheifer-capi",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 10
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11
+        }
+      ]
+    }
+  ]
+}

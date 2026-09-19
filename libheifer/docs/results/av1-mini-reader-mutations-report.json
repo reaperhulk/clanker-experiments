@@ -1,0 +1,39 @@
+{
+  "scope": "3 deliberate defects; not comprehensive mutation coverage",
+  "mutations": [
+    {
+      "mutation": "mini_partial_items",
+      "suite": "mini_reader",
+      "source": "src/context.rs",
+      "before": "if input.is_minimized() {",
+      "after": "if false && input.is_minimized() {",
+      "candidate_sha256": "54022e8451c71dddbfff2d49500f14134e6efb455d7e0066e15d735cf0d368c3",
+      "mismatches": 24,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "reader_empty_timeout",
+      "suite": "mini_reader",
+      "source": "crates/capi/src/input.rs",
+      "before": "None => Ok(Cow::Borrowed(&[])),",
+      "after": "None => Err(eof()),",
+      "candidate_sha256": "b885c408d113732d9bcb30286aa99cf3129d6a962fbb05ee84cf54da29c324ff",
+      "mismatches": 8,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "mini_reader_payload_budget",
+      "suite": "mini_reader",
+      "source": "src/input.rs",
+      "before": "crate::mini::payload_budget(end - offset - h.header as u64)?;",
+      "after": "crate::mini::payload_budget(end - offset - h.header as u64 + 1)?;",
+      "candidate_sha256": "1457deabac98e79aef5f40c72a45b002785fd72849eb8fa0a94c319e403f17c3",
+      "mismatches": 8,
+      "process_failures": [],
+      "detected": true
+    }
+  ],
+  "all_detected": true
+}

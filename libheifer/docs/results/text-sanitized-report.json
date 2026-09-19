@@ -1,0 +1,17 @@
+{
+  "scope": "Original-header text items, attachments, content bytes, language properties and retained lookup state.",
+  "cases": 1309,
+  "mismatches": 0,
+  "full_payload_bytes_equal": true,
+  "payload_sha256": {
+    "reference": "693b0f5e160704b413e2b6c77294d7a53a4ea527eb223caddc2d02aae9bc53c7",
+    "candidate": "693b0f5e160704b413e2b6c77294d7a53a4ea527eb223caddc2d02aae9bc53c7"
+  },
+  "client_sanitizers": true,
+  "leak_check": false,
+  "client_sha256": "2e2abac02b9d50d4d2f86270b2f2d24472f546c4a83d83515dbea77759a64eed",
+  "corpus_sha256": "103cbe3a90db4d74643ae1804a68c12f4b0e31297a5e50024b955e88f488ee05",
+  "differences": [],
+  "reference_sha256": "5d70927cded8be6d1b4da912971aed75d426ba079c84d0b8462785ec5b9c92f7",
+  "candidate_sha256": "6a58e6b4d5ac7d1a6bb51d12ae4889563635a347d1ef6844d091b5ee09400eda"
+}

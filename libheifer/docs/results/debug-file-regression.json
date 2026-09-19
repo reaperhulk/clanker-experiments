@@ -1,0 +1,13 @@
+{
+  "scope": "Original-header file input, missing-file diagnostics, retained handles after unlink/open failure and context release.",
+  "cases": 929,
+  "transcript_lines": 929,
+  "mismatches": 0,
+  "differences": [],
+  "client_sanitizers": false,
+  "leak_check": false,
+  "client_sha256": "5cb4eaf71e9297c76525cf4164689dc8ff3c47e086da927e1990c4db354d96c3",
+  "corpus_sha256": "b249d05a0786f28cc6530cfbd01178674e36b2b7a9c12203c5ecb11c24d221ec",
+  "reference_sha256": "5cc5713a0503098f20f8a3631e370d43256ebdca0a3209e97d541e6ecf1cd917",
+  "candidate_sha256": "8f3021643bd5b0e1c8183675c6464b1e983bc09f1e0a006af38c756e3c1c5f95"
+}
