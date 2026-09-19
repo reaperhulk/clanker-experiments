@@ -106,7 +106,9 @@ pub trait Input: Send + Sync {
         (data.as_ptr() as usize - self.bytes().as_ptr() as usize) as u64
     }
     fn read_range(&self, offset: u64, size: u64) -> Result<std::borrow::Cow<'_, [u8]>> {
-        let end = offset.checked_add(size).ok_or_else(ContextError::truncated)?;
+        let end = offset
+            .checked_add(size)
+            .ok_or_else(ContextError::truncated)?;
         let start = usize::try_from(offset).map_err(|_| ContextError::truncated())?;
         let end = usize::try_from(end).map_err(|_| ContextError::truncated())?;
         self.bytes()
@@ -117,7 +119,9 @@ pub trait Input: Send + Sync {
 }
 impl std::fmt::Debug for dyn Input + '_ {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Input").field("length", &self.length()).finish()
+        f.debug_struct("Input")
+            .field("length", &self.length())
+            .finish()
     }
 }
 impl Input for Vec<u8> {

@@ -674,7 +674,11 @@ impl<'a> Container<'a> {
             let slice = if !self.payloads.contains_key(&id)
                 && let Some(input) = self.input
             {
-                let offset = if *idat { input.original_offset(data) } else { 0 };
+                let offset = if *idat {
+                    input.original_offset(data)
+                } else {
+                    0
+                };
                 input
                     .read_range(offset + range.start as u64, range.len() as u64)
                     .map_err(ParseError::Input)?
