@@ -28,7 +28,7 @@ fn public_structs_match_original_header_layouts() {
     let source = work.join("layout.c");
     let binary = work.join("layout");
     let mut c = String::from(
-        "#include <libheif/heif.h>\n#include <libheif/heif_properties.h>\n#include <libheif/heif_components.h>\n#include <libheif/heif_tai_timestamps.h>\n#include <stddef.h>\n#include <stdio.h>\nint main(void) {\n",
+        "#include <libheif/heif.h>\n#include <libheif/heif_properties.h>\n#include <libheif/heif_components.h>\n#include <libheif/heif_tai_timestamps.h>\n#include <libheif/heif_sequences.h>\n#include <libheif/heif_uncompressed.h>\n#include <stddef.h>\n#include <stdio.h>\nint main(void) {\n",
     );
     let mut expected = String::new();
     macro_rules! layout {
@@ -43,6 +43,42 @@ fn public_structs_match_original_header_layouts() {
             expected.push('\n');
         }};
     }
+    layout!(
+        heif_encoding_options,
+        heifer::EncodingOptions,
+        version,
+        save_alpha_channel,
+        macOS_compatibility_workaround,
+        save_two_colr_boxes_when_ICC_and_nclx_available,
+        output_nclx_profile,
+        macOS_compatibility_workaround_no_nclx_profile,
+        image_orientation,
+        color_conversion_options,
+        prefer_uncC_short_form,
+        unci_parameters
+    );
+    layout!(
+        heif_sequence_encoding_options,
+        heifer::SequenceEncodingOptions,
+        version,
+        output_nclx_profile,
+        color_conversion_options,
+        gop_structure,
+        keyframe_distance_min,
+        keyframe_distance_max,
+        save_alpha_channel,
+        content_kind
+    );
+    layout!(
+        heif_unci_image_parameters,
+        heifer::UnciParameters,
+        version,
+        image_width,
+        image_height,
+        tile_width,
+        tile_height,
+        compression
+    );
     layout!(
         heif_tai_clock_info,
         libheifer::tai::ClockInfo,

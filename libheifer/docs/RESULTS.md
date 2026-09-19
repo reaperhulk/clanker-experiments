@@ -652,3 +652,30 @@ regressions, Rust feature matrices and strict Clippy pass. This brings the
 inventory to 299 partial functions, with 166 missing. Encoding/serialization
 integration, whole-library instrumentation and allocation-failure coverage remain
 open; the completion gate remains deliberately failing.
+
+## Versioned encoding options and orientation composition
+
+Ten additional exports implement allocation, copying and release of still-image,
+sequence and uncompressed-image encoding options, plus EXIF orientation
+composition. Copies read only the fields present in both caller versions, retain
+the destination version, shallow-copy profile/parameter pointers and preserve the
+reference's no-op behavior for unknown minimum versions.
+
+The final original-header corpus matches 2,243 cases, including exact historical
+allocation prefixes (one-byte option versions and four-byte unci versions),
+all 256 byte versions, signed unci version boundaries, NULL sources, self-copy,
+raw enum/flag values and both orders of orientation composition. C struct sizes,
+alignment and every public field offset are independently checked against Rust.
+The same final corpus passes C-client ASan/UBSan (local leak checking disabled)
+and codec-free builds. Rust feature matrices and strict Clippy pass.
+
+Four mutations are rejected: alpha default (2,242 mismatches), future-version
+handling (1,539), version-copy boundary (1,861), and orientation order (258).
+The default suite now contains 95 deliberate defects. The mutation corpus was
+subsequently strengthened with unci-prefix and NULL-profile checks; the final
+normal/sanitized/codec-free reports retain the newer client hash explicitly.
+
+There are now 309 partial functions and 156 missing. The full completion gate
+still fails with no inventory inconsistencies; encoding/track integration,
+additional codecs, callbacks, plugins, region APIs and whole-library safety
+validation remain open. No performance claim is made.

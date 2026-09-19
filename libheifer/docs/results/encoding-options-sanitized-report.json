@@ -1,0 +1,12 @@
+{
+  "scope": "Original-header encoding/sequence/unci defaults, versioned copies, historical allocation prefixes and orientation composition.",
+  "cases": 2243,
+  "mismatches": 0,
+  "client_sanitizers": true,
+  "leak_check": false,
+  "client_sha256": "39ff9a1a71d92afee052717e1ffbf399465a72740d0d9680e2978b5b8870dec8",
+  "corpus_sha256": "efbf5cc53dbd8bbb36b0b4ab30b541f621c4338cc4306a9cfc7a4c8d359304ec",
+  "differences": [],
+  "reference_sha256": "5d70927cded8be6d1b4da912971aed75d426ba079c84d0b8462785ec5b9c92f7",
+  "candidate_sha256": "b9b9e48bb9e4d4466bc917585e927dcaaec7df5a72230beead9314fd547c333e"
+}

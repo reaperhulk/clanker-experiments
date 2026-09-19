@@ -2715,5 +2715,95 @@
       "tools/test_omaf.py"
     ],
     "notes": "Independent property, description, decoded-image, transform and retained-handle tests; encoding integration remains open."
+  },
+  "heif_orientation_concat": {
+    "status": "partial",
+    "tests": [
+      "tests/encoding_options.c",
+      "tools/test_encoding_options.py",
+      "crates/capi/tests/abi.rs"
+    ],
+    "notes": "Independent defaults, versioned field copies, historical prefix allocations and ABI layouts; encoder integration and allocation failure remain open."
+  },
+  "heif_encoding_options_alloc": {
+    "status": "partial",
+    "tests": [
+      "tests/encoding_options.c",
+      "tools/test_encoding_options.py",
+      "crates/capi/tests/abi.rs"
+    ],
+    "notes": "Independent defaults, versioned field copies, historical prefix allocations and ABI layouts; encoder integration and allocation failure remain open."
+  },
+  "heif_encoding_options_copy": {
+    "status": "partial",
+    "tests": [
+      "tests/encoding_options.c",
+      "tools/test_encoding_options.py",
+      "crates/capi/tests/abi.rs"
+    ],
+    "notes": "Independent defaults, versioned field copies, historical prefix allocations and ABI layouts; encoder integration and allocation failure remain open."
+  },
+  "heif_encoding_options_free": {
+    "status": "partial",
+    "tests": [
+      "tests/encoding_options.c",
+      "tools/test_encoding_options.py",
+      "crates/capi/tests/abi.rs"
+    ],
+    "notes": "Independent defaults, versioned field copies, historical prefix allocations and ABI layouts; encoder integration and allocation failure remain open."
+  },
+  "heif_sequence_encoding_options_alloc": {
+    "status": "partial",
+    "tests": [
+      "tests/encoding_options.c",
+      "tools/test_encoding_options.py",
+      "crates/capi/tests/abi.rs"
+    ],
+    "notes": "Independent defaults, versioned field copies, historical prefix allocations and ABI layouts; encoder integration and allocation failure remain open."
+  },
+  "heif_sequence_encoding_options_copy": {
+    "status": "partial",
+    "tests": [
+      "tests/encoding_options.c",
+      "tools/test_encoding_options.py",
+      "crates/capi/tests/abi.rs"
+    ],
+    "notes": "Independent defaults, versioned field copies, historical prefix allocations and ABI layouts; encoder integration and allocation failure remain open."
+  },
+  "heif_sequence_encoding_options_release": {
+    "status": "partial",
+    "tests": [
+      "tests/encoding_options.c",
+      "tools/test_encoding_options.py",
+      "crates/capi/tests/abi.rs"
+    ],
+    "notes": "Independent defaults, versioned field copies, historical prefix allocations and ABI layouts; encoder integration and allocation failure remain open."
+  },
+  "heif_unci_image_parameters_alloc": {
+    "status": "partial",
+    "tests": [
+      "tests/encoding_options.c",
+      "tools/test_encoding_options.py",
+      "crates/capi/tests/abi.rs"
+    ],
+    "notes": "Independent defaults, versioned field copies, historical prefix allocations and ABI layouts; encoder integration and allocation failure remain open."
+  },
+  "heif_unci_image_parameters_copy": {
+    "status": "partial",
+    "tests": [
+      "tests/encoding_options.c",
+      "tools/test_encoding_options.py",
+      "crates/capi/tests/abi.rs"
+    ],
+    "notes": "Independent defaults, versioned field copies, historical prefix allocations and ABI layouts; encoder integration and allocation failure remain open."
+  },
+  "heif_unci_image_parameters_release": {
+    "status": "partial",
+    "tests": [
+      "tests/encoding_options.c",
+      "tools/test_encoding_options.py",
+      "crates/capi/tests/abi.rs"
+    ],
+    "notes": "Independent defaults, versioned field copies, historical prefix allocations and ABI layouts; encoder integration and allocation failure remain open."
   }
 }

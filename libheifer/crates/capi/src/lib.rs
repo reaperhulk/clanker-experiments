@@ -231,3 +231,6 @@ pub unsafe extern "C" fn heif_has_compatible_filetype(data: *const u8, len: c_in
 mod sequence_sample;
 
 mod omaf;
+
+mod encoding_options;
+pub use encoding_options::{EncodingOptions, SequenceEncodingOptions, UnciParameters};

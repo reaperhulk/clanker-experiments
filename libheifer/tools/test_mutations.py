@@ -15,6 +15,11 @@ import sys
 import tempfile
 
 MUTATIONS = [
+    ('encoding_option_default', 'crates/capi/src/encoding_options.rs', 'version: 8,\n            save_alpha_channel: 1,', 'version: 8,\n            save_alpha_channel: 0,', 'encoding_options'),
+    ('encoding_option_future_version', 'crates/capi/src/encoding_options.rs', '!(1..=$max).contains(&version)', '!(1..=255).contains(&version)', 'encoding_options'),
+    ('encoding_option_copy_boundary', 'crates/capi/src/encoding_options.rs', 'version >= $version', 'version > $version', 'encoding_options'),
+    ('orientation_composition_order', 'src/geometry.rs', 'TABLE[first as usize - 1][second as usize - 1]', 'TABLE[second as usize - 1][first as usize - 1]', 'encoding_options'),
+
     ('omaf_projection_width', 'src/omaf.rs', '.map(|v| i32::from(v & 31))', '.map(|v| i32::from(v & 15))', 'omaf'),
     ('omaf_latest_property', 'src/omaf.rs', '.find(|p| !p.raw && p.kind == *b"prfr")', '.rfind(|p| !p.raw && p.kind == *b"prfr")', 'omaf'),
     ('omaf_description_value', 'src/omaf.rs', 'self.projection.store(value, Ordering::Relaxed);', 'self.projection.store(value & 31, Ordering::Relaxed);', 'omaf'),
