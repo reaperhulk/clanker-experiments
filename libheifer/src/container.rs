@@ -568,6 +568,88 @@ impl<'a> Container<'a> {
         Ok(bytes)
     }
 
+    /// Read an iloc window, preserving extent checks and per-read memory limits.
+    pub(crate) fn payload_window(
+        &self,
+        id: u32,
+        mut offset: u64,
+        mut remaining: u64,
+    ) -> std::result::Result<Vec<u8>, crate::context::ContextError> {
+        use crate::context::ContextError;
+        let item = self.items.get(&id).ok_or(ParseError::MissingItem)?;
+        let mut out = Vec::new();
+        for (idat, range) in &item.extents {
+            let length = range.len() as u64;
+            if length == 0 {
+                continue;
+            }
+            let source_offset = if *idat {
+                let data = self.idat.ok_or_else(|| {
+                    ContextError::invalid(
+                        103,
+                        "No 'idat' box: idat box referenced in iref box is not present in file",
+                    )
+                })?;
+                data.as_ptr() as usize - self.data.as_ptr() as usize
+            } else {
+                if self.data.get(range.clone()).is_none() {
+                    return Err(ContextError::invalid(
+                        100,
+                        &format!(
+                            "Unexpected end of file: Extent in iloc box references data outside of file bounds (points to file position {})\n",
+                            range.start
+                        ),
+                    ));
+                }
+                0
+            };
+            let skip = offset.min(length);
+            offset -= skip;
+            let read = (length - skip).min(remaining);
+            if offset != 0 || read == 0 {
+                continue;
+            }
+            let limit = self.limits.max_memory_block_size;
+            if limit != 0 && read > limit.wrapping_sub(out.len() as u64) {
+                let reported = if *idat { read } else { length };
+                return Err(ContextError::new(
+                    6,
+                    1000,
+                    format!(
+                        "Memory allocation error: Security limit exceeded: {} box contained {reported} bytes, total memory size would be {} bytes, exceeding the security limit of {limit} bytes",
+                        if *idat { "idat" } else { "iloc" },
+                        out.len() as u64 + reported
+                    ),
+                ));
+            }
+            let begin = range.start as u64 + skip;
+            let end = begin.checked_add(read).ok_or(ParseError::Truncated)?;
+            if *idat && end > self.idat.unwrap().len() as u64 + 8 {
+                return Err(ContextError::invalid(100, "Unexpected end of file"));
+            }
+            let start = usize::try_from(begin)
+                .ok()
+                .and_then(|v| source_offset.checked_add(v))
+                .ok_or(ParseError::Truncated)?;
+            let end = usize::try_from(end)
+                .ok()
+                .and_then(|v| source_offset.checked_add(v))
+                .ok_or(ParseError::Truncated)?;
+            let data = self.data.get(start..end).ok_or(ParseError::Truncated)?;
+            out.try_reserve(data.len())
+                .map_err(|_| crate::error::Error::ALLOCATION)?;
+            out.extend_from_slice(data);
+            remaining -= read;
+        }
+        if remaining != 0 {
+            return Err(ContextError::invalid(
+                100,
+                "Unexpected end of file: Not enough data present in 'iloc' to satisfy request.",
+            ));
+        }
+        Ok(out)
+    }
+
     /// Return parameter-set and picture NAL units for one direct HEVC item.
     /// Grids/transforms/auxiliary composition are separate operations, not silently ignored.
     pub fn hevc_nals(&self, id: u32) -> Result<Vec<Vec<u8>>> {

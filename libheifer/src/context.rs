@@ -251,6 +251,12 @@ fn validate_limit_boxes(
         let h = header(data)?;
         let p = body(data, h)?;
         match &h.kind {
+            b"cmpC" => {
+                crate::uncompressed::compression::Compression::parse(p)?;
+            }
+            b"icef" => {
+                crate::uncompressed::compression::units(p, Some(limits))?;
+            }
             b"cmpd" => {
                 crate::uncompressed::definitions(p, limits.max_components)?;
             }

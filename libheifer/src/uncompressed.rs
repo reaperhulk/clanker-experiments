@@ -562,3 +562,6 @@ impl crate::context::ImageInfo {
             })
     }
 }
+
+#[path = "uncompressed_compression.rs"]
+pub(crate) mod compression;

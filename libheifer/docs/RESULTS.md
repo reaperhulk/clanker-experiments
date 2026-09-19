@@ -575,3 +575,27 @@ Six additional mutation checks reject wrong pixel values (1,130 mismatches), row
 alignment (126), block extraction (134), component format (378), preferred-chroma
 output writes (52), and sub-byte RGB replication (44). The default mutation suite
 now contains 74 deliberate defects.
+
+## Compressed uncompressed-image units
+
+Pure Rust zlib/deflate decoding now supports full-item compressed data and icef
+unit tables, including tile-local reads, implied offsets, all offset/length
+widths, reordered and overlapping ranges, and malformed compression properties.
+Uncompressed tile reads use iloc windows rather than eagerly reading the full
+item. The independent original-header client matches 2,193 cases with 2,294
+successful decodes, including multicomponent, planar and interleaved layouts.
+The transcript SHA-256 is
+`658e0f559eef1fd4a45b7afcd7497fd31c4077d8e7e0591c3729fdebba8c0bb3`.
+The same corpus passes with optional codecs disabled and C-client ASan/UBSan.
+Local LeakSanitizer fails under the traced execution environment; local reports
+explicitly disable leak checking, while CI continues to request it.
+
+Six new mutations are rejected: compression wrapper (552 mismatches), unit-type
+boundary (236), tile index (100), implied offsets (50), overflow boundary (3),
+and decompressed range origin (574). The default mutation suite has 80 defects.
+The existing 2,448-case uncompressed pixel corpus passes unchanged, as do Rust
+all-feature/no-default-feature tests and strict Clippy. No C dependency was added.
+
+This extends existing exports, leaving 279 partial and 186 missing functions.
+Brotli-enabled oracle/candidate support, exact cumulative resource accounting,
+allocation failure injection and full-library instrumentation remain open.

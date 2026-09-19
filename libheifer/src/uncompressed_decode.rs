@@ -572,27 +572,27 @@ pub fn decode(
     }
     let layout = choose(&c)?;
     let sizes = sizes(&c, &entries, layout, tw, th)?;
-    let data = container.payload(id)?;
+    let source = super::compression::Source::new(container, id, image.budget.clone())?;
     let count = u64::from(c.columns) * u64::from(c.rows);
     for ty in 0..c.rows {
         for tx in 0..c.columns {
             let index = u64::from(ty) * u64::from(c.columns) + u64::from(tx);
             let mut tile_data = Vec::new();
-            let mut base = 0;
+            let mut base = 0u64;
             for size in &sizes {
-                let start = base + size * index;
-                let end = start.checked_add(*size).ok_or_else(row_overflow)?;
-                let bytes = data
-                    .get(
-                        usize::try_from(start).unwrap_or(usize::MAX)
-                            ..usize::try_from(end).unwrap_or(usize::MAX),
-                    )
-                    .ok_or_else(|| ContextError::invalid(100, "Unexpected end of file: Not enough data present in 'iloc' to satisfy request."))?;
+                let start = size
+                    .checked_mul(index)
+                    .and_then(|v| base.checked_add(v))
+                    .ok_or_else(row_overflow)?;
+                let bytes = source.range(start, *size, index)?;
                 tile_data
                     .try_reserve(bytes.len())
                     .map_err(|_| crate::error::Error::ALLOCATION)?;
-                tile_data.extend_from_slice(bytes);
-                base += size * count;
+                tile_data.extend_from_slice(&bytes);
+                base = size
+                    .checked_mul(count)
+                    .and_then(|v| base.checked_add(v))
+                    .ok_or_else(row_overflow)?;
             }
             tile(
                 &tile_data,

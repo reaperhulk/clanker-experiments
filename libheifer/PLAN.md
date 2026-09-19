@@ -127,3 +127,9 @@ formats, packing, padding, endian flags and rejected layouts. This adds behavior
 to existing exports; the 279 partial / 186 missing function totals are unchanged.
 Next: uncompressed generic compression and sensor properties, exact range reads
 and resource limits, then remaining codec/API families. No optimization claims.
+
+Compressed-unit iteration: full-item and indexed zlib/deflate data, tile-local
+ranges, all icef field widths and overflow handling have independent pixel/error
+coverage, codec-free and C-client sanitizer runs, and six new mutation checks.
+Brotli and exhaustive resource behavior remain open. Sequence sample objects are
+next, providing owned data/metadata for the still-missing track APIs.

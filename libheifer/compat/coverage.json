@@ -316,7 +316,8 @@
       "tools/test_properties.py",
       "tools/test_decode_properties.py",
       "tests/decode_uncompressed.c",
-      "tools/test_uncompressed_pixels.py"
+      "tools/test_uncompressed_pixels.py",
+      "tools/test_uncompressed_units.py"
     ]
   },
   "heif_context_read_from_memory_without_copy": {
@@ -330,7 +331,8 @@
       "tools/test_properties.py",
       "tools/test_decode_properties.py",
       "tests/decode_uncompressed.c",
-      "tools/test_uncompressed_pixels.py"
+      "tools/test_uncompressed_pixels.py",
+      "tools/test_uncompressed_units.py"
     ]
   },
   "heif_context_set_max_decoding_threads": {
@@ -382,7 +384,8 @@
       "tools/test_properties.py",
       "tools/test_decode_properties.py",
       "tests/decode_uncompressed.c",
-      "tools/test_uncompressed_pixels.py"
+      "tools/test_uncompressed_pixels.py",
+      "tools/test_uncompressed_units.py"
     ]
   },
   "heif_decoding_options_alloc": {

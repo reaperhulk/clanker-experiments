@@ -15,6 +15,12 @@ import sys
 import tempfile
 
 MUTATIONS = [
+    ('unc_compression_wrapper', 'src/uncompressed_compression.rs', 'b"zlib" => 4,', 'b"zlib" => 3,', 'uncompressed_units'),
+    ('unc_unit_type', 'src/uncompressed_compression.rs', 'if unit > 4 {', 'if unit > 3 {', 'uncompressed_units'),
+    ('unc_unit_index', 'src/uncompressed_compression.rs', '.get(tile as usize)', '.get(0)', 'uncompressed_units'),
+    ('unc_implied_offset', 'src/uncompressed_compression.rs', 'implied += size;', 'implied += 0;', 'uncompressed_units'),
+    ('unc_unit_overflow', 'src/uncompressed_compression.rs', 'size >= u64::MAX - offset', 'size > u64::MAX - offset', 'uncompressed_units'),
+    ('unc_range_origin', 'src/uncompressed_compression.rs', 'data.copy_within(start as usize..(start + size) as usize, 0);', 'data.copy_within(0..size as usize, 0);', 'uncompressed_units'),
     ('unc_pixel_value', 'src/uncompressed_decode.rs', 'let bytes = value.to_ne_bytes();', 'let bytes = (value ^ 1).to_ne_bytes();', 'uncompressed_pixels'),
     ('unc_row_alignment', 'src/uncompressed_decode.rs', 'bits.align(u64::from(align), start);', 'bits.align(0, start);', 'uncompressed_pixels'),
     ('unc_block_padding', 'src/uncompressed_decode.rs', 'let v = (value >> shift) & ((1u64 << n) - 1);', 'let v = (value >> shift) & ((1u64 << n) - 2);', 'uncompressed_pixels'),
