@@ -296,6 +296,7 @@ fn metadata<'a>(
     data: &'a [u8],
     limits: &crate::security::Limits,
     properties: Option<&mut crate::properties::PropertyStore>,
+    mut items: Option<&mut crate::items::ItemStore>,
 ) -> Result<&'a [u8]> {
     if data.len() < 32 {
         return Err(ContextError::invalid(
@@ -405,6 +406,8 @@ fn metadata<'a>(
     }
     validate_limit_boxes(&meta[4..], *b"meta", limits)?;
     let boxes = children(&meta[4..])?;
+    // Parse all table bodies before installing any mandatory-box pointers.
+    let mut parsed_items = crate::items::ItemStore::parse_tables(&boxes, *limits)?;
     // Box parsing precedes assignment of the file's mandatory-box pointers.
     // Preserve those assignment stages so property queries after failed reads
     // expose exactly the portion of the new file that was installed.
@@ -434,6 +437,9 @@ fn metadata<'a>(
         }
     }
     required(&boxes, *b"iinf", 111)?;
+    if let Some(items) = items.as_deref_mut() {
+        items.items = std::mem::take(&mut parsed_items.items);
+    }
     if has_images(&boxes) {
         required(&boxes, *b"pitm", 107)?;
         let props = children(required(&boxes, *b"iprp", 112)?)?;
@@ -444,6 +450,13 @@ fn metadata<'a>(
         required(&props, *b"ipma", 109)?;
     }
     required(&boxes, *b"iloc", 110)?;
+    if let Some(items) = items {
+        items.install_data(parsed_items);
+        if let Some((_, idat)) = boxes.iter().find(|(kind, _)| kind == b"idat") {
+            items.set_idat(idat);
+        }
+        items.seed();
+    }
     Ok(meta)
 }
 
@@ -574,7 +587,7 @@ impl Document {
     pub fn container(&self) -> Result<Container<'_>> {
         let mut container = Container::parse_meta_with_limits(
             self.input.bytes(),
-            metadata(self.input.bytes(), &self.read_limits, None)?,
+            metadata(self.input.bytes(), &self.read_limits, None, None)?,
             self.read_limits,
         )?;
         container.limits = self.current_limits();
@@ -585,7 +598,11 @@ impl Document {
         context.read(input)?;
         Ok(Arc::try_unwrap(context.document.unwrap()).ok().unwrap())
     }
-    fn interpret(&mut self, container: &Container<'_>) -> Result<()> {
+    fn interpret(
+        &mut self,
+        container: &Container<'_>,
+        items: &crate::items::ItemStore,
+    ) -> Result<()> {
         let images = &mut self.images;
         for item in container.items.values() {
             if !matches!(
@@ -1000,16 +1017,24 @@ impl Document {
             }
         }
         for item in container.items.values() {
-            if images.contains_key(&item.id)
-                || item.kind == *b"rgan"
-                || !item.references.contains_key(b"cdsc")
-            {
+            if images.contains_key(&item.id) || item.kind == *b"rgan" {
                 continue;
             }
-            if !item.content_encoding.is_empty() {
+            let method = items
+                .items
+                .get(&item.id)
+                .map_or(0, crate::items::Item::compression);
+            if !matches!(method, 0 | 3 | 4) {
                 continue;
-            } // compressed metadata remains an explicit coverage gap
-            let data = container.payload(item.id)?;
+            }
+            let data = match items
+                .item_data(item.id, self.read_limits)
+                .and_then(|data| crate::compression::decompress(data, method, &self.budget))
+            {
+                Ok(data) => data,
+                Err(error) if matches!(&item.kind, b"Exif" | b"mime") => return Err(error),
+                Err(_) => continue,
+            };
             let metadata = Arc::new(Metadata {
                 _reservation: self
                     .budget
@@ -1020,7 +1045,7 @@ impl Document {
                 uri_type: CString::new(item.uri_type.clone()).unwrap(),
                 data,
             });
-            for target in &item.references[b"cdsc"] {
+            for target in item.references.get(b"cdsc").into_iter().flatten() {
                 if let Some(image) = images.get_mut(target).and_then(Arc::get_mut) {
                     image.metadata.push(metadata.clone());
                 } else if !container.items.contains_key(target) {
@@ -1035,6 +1060,7 @@ impl Document {
     }
 }
 pub struct Context {
+    pub items: crate::items::ItemStore,
     pub properties: crate::properties::PropertyStore,
     pub budget: Arc<crate::security::Budget>,
     pub limits: Arc<RwLock<crate::security::Limits>>,
@@ -1046,6 +1072,7 @@ impl Default for Context {
     fn default() -> Self {
         let limits = Arc::new(RwLock::new(crate::security::Limits::default()));
         Self {
+            items: crate::items::ItemStore::default(),
             properties: crate::properties::PropertyStore::default(),
             budget: Arc::new(crate::security::Budget::new(limits.clone())),
             document: None,
@@ -1057,6 +1084,7 @@ impl Default for Context {
 }
 impl Context {
     pub fn read(&mut self, input: Arc<dyn Input>) -> Result<()> {
+        self.items = crate::items::ItemStore::reading(input.clone());
         self.properties = crate::properties::PropertyStore {
             read_only: true,
             ..Default::default()
@@ -1067,7 +1095,12 @@ impl Context {
             .limits
             .read()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let meta = metadata(input.bytes(), &read_limits, Some(&mut self.properties))?;
+        let meta = metadata(
+            input.bytes(),
+            &read_limits,
+            Some(&mut self.properties),
+            Some(&mut self.items),
+        )?;
         if !has_images(&children(&meta[4..])?) {
             if self.document.is_none() {
                 self.document = Some(Arc::new(Document {
@@ -1101,7 +1134,7 @@ impl Context {
         // Interpretation replaces the context's ownership immediately. Old
         // handles retain only their own objects and referenced auxiliary images.
         self.document = None;
-        let outcome = document.interpret(&container);
+        let outcome = document.interpret(&container, &self.items);
         self.document = Some(Arc::new(document));
         outcome
     }

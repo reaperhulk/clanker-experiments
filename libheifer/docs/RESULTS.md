@@ -8,8 +8,8 @@ with VUI unspecified-color, monochrome-decoding and typed missing-parameter fixe
 
 ## Implemented scope
 
-211 of 465 public functions are exported, plus `heif_error_success`.
-254 functions are missing. Even the exported functions are marked **partial**:
+234 of 465 public functions are exported, plus `heif_error_success`.
+231 functions are missing. Even the exported functions are marked **partial**:
 coverage is finite, platform coverage is incomplete, and one malformed-box
 behavior gap is explicitly retained. There is no claim of a compatible library.
 
@@ -272,3 +272,56 @@ mutations and the three-platform Rust builds. Only full completion failed
 mutation checks for error classification, optional children and parent boundaries.
 The default set now contains 35 defects. The original 17,126-case brand corpus
 also passes against the same candidate.
+
+
+## Generic items and compressed metadata
+
+The item increment adds 23 partial exports: creation and queries for generic,
+MIME, precompressed MIME and URI items; names, hidden flags, languages, payloads,
+ordered references and release functions; and compression capability queries.
+All names declared in `heif_items.h` are present. File writing, entity/track ID
+namespaces, Brotli and broad malformed-container equivalence remain open.
+
+The independent original-header client matches 2,840 cases, including all output
+pointer combinations, signed lengths, missing IDs, failed-add ID consumption,
+first duplicate table selection, extent boundaries, exact error text, versioned
+item tables, owned values after context destruction and reloads. In addition to
+text transcripts, the complete returned payload stream is compared byte for
+byte (SHA-256 `4e4976cdaad546af32a2e4922d75d943322511b0b46bcf0a5a90c2eafc5c6de3`).
+The compression corpus includes 530 default-encoder boundary/random cases and
+malformed/truncated streams. Another 430 cases compare compressed image metadata
+through retained image handles. Both suites pass C-client ASan/UBSan; local leak
+checking is disabled because of ptrace, while CI enables it.
+
+Pure Rust `zlib-rs` 0.6.8 supplies inflation with only `std`/`rust-allocator`
+features. Its vendored compatibility patch preserves the original malformed-
+stream diagnostic instead of overwriting it with a repeated-call message.
+The default encoder is an in-tree Rust adaptation of zlib 1.3's level-6 matching
+and Huffman algorithms, retaining the zlib license in `licenses/zlib.txt`.
+Using the dependency's default encoder initially produced different compressed
+bytes; the in-tree encoder matches the tested corpus, including window and
+symbol-buffer boundaries. This is finite evidence, not exhaustive equivalence.
+The dependency audit rejects native build scripts, native link declarations,
+unreviewed crates and the C allocator feature.
+
+The reference configuration explicitly requires zlib and disables Brotli to
+make the existing oracle configuration reproducible across hosts. This does
+not satisfy Brotli compatibility; it remains required work. The native zlib,
+libheif and libde265 implementations are test oracles only.
+
+Existing context (1,786), auxiliary (512), component-handle (791), security
+(2,927) and derived-graph (47) cases also match this candidate. Seventeen public
+struct layouts still match original headers on Linux x86_64. Reports are in
+`docs/results/items-*` and `docs/results/metadata-compression-*`.
+
+The preceding brand-box commit `1d38abc` passed every development CI step,
+all 35 then-present mutations and Rust builds on Linux, macOS and Windows.
+Only the intentionally strict full-API completion gate failed; see
+`docs/results/ci-brand-boxes-report.json`.
+
+Six new deliberate defects are rejected: failed-add ID reuse (15 cases), reversed
+reference order (2,839), missing compression output on errors (169), altered
+Huffman tree tie-breaking (338), overwritten inflate diagnostics (84) and
+skipped compressed handle metadata (134). All baselines pass; compiler errors
+and client crashes are not counted. The default mutation set now has 41 defects.
+Both new suites also match in the build with every codec feature disabled.

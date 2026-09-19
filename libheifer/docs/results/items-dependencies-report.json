@@ -1,0 +1,50 @@
+{
+  "packages": [
+    {
+      "name": "libheifer",
+      "version": "0.1.0",
+      "source": null,
+      "features": [
+        "hevc",
+        "hevc-profile"
+      ]
+    },
+    {
+      "name": "libheifer-capi",
+      "version": "0.1.0",
+      "source": null,
+      "features": [
+        "default",
+        "hevc"
+      ]
+    },
+    {
+      "name": "rusty_h265",
+      "version": "0.6.0",
+      "source": null,
+      "features": [
+        "default",
+        "prof",
+        "simd"
+      ]
+    },
+    {
+      "name": "rusty_h265-accel",
+      "version": "0.6.0",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "features": [
+        "simd"
+      ]
+    },
+    {
+      "name": "zlib-rs",
+      "version": "0.6.8",
+      "source": null,
+      "features": [
+        "rust-allocator",
+        "std"
+      ]
+    }
+  ],
+  "problems": []
+}

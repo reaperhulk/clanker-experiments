@@ -28,7 +28,9 @@ will provide the platform's libheif SONAME/install-name only after its full gate
 
 LGPL-3.0-or-later. Compatibility work refers to and adapts libheif, Copyright
 Dirk Farin and the libheif contributors. Upstream source and headers retain their
-notices in the test submodule. See COPYING.
+notices in the test submodule. See COPYING. The default DEFLATE encoder adapts
+zlib 1.3 algorithms under its zlib license (see `licenses/zlib.txt`); the pure Rust
+inflater retains its license in `vendor/zlib-rs/LICENSE`.
 
 ## Development validation
 
@@ -50,6 +52,8 @@ python tools/test_brand_boxes.py --reference-build .build/reference
 python tools/test_images.py --reference-build .build/reference
 python tools/test_color.py --reference-build .build/reference
 python tools/test_context.py --reference-build .build/reference
+python tools/test_items.py --reference-build .build/reference
+python tools/test_metadata_compression.py --reference-build .build/reference
 python tools/test_auxiliary.py --reference-build .build/reference
 python tools/test_properties.py --reference-build .build/reference
 python tools/test_decode_properties.py --reference-build .build/reference

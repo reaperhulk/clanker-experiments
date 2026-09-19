@@ -19,6 +19,7 @@ mod components;
 mod context;
 mod decoding;
 mod image;
+mod items;
 mod properties;
 mod security;
 mod sensor;

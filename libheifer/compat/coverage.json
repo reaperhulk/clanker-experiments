@@ -77,6 +77,60 @@
       "crates/capi/tests/abi.rs"
     ]
   },
+  "heif_context_add_item": {
+    "notes": "Linux x86_64 original-header differential: generic creation, payload bytes, zlib/deflate compression, diagnostics, resource limits, references, language ownership, reloads and malformed item tables. Brotli, file writing, entity/track ID namespaces, allocation failures and cross-platform ABI remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/items.c",
+      "tools/test_items.py",
+      "tools/test_metadata_compression.py"
+    ]
+  },
+  "heif_context_add_item_reference": {
+    "notes": "Linux x86_64 original-header differential: generic creation, payload bytes, zlib/deflate compression, diagnostics, resource limits, references, language ownership, reloads and malformed item tables. Brotli, file writing, entity/track ID namespaces, allocation failures and cross-platform ABI remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/items.c",
+      "tools/test_items.py",
+      "tools/test_metadata_compression.py"
+    ]
+  },
+  "heif_context_add_item_references": {
+    "notes": "Linux x86_64 original-header differential: generic creation, payload bytes, zlib/deflate compression, diagnostics, resource limits, references, language ownership, reloads and malformed item tables. Brotli, file writing, entity/track ID namespaces, allocation failures and cross-platform ABI remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/items.c",
+      "tools/test_items.py",
+      "tools/test_metadata_compression.py"
+    ]
+  },
+  "heif_context_add_mime_item": {
+    "notes": "Linux x86_64 original-header differential: generic creation, payload bytes, zlib/deflate compression, diagnostics, resource limits, references, language ownership, reloads and malformed item tables. Brotli, file writing, entity/track ID namespaces, allocation failures and cross-platform ABI remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/items.c",
+      "tools/test_items.py",
+      "tools/test_metadata_compression.py"
+    ]
+  },
+  "heif_context_add_precompressed_mime_item": {
+    "notes": "Linux x86_64 original-header differential: generic creation, payload bytes, zlib/deflate compression, diagnostics, resource limits, references, language ownership, reloads and malformed item tables. Brotli, file writing, entity/track ID namespaces, allocation failures and cross-platform ABI remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/items.c",
+      "tools/test_items.py",
+      "tools/test_metadata_compression.py"
+    ]
+  },
+  "heif_context_add_uri_item": {
+    "notes": "Linux x86_64 original-header differential: generic creation, payload bytes, zlib/deflate compression, diagnostics, resource limits, references, language ownership, reloads and malformed item tables. Brotli, file writing, entity/track ID namespaces, allocation failures and cross-platform ABI remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/items.c",
+      "tools/test_items.py",
+      "tools/test_metadata_compression.py"
+    ]
+  },
   "heif_context_alloc": {
     "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open. Derived and mask handle queries also cover cyclic/missing references and partial reloads.",
     "status": "partial",
@@ -104,6 +158,24 @@
       "tools/test_derived_handles.py"
     ]
   },
+  "heif_context_get_item_references": {
+    "notes": "Linux x86_64 original-header differential: generic creation, payload bytes, zlib/deflate compression, diagnostics, resource limits, references, language ownership, reloads and malformed item tables. Brotli, file writing, entity/track ID namespaces, allocation failures and cross-platform ABI remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/items.c",
+      "tools/test_items.py",
+      "tools/test_metadata_compression.py"
+    ]
+  },
+  "heif_context_get_list_of_item_IDs": {
+    "notes": "Linux x86_64 original-header differential: generic creation, payload bytes, zlib/deflate compression, diagnostics, resource limits, references, language ownership, reloads and malformed item tables. Brotli, file writing, entity/track ID namespaces, allocation failures and cross-platform ABI remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/items.c",
+      "tools/test_items.py",
+      "tools/test_metadata_compression.py"
+    ]
+  },
   "heif_context_get_list_of_top_level_image_IDs": {
     "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open. Derived and mask handle queries also cover cyclic/missing references and partial reloads.",
     "status": "partial",
@@ -121,6 +193,15 @@
       "tools/test_warnings.py",
       "tests/decode.c",
       "tools/test_decode_derived.py"
+    ]
+  },
+  "heif_context_get_number_of_items": {
+    "notes": "Linux x86_64 original-header differential: generic creation, payload bytes, zlib/deflate compression, diagnostics, resource limits, references, language ownership, reloads and malformed item tables. Brotli, file writing, entity/track ID namespaces, allocation failures and cross-platform ABI remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/items.c",
+      "tools/test_items.py",
+      "tools/test_metadata_compression.py"
     ]
   },
   "heif_context_get_number_of_top_level_images": {
@@ -1698,6 +1779,51 @@
       "crates/capi/tests/abi.rs"
     ]
   },
+  "heif_item_get_item_data": {
+    "notes": "Linux x86_64 original-header differential: generic creation, payload bytes, zlib/deflate compression, diagnostics, resource limits, references, language ownership, reloads and malformed item tables. Brotli, file writing, entity/track ID namespaces, allocation failures and cross-platform ABI remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/items.c",
+      "tools/test_items.py",
+      "tools/test_metadata_compression.py"
+    ]
+  },
+  "heif_item_get_item_name": {
+    "notes": "Linux x86_64 original-header differential: generic creation, payload bytes, zlib/deflate compression, diagnostics, resource limits, references, language ownership, reloads and malformed item tables. Brotli, file writing, entity/track ID namespaces, allocation failures and cross-platform ABI remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/items.c",
+      "tools/test_items.py",
+      "tools/test_metadata_compression.py"
+    ]
+  },
+  "heif_item_get_item_type": {
+    "notes": "Linux x86_64 original-header differential: generic creation, payload bytes, zlib/deflate compression, diagnostics, resource limits, references, language ownership, reloads and malformed item tables. Brotli, file writing, entity/track ID namespaces, allocation failures and cross-platform ABI remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/items.c",
+      "tools/test_items.py",
+      "tools/test_metadata_compression.py"
+    ]
+  },
+  "heif_item_get_mime_item_content_encoding": {
+    "notes": "Linux x86_64 original-header differential: generic creation, payload bytes, zlib/deflate compression, diagnostics, resource limits, references, language ownership, reloads and malformed item tables. Brotli, file writing, entity/track ID namespaces, allocation failures and cross-platform ABI remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/items.c",
+      "tools/test_items.py",
+      "tools/test_metadata_compression.py"
+    ]
+  },
+  "heif_item_get_mime_item_content_type": {
+    "notes": "Linux x86_64 original-header differential: generic creation, payload bytes, zlib/deflate compression, diagnostics, resource limits, references, language ownership, reloads and malformed item tables. Brotli, file writing, entity/track ID namespaces, allocation failures and cross-platform ABI remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/items.c",
+      "tools/test_items.py",
+      "tools/test_metadata_compression.py"
+    ]
+  },
   "heif_item_get_properties_of_type": {
     "notes": "Linux x86_64 original-header differential queries/insertion, item-local IDs, raw/UUID ownership, descriptions, transforms, partial read state and malformed associations. Insertion after file reads matches the pinned restriction. Other box classes, writers, allocation failures and cross-platform ABI remain open.",
     "status": "partial",
@@ -1706,6 +1832,15 @@
       "tools/test_properties.py",
       "tools/test_decode_properties.py",
       "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_item_get_property_extended_language": {
+    "notes": "Linux x86_64 original-header differential: generic creation, payload bytes, zlib/deflate compression, diagnostics, resource limits, references, language ownership, reloads and malformed item tables. Brotli, file writing, entity/track ID namespaces, allocation failures and cross-platform ABI remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/items.c",
+      "tools/test_items.py",
+      "tools/test_metadata_compression.py"
     ]
   },
   "heif_item_get_property_raw_data": {
@@ -1798,6 +1933,42 @@
       "crates/capi/tests/abi.rs"
     ]
   },
+  "heif_item_get_uri_item_uri_type": {
+    "notes": "Linux x86_64 original-header differential: generic creation, payload bytes, zlib/deflate compression, diagnostics, resource limits, references, language ownership, reloads and malformed item tables. Brotli, file writing, entity/track ID namespaces, allocation failures and cross-platform ABI remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/items.c",
+      "tools/test_items.py",
+      "tools/test_metadata_compression.py"
+    ]
+  },
+  "heif_item_is_item_hidden": {
+    "notes": "Linux x86_64 original-header differential: generic creation, payload bytes, zlib/deflate compression, diagnostics, resource limits, references, language ownership, reloads and malformed item tables. Brotli, file writing, entity/track ID namespaces, allocation failures and cross-platform ABI remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/items.c",
+      "tools/test_items.py",
+      "tools/test_metadata_compression.py"
+    ]
+  },
+  "heif_item_set_item_name": {
+    "notes": "Linux x86_64 original-header differential: generic creation, payload bytes, zlib/deflate compression, diagnostics, resource limits, references, language ownership, reloads and malformed item tables. Brotli, file writing, entity/track ID namespaces, allocation failures and cross-platform ABI remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/items.c",
+      "tools/test_items.py",
+      "tools/test_metadata_compression.py"
+    ]
+  },
+  "heif_item_set_property_extended_language": {
+    "notes": "Linux x86_64 original-header differential: generic creation, payload bytes, zlib/deflate compression, diagnostics, resource limits, references, language ownership, reloads and malformed item tables. Brotli, file writing, entity/track ID namespaces, allocation failures and cross-platform ABI remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/items.c",
+      "tools/test_items.py",
+      "tools/test_metadata_compression.py"
+    ]
+  },
   "heif_list_compatible_brands": {
     "notes": "Tested on Linux x86_64; cross-platform ABI and exhaustive input coverage pending.",
     "status": "partial",
@@ -1821,6 +1992,15 @@
       "tests/color.c",
       "tools/test_color.py",
       "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_metadata_compression_method_supported": {
+    "notes": "Linux x86_64 original-header differential: generic creation, payload bytes, zlib/deflate compression, diagnostics, resource limits, references, language ownership, reloads and malformed item tables. Brotli, file writing, entity/track ID namespaces, allocation failures and cross-platform ABI remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/items.c",
+      "tools/test_items.py",
+      "tools/test_metadata_compression.py"
     ]
   },
   "heif_nclx_color_profile_alloc": {
@@ -1910,6 +2090,33 @@
     "tests": [
       "tests/brands.c",
       "tools/test_brands.py"
+    ]
+  },
+  "heif_release_item_data": {
+    "notes": "Linux x86_64 original-header differential: generic creation, payload bytes, zlib/deflate compression, diagnostics, resource limits, references, language ownership, reloads and malformed item tables. Brotli, file writing, entity/track ID namespaces, allocation failures and cross-platform ABI remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/items.c",
+      "tools/test_items.py",
+      "tools/test_metadata_compression.py"
+    ]
+  },
+  "heif_release_item_references": {
+    "notes": "Linux x86_64 original-header differential: generic creation, payload bytes, zlib/deflate compression, diagnostics, resource limits, references, language ownership, reloads and malformed item tables. Brotli, file writing, entity/track ID namespaces, allocation failures and cross-platform ABI remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/items.c",
+      "tools/test_items.py",
+      "tools/test_metadata_compression.py"
+    ]
+  },
+  "heif_string_release": {
+    "notes": "Linux x86_64 original-header differential: generic creation, payload bytes, zlib/deflate compression, diagnostics, resource limits, references, language ownership, reloads and malformed item tables. Brotli, file writing, entity/track ID namespaces, allocation failures and cross-platform ABI remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/items.c",
+      "tools/test_items.py",
+      "tools/test_metadata_compression.py"
     ]
   }
 }

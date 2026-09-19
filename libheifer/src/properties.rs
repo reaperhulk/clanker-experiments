@@ -57,15 +57,16 @@ pub(crate) fn parse_error(kind: [u8; 4], data: &[u8]) -> Option<(ContextError, b
         b"cmex" => crate::camera::ExtrinsicMatrix::parse(data)
             .err()
             .map(|e| (e, true)),
-        b"udes" if data.len() < 4 => {
+        b"udes" | b"elng" if data.len() < 4 => {
             Some((ContextError::invalid(100, "Unexpected end of file"), true))
         }
-        b"udes" if data[0] != 0 => Some((
+        b"udes" | b"elng" if data[0] != 0 => Some((
             ContextError::new(
                 4,
                 3002,
                 format!(
-                    "Unsupported feature: Unsupported data version: udes box data version {} is not implemented yet",
+                    "Unsupported feature: Unsupported data version: {} box data version {} is not implemented yet",
+                    String::from_utf8_lossy(&kind),
                     data[0]
                 ),
             ),

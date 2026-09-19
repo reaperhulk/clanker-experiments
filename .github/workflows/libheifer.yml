@@ -52,6 +52,10 @@ jobs:
       - run: python tools/test_images.py --reference-build .build/reference
       - run: python tools/test_color.py --reference-build .build/reference
       - run: python tools/test_context.py --reference-build .build/reference
+      - run: python tools/test_items.py --reference-build .build/reference
+      - run: python tools/test_metadata_compression.py --reference-build .build/reference
+      - run: python tools/test_items.py --reference-build .build/reference --sanitize --output .build/items-sanitized-report.json
+      - run: python tools/test_metadata_compression.py --reference-build .build/reference --sanitize --output .build/metadata-compression-sanitized-report.json
       - run: python tools/test_auxiliary.py --reference-build .build/reference
       - run: python tools/test_properties.py --reference-build .build/reference
       - run: python tools/test_properties.py --reference-build .build/reference --sanitize --output .build/properties-sanitized-report.json
@@ -78,6 +82,8 @@ jobs:
       - run: python tools/test_decode_overlay.py --reference-build .build/reference
       - run: python tools/test_decode_mask.py --reference-build .build/reference
       - run: CARGO_TARGET_DIR=.build/no-codecs cargo build --locked --release -p libheifer-capi --no-default-features
+      - run: python tools/test_items.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --output .build/no-codecs-items-report.json
+      - run: python tools/test_metadata_compression.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --output .build/no-codecs-metadata-compression-report.json
       - run: python tools/test_auxiliary.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --output .build/no-codecs-auxiliary-report.json
       - run: python tools/test_properties.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --output .build/no-codecs-properties-report.json
       - run: python tools/test_camera.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --output .build/no-codecs-camera-report.json

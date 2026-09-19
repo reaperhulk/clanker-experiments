@@ -1,0 +1,66 @@
+{
+  "scope": "6 deliberate defects; not comprehensive mutation coverage",
+  "mutations": [
+    {
+      "mutation": "item_failed_add_id",
+      "suite": "items",
+      "source": "src/items.rs",
+      "before": "self.items.remove(&id);",
+      "after": "self.items.remove(&id);\n                self.next = id;",
+      "candidate_sha256": "1b80eb6e5e58b6af1fe132c077cdf56eb89d01b6d0db19163b68640e8107e905",
+      "mismatches": 15,
+      "detected": true
+    },
+    {
+      "mutation": "item_reference_order",
+      "suite": "items",
+      "source": "crates/capi/src/items.rs",
+      "before": ".filter(|r| r.from == from)\n        .nth(index as usize)",
+      "after": ".filter(|r| r.from == from)\n        .rev()\n        .nth(index as usize)",
+      "candidate_sha256": "7ef224a0f47fbd69c3ed7d4048b1ca12a122b98d97aa2baf892bec56be497f44",
+      "mismatches": 2839,
+      "detected": true
+    },
+    {
+      "mutation": "item_error_compression",
+      "suite": "items",
+      "source": "crates/capi/src/items.rs",
+      "before": "&& method == 0\n        && !compression.is_null()",
+      "after": "&& false\n        && !compression.is_null()",
+      "candidate_sha256": "cd8729f7ad3270c5246b52e2e858edaaca6cffaf512c0c0c7567f9bbd789f33f",
+      "mismatches": 169,
+      "detected": true
+    },
+    {
+      "mutation": "deflate_tree_tiebreak",
+      "suite": "items",
+      "source": "src/deflate_compat.rs",
+      "before": "nodes[a].depth <= nodes[b].depth",
+      "after": "nodes[a].depth < nodes[b].depth",
+      "candidate_sha256": "ec05719f00df885667612dff3e533c4dcb2183f9bcb4fedaf863be511b01f6d3",
+      "mismatches": 338,
+      "detected": true
+    },
+    {
+      "mutation": "inflate_error_cause",
+      "suite": "items",
+      "source": "vendor/zlib-rs/src/inflate.rs",
+      "before": "self.error_message.get_or_insert(msg);",
+      "after": "self.error_message = Some(msg);",
+      "candidate_sha256": "6a764f2f774e06651a2a798d50928142c104824e352795afca3499d037a75cd6",
+      "mismatches": 84,
+      "detected": true
+    },
+    {
+      "mutation": "compressed_handle_metadata",
+      "suite": "metadata_compression",
+      "source": "src/context.rs",
+      "before": "if !matches!(method, 0 | 3 | 4)",
+      "after": "if method != 0",
+      "candidate_sha256": "f12a1e86c878cab240f4672e5db3decd64a4bb6bae9b39ea1f603a75ca6a27e6",
+      "mismatches": 134,
+      "detected": true
+    }
+  ],
+  "all_detected": true
+}

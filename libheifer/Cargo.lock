@@ -7,6 +7,7 @@ name = "libheifer"
 version = "0.1.0"
 dependencies = [
  "rusty_h265",
+ "zlib-rs",
 ]
 
 [[package]]
@@ -28,3 +29,7 @@ name = "rusty_h265-accel"
 version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bba7bb825f634907ff7684a14f4abd999d477e8f7b7a9a8ebbf79ba3ffe0b329"
+
+[[package]]
+name = "zlib-rs"
+version = "0.6.8"
