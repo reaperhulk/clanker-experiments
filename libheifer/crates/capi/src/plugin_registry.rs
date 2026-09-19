@@ -56,6 +56,10 @@ impl Registry {
         self.decoders.push(Arc::new(DecoderRecord {
             source: DecoderSource::Builtin(8),
         }));
+        #[cfg(feature = "av1")]
+        self.decoders.push(Arc::new(DecoderRecord {
+            source: DecoderSource::Builtin(4),
+        }));
         #[cfg(feature = "hevc")]
         self.decoders.push(Arc::new(DecoderRecord {
             source: DecoderSource::Builtin(1),
@@ -338,6 +342,7 @@ impl DecoderSource {
     fn name(self) -> *const c_char {
         match self {
             Self::Builtin(8) => c"builtin".as_ptr(),
+            Self::Builtin(4) => c"rav1d".as_ptr(),
             Self::Builtin(_) => c"rusty_h265".as_ptr(),
             Self::External(p) => field!(p, get_plugin_name).map_or(ptr::null(), |f| unsafe { f() }),
         }
@@ -345,6 +350,7 @@ impl DecoderSource {
     fn id(self) -> *const c_char {
         match self {
             Self::Builtin(8) => c"uncompressed".as_ptr(),
+            Self::Builtin(4) => c"rav1d".as_ptr(),
             Self::Builtin(_) => c"rusty_h265".as_ptr(),
             Self::External(p) => {
                 if field!(p, plugin_api_version) < 3 {
@@ -435,11 +441,19 @@ unsafe extern "C" fn uncompressed_priority(format: c_int) -> c_int {
 unsafe extern "C" fn hevc_priority(format: c_int) -> c_int {
     if format == 1 { 100 } else { 0 }
 }
+unsafe extern "C" fn av1_name() -> *const c_char {
+    c"rav1d".as_ptr()
+}
+unsafe extern "C" fn av1_priority(format: c_int) -> c_int {
+    if format == 4 { 100 } else { 0 }
+}
 const fn builtin_record(format: c_int) -> DecoderPlugin {
     DecoderPlugin {
         plugin_api_version: 5,
         get_plugin_name: if format == 8 {
             Some(uncompressed_name)
+        } else if format == 4 {
+            Some(av1_name)
         } else {
             Some(hevc_name)
         },
@@ -447,6 +461,8 @@ const fn builtin_record(format: c_int) -> DecoderPlugin {
         deinit_plugin: None,
         does_support_format: if format == 8 {
             Some(uncompressed_priority)
+        } else if format == 4 {
+            Some(av1_priority)
         } else {
             Some(hevc_priority)
         },
@@ -457,6 +473,8 @@ const fn builtin_record(format: c_int) -> DecoderPlugin {
         set_strict_decoding: None,
         id_name: if format == 8 {
             c"uncompressed".as_ptr()
+        } else if format == 4 {
+            c"rav1d".as_ptr()
         } else {
             c"rusty_h265".as_ptr()
         },
@@ -470,10 +488,13 @@ const fn builtin_record(format: c_int) -> DecoderPlugin {
     }
 }
 static UNCOMPRESSED_DECODER: StaticDecoder = StaticDecoder(builtin_record(8));
+static AV1_DECODER: StaticDecoder = StaticDecoder(builtin_record(4));
 static HEVC_DECODER: StaticDecoder = StaticDecoder(builtin_record(1));
 fn builtin_decoder(format: c_int) -> *const DecoderPlugin {
     if format == 8 {
         &UNCOMPRESSED_DECODER.0
+    } else if format == 4 {
+        &AV1_DECODER.0
     } else {
         &HEVC_DECODER.0
     }
@@ -542,6 +563,30 @@ pub(super) fn select_decoder(
     }
     Ok(match selected {
         Some(DecoderSource::External(p)) => Some(p),
-        _ => None,
+        Some(DecoderSource::Builtin(_)) => None,
+        None => {
+            let detail = match format {
+                1 => "HEVC (a suitable decoder plugin is libde265)",
+                2 => "AVC (a suitable decoder plugin is openh264)",
+                3 => "JPEG (a suitable decoder plugin is libjpeg)",
+                4 => "AV1 (a suitable decoder plugin is dav1d)",
+                5 => "VVC (a suitable decoder plugin is vvdec)",
+                6 => "EVC",
+                7 => "JPEG 2000 (a suitable decoder plugin is openjpeg)",
+                8 => "ISO/IEC 23001-17 uncompressed",
+                9 => "mask image",
+                10 => "HT-J2K (a suitable decoder plugin is openjpeg)",
+                _ => "",
+            };
+            return Err(libheifer::context::ContextError::new(
+                11,
+                6003,
+                format!(
+                    "Error while loading plugin: Support for this compression format has not been built in{}{}",
+                    if detail.is_empty() { "" } else { ": " },
+                    detail
+                ),
+            ));
+        }
     })
 }

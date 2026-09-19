@@ -3,6 +3,7 @@
 import argparse
 import hashlib
 import json
+import os
 from pathlib import Path
 import subprocess
 from test_hevc import FIXTURES
@@ -16,7 +17,11 @@ def main():
     p.add_argument('--work', default='.build/decode')
     p.add_argument('--output', default='.build/decode-report.json')
     p.add_argument('--modes', default=','.join(map(str, range(23))))
+    p.add_argument('--sanitize', action='store_true')
+    p.add_argument('--no-leak-check', action='store_true')
     args = p.parse_args()
+    if args.no_leak_check and not args.sanitize:
+        p.error('--no-leak-check requires --sanitize')
     Path(args.output).unlink(missing_ok=True)
     source = Path(args.source).resolve()
     reference = Path(args.reference_build).resolve()
@@ -27,8 +32,14 @@ def main():
     libraries = {'reference': reference/'libheif/libheif.so', 'candidate': Path(args.candidate).resolve()}
     binary_hashes={name:hashlib.sha256(path.read_bytes()).hexdigest() for name,path in libraries.items()}
     client_hash=hashlib.sha256(Path('tests/decode.c').read_bytes()).hexdigest()
+    sanitizer_flags = ['-fsanitize=address,undefined', '-fno-omit-frame-pointer'] if args.sanitize else []
+    env = dict(os.environ)
+    if args.sanitize:
+        env['UBSAN_OPTIONS'] = env.get('UBSAN_OPTIONS', '') + ':halt_on_error=1'
+    if args.no_leak_check:
+        env['ASAN_OPTIONS'] = env.get('ASAN_OPTIONS', '') + ':detect_leaks=0'
     for name, library in libraries.items():
-        subprocess.run(['cc','-std=c11','-O2','-Werror',f'-I{source/"libheif/api"}',f'-I{include.parent}',
+        subprocess.run(['cc','-std=c11','-O2','-Werror',*sanitizer_flags,f'-I{source/"libheif/api"}',f'-I{include.parent}',
                         'tests/decode.c',str(library),f'-Wl,-rpath,{library.parent}','-o',str(work/name)],check=True)
     results=[]
     for fixture in FIXTURES:
@@ -37,7 +48,7 @@ def main():
             for name in libraries:
                 out=work/f'{Path(fixture).stem}-{mode}-{name}.bin'
                 out.unlink(missing_ok=True)
-                run=subprocess.run([str(work/name),str(source/fixture),str(out),str(mode)],capture_output=True,timeout=120)
+                run=subprocess.run([str(work/name),str(source/fixture),str(out),str(mode)],capture_output=True,timeout=120,env=env)
                 if run.returncode:raise SystemExit(f'{name}: {fixture} mode {mode}: {run.returncode} {run.stderr.decode(errors="replace")}')
                 data[name]=out.read_bytes()
             match=data['reference']==data['candidate']
@@ -50,6 +61,7 @@ def main():
     if binary_hashes != {name:hashlib.sha256(path.read_bytes()).hexdigest() for name,path in libraries.items()} or client_hash != hashlib.sha256(Path('tests/decode.c').read_bytes()).hexdigest():
         raise SystemExit('Decode binaries or client changed during comparison; no report accepted')
     report={'scope':__doc__,'cases':len(results),'mismatches':sum(not r['match'] for r in results),
+            'client_sanitizers':args.sanitize,'leak_check':args.sanitize and not args.no_leak_check,
             'client_sha256':client_hash,
             **{name+'_sha256':value for name,value in binary_hashes.items()},'results':results}
     Path(args.output).write_text(json.dumps(report,indent=2)+'\n')

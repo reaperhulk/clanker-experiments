@@ -232,6 +232,7 @@ unsafe fn decode_requested(
                 },
                 ignore_transformations: options.ignore_transformations != 0,
                 strict: options.strict_decoding != 0,
+                autocorrect_broken_input: options.autocorrect_broken_input != 0,
                 output_nclx,
                 profile_passthrough: options.output_image_nclx_profile_passthrough != 0,
                 convert_hdr_to_8bit: options.convert_hdr_to_8bit != 0,

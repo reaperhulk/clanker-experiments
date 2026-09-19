@@ -417,12 +417,21 @@
     ]
   },
   "heif_context_get_primary_image_handle": {
-    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open. Derived and mask handle queries also cover cyclic/missing references and partial reloads.",
+    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open. Derived and mask handle queries also cover cyclic/missing references and partial reloads. Rust-only AV1/rav1d and compact mini containers now have independent dav1d pixel/error, generated 8/10/12-bit, HDR/property, source-lifetime, callback, resource-limit and codec-free comparisons. Container/bitstream color warnings persist across decodes and full-range correction is optional. Codec conformance, compact diagnostics/writing, invalid bitstream NCLX values, remaining codecs and cross-platform/downstream completion remain open.",
     "status": "partial",
     "tests": [
       "tests/context.c",
       "tools/test_context.py",
-      "tools/test_derived_handles.py"
+      "tools/test_derived_handles.py",
+      "tests/decode.c",
+      "tests/mini_properties.c",
+      "tools/test_av1.py",
+      "tools/test_av1_errors.py",
+      "tools/test_av1_limits.py",
+      "tools/test_mini.py",
+      "tools/test_mini_properties.py",
+      "tools/test_mini_file.py",
+      "tools/test_mini_reader.py"
     ]
   },
   "heif_context_get_region_item": {
@@ -529,7 +538,7 @@
     ]
   },
   "heif_context_read_from_file": {
-    "notes": "929 original-header cases, 212 sequence fixtures and three 16-GiB sparse files passed normal, ASan/UBSan with leak checking and codec-free CI at e57bfbb. Five file mutations and all 184 baseline mutations passed. Expanded 2,117 sequence cases now also pass normal/client sanitizer/codec-free checks. Complete resource accounting, file-change semantics and platform C execution remain open.",
+    "notes": "929 original-header cases, 212 sequence fixtures and three 16-GiB sparse files passed normal, ASan/UBSan with leak checking and codec-free CI at e57bfbb. Five file mutations and all 184 baseline mutations passed. Expanded 2,117 sequence cases now also pass normal/client sanitizer/codec-free checks. Complete resource accounting, file-change semantics and platform C execution remain open. Rust-only AV1/rav1d and compact mini containers now have independent dav1d pixel/error, generated 8/10/12-bit, HDR/property, source-lifetime, callback, resource-limit and codec-free comparisons. Container/bitstream color warnings persist across decodes and full-range correction is optional. Codec conformance, compact diagnostics/writing, invalid bitstream NCLX values, remaining codecs and cross-platform/downstream completion remain open.",
     "status": "partial",
     "tests": [
       "tests/file_input.c",
@@ -537,11 +546,20 @@
       "tests/file_sparse.c",
       "tools/test_file_input.py",
       "tools/test_file_sequence_reading.py",
-      "tools/test_file_sparse.py"
+      "tools/test_file_sparse.py",
+      "tests/decode.c",
+      "tests/mini_properties.c",
+      "tools/test_av1.py",
+      "tools/test_av1_errors.py",
+      "tools/test_av1_limits.py",
+      "tools/test_mini.py",
+      "tools/test_mini_properties.py",
+      "tools/test_mini_file.py",
+      "tools/test_mini_reader.py"
     ]
   },
   "heif_context_read_from_memory": {
-    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open. Derived and mask handle queries also cover cyclic/missing references and partial reloads.",
+    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open. Derived and mask handle queries also cover cyclic/missing references and partial reloads. Rust-only AV1/rav1d and compact mini containers now have independent dav1d pixel/error, generated 8/10/12-bit, HDR/property, source-lifetime, callback, resource-limit and codec-free comparisons. Container/bitstream color warnings persist across decodes and full-range correction is optional. Codec conformance, compact diagnostics/writing, invalid bitstream NCLX values, remaining codecs and cross-platform/downstream completion remain open.",
     "status": "partial",
     "tests": [
       "tests/context.c",
@@ -552,11 +570,20 @@
       "tools/test_decode_properties.py",
       "tests/decode_uncompressed.c",
       "tools/test_uncompressed_pixels.py",
-      "tools/test_uncompressed_units.py"
+      "tools/test_uncompressed_units.py",
+      "tests/decode.c",
+      "tests/mini_properties.c",
+      "tools/test_av1.py",
+      "tools/test_av1_errors.py",
+      "tools/test_av1_limits.py",
+      "tools/test_mini.py",
+      "tools/test_mini_properties.py",
+      "tools/test_mini_file.py",
+      "tools/test_mini_reader.py"
     ]
   },
   "heif_context_read_from_memory_without_copy": {
-    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open. Derived and mask handle queries also cover cyclic/missing references and partial reloads.",
+    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open. Derived and mask handle queries also cover cyclic/missing references and partial reloads. Rust-only AV1/rav1d and compact mini containers now have independent dav1d pixel/error, generated 8/10/12-bit, HDR/property, source-lifetime, callback, resource-limit and codec-free comparisons. Container/bitstream color warnings persist across decodes and full-range correction is optional. Codec conformance, compact diagnostics/writing, invalid bitstream NCLX values, remaining codecs and cross-platform/downstream completion remain open.",
     "status": "partial",
     "tests": [
       "tests/context.c",
@@ -567,16 +594,34 @@
       "tools/test_decode_properties.py",
       "tests/decode_uncompressed.c",
       "tools/test_uncompressed_pixels.py",
-      "tools/test_uncompressed_units.py"
+      "tools/test_uncompressed_units.py",
+      "tests/decode.c",
+      "tests/mini_properties.c",
+      "tools/test_av1.py",
+      "tools/test_av1_errors.py",
+      "tools/test_av1_limits.py",
+      "tools/test_mini.py",
+      "tools/test_mini_properties.py",
+      "tools/test_mini_file.py",
+      "tools/test_mini_reader.py"
     ]
   },
   "heif_context_read_from_reader": {
-    "notes": "Retained callback table/userdata, historical prefixes, version-2 struct returns, inline/file extents, size bisection and error-message ownership. 4,712 original-header cases pass normal, ASan/UBSan clients and codec-free builds; five reader mutations detected through semantic differences. Read-call granularity, callback reentrancy, allocation budgets, complete growing-input/sequence behavior and cross-platform C execution remain open.",
+    "notes": "Retained callback table/userdata, historical prefixes, version-2 struct returns, inline/file extents, size bisection and error-message ownership. 4,712 original-header cases pass normal, ASan/UBSan clients and codec-free builds; five reader mutations detected through semantic differences. Read-call granularity, callback reentrancy, allocation budgets, complete growing-input/sequence behavior and cross-platform C execution remain open. Rust-only AV1/rav1d and compact mini containers now have independent dav1d pixel/error, generated 8/10/12-bit, HDR/property, source-lifetime, callback, resource-limit and codec-free comparisons. Container/bitstream color warnings persist across decodes and full-range correction is optional. Codec conformance, compact diagnostics/writing, invalid bitstream NCLX values, remaining codecs and cross-platform/downstream completion remain open.",
     "status": "partial",
     "tests": [
       "tests/reader_input.c",
       "tools/test_reader_input.py",
-      "crates/capi/tests/abi.rs"
+      "crates/capi/tests/abi.rs",
+      "tests/decode.c",
+      "tests/mini_properties.c",
+      "tools/test_av1.py",
+      "tools/test_av1_errors.py",
+      "tools/test_av1_limits.py",
+      "tools/test_mini.py",
+      "tools/test_mini_properties.py",
+      "tools/test_mini_file.py",
+      "tools/test_mini_reader.py"
     ]
   },
   "heif_context_set_major_brand": {
@@ -688,7 +733,7 @@
     ]
   },
   "heif_decode_image": {
-    "notes": "Five direct HEVC fixtures in 23 modes plus 688 generated/real geometry cases: exact visible pixels including monochrome HEVC alpha, crop/rotate/mirror order, fractional boundaries, metadata, errors and output writes. Full codec conformance, derived images, callback orchestration, resource limits, every conversion operator and other codecs remain open. Generated overlay, 8/16-bit mask and adversarial graph transcripts also compare exactly; all remain finite coverage. Registered still-image decoder callbacks additionally pass 616 original-header HEVC/AV1 cases: historical records, selection reuse, exact configuration/payload bytes, allocation/push/flush/poll/free order, raw strict/thread options, callback diagnostics, output planes, transforms and derived composition. Normal, client ASan/UBSan and codec-free builds pass; eight semantic mutations are detected. Sequence/plugin encoding integration, other codec configurations, concurrent unload, exhaustive resource failures and platform C execution remain open.",
+    "notes": "Five direct HEVC fixtures in 23 modes plus 688 generated/real geometry cases: exact visible pixels including monochrome HEVC alpha, crop/rotate/mirror order, fractional boundaries, metadata, errors and output writes. Full codec conformance, derived images, callback orchestration, resource limits, every conversion operator and other codecs remain open. Generated overlay, 8/16-bit mask and adversarial graph transcripts also compare exactly; all remain finite coverage. Registered still-image decoder callbacks additionally pass 616 original-header HEVC/AV1 cases: historical records, selection reuse, exact configuration/payload bytes, allocation/push/flush/poll/free order, raw strict/thread options, callback diagnostics, output planes, transforms and derived composition. Normal, client ASan/UBSan and codec-free builds pass; eight semantic mutations are detected. Sequence/plugin encoding integration, other codec configurations, concurrent unload, exhaustive resource failures and platform C execution remain open. Rust-only AV1/rav1d and compact mini containers now have independent dav1d pixel/error, generated 8/10/12-bit, HDR/property, source-lifetime, callback, resource-limit and codec-free comparisons. Container/bitstream color warnings persist across decodes and full-range correction is optional. Codec conformance, compact diagnostics/writing, invalid bitstream NCLX values, remaining codecs and cross-platform/downstream completion remain open.",
     "status": "partial",
     "tests": [
       "tests/decode.c",
@@ -707,7 +752,15 @@
       "tools/test_uncompressed_pixels.py",
       "tools/test_uncompressed_units.py",
       "tests/plugin_decoding.c",
-      "tools/test_plugin_decoding.py"
+      "tools/test_plugin_decoding.py",
+      "tests/mini_properties.c",
+      "tools/test_av1.py",
+      "tools/test_av1_errors.py",
+      "tools/test_av1_limits.py",
+      "tools/test_mini.py",
+      "tools/test_mini_properties.py",
+      "tools/test_mini_file.py",
+      "tools/test_mini_reader.py"
     ]
   },
   "heif_decoder_descriptor_get_id_name": {
@@ -1719,13 +1772,21 @@
     ]
   },
   "heif_image_get_decoding_warnings": {
-    "notes": "Original-header independent diagnostics, warning pagination/copy, context thread values, grid worker callbacks and serial tile validation. Arbitrary concurrent clients, allocation failure and other codecs remain open.",
+    "notes": "Original-header independent diagnostics, warning pagination/copy, context thread values, grid worker callbacks and serial tile validation. Arbitrary concurrent clients, allocation failure and other codecs remain open. Rust-only AV1/rav1d and compact mini containers now have independent dav1d pixel/error, generated 8/10/12-bit, HDR/property, source-lifetime, callback, resource-limit and codec-free comparisons. Container/bitstream color warnings persist across decodes and full-range correction is optional. Codec conformance, compact diagnostics/writing, invalid bitstream NCLX values, remaining codecs and cross-platform/downstream completion remain open.",
     "status": "partial",
     "tests": [
       "tests/warnings.c",
       "tools/test_warnings.py",
       "tests/decode.c",
-      "tools/test_decode_derived.py"
+      "tools/test_decode_derived.py",
+      "tests/mini_properties.c",
+      "tools/test_av1.py",
+      "tools/test_av1_errors.py",
+      "tools/test_av1_limits.py",
+      "tools/test_mini.py",
+      "tools/test_mini_properties.py",
+      "tools/test_mini_file.py",
+      "tools/test_mini_reader.py"
     ]
   },
   "heif_image_get_duration": {
@@ -2319,14 +2380,23 @@
     ]
   },
   "heif_image_handle_get_metadata": {
-    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open. Derived and mask handle queries also cover cyclic/missing references and partial reloads.",
+    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open. Derived and mask handle queries also cover cyclic/missing references and partial reloads. Rust-only AV1/rav1d and compact mini containers now have independent dav1d pixel/error, generated 8/10/12-bit, HDR/property, source-lifetime, callback, resource-limit and codec-free comparisons. Container/bitstream color warnings persist across decodes and full-range correction is optional. Codec conformance, compact diagnostics/writing, invalid bitstream NCLX values, remaining codecs and cross-platform/downstream completion remain open.",
     "status": "partial",
     "tests": [
       "tests/context.c",
       "tools/test_context.py",
       "tools/test_derived_handles.py",
       "tests/error_lifetimes.c",
-      "tools/test_error_lifetimes.py"
+      "tools/test_error_lifetimes.py",
+      "tests/decode.c",
+      "tests/mini_properties.c",
+      "tools/test_av1.py",
+      "tools/test_av1_errors.py",
+      "tools/test_av1_limits.py",
+      "tools/test_mini.py",
+      "tools/test_mini_properties.py",
+      "tools/test_mini_file.py",
+      "tools/test_mini_reader.py"
     ]
   },
   "heif_image_handle_get_metadata_content_type": {
@@ -2366,12 +2436,21 @@
     ]
   },
   "heif_image_handle_get_nclx_color_profile": {
-    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open. Derived and mask handle queries also cover cyclic/missing references and partial reloads.",
+    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open. Derived and mask handle queries also cover cyclic/missing references and partial reloads. Rust-only AV1/rav1d and compact mini containers now have independent dav1d pixel/error, generated 8/10/12-bit, HDR/property, source-lifetime, callback, resource-limit and codec-free comparisons. Container/bitstream color warnings persist across decodes and full-range correction is optional. Codec conformance, compact diagnostics/writing, invalid bitstream NCLX values, remaining codecs and cross-platform/downstream completion remain open.",
     "status": "partial",
     "tests": [
       "tests/context.c",
       "tools/test_context.py",
-      "tools/test_derived_handles.py"
+      "tools/test_derived_handles.py",
+      "tests/decode.c",
+      "tests/mini_properties.c",
+      "tools/test_av1.py",
+      "tools/test_av1_errors.py",
+      "tools/test_av1_limits.py",
+      "tools/test_mini.py",
+      "tools/test_mini_properties.py",
+      "tools/test_mini_file.py",
+      "tools/test_mini_reader.py"
     ]
   },
   "heif_image_handle_get_nominal_diffuse_white_luminance": {
@@ -2489,12 +2568,21 @@
     ]
   },
   "heif_image_handle_get_raw_color_profile": {
-    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open. Derived and mask handle queries also cover cyclic/missing references and partial reloads.",
+    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open. Derived and mask handle queries also cover cyclic/missing references and partial reloads. Rust-only AV1/rav1d and compact mini containers now have independent dav1d pixel/error, generated 8/10/12-bit, HDR/property, source-lifetime, callback, resource-limit and codec-free comparisons. Container/bitstream color warnings persist across decodes and full-range correction is optional. Codec conformance, compact diagnostics/writing, invalid bitstream NCLX values, remaining codecs and cross-platform/downstream completion remain open.",
     "status": "partial",
     "tests": [
       "tests/context.c",
       "tools/test_context.py",
-      "tools/test_derived_handles.py"
+      "tools/test_derived_handles.py",
+      "tests/decode.c",
+      "tests/mini_properties.c",
+      "tools/test_av1.py",
+      "tools/test_av1_errors.py",
+      "tools/test_av1_limits.py",
+      "tools/test_mini.py",
+      "tools/test_mini_properties.py",
+      "tools/test_mini_file.py",
+      "tools/test_mini_reader.py"
     ]
   },
   "heif_image_handle_get_raw_color_profile_size": {
@@ -3007,13 +3095,22 @@
     ]
   },
   "heif_item_get_properties_of_type": {
-    "notes": "Linux x86_64 original-header differential queries/insertion, item-local IDs, raw/UUID ownership, descriptions, transforms, partial read state and malformed associations. Insertion after file reads matches the pinned restriction. Other box classes, writers, allocation failures and cross-platform ABI remain open.",
+    "notes": "Linux x86_64 original-header differential queries/insertion, item-local IDs, raw/UUID ownership, descriptions, transforms, partial read state and malformed associations. Insertion after file reads matches the pinned restriction. Other box classes, writers, allocation failures and cross-platform ABI remain open. Rust-only AV1/rav1d and compact mini containers now have independent dav1d pixel/error, generated 8/10/12-bit, HDR/property, source-lifetime, callback, resource-limit and codec-free comparisons. Container/bitstream color warnings persist across decodes and full-range correction is optional. Codec conformance, compact diagnostics/writing, invalid bitstream NCLX values, remaining codecs and cross-platform/downstream completion remain open.",
     "status": "partial",
     "tests": [
       "tests/properties.c",
       "tools/test_properties.py",
       "tools/test_decode_properties.py",
-      "crates/capi/tests/abi.rs"
+      "crates/capi/tests/abi.rs",
+      "tests/decode.c",
+      "tests/mini_properties.c",
+      "tools/test_av1.py",
+      "tools/test_av1_errors.py",
+      "tools/test_av1_limits.py",
+      "tools/test_mini.py",
+      "tools/test_mini_properties.py",
+      "tools/test_mini_file.py",
+      "tools/test_mini_reader.py"
     ]
   },
   "heif_item_get_property_extended_language": {
@@ -3094,13 +3191,22 @@
     ]
   },
   "heif_item_get_property_type": {
-    "notes": "Linux x86_64 original-header differential queries/insertion, item-local IDs, raw/UUID ownership, descriptions, transforms, partial read state and malformed associations. Insertion after file reads matches the pinned restriction. Other box classes, writers, allocation failures and cross-platform ABI remain open.",
+    "notes": "Linux x86_64 original-header differential queries/insertion, item-local IDs, raw/UUID ownership, descriptions, transforms, partial read state and malformed associations. Insertion after file reads matches the pinned restriction. Other box classes, writers, allocation failures and cross-platform ABI remain open. Rust-only AV1/rav1d and compact mini containers now have independent dav1d pixel/error, generated 8/10/12-bit, HDR/property, source-lifetime, callback, resource-limit and codec-free comparisons. Container/bitstream color warnings persist across decodes and full-range correction is optional. Codec conformance, compact diagnostics/writing, invalid bitstream NCLX values, remaining codecs and cross-platform/downstream completion remain open.",
     "status": "partial",
     "tests": [
       "tests/properties.c",
       "tools/test_properties.py",
       "tools/test_decode_properties.py",
-      "crates/capi/tests/abi.rs"
+      "crates/capi/tests/abi.rs",
+      "tests/decode.c",
+      "tests/mini_properties.c",
+      "tools/test_av1.py",
+      "tools/test_av1_errors.py",
+      "tools/test_av1_limits.py",
+      "tools/test_mini.py",
+      "tools/test_mini_properties.py",
+      "tools/test_mini_file.py",
+      "tools/test_mini_reader.py"
     ]
   },
   "heif_item_get_property_user_description": {

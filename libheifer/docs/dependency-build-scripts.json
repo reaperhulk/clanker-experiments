@@ -1,0 +1,24 @@
+{
+  "libc@0.2.189": {
+    "build.rs": "e47f4a6762799b6e69cefc7acdb3291df828010e4de20609f7378f9c94ea29e6"
+  },
+  "parking_lot_core@0.9.12": {
+    "build.rs": "3698c936b75f8332d9b6b30a8a6838ea116c1ff0a819a025c9ea9696e4d8ce72"
+  },
+  "paste@1.0.15": {
+    "build.rs": "dba46ae4291317fb644ba2143f44eaf54a8ab946ba1367a33d055d694715f68a"
+  },
+  "proc-macro2@1.0.107": {
+    "build.rs": "baeb20b52f6b536be8657a566591a507bb2e34a45cf8baa42b135510a0c3c729",
+    "src/probe/proc_macro_span.rs": "53853f0c70170c9695294b8867821664d9b8f1c901957b003003a3c26987abbe",
+    "src/probe/proc_macro_span_file.rs": "e7fb4cf8852d9d589bfa3321d8d5cdc8cccb45606ec816a6b8a08f73e416b9ce",
+    "src/probe/proc_macro_span_location.rs": "e022386204b6e042b3c55a6c809923849a2f915199bcbf3be72d0b7c8ffa7f83"
+  },
+  "quote@1.0.47": {
+    "build.rs": "cd6808c02e476b09a520105e2c6f6d325cccb1ecd542cbbcc836a0ae6f6fb0f1"
+  },
+  "rustversion@1.0.23": {
+    "build/build.rs": "4438b108d5b198ca43ef0a78509da89861020674abd05166addd1c3058afbfa6",
+    "build/rustc.rs": "faf67033ec831d968406f5a66c475df337f7221e9d1ab3477fed3a629e1ec5bc"
+  }
+}

@@ -31,6 +31,7 @@ static void decode(const heif_image_handle* handle,int mode){
   if(mode==9)options->cancel_decoding=cancel;
   if(mode==10)options->decoder_id="unavailable-decoder";
   if(mode==11 || mode==25)options->strict_decoding=1;
+  if(mode==26)options->autocorrect_broken_input=1;
   heif_colorspace cs=heif_colorspace_undefined;heif_chroma ch=heif_chroma_undefined;
   if(mode==3){cs=heif_colorspace_RGB;ch=heif_chroma_interleaved_RGB;}
   if(mode==4){cs=heif_colorspace_RGB;ch=heif_chroma_interleaved_RGBA;}
@@ -90,7 +91,7 @@ int main(int argc,char** argv){
   if(mode==10)heif_context_set_max_decoding_threads(ctx,1);
   if(mode==23 || mode==24 || mode==25)heif_context_set_max_decoding_threads(ctx,mode==24?-1:0);heif_error e=heif_context_read_from_memory(ctx,bytes,size,NULL);free(bytes);error(e);
   if(!e.code){uint32_t ids[100];int count=heif_context_get_list_of_top_level_image_IDs(ctx,ids,100);number(count);
-    for(int i=0;i<count;i++){number(ids[i]);heif_image_handle* h=NULL;e=heif_context_get_image_handle(ctx,ids[i],&h);error(e);if(!e.code){decode(h,mode);heif_image_handle_release(h);}}
+    for(int i=0;i<count;i++){number(ids[i]);heif_image_handle* h=NULL;e=heif_context_get_image_handle(ctx,ids[i],&h);error(e);if(!e.code){decode(h,mode);if(mode==27)decode(h,mode);heif_image_handle_release(h);}}
   }
   heif_context_free(ctx);return fclose(output)?7:0;
 }

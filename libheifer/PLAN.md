@@ -339,3 +339,45 @@ paths, all native codec replacements, exact non-UTF8 diagnostics, every resource
 failure and concurrent unload/platform C behavior remain open. No function has
 been promoted from partial: all 465 exports exist, and the strict full-completion
 gate remains false. Continue with built-in pure Rust AV1 and remaining plan gates.
+
+
+### Rust AV1 decoding and minimized image containers
+
+Built-in AV1 decoding now uses the pinned rav1d 1.1.0 Rust sources with assembly,
+native build tooling and exported compatibility symbols removed. The owned safe
+adapter transfers 8/10/12-bit monochrome, 4:2:0, 4:2:2, 4:4:4 and RGB planes into
+the existing Rust transform pipeline. AV1 configuration upload, missing-decoder
+errors, color disagreement warnings, warning persistence and optional full-range
+correction match the independent native dav1d oracle for the recorded corpus.
+Dependency review and reproducible fixture provenance are recorded separately.
+
+The minimized `mini` reader now expands metadata while retaining physical media
+offsets and input ownership. It handles alpha, Exif/XMP, ICC/NCLX, HDR properties,
+orientation, compact field widths and native global/context limit distinctions.
+Callback readers preserve partial item state after configuration errors, native
+timeout behavior and payload allocation checks before reading. Compact diagnostics
+and writing remain open, as do wider AV1 configuration/bitstream conformance and
+registered/built-in decoder cache interactions.
+
+Independent original-header comparisons pass: AV1 1,400; malformed AV1 540;
+resource boundaries 3,089; compact context 1,990; compact properties 1,990;
+compact files 1,031; compact callbacks 4,655. Normal and ASan/UBSan client runs
+pass; codec-free AV1 and compact context/property/file/reader runs also pass.
+Local sanitizer reports explicitly disable leak checking under ptrace; CI retains
+it. Regression checks cover context (1,786), callbacks (4,712), registered decoders
+(616) and HEVC pixels (115). Rust all-feature/no-feature tests, Clippy, formatting,
+original-header ABI, dependency guard and development inventory checks pass.
+Reports retain exact client/corpus/library hashes in `docs/results/av1-*.json`
+and `docs/results/mini-*.json`; they describe the tested build for each step.
+
+All 14 new mutations are detected without process failures. The initial alpha
+configuration mutation survived the generic metadata client; the retained failed
+report documents that gap, and a new original-header property-query client detects
+86 differences. Follow-up reports also detect HDR, context-limit, partial-state,
+timeout and payload-budget defects. The default mutation inventory is now 222.
+
+All 465 function exports still have partial status. The strict full-completion
+gate remains false. AV1 encoding, other codec replacements, sequence/encoder
+plugin integration, exhaustive behavior and platform/downstream/performance gates
+remain open; implementation continues rather than treating finite corpus parity
+or symbol presence as full compatibility.

@@ -99,6 +99,12 @@ type Result<T> = std::result::Result<T, ContextError>;
 /// Foreign borrowed buffers implement this trait only in the unsafe C adapter.
 pub trait Input: Send + Sync {
     fn bytes(&self) -> &[u8];
+    fn metadata_limits(&self, limits: crate::security::Limits) -> crate::security::Limits {
+        limits
+    }
+    fn is_minimized(&self) -> bool {
+        false
+    }
     fn length(&self) -> u64 {
         self.bytes().len() as u64
     }
@@ -575,6 +581,7 @@ pub struct ImageInfo {
     pub intrinsic: Option<crate::camera::IntrinsicMatrix>,
     pub extrinsic: Option<crate::camera::ExtrinsicMatrix>,
     pub warnings: Vec<crate::image::DecodingWarning>,
+    pub(crate) runtime_warnings: std::sync::Mutex<Vec<crate::image::DecodingWarning>>,
     pub auxiliary: crate::auxiliary::Auxiliary,
     pub last_error: std::sync::Mutex<CString>,
     pub(crate) decode_mutex: std::sync::Mutex<()>,
@@ -624,6 +631,7 @@ impl ImageInfo {
             tai_timestamp: None,
             extrinsic: None,
             warnings: Vec::new(),
+            runtime_warnings: std::sync::Mutex::new(Vec::new()),
             auxiliary: crate::auxiliary::Auxiliary::default(),
             last_error: std::sync::Mutex::new(CString::new("Success").unwrap()),
             decode_mutex: std::sync::Mutex::new(()),
@@ -744,17 +752,11 @@ impl Document {
                 self.current_limits(),
             )?);
         }
+        let parsing_limits = self.input.metadata_limits(self.read_limits);
         let mut container = Container::parse_meta_with_limits(
             self.input.bytes(),
-            metadata(
-                self.input.bytes(),
-                &self.read_limits,
-                None,
-                None,
-                None,
-                None,
-            )?,
-            self.read_limits,
+            metadata(self.input.bytes(), &parsing_limits, None, None, None, None)?,
+            parsing_limits,
         )?;
         container.input = Some(self.input.as_ref());
         container.limits = self.current_limits();
@@ -1429,9 +1431,23 @@ impl Context {
             .limits
             .read()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let input = crate::mini::expand(input)?;
+        self.items.input = Some(input.clone());
+        let parsing_limits = input.metadata_limits(read_limits);
+        if input.is_minimized() {
+            // Native expansion installs infe entries before parsing the embedded
+            // codec configuration; failed configuration reads retain those items.
+            let first = header(input.bytes())?;
+            let data = &input.bytes()[first.size as usize..];
+            let meta = body(data, header(data)?)?;
+            self.items.items =
+                crate::items::ItemStore::parse_tables(&children(&meta[4..])?, parsing_limits)?
+                    .items;
+            self.debug_loaded = 2;
+        }
         let meta = metadata(
             input.bytes(),
-            &read_limits,
+            &parsing_limits,
             Some(&mut self.properties),
             Some(&mut self.items),
             Some(&mut self.entity_groups),
@@ -1456,7 +1472,7 @@ impl Context {
             }
             return Ok(());
         }
-        let mut container = Container::parse_meta_with_limits(input.bytes(), meta, read_limits)?;
+        let mut container = Container::parse_meta_with_limits(input.bytes(), meta, parsing_limits)?;
         container.input = Some(input.as_ref());
         let mut document = Document {
             owned: None,

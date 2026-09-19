@@ -15,6 +15,20 @@ import sys
 import tempfile
 
 MUTATIONS = [
+    ('mini_partial_items', 'src/context.rs', 'if input.is_minimized() {', 'if false && input.is_minimized() {', 'mini_reader'),
+    ('reader_empty_timeout', 'crates/capi/src/input.rs', 'None => Ok(Cow::Borrowed(&[])),', 'None => Err(eof()),', 'mini_reader'),
+    ('mini_reader_payload_budget', 'src/input.rs', 'crate::mini::payload_budget(amount)?;', 'crate::mini::payload_budget(amount + 1)?;', 'mini_reader'),
+    ('av1_pixel_copy', 'src/av1.rs', '.copy_from_slice(&frame.planes[channel][y * row..y * row + row]);', '.copy_from_slice(&frame.planes[channel][y * row..y * row + row]);\n            plane.data_mut()[y * stride] ^= 1;', 'av1'),
+    ('av1_matrix', 'src/av1.rs', 'matrix: u16::from(frame.matrix_coefficients),', 'matrix: 2,', 'av1'),
+    ('color_mismatch_warning', 'src/decoding.rs', 'let mismatch = |a, b| a != 2 && b != 2 && a != b;', 'let mismatch = |a, b| a != 2 && b != 2 && a == b;', 'av1'),
+    ('color_warning_persistence', 'src/decoding.rs', 'let range = |full| if full { "full" } else { "limited" };', 'warnings.clear();\n            let range = |full| if full { "full" } else { "limited" };', 'av1'),
+    ('color_full_range_correction', 'src/decoding.rs', 'options.autocorrect_broken_input && bitstream.full_range && !profile.full_range', 'false && options.autocorrect_broken_input && bitstream.full_range && !profile.full_range', 'av1'),
+    ('mini_orientation', 'src/mini.rs', 'match self.orientation {', 'match 1 {', 'mini'),
+    ('mini_payload_offset', 'src/mini.rs', 'extents.push((id, offset + at as u64, size));', 'extents.push((id, offset + at as u64 + 1, size));', 'mini'),
+    ('mini_alpha_configuration', 'src/mini.rs', '} else if alpha_config_size == 0 {\n            config', '} else if alpha_config_size == 0 {\n            &[]', 'mini_properties'),
+    ('mini_diffuse_white', 'src/mini.rs', 'data.extend([0; 4]); // ndwt is a version-zero FullBox.', '// deliberately omit the FullBox header', 'mini_properties'),
+    ('mini_context_table_limit', 'src/mini.rs', 'max_items: 0,', 'max_items: limits.max_items,', 'av1_limits'),
+    ('mini_nclx_range', 'src/mini.rs', 'nclx.push(u8::from(full_range) << 7);', 'nclx.push(u8::from(!full_range) << 7);', 'mini'),
     ('plugin_decode_threads', 'crates/capi/src/plugin_decoding.rs', 'num_threads: options.num_codec_threads,', 'num_threads: options.num_codec_threads + 1,', 'plugin_decoding'),
     ('plugin_decode_strict', 'crates/capi/src/plugin_decoding.rs', 'strict_decoding: options.plugin_strict,', 'strict_decoding: i32::from(options.strict),', 'plugin_decoding'),
     ('plugin_decode_poll_limit', 'crates/capi/src/plugin_decoding.rs', 'for _ in 0..50 {', 'for _ in 0..49 {', 'plugin_decoding'),
@@ -253,6 +267,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--reference-build", required=True)
     parser.add_argument("--plugin-reference-build", default=".build/reference-plugins")
+    parser.add_argument("--av1-reference-build", default=".build/reference-av1")
     parser.add_argument("--candidate", default="target/release/libheifer.so")
     parser.add_argument("--output", default=".build/mutations-report.json")
     parser.add_argument("--only", choices=[m[0] for m in MUTATIONS], action="append", help="Run selected defects; default runs the complete mutation set")
@@ -264,6 +279,8 @@ def main():
     reference = str(Path(args.reference_build).resolve())
     candidate = str(Path(args.candidate).resolve())
     def oracle(suite):
+        if suite in ('av1', 'av1_limits', 'mini_reader'):
+            return str(Path(args.av1_reference_build).resolve())
         return str(Path(args.plugin_reference_build).resolve()) if suite == "dynamic_plugins" else reference
     # Baselines must pass on this tree before a rejected mutant is meaningful.
     for suite in dict.fromkeys(m[4] for m in mutations if m[4] != "abi"):

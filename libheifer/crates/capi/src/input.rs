@@ -251,8 +251,11 @@ impl Input for CallbackInput {
         let eof = || ContextError::invalid(100, "Unexpected end of file");
         let end = offset.checked_add(size).ok_or_else(eof)?;
         let mut source = self.source.lock().unwrap();
-        if source.request_range(offset, end) < end {
-            return Err(source.last_error.clone().unwrap_or_else(eof));
+        if source.request_range(offset, end) == 0 {
+            return match source.last_error.clone() {
+                Some(error) => Err(error),
+                None => Ok(Cow::Borrowed(&[])),
+            };
         }
         let size = usize::try_from(size).map_err(|_| ContextError::from(Error::ALLOCATION))?;
         let mut data = Vec::new();

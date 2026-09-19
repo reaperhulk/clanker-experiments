@@ -55,6 +55,7 @@ pub struct DecodeOptions<'a> {
     pub max_decoding_threads: i32,
     pub ignore_transformations: bool,
     pub strict: bool,
+    pub autocorrect_broken_input: bool,
     pub output_nclx: Option<Nclx>,
     pub profile_passthrough: bool,
     pub convert_hdr_to_8bit: bool,
@@ -71,6 +72,7 @@ impl Default for DecodeOptions<'_> {
             max_decoding_threads: 4,
             ignore_transformations: false,
             strict: false,
+            autocorrect_broken_input: false,
             output_nclx: None,
             profile_passthrough: false,
             convert_hdr_to_8bit: false,
@@ -163,6 +165,13 @@ fn decode_requested(
         .map_err(ContextError::from)?;
     }
     image.warnings.extend(document.images[&id].warnings.clone());
+    image.warnings.extend(
+        document.images[&id]
+            .runtime_warnings
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .clone(),
+    );
     Ok(image)
 }
 
@@ -461,6 +470,8 @@ fn decode_native_mode(
                 }
                 decode_native(document, child, options, visiting)?
             }
+            #[cfg(feature = "av1")]
+            b"av01" => crate::av1::decode(document, id, options)?,
             #[cfg(feature = "hevc")]
             b"hvc1" => {
                 // Each decode replaces the decoder's input extent. The buffer remains
@@ -642,6 +653,25 @@ fn decode_native_mode(
     image.color.diffuse_white = inherited_hdr.3;
     if image.color.nclx.is_none_or(|n| !n.is_defined()) {
         image.color.nclx = bitstream_nclx;
+    } else if let Some(bitstream) = bitstream_nclx.filter(|n| n.is_defined()) {
+        let profile = image.color.nclx.as_mut().unwrap();
+        let mismatch = |a, b| a != 2 && b != 2 && a != b;
+        let mut warnings = info
+            .runtime_warnings
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        if mismatch(bitstream.primaries, profile.primaries)
+            || mismatch(bitstream.transfer, profile.transfer)
+            || mismatch(bitstream.matrix, profile.matrix)
+            || bitstream.full_range != profile.full_range
+        {
+            let range = |full| if full { "full" } else { "limited" };
+            warnings.push(ContextError::invalid(152, &format!("colr box and bitstream colour signalling disagree: colr box NCLX ({}/{}/{}/{}) disagrees with bitstream signalling ({}/{}/{}/{}); colr takes precedence per ISO/IEC 14496-12 and ISO/IEC 23000-22 (MIAF)", profile.primaries, profile.transfer, profile.matrix, range(profile.full_range), bitstream.primaries, bitstream.transfer, bitstream.matrix, range(bitstream.full_range))).into());
+        }
+        if options.autocorrect_broken_input && bitstream.full_range && !profile.full_range {
+            warnings.push(ContextError::invalid(152, "colr box and bitstream colour signalling disagree: Autocorrecting full-range flag to ON (colr=limited, bitstream=full)").into());
+            profile.full_range = true;
+        }
     }
     if let Some(timestamp) = info.tai_timestamp {
         image.tai_timestamp = Some(timestamp);

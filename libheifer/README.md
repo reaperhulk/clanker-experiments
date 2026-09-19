@@ -31,6 +31,7 @@ Dirk Farin and the libheif contributors. Upstream source and headers retain thei
 notices in the test submodule. See COPYING. The default DEFLATE encoder adapts
 zlib 1.3 algorithms under its zlib license (see `licenses/zlib.txt`); the pure Rust
 inflater retains its license in `vendor/zlib-rs/LICENSE`.
+The Rust AV1 decoder retains rav1d's BSD-2-Clause notices in `vendor/rav1d`.
 
 ## Development validation
 
@@ -40,10 +41,11 @@ on any missing or unvalidated API. `--development` only permits incomplete
 coverage; it still rejects stale claims, unknown exports and reference drift.
 
 ```sh
-python -m pip install libclang==18.1.1
+python -m pip install libclang==18.1.1 meson==1.12.0 ninja==1.13.2
 python tools/inventory.py --check
 python tools/audit_dependencies.py
 python tools/build_reference.py --hevc
+python tools/build_reference.py --av1 --build .build/reference-av1
 cargo test --workspace --all-features
 cargo build --release -p libheifer-capi
 cargo build --release --features hevc --example hevc_probe
@@ -52,6 +54,13 @@ python tools/test_brand_boxes.py --reference-build .build/reference
 python tools/test_images.py --reference-build .build/reference
 python tools/test_color.py --reference-build .build/reference
 python tools/test_context.py --reference-build .build/reference
+python tools/test_av1.py --reference-build .build/reference-av1
+python tools/test_av1_errors.py --reference-build .build/reference-av1
+python tools/test_av1_limits.py --reference-build .build/reference-av1
+python tools/test_mini.py --reference-build .build/reference
+python tools/test_mini_properties.py --reference-build .build/reference
+python tools/test_mini_file.py --reference-build .build/reference
+python tools/test_mini_reader.py --reference-build .build/reference-av1
 python tools/test_items.py --reference-build .build/reference
 python tools/test_add_metadata.py --reference-build .build/reference
 python tools/test_text.py --reference-build .build/reference
@@ -88,11 +97,15 @@ python tools/check_coverage.py --reference .build/reference/libheif/libheif.so
 
 The native reference build is test-only and requires a C/C++ toolchain and CMake.
 It is never linked into libheifer. The Rust `hevc` feature enables direct-item
-HEVC decoding; the separate C ABI package enables it by default. The decoder is
+HEVC decoding; the separate C ABI package enables it and the Rust `av1` feature by default. The HEVC decoder is
 vendored with a documented VUI default-value fix, retaining its Apache-2.0 license.
 The C API also handles native alpha, rotation/mirroring, YCbCr/RGB conversion,
 8/16-bit RGB packing, image crop/scale, grid, overlay and identity derivations, raw masks, decoding
 warnings, context thread controls and versioned decoding options.
+AV1 uses vendored rav1d without its native assembly/build dependencies. Compact
+`mini` files are expanded into the image model while media reads retain the
+original source. See [docs/AV1_DEPENDENCIES.md](docs/AV1_DEPENDENCIES.md) for the
+dependency review and [PLAN.md](PLAN.md) for finite validation and open gates.
 
 The current decode differential checks 23 modes on five fixtures, including all
 visible alpha samples, profiles and error outputs. Generated crop/scale cases

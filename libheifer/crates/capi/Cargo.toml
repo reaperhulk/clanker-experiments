@@ -17,5 +17,6 @@ libheifer = { path = "../.." }
 unsafe_op_in_unsafe_fn = "deny"
 
 [features]
-default = ["hevc"]
+default = ["hevc", "av1"]
 hevc = ["libheifer/hevc"]
+av1 = ["libheifer/av1"]

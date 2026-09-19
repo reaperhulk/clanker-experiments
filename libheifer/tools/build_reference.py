@@ -7,6 +7,7 @@ import subprocess
 
 HEIF = "4e14f5942c1732ace9611b9522cc991501445463"
 DE265 = "7ba65889d3d6d8a0d99b5360b028243ba843be3a"
+DAV1D = "42b2b24fb8819f1ed3643aa9cf2a62f03868e3aa"
 
 
 def run(*args):
@@ -18,6 +19,7 @@ def main():
     p.add_argument("--build", default=".build/reference")
     p.add_argument("--source", default="tests/upstream")
     p.add_argument("--hevc", action="store_true")
+    p.add_argument("--av1", action="store_true")
     p.add_argument("--plugins", action="store_true", help="enable native dynamic-plugin oracle with an empty default search path")
     p.add_argument("-j", default="4")
     a = p.parse_args()
@@ -48,7 +50,25 @@ def main():
         run(cmake, "--build", dbuild, "-j", a.j)
         run(cmake, "--install", dbuild)
         flags += [f"-DLIBDE265_INCLUDE_DIR={install / 'include'}", f"-DLIBDE265_LIBRARY={install / 'lib/libde265.so'}"]
-    run(cmake, "-S", source, "-B", build, "-DCMAKE_BUILD_TYPE=Release", "-DBUILD_TESTING=OFF", "-DBUILD_DOCUMENTATION=OFF", "-DWITH_EXAMPLES=OFF", "-DWITH_GDK_PIXBUF=OFF", f"-DENABLE_PLUGIN_LOADING={'ON' if a.plugins else 'OFF'}", *(["-DPLUGIN_DIRECTORY="] if a.plugins else []), f"-DWITH_LIBDE265={'ON' if a.hevc else 'OFF'}", "-DWITH_X265=OFF", "-DWITH_X264=OFF", "-DWITH_OpenH264_DECODER=OFF", "-DWITH_AOM_DECODER=OFF", "-DWITH_AOM_ENCODER=OFF", "-DWITH_LIBSHARPYUV=OFF", "-DWITH_UNCOMPRESSED_CODEC=ON", *flags)
+    if a.av1:
+        decoder = build.parent / "dav1d-source"
+        install = build.parent / "dav1d-install"
+        dbuild = build.parent / "dav1d-build"
+        if not decoder.exists():
+            run("git", "init", decoder)
+            run("git", "-C", decoder, "remote", "add", "origin", "https://code.videolan.org/videolan/dav1d.git")
+            run("git", "-C", decoder, "fetch", "--depth=1", "origin", DAV1D)
+            run("git", "-C", decoder, "checkout", "--detach", "FETCH_HEAD")
+        revision = subprocess.check_output(["git", "-C", str(decoder), "rev-parse", "HEAD"], text=True).strip()
+        if revision != DAV1D:
+            raise SystemExit("Wrong dav1d reference revision")
+        run("meson", "setup", *(["--reconfigure"] if (dbuild / "build.ninja").exists() else []), dbuild, decoder,
+            "--buildtype=release", f"--prefix={install}", "--libdir=lib", "-Denable_tools=false",
+            "-Denable_tests=false", "-Denable_asm=false", "-Ddefault_library=shared")
+        run("ninja", "-C", dbuild, "-j", a.j)
+        run("ninja", "-C", dbuild, "install")
+        flags += [f"-DDAV1D_INCLUDE_DIR={install / 'include'}", f"-DDAV1D_LIBRARY={install / 'lib/libdav1d.so'}"]
+    run(cmake, "-S", source, "-B", build, "-DCMAKE_BUILD_TYPE=Release", "-DBUILD_TESTING=OFF", "-DBUILD_DOCUMENTATION=OFF", "-DWITH_EXAMPLES=OFF", "-DWITH_GDK_PIXBUF=OFF", f"-DENABLE_PLUGIN_LOADING={'ON' if a.plugins else 'OFF'}", *(["-DPLUGIN_DIRECTORY="] if a.plugins else []), f"-DWITH_LIBDE265={'ON' if a.hevc else 'OFF'}", "-DWITH_X265=OFF", "-DWITH_X264=OFF", "-DWITH_OpenH264_DECODER=OFF", f"-DWITH_DAV1D={'ON' if a.av1 else 'OFF'}", "-DWITH_DAV1D_PLUGIN=OFF", "-DWITH_AOM_DECODER=OFF", "-DWITH_AOM_ENCODER=OFF", "-DWITH_LIBSHARPYUV=OFF", "-DWITH_UNCOMPRESSED_CODEC=ON", *flags)
     run(cmake, "--build", build, "-j", a.j)
 
 

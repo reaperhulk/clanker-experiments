@@ -116,6 +116,13 @@ impl Snapshot {
                         &format!("{category}: Cannot read full {name} box"),
                     ));
                 }
+                if h.kind == *b"mini" {
+                    let amount = end
+                        .checked_sub(offset)
+                        .and_then(|n| n.checked_sub(h.header as u64))
+                        .ok_or_else(eof)?;
+                    crate::mini::payload_budget(amount)?;
+                }
                 out.append(offset, &take(source, offset, end - offset)?)?;
                 found = true;
             } else {

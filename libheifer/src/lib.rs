@@ -3,6 +3,8 @@
 #![forbid(unsafe_code)]
 
 pub mod auxiliary;
+#[cfg(feature = "av1")]
+pub mod av1;
 mod box_probe;
 pub mod brands;
 pub mod camera;
@@ -28,6 +30,7 @@ pub mod items;
 pub mod jpeg_config;
 pub mod mask;
 pub mod metadata;
+mod mini;
 pub mod overlay;
 pub mod properties;
 pub mod security;

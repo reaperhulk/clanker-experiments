@@ -1,0 +1,12 @@
+{
+  "scope": "Original-header registered decoder callback dispatch, ownership, errors, polling, historical records and complete output pixels.",
+  "cases": 616,
+  "mismatches": 0,
+  "differences": [],
+  "client_sanitizers": false,
+  "leak_check": false,
+  "client_sha256": "2cba2e9456595bdd8d9ca1cb149cc74544357d58168e5993007c60314371e5bc",
+  "corpus_sha256": "712bd3ea125df77af595b070be24485a38993023519bfeb4d346146e9a850460",
+  "reference_sha256": "5cc5713a0503098f20f8a3631e370d43256ebdca0a3209e97d541e6ecf1cd917",
+  "candidate_sha256": "1a51e50ba3ba49bddeb28005827c90c0754efa737127e1d89c4d94dfbea12981"
+}
