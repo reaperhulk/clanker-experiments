@@ -254,3 +254,6 @@ mod encoding;
 
 mod tiling;
 pub use libheifer::tiling::Tiling;
+
+mod sequences;
+pub use sequences::*;

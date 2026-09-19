@@ -8,7 +8,7 @@ pub struct SampleMetadata {
     pub content_id: Vec<u8>,
 }
 
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct RawSample {
     pub metadata: SampleMetadata,
     pub timestamp: Option<Box<Timestamp>>,

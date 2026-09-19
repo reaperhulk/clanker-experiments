@@ -1,0 +1,12 @@
+{
+  "scope": "Original-header writer callbacks, exact serialized metadata bytes, repeated writes, brands, property/reference layout and read-back.",
+  "cases": 480,
+  "mismatches": 0,
+  "client_sanitizers": false,
+  "leak_check": false,
+  "client_sha256": "db9514d3ea5482eb9dc5afadd14a5b51bc21b36def99697318a278a2b9bd8382",
+  "corpus_sha256": "b3e1f0876ae0d6167af0398965f19bafd7451281e1227299c280ec1048de8475",
+  "differences": [],
+  "reference_sha256": "5cc5713a0503098f20f8a3631e370d43256ebdca0a3209e97d541e6ecf1cd917",
+  "candidate_sha256": "545447dd517b521e763bf34257408152db23c89ed3a6fd15382641d828312d95"
+}

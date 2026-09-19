@@ -103,7 +103,7 @@ pub(crate) fn boxed(kind: [u8; 4], data: &[u8]) -> Vec<u8> {
     out.extend(data);
     out
 }
-fn full(kind: [u8; 4], version: u8, flags: u32, data: &[u8]) -> Vec<u8> {
+pub(crate) fn full(kind: [u8; 4], version: u8, flags: u32, data: &[u8]) -> Vec<u8> {
     let mut b = vec![version];
     number(&mut b, u64::from(flags), 3);
     b.extend(data);
@@ -118,6 +118,7 @@ impl Context {
                 "Unsupported feature: Unspecified: Writing a context that was read from a file is not supported",
             ));
         }
+        self.sequences.finalize();
         if let Some(doc) = &self.document {
             for image in doc.images.values() {
                 for &id in image.region_ids.lock().unwrap().iter() {
@@ -168,6 +169,9 @@ impl Context {
         if layout.major == 0 && structural {
             layout.major = u32::from_be_bytes(*b"mif1");
         }
+        if !self.sequences.tracks.is_empty() && layout.major == 0 {
+            layout.major = u32::from_be_bytes(*b"msf1");
+        }
         if layout.major == 0 {
             return Err(ContextError::new(
                 5,
@@ -186,6 +190,10 @@ impl Context {
         {
             layout.compatible(u32::from_be_bytes(*b"miaf"));
         }
+        if !self.sequences.tracks.is_empty() {
+            layout.compatible(u32::from_be_bytes(*b"msf1"));
+            layout.compatible(u32::from_be_bytes(*b"isom"));
+        }
         if layout.unif {
             layout.compatible(u32::from_be_bytes(*b"unif"));
         }
@@ -200,20 +208,60 @@ impl Context {
         }
         let mut out = boxed(*b"ftyp", &ftyp);
         let metadata = |base: u64| self.write_meta(&layout, base);
-        if !layout.meta.is_empty() {
-            let first = metadata(0);
-            let base = out.len() as u64 + first.len() as u64 + 8;
-            out.extend(metadata(base));
-            let mut data = Vec::new();
-            for id in &self.items.location_order {
-                let loc = &self.items.locations[id];
-                if loc.method == 0
-                    && let Some(bytes) = &loc.owned
-                {
-                    data.extend_from_slice(bytes);
+        let meta_size = if layout.meta.is_empty() {
+            0
+        } else {
+            metadata(0).len()
+        };
+        let moov_size = self.sequences.moov(0).len();
+        let item_base = out.len() as u64 + meta_size as u64 + moov_size as u64 + 8;
+        let mut item_data = Vec::new();
+        for id in &self.items.location_order {
+            let loc = &self.items.locations[id];
+            if loc.method == 0
+                && let Some(bytes) = &loc.owned
+            {
+                item_data.extend_from_slice(bytes);
+            }
+        }
+        let sequence_base = item_base
+            + if meta_size == 0 {
+                0
+            } else {
+                item_data.len() as u64 + 8
+            };
+        if self.sequences.before_meta {
+            out.extend(self.sequences.moov(sequence_base));
+        }
+        if meta_size != 0 {
+            out.extend(metadata(item_base));
+        }
+        if !self.sequences.before_meta {
+            out.extend(self.sequences.moov(sequence_base));
+        }
+        if meta_size != 0 {
+            out.extend(boxed(*b"mdat", &item_data));
+        }
+        if !self.sequences.tracks.is_empty() {
+            out.extend(boxed(*b"mdat", &self.sequences.data));
+        }
+        // A child write error stops its parent; the native pointer patch walk
+        // still visits subsequent unwritten tracks, whose offset position is zero.
+        let mut unwritten = false;
+        for track in self.sequences.tracks.values() {
+            let t = track.lock().unwrap();
+            if unwritten {
+                for (i, offset) in t.offsets.iter().enumerate() {
+                    if let Some(dst) = out.get_mut(i * 4..i * 4 + 4) {
+                        dst.copy_from_slice(&((sequence_base + offset) as u32).to_be_bytes());
+                    }
                 }
             }
-            out.extend(boxed(*b"mdat", &data));
+            if t.references.iter().any(|(_, ids)| {
+                ids.iter().collect::<std::collections::BTreeSet<_>>().len() != ids.len()
+            }) {
+                unwritten = true;
+            }
         }
         Ok(out)
     }

@@ -55,3 +55,5 @@ mod uncompressed_encode;
 
 pub mod tile_encoding;
 pub mod tiling;
+
+pub mod sequences;

@@ -64,9 +64,13 @@ jobs:
       - run: python tools/test_encoding.py --reference-build .build/reference
       - run: python tools/test_tiling.py --reference-build .build/reference
       - run: python tools/test_tile_encoding.py --reference-build .build/reference
+      - run: python tools/test_sequences.py --reference-build .build/reference
+      - run: python tools/test_sequence_reading.py --reference-build .build/reference
       - run: python tools/test_encoding.py --reference-build .build/reference --sanitize --output .build/encoding-sanitized-report.json
       - run: python tools/test_tiling.py --reference-build .build/reference --sanitize --output .build/tiling-sanitized-report.json
       - run: python tools/test_tile_encoding.py --reference-build .build/reference --sanitize --output .build/tile-encoding-sanitized-report.json
+      - run: python tools/test_sequences.py --reference-build .build/reference --sanitize --output .build/sequences-sanitized-report.json
+      - run: python tools/test_sequence_reading.py --reference-build .build/reference --sanitize --output .build/sequence-reading-sanitized-report.json --work .build/sequence-reading-sanitized
       - run: python tools/test_writing.py --reference-build .build/reference
       - run: python tools/test_writing.py --reference-build .build/reference --sanitize --output .build/writing-sanitized-report.json
       - run: python tools/test_plugins.py --reference-build .build/reference --sanitize --output .build/plugins-sanitized-report.json
@@ -128,6 +132,8 @@ jobs:
       - run: python tools/test_encoding.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --output .build/no-codecs-encoding-report.json
       - run: python tools/test_tiling.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --output .build/no-codecs-tiling-report.json
       - run: python tools/test_tile_encoding.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --output .build/no-codecs-tile-encoding-report.json
+      - run: python tools/test_sequences.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --output .build/no-codecs-sequences-report.json
+      - run: python tools/test_sequence_reading.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --output .build/no-codecs-sequence-reading-report.json
       - run: python tools/test_writing.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --output .build/no-codecs-writing-report.json
       - run: python tools/test_entity_groups.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --output .build/no-codecs-entity-groups-report.json
       - run: python tools/test_regions.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --output .build/no-codecs-regions-report.json

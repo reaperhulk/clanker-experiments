@@ -161,7 +161,7 @@ fn body(data: &[u8], h: Header) -> Result<&[u8]> {
     }
     data.get(h.header..size).ok_or_else(ContextError::truncated)
 }
-fn children(mut data: &[u8]) -> Result<Vec<([u8; 4], &[u8])>> {
+pub(crate) fn children(mut data: &[u8]) -> Result<Vec<([u8; 4], &[u8])>> {
     let mut out = Vec::new();
     while !data.is_empty() {
         let h = header(data)?;
@@ -376,9 +376,10 @@ fn metadata<'a>(
         });
     let mut pos = first.size;
     let mut found = None;
+    let mut sequence_found = false;
     loop {
         if pos.checked_add(32).is_none_or(|n| n > data.len() as u64) {
-            if found.is_some() {
+            if found.is_some() || sequence_found {
                 break;
             }
             return Err(ContextError::invalid(
@@ -399,11 +400,14 @@ fn metadata<'a>(
                 ));
             }
             found = Some(body(&data[pos as usize..], h)?);
-        } else if matches!(&h.kind, b"mini" | b"moov") {
+        } else if h.kind == *b"moov" {
+            body(&data[pos as usize..], h)?;
+            sequence_found = true;
+        } else if h.kind == *b"mini" {
             return Err(ParseError::Unsupported.into());
         }
         if h.size == 0 {
-            if found.is_some() {
+            if found.is_some() || sequence_found {
                 break;
             }
             return Err(ContextError::invalid(0, "Unspecified: No meta box found"));
@@ -419,7 +423,9 @@ fn metadata<'a>(
             "Unsupported file-type: Unspecified: File does not include any supported brands.\n",
         ));
     }
-    let meta = found.unwrap();
+    let Some(meta) = found else {
+        return Ok(&[0; 4]);
+    };
     if meta.len() < 4 {
         return Err(ContextError::truncated());
     }
@@ -1280,6 +1286,7 @@ impl Document {
     }
 }
 pub struct Context {
+    pub sequences: crate::sequences::Sequences,
     pub entity_groups: Option<crate::entity_groups::EntityGroups>,
     pub region_items: Vec<Arc<std::sync::Mutex<crate::regions::RegionItem>>>,
     pub text_items: Vec<Arc<crate::text::TextItem>>,
@@ -1300,6 +1307,7 @@ impl Default for Context {
             ..Default::default()
         };
         Self {
+            sequences: crate::sequences::Sequences::default(),
             entity_groups: None,
             region_items: Vec::new(),
             text_items: Vec::new(),
@@ -1318,6 +1326,9 @@ impl Default for Context {
 }
 impl Context {
     pub fn read(&mut self, input: Arc<dyn Input>) -> Result<()> {
+        self.sequences.timescale = 0;
+        self.sequences.duration = 0;
+        self.sequences.initialized = false;
         self.entity_groups = None;
         self.items = crate::items::ItemStore::reading(input.clone());
         self.properties = crate::properties::PropertyStore {
@@ -1337,6 +1348,7 @@ impl Context {
             Some(&mut self.items),
             Some(&mut self.entity_groups),
         )?;
+        self.read_sequences(input.clone())?;
         if !has_images(&children(&meta[4..])?) {
             if self.document.is_none() {
                 self.document = Some(Arc::new(Document {

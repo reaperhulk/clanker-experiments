@@ -15,6 +15,19 @@ import sys
 import tempfile
 
 MUTATIONS = [
+    ('sequence_default_timescale', 'src/sequences.rs', 'timescale: 90000,', 'timescale: 90001,', 'sequences'),
+    ('sequence_fresh_handler', 'src/sequences.rs', 'reported_handler: 0,', 'reported_handler: handler,', 'sequences'),
+    ('sequence_reference_order', 'src/sequences.rs', '            ids.push(id);', '            ids.insert(0,id);', 'sequences'),
+    ('sequence_sample_duration', 'src/sequences.rs', 'self.durations.push(sample.metadata.duration);', 'self.durations.push(sample.metadata.duration.wrapping_add(1));', 'sequences'),
+    ('sequence_optional_tai', 'src/sequences.rs', '} else if self.options.tai_presence == 1 {', '} else if self.options.tai_presence == 2 {', 'sequences'),
+    ('sequence_infinite_duration', 'src/sequences.rs', 't.movie_duration = if self.repetitions == 0 {', 't.movie_duration = if self.repetitions == u32::MAX {', 'sequences'),
+    ('sequence_sample_offset', 'src/sequences.rs', 'let (offset, size) = self.ranges[idx];', 'let (offset, size) = self.ranges[idx];\n        let offset=offset+1;', 'sequences'),
+    ('sequence_clock_copy', 'src/sequences.rs', 't.first_clock = Some(Box::new(c));', 'let mut c=c; c.clock_resolution=c.clock_resolution.wrapping_add(1); t.first_clock = Some(Box::new(c));', 'sequences'),
+    ('sequence_decoder_duration', 'src/sequences.rs', 'self.durations[self.next as usize % self.durations.len()]', 'self.durations[self.next.wrapping_sub(1) as usize % self.durations.len()]', 'sequences'),
+    ('sequence_raw_output_sentinel', 'crates/capi/src/sequences.rs', 'let result = track.track.lock().unwrap().next_raw();', 'unsafe{out.write(ptr::null_mut())};\n    let result = track.track.lock().unwrap().next_raw();', 'sequences'),
+    ('sequence_coding_constraints', 'src/sequences.rs', 'full(*b"ccst", 0, 0, &[0x80, 0, 0, 0])', 'full(*b"ccst", 0, 0, &[0, 0, 0, 0])', 'sequences'),
+    ('sequence_movie_validation', 'src/sequences.rs', 'validate_sequence_boxes(movie, &self.limits.read().unwrap())?;', '// deliberately skip sequence box validation', 'sequence_reading'),
+
     ('grid_copy_error_propagation', 'src/decoding.rs', 'let _ = out.paste(&image, x, y);', 'out.paste(&image, x, y)?;', 'tile_encoding'),
     ('tiling_coded_width', 'src/tiling.rs', 't.tile_width = w;', 't.tile_width = w.wrapping_add(1);', 'tiling'),
     ('tiling_inverse_rotation', 'src/tiling.rs', '1 => (self.num_rows - 1 - y, x),', '1 => (y, x),', 'tiling'),
@@ -39,7 +52,7 @@ MUTATIONS = [
     ('encode_overlay_background', 'src/encoding.rs', 'for n in background {', 'for n in [0u16;4] {', 'encoding'),
     ('encode_repeated_extent', 'src/items.rs', '*len = bytes.len() as u64 + data.len() as u64;', '*len = data.len() as u64;', 'encoding'),
 
-    ('writer_mdat_base', 'src/writing.rs', 'out.len() as u64 + first.len() as u64 + 8', 'out.len() as u64 + first.len() as u64 + 9', 'writing'),
+    ('writer_mdat_base', 'src/writing.rs', 'out.len() as u64 + meta_size as u64 + moov_size as u64 + 8', 'out.len() as u64 + meta_size as u64 + moov_size as u64 + 9', 'writing'),
     ('writer_brand_dedup', 'src/writing.rs', 'if !self.brands.contains(&brand) {', 'if true {', 'writing'),
     ('writer_uuid_bytes', 'src/writing.rs', 'p.extend(prop.uuid.unwrap_or([0; 16]));', 'p.extend([0; 16]);', 'writing'),
     ('writer_large_property_index', 'src/writing.rs', 'any(|i| *i >= 127)', 'any(|i| *i >= 128)', 'writing'),

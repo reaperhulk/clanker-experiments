@@ -465,6 +465,14 @@ fn public_structs_match_original_header_layouts() {
         offset_of!(heifer::EncoderParameter, value)
             + offset_of!(heifer::BooleanParameter, default_value)
     ));
+    c.push_str("printf(\"%zu %zu %zu %zu\\n\", sizeof(heif_sample_aux_info_type), _Alignof(heif_sample_aux_info_type), offsetof(heif_sample_aux_info_type, type), offsetof(heif_sample_aux_info_type, parameter));\n");
+    expected.push_str(&format!(
+        "{} {} {} {}\n",
+        size_of::<libheifer::sequences::AuxType>(),
+        align_of::<libheifer::sequences::AuxType>(),
+        offset_of!(libheifer::sequences::AuxType, kind),
+        offset_of!(libheifer::sequences::AuxType, parameter)
+    ));
     c.push_str("return 0; }\n");
     fs::write(&source, c).unwrap();
     assert!(

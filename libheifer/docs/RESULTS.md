@@ -8,8 +8,8 @@ with VUI unspecified-color, monochrome-decoding and typed missing-parameter fixe
 
 ## Implemented scope
 
-414 of 465 public functions are exported, plus `heif_error_success`.
-51 functions are missing. Even the exported functions are marked **partial**:
+457 of 465 public functions are exported, plus `heif_error_success`.
+8 functions are missing. Even the exported functions are marked **partial**:
 coverage is finite, platform coverage is incomplete, and one malformed-box
 behavior gap is explicitly retained. There is no claim of a compatible library.
 
@@ -849,3 +849,36 @@ separately. Local leak checking remains disabled under tracing, while CI request
 it. Whole-library instrumentation, full codecs/plugins, sequence tracks, streaming
 input, custom/sensor formats, allocation failures, platform ABI and fuzzing remain
 open. The strict completion gate remains unchanged and fails.
+
+## Sequence checkpoint (457 partial APIs, 8 missing)
+
+The 43 remaining track APIs now have Rust implementations: owned/versioned
+options, track references, raw metadata samples, TAI/GIMI auxiliary streams,
+uncompressed visual sequences, timing/repetition, movie parsing and serialization.
+Mixed still-image/sequence files preserve box/brand order and sample offsets.
+Independent original-header clients compare 892 construction/write/readback cases
+and 212 native-file reading/malformed-table cases. All pass in normal,
+ASan/UBSan-client and codec-free runs. Local leak detection is disabled because
+of the execution environment; CI requests it. Libraries are not instrumented.
+Seven affected regression suites pass 19,766 cases (context, writing, encoding,
+raw samples, tiling, tile encoding and security).
+
+Twelve new mutations cover defaults, fresh handler state, reference ordering,
+durations, mandatory timestamps, indefinite repetition, lazy sample offsets,
+clock copies, decoder duration indexing, output sentinels, coding constraints
+and movie box validation. Each produces semantic mismatches with a passing
+baseline. The relocated writer-offset mutation is also rerun. The default
+mutation inventory is 171; compilation and process failures do not count.
+
+The oracle has an uninitialized two-byte `urim` data-reference-index field.
+The client identifies those bytes structurally and excludes only those bytes;
+they are not parity evidence. All defined bytes, including native malformed
+output after duplicate track references, remain compared. Native reader fixtures
+set the two indeterminate bytes to zero and document their provenance.
+
+This remains partial: external codec sequence encoding, inter-frame sequence
+decoding, alpha tracks, all sample-description/edit-list variants, reader callback
+I/O and complete resource accounting need further implementation and testing.
+The strict completion gate remains false. Eight unexported APIs are file/reader
+input, debug dumping and dynamic plugin management. Evidence is in
+`docs/results/sequences-*-report.json` and `sequence-reading-*-report.json`.
