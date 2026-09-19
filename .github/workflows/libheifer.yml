@@ -61,6 +61,8 @@ jobs:
       - run: python tools/test_sequence_samples.py --reference-build .build/reference
       - run: python tools/test_encoder_parameters.py --reference-build .build/reference
       - run: python tools/test_plugins.py --reference-build .build/reference
+      - run: python tools/test_writing.py --reference-build .build/reference
+      - run: python tools/test_writing.py --reference-build .build/reference --sanitize --output .build/writing-sanitized-report.json
       - run: python tools/test_plugins.py --reference-build .build/reference --sanitize --output .build/plugins-sanitized-report.json
       - run: python tools/test_encoder_parameters.py --reference-build .build/reference --sanitize --output .build/encoder-parameters-sanitized-report.json
       - run: python tools/test_gimi.py --reference-build .build/reference
@@ -117,6 +119,7 @@ jobs:
       - run: python tools/test_gimi.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --output .build/no-codecs-gimi-report.json
       - run: python tools/test_encoder_parameters.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --output .build/no-codecs-encoder-parameters-report.json
       - run: python tools/test_plugins.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --output .build/no-codecs-plugins-report.json
+      - run: python tools/test_writing.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --output .build/no-codecs-writing-report.json
       - run: python tools/test_entity_groups.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --output .build/no-codecs-entity-groups-report.json
       - run: python tools/test_regions.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --output .build/no-codecs-regions-report.json
       - run: python tools/test_encoding_options.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --output .build/no-codecs-encoding-options-report.json

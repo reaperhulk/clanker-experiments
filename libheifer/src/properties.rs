@@ -189,6 +189,7 @@ pub(crate) fn parse_error(kind: [u8; 4], data: &[u8]) -> Option<(ContextError, b
 
 #[derive(Default)]
 pub struct PropertyStore {
+    pub layout: crate::writing::SharedLayout,
     pub read_only: bool,
     pub has_ipco: bool,
     pub has_ipma: bool,
@@ -269,6 +270,7 @@ impl PropertyStore {
         property: Property,
         essential: bool,
     ) -> Result<u32, ContextError> {
+        self.layout.lock().unwrap().init_properties();
         self.has_ipco = true;
         self.has_ipma = true;
         // Box equality compares serialized data, so a previously inserted raw

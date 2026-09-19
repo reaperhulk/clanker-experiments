@@ -46,6 +46,10 @@ impl Context {
         width: u32,
         height: u32,
     ) -> Result<Arc<Mutex<RegionItem>>, ContextError> {
+        self.items.layout.lock().unwrap().init_image();
+        self.items.has_iloc = true;
+        self.properties.has_ipco = true;
+        self.properties.has_ipma = true;
         let id = self.items.mint()?;
         self.items.items.insert(id, Item::new(*b"rgan"));
         let item = Arc::new(Mutex::new(RegionItem {

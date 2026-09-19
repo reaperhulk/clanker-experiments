@@ -16,6 +16,7 @@ impl Context {
         content_type: CString,
         content: Vec<u8>,
     ) -> Result<Arc<TextItem>, ContextError> {
+        self.items.layout.lock().unwrap().init_image();
         self.properties.has_ipco = true;
         self.properties.has_ipma = true;
         let mut item = Item::new(*b"mime");

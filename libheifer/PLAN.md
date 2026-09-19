@@ -115,7 +115,7 @@ The derived-image iteration adds grids/identity, cycle/MIAF checks, scoped tile
 workers and four warning/thread-control exports. Overlay composition, raw masks,
 shared-graph decode-operation budgets and dynamic derived queries follow in the next iteration. Six security-limit/allocation exports follow, including context-wide
 allocation accounting and object-specific resource lifetimes. Auxiliary/depth, item-property, six camera-matrix, twenty-two sensor-metadata and thirty-nine component APIs, generic items/compression, twelve TAI timestamp APIs, five metadata writers nine text-item APIs three image-area APIs thirteen handle color/aspect APIs and three component-definition queries bring the total to
-396 partial functions, with 69 functions missing. Compatibility work comes first;
+402 partial functions, with 63 functions missing. Compatibility work comes first;
 performance optimization is deferred until the complete compatibility gate passes.
 The full header contract, finite behavioral reports, known differences and
 performance evidence are retained in `compat/` and `docs/results/`.
@@ -183,3 +183,7 @@ Five parameter-query APIs now pass a 2,020-case original-header corpus, includin
 ### Plugin registries and encoder facade checkpoint
 
 Thirty-nine APIs add registration, init/deinit, discovery and descriptor queries, encoder allocation/release, parameter validation and callback dispatch. A 224-case original-header corpus compares callback traces, historical record allocations, borrowed descriptors and context-sensitive errors. Normal, codec-free and client ASan/UBSan runs match; all twelve deliberate mutations are detected, as do context and parameter regressions. The implementation still needs registered-plugin image encode/decode integration, dynamic loading and file writing; discovery/configuration coverage alone does not establish those. The Rust HEVC decoder keeps its own implementation name. Current count: 396 partial APIs, 69 missing.
+
+### File serialization and writer callbacks
+
+Six APIs now serialize ordered metadata boxes, payload extents, properties and references, manage brands/ID mode and invoke caller/file writers. The 480-case independent original-header corpus matches exact bytes, repeated writes, read-back outcomes, callback errors and userdata, reentrant queries, historical writer prefixes, UUIDs and property-index boundaries. Normal, codec-free and ASan/UBSan clients pass. All six semantic mutations are detected; the default suite contains 137 defects. Image/sequence integration, compact image output, large offsets, namespace switching and region/text round trips remain open. Current count: 402 partial APIs, 63 missing; strict completion remains false.

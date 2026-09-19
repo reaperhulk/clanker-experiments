@@ -47,6 +47,7 @@ impl Context {
     ) -> Result<u32, ContextError> {
         // Metadata writers initialize the image property tables, even when
         // the supplied image handle belongs to another context.
+        self.items.layout.lock().unwrap().init_image();
         self.properties.has_ipco = true;
         self.properties.has_ipma = true;
         let mut item = Item::new(kind);
@@ -59,7 +60,7 @@ impl Context {
         if compression == 3 {
             self.items.items.get_mut(&id).unwrap().content_encoding = c"deflate".into();
         }
-        self.items.references.push(Reference {
+        self.items.add_reference(Reference {
             from: id,
             kind: u32::from_be_bytes(*b"cdsc"),
             to: vec![target],

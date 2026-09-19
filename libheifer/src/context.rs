@@ -1256,12 +1256,18 @@ pub struct Context {
 impl Default for Context {
     fn default() -> Self {
         let limits = Arc::new(RwLock::new(crate::security::Limits::default()));
+        let layout = crate::writing::SharedLayout::default();
+        let mut items = crate::items::ItemStore::default();
+        items.layout = layout.clone();
         Self {
             entity_groups: None,
             region_items: Vec::new(),
             text_items: Vec::new(),
-            items: crate::items::ItemStore::default(),
-            properties: crate::properties::PropertyStore::default(),
+            items,
+            properties: crate::properties::PropertyStore {
+                layout,
+                ..Default::default()
+            },
             budget: Arc::new(crate::security::Budget::new(limits.clone())),
             document: None,
             last_error: CString::default(),

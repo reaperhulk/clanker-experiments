@@ -49,34 +49,23 @@ pub struct Reference {
     pub kind: u32,
     pub to: Vec<u32>,
 }
-struct Location {
-    method: u64,
+pub(crate) struct Location {
+    pub(crate) method: u64,
     base: u64,
-    extents: Vec<(u64, u64)>,
-    owned: Option<Vec<u8>>,
+    pub(crate) extents: Vec<(u64, u64)>,
+    pub(crate) owned: Option<Vec<u8>>,
 }
 
+#[derive(Default)]
 pub struct ItemStore {
     pub items: BTreeMap<u32, Item>,
     pub references: Vec<Reference>,
     pub has_iloc: bool,
-    locations: BTreeMap<u32, Location>,
+    pub(crate) locations: BTreeMap<u32, Location>,
+    pub(crate) location_order: Vec<u32>,
+    pub layout: crate::writing::SharedLayout,
     input: Option<Arc<dyn Input>>,
     idat: Option<(usize, u64)>,
-    next: u32,
-}
-impl Default for ItemStore {
-    fn default() -> Self {
-        Self {
-            items: BTreeMap::new(),
-            references: Vec::new(),
-            has_iloc: false,
-            locations: BTreeMap::new(),
-            input: None,
-            idat: None,
-            next: 1,
-        }
-    }
 }
 impl ItemStore {
     pub(crate) fn parse_tables(boxes: &[([u8; 4], &[u8])], limits: Limits) -> Result<Self> {
@@ -114,7 +103,7 @@ impl ItemStore {
     }
     pub(crate) fn seed(&mut self) {
         if let Some(id) = self.items.keys().next_back() {
-            self.next = id.checked_add(1).unwrap_or(0);
+            self.layout.lock().unwrap().mark(0, *id);
         }
     }
     pub fn add(&mut self, item: Item, data: Vec<u8>) -> Result<u32> {
@@ -122,12 +111,14 @@ impl ItemStore {
     }
     /// Text payloads are materialized into iloc only when the context is written.
     pub fn add_pending(&mut self, item: Item) -> Result<u32> {
+        self.layout.lock().unwrap().init_meta();
         self.has_iloc = true;
         let id = self.mint()?;
         self.items.insert(id, item);
         Ok(id)
     }
     pub fn add_compressed(&mut self, mut item: Item, data: &[u8], compression: i32) -> Result<u32> {
+        self.layout.lock().unwrap().init_meta();
         self.has_iloc = true;
         let id = self.mint()?;
         item.content_encoding = match compression {
@@ -143,28 +134,41 @@ impl ItemStore {
                 return Err(error);
             }
         };
+        self.location_order.push(id);
         self.locations.insert(
             id,
             Location {
                 method: 0,
                 base: 0,
-                extents: Vec::new(),
+                extents: vec![(0, data.len() as u64)],
                 owned: Some(data),
             },
         );
         Ok(id)
     }
     pub fn mint(&mut self) -> Result<u32> {
-        if self.next == 0 {
-            return Err(ContextError::new(
-                5,
-                0,
-                "Usage error: Unspecified: ID namespace overflow",
-            ));
+        self.layout.lock().unwrap().mint(0)
+    }
+    pub fn add_reference(&mut self, reference: Reference) {
+        self.layout.lock().unwrap().add_meta(*b"iref");
+        self.references.push(reference);
+    }
+    pub(crate) fn append_written(&mut self, id: u32, method: u64, data: Vec<u8>) -> Result<()> {
+        self.has_iloc = true;
+        if !self.locations.contains_key(&id) {
+            self.location_order.push(id);
         }
-        let id = self.next;
-        self.next = id.checked_add(1).unwrap_or(0);
-        Ok(id)
+        let loc = self.locations.entry(id).or_insert(Location {
+            method,
+            base: 0,
+            extents: Vec::new(),
+            owned: Some(Vec::new()),
+        });
+        let bytes = loc.owned.get_or_insert_with(Vec::new);
+        loc.extents.push((bytes.len() as u64, data.len() as u64));
+        bytes.try_reserve(data.len()).map_err(|_| allocation())?;
+        bytes.extend(data);
+        Ok(())
     }
     pub fn item_data(&self, id: u32, limits: Limits) -> Result<Vec<u8>> {
         if !self.has_iloc {

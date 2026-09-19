@@ -474,7 +474,7 @@ pub unsafe extern "C" fn heif_region_item_add_region_referenced_mask(
     if e.code == 0 {
         let item = unsafe { &*item };
         let mut state = lock(&item.shared);
-        state.items.references.push(libheifer::items::Reference {
+        state.items.add_reference(libheifer::items::Reference {
             from: item_lock(&item.value).id,
             kind: u32::from_be_bytes(*b"mask"),
             to: vec![id],

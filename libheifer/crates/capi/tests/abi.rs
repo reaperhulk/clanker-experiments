@@ -162,6 +162,7 @@ fn public_structs_match_original_header_layouts() {
     ));
     c.push_str("puts(\"\");\n");
     expected.push('\n');
+    layout!(heif_writer, heifer::Writer, writer_api_version, write);
     layout!(
         heif_entity_group,
         heifer::EntityGroup,

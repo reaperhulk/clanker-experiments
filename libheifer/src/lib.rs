@@ -47,3 +47,5 @@ pub mod regions;
 pub mod entity_groups;
 
 pub mod gimi;
+
+pub mod writing;

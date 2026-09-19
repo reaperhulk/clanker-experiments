@@ -95,6 +95,15 @@
       "tools/test_add_metadata.py"
     ]
   },
+  "heif_context_add_compatible_brand": {
+    "notes": "Original-header exact metadata-only BMFF bytes and read-back, output files and I/O-failure behavior, callback errors/reentrant queries, invalid writer versions with historical prefixes, optional userdata, explicit brands, UUID and large property indices. Region/text serialization infrastructure added, but in-memory image/sequence encoding round trips, mini images, namespace switching and allocation failures remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/writing.c",
+      "tools/test_writing.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
   "heif_context_add_exif_metadata": {
     "notes": "Linux x86_64 original-header differential: Exif signature offsets, XMP compression branches and exact bytes, invalid generic types, URI behavior, foreign handles, reloads, references, resource limits and unchanged handle metadata. File serialization, allocation-failure behavior and cross-platform ABI remain open.",
     "status": "partial",
@@ -379,6 +388,15 @@
       "tools/test_uncompressed_units.py"
     ]
   },
+  "heif_context_set_major_brand": {
+    "notes": "Original-header exact metadata-only BMFF bytes and read-back, output files and I/O-failure behavior, callback errors/reentrant queries, invalid writer versions with historical prefixes, optional userdata, explicit brands, UUID and large property indices. Region/text serialization infrastructure added, but in-memory image/sequence encoding round trips, mini images, namespace switching and allocation failures remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/writing.c",
+      "tools/test_writing.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
   "heif_context_set_max_decoding_threads": {
     "notes": "Original-header independent diagnostics, warning pagination/copy, context thread values, grid worker callbacks and serial tile validation. Arbitrary concurrent clients, allocation failure and other codecs remain open.",
     "status": "partial",
@@ -408,6 +426,42 @@
       "tools/test_security.py",
       "tests/security_lifetimes.c",
       "tools/test_security_lifetimes.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_context_set_unif": {
+    "notes": "Original-header exact metadata-only BMFF bytes and read-back, output files and I/O-failure behavior, callback errors/reentrant queries, invalid writer versions with historical prefixes, optional userdata, explicit brands, UUID and large property indices. Region/text serialization infrastructure added, but in-memory image/sequence encoding round trips, mini images, namespace switching and allocation failures remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/writing.c",
+      "tools/test_writing.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_context_set_write_mini_format": {
+    "notes": "Original-header exact metadata-only BMFF bytes and read-back, output files and I/O-failure behavior, callback errors/reentrant queries, invalid writer versions with historical prefixes, optional userdata, explicit brands, UUID and large property indices. Region/text serialization infrastructure added, but in-memory image/sequence encoding round trips, mini images, namespace switching and allocation failures remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/writing.c",
+      "tools/test_writing.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_context_write": {
+    "notes": "Original-header exact metadata-only BMFF bytes and read-back, output files and I/O-failure behavior, callback errors/reentrant queries, invalid writer versions with historical prefixes, optional userdata, explicit brands, UUID and large property indices. Region/text serialization infrastructure added, but in-memory image/sequence encoding round trips, mini images, namespace switching and allocation failures remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/writing.c",
+      "tools/test_writing.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_context_write_to_file": {
+    "notes": "Original-header exact metadata-only BMFF bytes and read-back, output files and I/O-failure behavior, callback errors/reentrant queries, invalid writer versions with historical prefixes, optional userdata, explicit brands, UUID and large property indices. Region/text serialization infrastructure added, but in-memory image/sequence encoding round trips, mini images, namespace switching and allocation failures remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/writing.c",
+      "tools/test_writing.py",
       "crates/capi/tests/abi.rs"
     ]
   },

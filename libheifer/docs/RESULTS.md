@@ -780,3 +780,13 @@ The 224-case independent original-header client exercises 39 APIs with exact cal
 Registered-plugin image encoding/decoding, dynamic plugin loading, resource failures and cross-platform C execution remain open. Native HEVC plugin names are not imitated: the candidate identifies its Rust decoder as `rusty_h265`. This corpus checks external test plugins independently of bundled optional codecs and does not claim native codec equivalence. Full completion remains false: 396 partial APIs and 69 missing.
 
 Region checkpoint CI (`386ed8ca16a0d4a443e960419d2b7ceaa713add7`, run `35421346438`) completed: all independent development suites, client sanitizers with leak checking, codec-free suites, all 103 then-current mutations, development inventory and Linux/macOS/Windows builds passed. Only strict full completion failed, as expected.
+
+### File serialization and writer callbacks
+
+Six APIs implement ordered BMFF metadata serialization, iloc/idat/mdat payloads, item information, properties/associations/references, brands, writer callbacks and file output. The independent 480-case original-header corpus compares every output byte, callback userdata and exact errors, callback reentrancy, old writer prefixes, repeated writes, read-back outcomes, UUIDs, 127/128 property boundaries, and native file-open failure behavior. Normal, codec-free and ASan/UBSan clients match. Local LeakSanitizer remains disabled under tracing; CI requests it.
+
+All six mutations are detected by transcript differences: mdat base (198 cases), duplicate brands (265), UUID bytes (18), property index width (3), callback userdata (265), and success message (50). An initial userdata mutant crashed the internal file callback before producing a comparison report and was correctly rejected as undetected. Guarding that internal callback against null userdata lets the suite detect the semantic difference without counting a crash as evidence. The default mutation suite now contains 137 defects.
+
+The writer guard is the only subsequent change after 11,478 item/region/property/metadata/text/context regression cases passed. Both feature builds, original-header ABI and strict Clippy passed before that guard; the mutation baseline rechecked ABI afterward. Exact tested binary hashes are retained per report under `docs/results/writing-*.json`.
+
+This is metadata writer coverage, not complete image/sequence writing. New-image encoding integration, region/text round trips, actual compact image output, offsets beyond 32 bits, ID namespace switching, allocation failures, whole-library instrumentation and non-Linux C execution remain open. There are 402 partial APIs and 63 missing; the strict completion gate remains unchanged.

@@ -246,3 +246,6 @@ mod entity_groups;
 pub use entity_groups::EntityGroup;
 
 mod gimi;
+
+mod writing;
+pub use writing::Writer;

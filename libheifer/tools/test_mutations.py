@@ -15,6 +15,13 @@ import sys
 import tempfile
 
 MUTATIONS = [
+    ('writer_mdat_base', 'src/writing.rs', 'out.len() as u64 + first.len() as u64 + 8', 'out.len() as u64 + first.len() as u64 + 9', 'writing'),
+    ('writer_brand_dedup', 'src/writing.rs', 'if !self.brands.contains(&brand) {', 'if true {', 'writing'),
+    ('writer_uuid_bytes', 'src/writing.rs', 'p.extend(prop.uuid.unwrap_or([0; 16]));', 'p.extend([0; 16]);', 'writing'),
+    ('writer_large_property_index', 'src/writing.rs', 'any(|i| *i >= 127)', 'any(|i| *i >= 128)', 'writing'),
+    ('writer_userdata', 'crates/capi/src/writing.rs', 'data.len(), userdata)', 'data.len(), ptr::null_mut())', 'writing'),
+    ('writer_success_message', 'crates/capi/src/writing.rs', 'error.message = SUCCESS.message;', 'error.message = c"Wrong success".as_ptr();', 'writing'),
+
     ('plugin_encoder_priority', 'crates/capi/src/plugin_registry.rs', 'Self::External(p) => field!(p, priority)', 'Self::External(p) => -field!(p, priority)', 'plugins'),
     ('plugin_decoder_negative_priority', 'crates/capi/src/plugin_registry.rs', 'if priority != 0 {', 'if priority > 0 {', 'plugins'),
     ('plugin_decoder_duplicate', 'crates/capi/src/plugin_registry.rs', 'if !r\n        .decoders', 'if true || !r\n        .decoders', 'plugins'),

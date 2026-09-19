@@ -293,7 +293,7 @@ pub unsafe extern "C" fn heif_context_add_item_references(
     } else {
         unsafe { std::slice::from_raw_parts(to, count as usize) }
     };
-    lock(&ctx.shared).items.references.push(Reference {
+    lock(&ctx.shared).items.add_reference(Reference {
         from,
         kind,
         to: to.to_vec(),
