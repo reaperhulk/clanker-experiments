@@ -1057,3 +1057,28 @@ remaining codec replacements, exhaustive behavior, platform C execution and
 external downstream/performance gates remain open. Compact output's HEVC and
 post-write diagnostics paths still need their own end-to-end oracle coverage.
 Continue through those gaps; finite corpus parity is not full compatibility.
+
+
+### Registered HEVC encoding
+
+Registered HEVC encoder packets now populate hvcC VPS/SPS/PPS arrays, deduplicate
+native equivalent NAL prefixes, and length-prefix image packets. SPS fields supply
+profile, chroma, bit depths and post-conformance-window dimensions; encoder-size
+callbacks, alpha-specific URNs, clean apertures and heic/heix profile brands are
+preserved. The compact writer now has independent HEVC end-to-end coverage.
+All 762 ordinary and 762 compact cases pass exact original-header callback/pixel/
+file comparisons in normal, ASan/UBSan client and codec-free builds. Seven new
+mutations are detected by 8, 708, 24, 706, 51, 660 and 708 semantic differences,
+without process failures (247 default mutations). AV1 encoder/compact (441 each),
+HEVC size limits (400) and ordinary writer (480) regressions pass. Rust tests,
+formatting, Clippy, ABI baseline, dependency and development inventory gates pass.
+
+A workspace reset interrupted the first mutation run after five detections; that
+incomplete evidence is retained separately. Restored sources/client/corpora rebuilt
+to the same binary and corpus hashes, and every new suite and all seven mutations
+were rerun successfully. Reports are in docs/results/hevc-encoding-*,
+hevc-mini-encoding-*, hevc-encoder-* and hevc-recovery-*. Local leak checking is
+disabled under ptrace; CI retains it. Built-in HEVC encoding is still open, along
+with oversized/malformed encoder packets, broader compact post-write diagnostics,
+other codecs, sequences and remaining platform/downstream gates. All 465 functions
+remain partial and strict completion remains false; implementation continues.

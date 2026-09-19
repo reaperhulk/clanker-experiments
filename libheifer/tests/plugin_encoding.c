@@ -11,6 +11,7 @@
 static uint32_t v[12];
 static unsigned char *packet;
 static int poll, allocations, current_class;
+static size_t packet_at;
 static const heif_encoder_parameter *parameters[4] = {NULL};
 static heif_error ok(void) { return (heif_error){0,0,"Success"}; }
 static void error(heif_error e) { printf(" e%d,%d,%s",e.code,e.subcode,e.message?e.message:"NULL"); }
@@ -33,7 +34,7 @@ static void size(void *p,uint32_t w,uint32_t h,uint32_t *ow,uint32_t *oh) {
  (void)p;printf(" size%u,%u",w,h);*ow=w+(int32_t)v[7];*oh=h+(int32_t)v[7];
 }
 static heif_error encode(void *p,const heif_image *image,heif_image_input_class cls) {
- (void)p;poll=0;current_class=cls;printf(" encode%d,%d,%d",cls,heif_image_get_colorspace(image),heif_image_get_chroma_format(image));
+ (void)p;poll=0;packet_at=0;current_class=cls;printf(" encode%d,%d,%d",cls,heif_image_get_colorspace(image),heif_image_get_chroma_format(image));
  for(int ch=0;ch<=10;ch++) if(heif_image_has_channel(image,(heif_channel)ch)) {
   int stride=0,w=heif_image_get_width(image,(heif_channel)ch),h=heif_image_get_height(image,(heif_channel)ch),b=heif_image_get_bits_per_pixel(image,(heif_channel)ch);
   const unsigned char *data=heif_image_get_plane_readonly(image,(heif_channel)ch,&stride);uint32_t hash=0;
@@ -47,7 +48,9 @@ static heif_error encode(void *p,const heif_image *image,heif_image_input_class 
 static heif_error data(void *p,uint8_t **out,int *n,heif_encoded_data_type *type) {
  (void)p;printf(" data%d,%d",poll,type!=NULL);
  if((v[8]==2 || (current_class==2 && (v[10]&65536))) && poll==1)return (heif_error){8,2006,"Usage error: Invalid parameter value: data callback"};
- if(poll<(int)v[9]) { *out=packet;*n=v[11]; } else { *out=NULL;*n=0; }
+ if(v[10]&262144) {
+  if(packet_at+4<=v[11] && v[9]) { uint32_t length;memcpy(&length,packet+packet_at,4);packet_at+=4;if(length>v[11]-packet_at)return (heif_error){8,0,"invalid probe packet"};*out=packet+packet_at;*n=length;packet_at+=length; } else { *out=NULL;*n=0; }
+ } else if(poll<(int)v[9]) { *out=packet;*n=v[11]; } else { *out=NULL;*n=0; }
  poll++;return ok();
 }
 static heif_error write_data(heif_context *ctx,const void *bytes,size_t n,void *u) {
@@ -59,10 +62,10 @@ int main(void) {
  while(fread(v,sizeof(v),1,stdin)==1) {
   if(v[11]>1000000)return 2;packet=malloc(v[11]+1);if(fread(packet,1,v[11],stdin)!=v[11])return 2;
   for(int i=0;i<3;i++){heif_encoder_parameter p={0};p.version=v[0]>=3?2:1;p.name=i==0?"integer":i==1?"boolean":"string";p.type=(heif_encoder_parameter_type)(i+1);size_t n=p.version==1?offsetof(heif_encoder_parameter,has_default):sizeof(p);void *copy=malloc(n);memcpy(copy,&p,n);parameters[i]=copy;}
-  allocations=0;heif_encoder_plugin plugin={0};plugin.plugin_api_version=v[0];plugin.compression_format=heif_compression_AV1;plugin.id_name="encode-probe";plugin.priority=100000;plugin.supports_lossy_compression=1;plugin.get_plugin_name=name;plugin.new_encoder=allocate;plugin.free_encoder=release;plugin.list_parameters=list;plugin.query_input_colorspace=query;plugin.query_input_colorspace2=query2;plugin.encode_image=encode;plugin.get_compressed_data=data;plugin.query_encoded_size=size;plugin.get_parameter_quality=get_int;plugin.set_parameter_quality=set_int;plugin.get_parameter_lossless=get_int;plugin.set_parameter_lossless=set_int;plugin.get_parameter_logging_level=get_int;plugin.set_parameter_logging_level=set_int;plugin.get_parameter_integer=get_named;plugin.set_parameter_integer=set_named;plugin.get_parameter_boolean=get_named;plugin.set_parameter_boolean=set_named;plugin.get_parameter_string=get_string;plugin.set_parameter_string=set_string;
+  allocations=0;heif_encoder_plugin plugin={0};plugin.plugin_api_version=v[0];plugin.compression_format=(v[10]&262144)?heif_compression_HEVC:heif_compression_AV1;plugin.id_name="encode-probe";plugin.priority=100000;plugin.supports_lossy_compression=1;plugin.get_plugin_name=name;plugin.new_encoder=allocate;plugin.free_encoder=release;plugin.list_parameters=list;plugin.query_input_colorspace=query;plugin.query_input_colorspace2=query2;plugin.encode_image=encode;plugin.get_compressed_data=data;plugin.query_encoded_size=size;plugin.get_parameter_quality=get_int;plugin.set_parameter_quality=set_int;plugin.get_parameter_lossless=get_int;plugin.set_parameter_lossless=set_int;plugin.get_parameter_logging_level=get_int;plugin.set_parameter_logging_level=set_int;plugin.get_parameter_integer=get_named;plugin.set_parameter_integer=set_named;plugin.get_parameter_boolean=get_named;plugin.set_parameter_boolean=set_named;plugin.get_parameter_string=get_string;plugin.set_parameter_string=set_string;
   size_t length=v[0]<=1?END(heif_encoder_plugin,get_compressed_data):v[0]==2?END(heif_encoder_plugin,query_input_colorspace2):v[0]==3?END(heif_encoder_plugin,query_encoded_size):sizeof(plugin);
   heif_encoder_plugin *old=malloc(length);memcpy(old,&plugin,length);error(heif_register_encoder_plugin(old));
-  heif_context *ctx=heif_context_alloc();heif_context_set_write_mini_format(ctx,v[10]&64);heif_encoder *encoder=NULL;error(heif_context_get_encoder_for_format(ctx,heif_compression_AV1,&encoder));
+  heif_context *ctx=heif_context_alloc();heif_context_set_write_mini_format(ctx,v[10]&64);heif_encoder *encoder=NULL;error(heif_context_get_encoder_for_format(ctx,plugin.compression_format,&encoder));
   heif_image *image=NULL;error(heif_image_create(7,5,(heif_colorspace)v[1],(heif_chroma)v[2],&image));
   for(int ch=0;ch<=10;ch++) {
    int present=v[1]==2?ch==0:v[1]==0?ch<3:v[2]==3?(ch>=3&&ch<=5):ch==10;

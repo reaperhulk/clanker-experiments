@@ -282,7 +282,7 @@
     ]
   },
   "heif_context_encode_image": {
-    "notes": "Independent original-header mask and uncompressed encoding, exact file bytes and all active decoded plane bytes, orientations, versioned options, ICC/NCLX/HDR/GIMI metadata, primary flags, overlays, thumbnail scaling/assignment/output sentinels, and repeated region/text writes. Native freshly encoded uncompressed alpha queries and encoded timestamp ownership fail in isolated ASan probes and are excluded from parity counts; candidate safety probes pass. External codec-plugin integration, other encoders/codecs, custom/sensor configurations, large/resource-failure cases and non-Linux behavior remain open. Registered AV1 callbacks/alpha/thumbnail and compact output: 441-case independent oracle suites, sanitizer, codec-free and mutation evidence. Other codec and exhaustive behavior gaps remain.",
+    "notes": "Independent original-header mask and uncompressed encoding, exact file bytes and all active decoded plane bytes, orientations, versioned options, ICC/NCLX/HDR/GIMI metadata, primary flags, overlays, thumbnail scaling/assignment/output sentinels, and repeated region/text writes. Native freshly encoded uncompressed alpha queries and encoded timestamp ownership fail in isolated ASan probes and are excluded from parity counts; candidate safety probes pass. External codec-plugin integration, other encoders/codecs, custom/sensor configurations, large/resource-failure cases and non-Linux behavior remain open. Registered AV1 callbacks/alpha/thumbnail and compact output: 441-case independent oracle suites, sanitizer, codec-free and mutation evidence. Other codec and exhaustive behavior gaps remain. Registered HEVC encoding and compact writing have 762-case normal/sanitizer/codec-free independent comparisons; SPS configuration, alpha, duplicate NALs, profile brands and callback errors. Broader codec/packet behavior remains partial.",
     "status": "partial",
     "tests": [
       "tests/encoding.c",
@@ -290,11 +290,13 @@
       "tools/test_encoding.py",
       "tests/plugin_encoding.c",
       "tools/test_plugin_encoding.py",
-      "tools/test_mini_encoding.py"
+      "tools/test_mini_encoding.py",
+      "tools/test_hevc_encoding.py",
+      "tools/test_hevc_mini_encoding.py"
     ]
   },
   "heif_context_encode_thumbnail": {
-    "notes": "Independent original-header mask and uncompressed encoding, exact file bytes and all active decoded plane bytes, orientations, versioned options, ICC/NCLX/HDR/GIMI metadata, primary flags, overlays, thumbnail scaling/assignment/output sentinels, and repeated region/text writes. Native freshly encoded uncompressed alpha queries and encoded timestamp ownership fail in isolated ASan probes and are excluded from parity counts; candidate safety probes pass. External codec-plugin integration, other encoders/codecs, custom/sensor configurations, large/resource-failure cases and non-Linux behavior remain open. Registered AV1 callbacks/alpha/thumbnail and compact output: 441-case independent oracle suites, sanitizer, codec-free and mutation evidence. Other codec and exhaustive behavior gaps remain.",
+    "notes": "Independent original-header mask and uncompressed encoding, exact file bytes and all active decoded plane bytes, orientations, versioned options, ICC/NCLX/HDR/GIMI metadata, primary flags, overlays, thumbnail scaling/assignment/output sentinels, and repeated region/text writes. Native freshly encoded uncompressed alpha queries and encoded timestamp ownership fail in isolated ASan probes and are excluded from parity counts; candidate safety probes pass. External codec-plugin integration, other encoders/codecs, custom/sensor configurations, large/resource-failure cases and non-Linux behavior remain open. Registered AV1 callbacks/alpha/thumbnail and compact output: 441-case independent oracle suites, sanitizer, codec-free and mutation evidence. Other codec and exhaustive behavior gaps remain. Registered HEVC encoding and compact writing have 762-case normal/sanitizer/codec-free independent comparisons; SPS configuration, alpha, duplicate NALs, profile brands and callback errors. Broader codec/packet behavior remains partial.",
     "status": "partial",
     "tests": [
       "tests/encoding.c",
@@ -302,7 +304,9 @@
       "tools/test_encoding.py",
       "tests/plugin_encoding.c",
       "tools/test_plugin_encoding.py",
-      "tools/test_mini_encoding.py"
+      "tools/test_mini_encoding.py",
+      "tools/test_hevc_encoding.py",
+      "tools/test_hevc_mini_encoding.py"
     ]
   },
   "heif_context_free": {
@@ -713,7 +717,7 @@
     ]
   },
   "heif_context_set_write_mini_format": {
-    "notes": "Original-header exact metadata-only BMFF bytes and read-back, output files and I/O-failure behavior, callback errors/reentrant queries, invalid writer versions with historical prefixes, optional userdata, explicit brands, UUID and large property indices. Region/text serialization infrastructure added, but in-memory image/sequence encoding round trips, mini images, namespace switching and allocation failures remain open. Registered AV1 callbacks/alpha/thumbnail and compact output: 441-case independent oracle suites, sanitizer, codec-free and mutation evidence. Other codec and exhaustive behavior gaps remain.",
+    "notes": "Original-header exact metadata-only BMFF bytes and read-back, output files and I/O-failure behavior, callback errors/reentrant queries, invalid writer versions with historical prefixes, optional userdata, explicit brands, UUID and large property indices. Region/text serialization infrastructure added, but in-memory image/sequence encoding round trips, mini images, namespace switching and allocation failures remain open. Registered AV1 callbacks/alpha/thumbnail and compact output: 441-case independent oracle suites, sanitizer, codec-free and mutation evidence. Other codec and exhaustive behavior gaps remain. Registered HEVC encoding and compact writing have 762-case normal/sanitizer/codec-free independent comparisons; SPS configuration, alpha, duplicate NALs, profile brands and callback errors. Broader codec/packet behavior remains partial.",
     "status": "partial",
     "tests": [
       "tests/writing.c",
@@ -721,11 +725,13 @@
       "crates/capi/tests/abi.rs",
       "tests/plugin_encoding.c",
       "tools/test_plugin_encoding.py",
-      "tools/test_mini_encoding.py"
+      "tools/test_mini_encoding.py",
+      "tools/test_hevc_encoding.py",
+      "tools/test_hevc_mini_encoding.py"
     ]
   },
   "heif_context_write": {
-    "notes": "Original-header exact metadata-only BMFF bytes and read-back, output files and I/O-failure behavior, callback errors/reentrant queries, invalid writer versions with historical prefixes, optional userdata, explicit brands, UUID and large property indices. Region/text serialization infrastructure added, but in-memory image/sequence encoding round trips, mini images, namespace switching and allocation failures remain open. Registered AV1 callbacks/alpha/thumbnail and compact output: 441-case independent oracle suites, sanitizer, codec-free and mutation evidence. Other codec and exhaustive behavior gaps remain.",
+    "notes": "Original-header exact metadata-only BMFF bytes and read-back, output files and I/O-failure behavior, callback errors/reentrant queries, invalid writer versions with historical prefixes, optional userdata, explicit brands, UUID and large property indices. Region/text serialization infrastructure added, but in-memory image/sequence encoding round trips, mini images, namespace switching and allocation failures remain open. Registered AV1 callbacks/alpha/thumbnail and compact output: 441-case independent oracle suites, sanitizer, codec-free and mutation evidence. Other codec and exhaustive behavior gaps remain. Registered HEVC encoding and compact writing have 762-case normal/sanitizer/codec-free independent comparisons; SPS configuration, alpha, duplicate NALs, profile brands and callback errors. Broader codec/packet behavior remains partial.",
     "status": "partial",
     "tests": [
       "tests/writing.c",
@@ -733,7 +739,9 @@
       "crates/capi/tests/abi.rs",
       "tests/plugin_encoding.c",
       "tools/test_plugin_encoding.py",
-      "tools/test_mini_encoding.py"
+      "tools/test_mini_encoding.py",
+      "tools/test_hevc_encoding.py",
+      "tools/test_hevc_mini_encoding.py"
     ]
   },
   "heif_context_write_to_file": {

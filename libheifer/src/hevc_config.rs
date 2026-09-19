@@ -125,3 +125,126 @@ pub fn coded_size(config: &[u8]) -> Result<Option<(u32, u32)>, ContextError> {
     }
     Ok(None)
 }
+
+/// HEVC packet configuration for registered still-image encoders.
+#[derive(Default)]
+pub struct EncoderConfiguration {
+    header: [u8; 22],
+    arrays: Vec<(u8, Vec<Vec<u8>>)>,
+    pub size: (u32, u32),
+}
+impl EncoderConfiguration {
+    pub fn update(&mut self, nal: &[u8]) -> Result<bool, ContextError> {
+        let Some(&first) = nal.first() else {
+            return Ok(false);
+        };
+        let kind = first >> 1;
+        if kind == 33 {
+            self.sps(nal)?;
+        }
+        if !matches!(kind, 32..=34) {
+            return Ok(false);
+        }
+        if let Some((_, units)) = self.arrays.iter_mut().find(|(t, _)| *t == kind) {
+            for existing in units.iter_mut() {
+                let common = existing.len().min(nal.len());
+                if existing[..common] == nal[..common] {
+                    if nal.len() < existing.len() {
+                        *existing = nal.to_vec();
+                    }
+                    return Ok(true);
+                }
+            }
+            units.push(nal.to_vec());
+        } else {
+            self.arrays.push((kind, vec![nal.to_vec()]));
+        }
+        Ok(true)
+    }
+    fn sps(&mut self, nal: &[u8]) -> Result<(), ContextError> {
+        let mut bits = Bits::new(nal);
+        bits.skip(20);
+        let layers = bits.get(3) as usize;
+        let nested = bits.get(1) as u8;
+        self.header[1] = bits.get(8) as u8;
+        self.header[2..6].copy_from_slice(&bits.get(32).to_be_bytes());
+        bits.skip(48);
+        self.header[12] = bits.get(8) as u8;
+        let flags: Vec<_> = (0..layers).map(|_| (bits.get(1), bits.get(1))).collect();
+        if layers != 0 {
+            bits.skip((8 - layers) * 2);
+        }
+        for (profile, level) in flags {
+            if profile != 0 {
+                bits.skip(56);
+            }
+            if level != 0 {
+                bits.skip(8);
+            }
+        }
+        bits.ue()?;
+        let chroma = bits.ue()?;
+        if chroma > 3 {
+            return Err(invalid("SPS chroma_format_idc out of range"));
+        }
+        if chroma == 3 {
+            bits.skip(1);
+        }
+        let mut width = bits.ue()?;
+        let mut height = bits.ue()?;
+        if bits.get(1) != 0 {
+            let left = u64::from(bits.ue()?);
+            let right = u64::from(bits.ue()?);
+            let top = u64::from(bits.ue()?);
+            let bottom = u64::from(bits.ue()?);
+            let sx = if matches!(chroma, 1 | 2) { 2 } else { 1 };
+            let sy = if chroma == 1 { 2 } else { 1 };
+            let crop_x = sx * (left + right);
+            let crop_y = sy * (top + bottom);
+            if crop_x > u64::from(width) || crop_y > u64::from(height) {
+                return Err(invalid("SPS conformance window exceeds image dimensions"));
+            }
+            width -= crop_x as u32;
+            height -= crop_y as u32;
+        }
+        let luma = bits.ue()?;
+        let color = bits.ue()?;
+        if luma > 8 {
+            return Err(invalid("SPS bit_depth_luma_minus8 out of range"));
+        }
+        if color > 8 {
+            return Err(invalid("SPS bit_depth_chroma_minus8 out of range"));
+        }
+        self.header[0] = 1;
+        self.header[13..22].copy_from_slice(&[
+            0xf0,
+            0,
+            0xfc,
+            0xfc | chroma as u8,
+            0xf8 | luma as u8,
+            0xf8 | color as u8,
+            0,
+            0,
+            11 | (nested << 2),
+        ]);
+        self.size = (width, height);
+        Ok(())
+    }
+    pub fn bytes(&self) -> Result<Vec<u8>, ContextError> {
+        let mut bytes = self.header.to_vec();
+        bytes.push(self.arrays.len() as u8);
+        for (kind, units) in &self.arrays {
+            bytes.push(64 | kind);
+            let count = u16::try_from(units.len())
+                .map_err(|_| ContextError::invalid(0, "Too many NAL units in hvcC"))?;
+            bytes.extend_from_slice(&count.to_be_bytes());
+            for nal in units {
+                let n = u16::try_from(nal.len())
+                    .map_err(|_| ContextError::invalid(0, "NAL unit too large in hvcC"))?;
+                bytes.extend_from_slice(&n.to_be_bytes());
+                bytes.extend_from_slice(nal);
+            }
+        }
+        Ok(bytes)
+    }
+}

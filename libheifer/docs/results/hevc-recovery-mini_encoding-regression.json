@@ -1,0 +1,12 @@
+{
+  "scope": "Original-header exact compact AV1 encoding, callbacks and repeated file writes.",
+  "cases": 441,
+  "mismatches": 0,
+  "client_sanitizers": false,
+  "leak_check": false,
+  "client_sha256": "2d56877588ad240efa28acede5ea5b1b4579848fd610b318f8bcd4309afcf3d2",
+  "corpus_sha256": "cbeb17330b4bc4c3459e89bf34c86480a2bb10bbc0cb961c0b17cee898d8a4b6",
+  "differences": [],
+  "reference_sha256": "5cc5713a0503098f20f8a3631e370d43256ebdca0a3209e97d541e6ecf1cd917",
+  "candidate_sha256": "8ff37afee0920402e9e6ee0d0848aaacd8d22c27a85cc63b9a6f31073c4b5f29"
+}

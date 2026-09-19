@@ -174,7 +174,16 @@ impl Context {
             .and_then(|doc| doc.images.get(&doc.primary))
             .and_then(|image| match &image.kind {
                 b"av01" => Some(*b"avif"),
-                b"hvc1" => Some(*b"heic"),
+                b"hvc1" => {
+                    let properties = image.retained_properties.lock().unwrap();
+                    let config = properties.iter().find(|p| p.kind == *b"hvcC");
+                    let main = config.is_some_and(|p| {
+                        let profile = p.data.get(1).copied().unwrap_or(0) & 31;
+                        let flags = p.data.get(2).copied().unwrap_or(0);
+                        matches!(profile, 1 | 3) || flags & 0x50 != 0
+                    });
+                    Some(if main { *b"heic" } else { *b"heix" })
+                }
                 _ => None,
             });
         if layout.major == 0 && structural {

@@ -49,7 +49,7 @@ pub unsafe extern "C" fn heif_context_encode_image(
     let external = if matches!(
         encoder.source,
         crate::plugin_registry::EncoderSource::External(_)
-    ) && encoder.source.format() == 4
+    ) && matches!(encoder.source.format(), 1 | 4)
     {
         Some(crate::plugin_encoding::encode_image(
             &ctx.shared,
@@ -253,7 +253,7 @@ pub unsafe extern "C" fn heif_context_encode_thumbnail(
     let external = if matches!(
         encoder.source,
         crate::plugin_registry::EncoderSource::External(_)
-    ) && encoder.source.format() == 4
+    ) && matches!(encoder.source.format(), 1 | 4)
     {
         drop(state);
         let result =

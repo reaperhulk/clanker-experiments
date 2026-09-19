@@ -13,7 +13,8 @@ Initial source audit (2026-09-18):
 | AV1 encode | [rav1e](https://github.com/xiph/rav1e) | Evaluate without native/assembly defaults; audit the resolved graph and actual build artifacts. Not integrated yet. |
 | JPEG2000 decode | [hayro-jpeg2000](https://github.com/LaurenzV/hayro) | Advertises pure Rust; conformance, profiles, encoder support and HTJ2K coverage still require evaluation. |
 | VVC | [gamut-vvc](https://github.com/justin13888/gamut/tree/main/crates/gamut-vvc) | Pure Rust intra-image codec candidate; workspace also contains an unrelated native JXL crate which must not enter our graph. Requires newer Rust and independent coverage validation. |
-| Raw mask decode | In-tree Rust | 8/16-bit mask samples and generated malformed input/conversion cases compared independently; mask encoding remains open. |
+| Raw mask decode | In-tree Rust | 8/16-bit mask samples and generated malformed input/conversion cases compared independently; mask encoding is implemented and has independent exact-byte/roundtrip coverage. |
+| Registered encoder hooks | In-tree Rust | HEVC/AV1 packet configuration, callback lifetimes, alpha/thumbnail conversion, ordinary and compact writing have independent oracle and mutation evidence. These optional caller-provided hooks are separate from the still-open built-in codec encoders. |
 | Remaining codecs/encoders | Open | JPEG, AVC, HEVC encoding, JPEG2000 encoding/HTJ2K, full VVC and uncompressed formats require further implementation/audit. |
 
 Repository descriptions and upstream conformance claims are leads, not our test

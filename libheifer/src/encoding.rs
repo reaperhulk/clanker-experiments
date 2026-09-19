@@ -322,7 +322,11 @@ impl Context {
             *b"auxC",
             [
                 &[0u8; 4][..],
-                b"urn:mpeg:mpegB:cicp:systems:auxiliary:alpha\0",
+                if main.kind == *b"hvc1" {
+                    b"urn:mpeg:hevc:2015:auxid:1\0".as_slice()
+                } else {
+                    b"urn:mpeg:mpegB:cicp:systems:auxiliary:alpha\0".as_slice()
+                },
             ]
             .concat(),
         );

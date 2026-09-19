@@ -15,11 +15,19 @@ import sys
 import tempfile
 
 MUTATIONS = [
+    ('hevc_encoder_crop', 'src/hevc_config.rs', 'width -= crop_x as u32;', 'width -= 0;', 'hevc_encoding'),
+    ('hevc_encoder_profile', 'src/hevc_config.rs', 'self.header[1] = bits.get(8) as u8;', 'self.header[1] = bits.get(8) as u8 ^ 1;', 'hevc_encoding'),
+    ('hevc_encoder_dedup', 'src/hevc_config.rs', 'if existing[..common] == nal[..common] {', 'if false && existing[..common] == nal[..common] {', 'hevc_encoding'),
+    ('hevc_encoder_length', 'crates/capi/src/plugin_encoding.rs', 'data.extend_from_slice(&(size as u32).to_be_bytes());', 'data.extend_from_slice(&((size + 1) as u32).to_be_bytes());', 'hevc_encoding'),
+    ('hevc_encoder_aux_type', 'src/encoding.rs', 'b"urn:mpeg:hevc:2015:auxid:1\\0".as_slice()', 'b"urn:mpeg:hevc:2015:auxid:2\\0".as_slice()', 'hevc_encoding'),
+    ('hevc_encoder_brand', 'src/writing.rs', 'flags & 0x50 != 0', 'flags & 0x50 == 0', 'hevc_encoding'),
+    ('hevc_encoder_array', 'src/hevc_config.rs', 'bytes.push(64 | kind);', 'bytes.push(128 | kind);', 'hevc_mini_encoding'),
+
     ('encoder_empty_pixi', 'src/encoding.rs', 'image.plane(ch).map_or(0, |p| p.bit_depth)', 'image.plane(ch).map_or(1, |p| p.bit_depth)', 'plugin_encoding'),
     ('encoder_versioned_query', 'crates/capi/src/plugin_encoding.rs', 'if version >= 2 {', 'if version >= 3 {', 'plugin_encoding'),
     ('encoder_input_class', 'crates/capi/src/plugin_encoding.rs', 'encode(encoder.state, &image, input_class)', 'encode(encoder.state, &image, input_class + 1)', 'plugin_encoding'),
     ('encoder_packet_configuration', 'crates/capi/src/plugin_encoding.rs', 'config.update(packet);', '// omit sequence configuration', 'plugin_encoding'),
-    ('encoder_alpha_class', 'crates/capi/src/plugin_encoding.rs', 'encode_av1(&alpha, &alpha_encoder, copied, options, 2)?', 'encode_av1(&alpha, &alpha_encoder, copied, options, 1)?', 'plugin_encoding'),
+    ('encoder_alpha_class', 'crates/capi/src/plugin_encoding.rs', 'encode_coded(&alpha, &alpha_encoder, copied, options, 2)?', 'encode_coded(&alpha, &alpha_encoder, copied, options, 1)?', 'plugin_encoding'),
     ('encoder_parameter_copy', 'crates/capi/src/plugin_encoding.rs', 'set(out.state, value);', 'set(out.state, value + 1);', 'plugin_encoding'),
     ('encoder_packet_bytes', 'crates/capi/src/plugin_encoding.rs', 'data.extend_from_slice(packet);', 'data.extend_from_slice(packet); data.push(0);', 'plugin_encoding'),
     ('encoder_clap_range', 'src/encoding.rs', 'encoded_size.0 - image.width > (1u32 << 31)', 'encoded_size.0 - image.width >= (1u32 << 31)', 'plugin_encoding'),

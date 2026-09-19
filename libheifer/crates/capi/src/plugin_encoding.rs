@@ -109,10 +109,14 @@ pub(super) fn encode_image(
     options: &Options,
     input_class: i32,
 ) -> Result<Arc<libheifer::context::ImageInfo>, ContextError> {
-    let encoded = encode_av1(image, encoder, copied, options, input_class)?;
+    let encoded = encode_coded(image, encoder, copied, options, input_class)?;
     let output = crate::context::lock(context).insert_coded(
         &encoded.image,
-        *b"av01",
+        if encoder.source.format() == 1 {
+            *b"hvc1"
+        } else {
+            *b"av01"
+        },
         encoded.data,
         encoded.properties,
         options,
@@ -159,7 +163,7 @@ pub(super) fn encode_image(
             full_range: true,
         });
         let alpha_encoder = alpha_encoder(encoder)?;
-        let mut encoded = encode_av1(&alpha, &alpha_encoder, copied, options, 2)?;
+        let mut encoded = encode_coded(&alpha, &alpha_encoder, copied, options, 2)?;
         encoded.image.color.raw = None;
         let alpha_options = Options {
             nclx: None,
@@ -168,7 +172,11 @@ pub(super) fn encode_image(
         let mut state = crate::context::lock(context);
         let alpha = state.insert_coded(
             &encoded.image,
-            *b"av01",
+            if encoder.source.format() == 1 {
+                *b"hvc1"
+            } else {
+                *b"av01"
+            },
             encoded.data,
             encoded.properties,
             &alpha_options,
@@ -186,7 +194,7 @@ pub(super) struct Encoded {
     pub size: (u32, u32),
 }
 
-pub(super) fn encode_av1(
+pub(super) fn encode_coded(
     image: &Image,
     encoder: &Encoder,
     copied: &EncodingOptions,
@@ -239,6 +247,8 @@ pub(super) fn encode_av1(
         )?;
     }
     let mut config = Configuration::from_image(&image);
+    let mut hevc = libheifer::hevc_config::EncoderConfiguration::default();
+    let is_hevc = encoder.source.format() == 1;
     let encode = field!(p, encode_image)
         .ok_or_else(|| ContextError::new(8, 0, "Encoder plugin generated an error: Unspecified"))?;
     let err = unsafe { encode(encoder.state, &image, input_class) };
@@ -266,10 +276,24 @@ pub(super) fn encode_av1(
             )
         })?;
         let packet = unsafe { std::slice::from_raw_parts(packet, size) };
-        config.update(packet);
+        if is_hevc {
+            if hevc.update(packet)? {
+                continue;
+            }
+            data.extend_from_slice(&(size as u32).to_be_bytes());
+        } else {
+            config.update(packet);
+        }
         data.try_reserve(size)
             .map_err(|_| libheifer::error::Error::ALLOCATION)?;
         data.extend_from_slice(packet);
+    }
+    if is_hevc && (hevc.size.0 == 0 || hevc.size.1 == 0) {
+        return Err(ContextError::new(
+            8,
+            129,
+            "Encoder plugin generated an error: Invalid image size",
+        ));
     }
     let mut size = (image.width, image.height);
     if version >= 3
@@ -288,7 +312,14 @@ pub(super) fn encode_av1(
     Ok(Encoded {
         image,
         data,
-        properties: vec![(property(*b"av1C", config.bytes()), true)],
-        size,
+        properties: vec![(
+            if is_hevc {
+                property(*b"hvcC", hevc.bytes()?)
+            } else {
+                property(*b"av1C", config.bytes())
+            },
+            true,
+        )],
+        size: if is_hevc { hevc.size } else { size },
     })
 }
