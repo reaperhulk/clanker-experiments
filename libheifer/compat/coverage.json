@@ -2683,5 +2683,37 @@
       "tools/test_sequence_samples.py"
     ],
     "notes": "Independent owned-sample and image-metadata behavior; track integration and allocation-failure coverage remain open."
+  },
+  "heif_image_get_omaf_image_projection": {
+    "status": "partial",
+    "tests": [
+      "tests/omaf.c",
+      "tools/test_omaf.py"
+    ],
+    "notes": "Independent property, description, decoded-image, transform and retained-handle tests; encoding integration remains open."
+  },
+  "heif_image_set_omaf_image_projection": {
+    "status": "partial",
+    "tests": [
+      "tests/omaf.c",
+      "tools/test_omaf.py"
+    ],
+    "notes": "Independent property, description, decoded-image, transform and retained-handle tests; encoding integration remains open."
+  },
+  "heif_image_handle_get_omaf_image_projection": {
+    "status": "partial",
+    "tests": [
+      "tests/omaf.c",
+      "tools/test_omaf.py"
+    ],
+    "notes": "Independent property, description, decoded-image, transform and retained-handle tests; encoding integration remains open."
+  },
+  "heif_image_handle_set_omaf_image_projection": {
+    "status": "partial",
+    "tests": [
+      "tests/omaf.c",
+      "tools/test_omaf.py"
+    ],
+    "notes": "Independent property, description, decoded-image, transform and retained-handle tests; encoding integration remains open."
   }
 }

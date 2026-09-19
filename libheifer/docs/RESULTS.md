@@ -630,3 +630,25 @@ The pinned reference dereferences NULL timestamp inputs. They are excluded from
 behavioral equality claims, rather than counted as matching errors. Candidate
 NULL handling is defensive. Allocation-failure injection, track integration,
 sequence file round trips and universal compatibility remain open.
+
+## OMAF projection properties and descriptions
+
+Four projection APIs and prfr parsing now match 1,678 independent original-header
+cases and 16,780 successful decodes. Coverage includes all 256 projection bytes
+and box versions, signed C enum boundaries, malformed/trailing data, flags,
+property deduplication and ordering, repeated setters, shared handles, context
+reload/free, derived images, decoded pixels and scale propagation.
+
+Descriptions preserve arbitrary enum integers, while only values 0..31 append
+prfr properties. Decoding uses the first retained property, which can differ from
+the latest description value; clearing the description does not erase a property.
+Initial file descriptions use the first valid property's masked five-bit value.
+The independent corpus caught the missing initialization before the final pass.
+
+The same corpus passes C-client ASan/UBSan (local leak checking disabled) and
+codec-free builds. All five new mutations are rejected, bringing the default
+suite to 91 deliberate defects. Context (1,786 cases) and property (960 cases)
+regressions, Rust feature matrices and strict Clippy pass. This brings the
+inventory to 299 partial functions, with 166 missing. Encoding/serialization
+integration, whole-library instrumentation and allocation-failure coverage remain
+open; the completion gate remains deliberately failing.

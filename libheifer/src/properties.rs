@@ -18,6 +18,7 @@ impl Property {
         // input bytes. File deduplication compares that serialized form.
         let size = match &kind {
             b"clli" => 4,
+            b"prfr" => 5,
             b"mdcv" => 24,
             b"amve" | b"ndwt" | b"pasp" => 8,
             _ => data.len(),
@@ -27,10 +28,14 @@ impl Property {
         } else {
             &data[..size.min(data.len())]
         };
+        let mut stored = data.to_vec();
+        if kind == *b"prfr" && !malformed {
+            stored[4] &= 31;
+        }
         Self {
             kind: if malformed { *b"ERR " } else { kind },
             uuid,
-            data: data.to_vec(),
+            data: stored,
             raw: !malformed && parsed_raw(kind, uuid),
             tai: if matches!(&kind, b"taic" | b"itai") {
                 crate::tai::TaiProperty::parse(kind, data).ok()
@@ -71,6 +76,23 @@ impl Property {
 /// as error boxes and rejected when their image is interpreted.
 pub(crate) fn parse_error(kind: [u8; 4], data: &[u8]) -> Option<(ContextError, bool)> {
     match &kind {
+        b"prfr" if data.len() < 4 => {
+            Some((ContextError::invalid(100, "Unexpected end of file"), true))
+        }
+        b"prfr" if data[0] != 0 => Some((
+            ContextError::new(
+                4,
+                3002,
+                format!(
+                    "Unsupported feature: Unsupported data version: prfr box data version {} is not implemented yet",
+                    data[0]
+                ),
+            ),
+            true,
+        )),
+        b"prfr" if data.len() < 5 => {
+            Some((ContextError::invalid(100, "Unexpected end of file"), true))
+        }
         b"clli" if data.len() < 4 => {
             Some((ContextError::invalid(100, "Unexpected end of file"), true))
         }

@@ -157,6 +157,7 @@ impl Image {
         out.color = self.color.try_clone()?;
         out.sensor = self.sensor.clone();
         out.sample = self.sample.clone();
+        out.projection = self.projection;
         out.tai_timestamp = self.tai_timestamp;
         out.pixel_aspect_ratio = self.pixel_aspect_ratio;
         out.premultiplied_alpha = self.premultiplied_alpha;

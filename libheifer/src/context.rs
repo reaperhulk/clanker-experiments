@@ -488,6 +488,7 @@ pub(crate) struct DecoderInput {
     pub _reservation: crate::security::Reservation,
 }
 pub struct ImageInfo {
+    pub(crate) projection: std::sync::atomic::AtomicI32,
     pub retained_properties: std::sync::Mutex<Vec<Arc<crate::properties::Property>>>,
     pub text_ids: std::sync::Mutex<Vec<u32>>,
     pub tai_timestamp: Option<crate::tai::Timestamp>,
@@ -643,6 +644,7 @@ impl Document {
             }
             let ispe = container.dimensions(item.id).unwrap_or((0, 0));
             let mut image = ImageInfo {
+                projection: std::sync::atomic::AtomicI32::new(crate::omaf::FLAT),
                 retained_properties: std::sync::Mutex::new(
                     properties
                         .items
@@ -686,6 +688,9 @@ impl Document {
                 metadata: Vec::new(),
                 error: None,
             };
+            if let Some(projection) = image.decoded_projection() {
+                *image.projection.get_mut() = projection;
+            }
             if let Err(e) = container.properties(item.id) {
                 image.error = Some(e.into());
             } else if item.kind == *b"hvc1" {

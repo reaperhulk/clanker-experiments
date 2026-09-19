@@ -467,6 +467,7 @@ pub fn convert(
         out.color = image.color.try_clone()?;
         out.sensor = image.sensor.clone();
         out.sample = image.sample.clone();
+        out.projection = image.projection;
         out.tai_timestamp = image.tai_timestamp;
         out.color.nclx = Some(node.state.nclx);
         out.pixel_aspect_ratio = image.pixel_aspect_ratio;

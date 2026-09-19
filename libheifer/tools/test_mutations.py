@@ -15,6 +15,12 @@ import sys
 import tempfile
 
 MUTATIONS = [
+    ('omaf_projection_width', 'src/omaf.rs', '.map(|v| i32::from(v & 31))', '.map(|v| i32::from(v & 15))', 'omaf'),
+    ('omaf_latest_property', 'src/omaf.rs', '.find(|p| !p.raw && p.kind == *b"prfr")', '.rfind(|p| !p.raw && p.kind == *b"prfr")', 'omaf'),
+    ('omaf_description_value', 'src/omaf.rs', 'self.projection.store(value, Ordering::Relaxed);', 'self.projection.store(value & 31, Ordering::Relaxed);', 'omaf'),
+    ('omaf_setter_property_range', 'src/omaf.rs', 'if !(0..32).contains(&value)', 'if !(0..31).contains(&value)', 'omaf'),
+    ('omaf_decoded_property', 'src/decoding.rs', 'image.projection = projection;', 'image.projection = crate::omaf::FLAT; let _ = projection;', 'omaf'),
+
     ('sample_payload_copy', 'src/sequence_sample.rs', 'self.data.extend_from_slice(data);', 'self.data.extend(data.iter().map(|v| v ^ 1));', 'sequence_samples'),
     ('sample_empty_storage', 'src/sequence_sample.rs', 'self.data.capacity() != 0', '!self.data.is_empty()', 'sequence_samples'),
     ('sample_duration', 'crates/capi/src/sequence_sample.rs', 'v.$field.duration = duration;', 'v.$field.duration = duration.wrapping_add(1);', 'sequence_samples'),

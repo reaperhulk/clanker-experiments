@@ -144,6 +144,7 @@ impl From<crate::context::ContextError> for DecodingWarning {
 
 #[derive(Debug)]
 pub struct Image {
+    pub projection: i32,
     pub sample: crate::sequence_sample::SampleMetadata,
     pub tai_timestamp: Option<crate::tai::Timestamp>,
     pub sensor: crate::sensor::SensorMetadata,
@@ -192,6 +193,7 @@ impl Image {
             chroma = 3;
         }
         Ok(Self {
+            projection: crate::omaf::FLAT,
             sample: crate::sequence_sample::SampleMetadata::default(),
             sensor: crate::sensor::SensorMetadata::default(),
             tai_timestamp: None,
@@ -554,6 +556,7 @@ impl Image {
         out.color = self.color.try_clone()?;
         out.sensor = self.sensor.clone();
         out.sample = self.sample.clone();
+        out.projection = self.projection;
         out.tai_timestamp = self.tai_timestamp;
         out.pixel_aspect_ratio = self.pixel_aspect_ratio;
         out.premultiplied_alpha = self.premultiplied_alpha;
@@ -638,6 +641,7 @@ impl Image {
         out.color = self.color.try_clone()?;
         out.sensor = self.sensor.clone();
         out.sample = self.sample.clone();
+        out.projection = self.projection;
         out.tai_timestamp = self.tai_timestamp;
         out.pixel_aspect_ratio = self.pixel_aspect_ratio;
         out.premultiplied_alpha = self.premultiplied_alpha;
@@ -684,6 +688,7 @@ impl Image {
         out.color = self.color.try_clone()?;
         out.sensor = self.sensor.clone();
         out.sample = self.sample.clone();
+        out.projection = self.projection;
         out.tai_timestamp = self.tai_timestamp;
         out.pixel_aspect_ratio = self.pixel_aspect_ratio;
         out.premultiplied_alpha = self.premultiplied_alpha;
