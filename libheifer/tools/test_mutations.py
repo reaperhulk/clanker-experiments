@@ -15,6 +15,11 @@ import sys
 import tempfile
 
 MUTATIONS = [
+    ('debug_writer_base', 'src/writing.rs', 'loc.base = debug_base;', 'loc.base = debug_base + 1;', 'debug_writing'),
+    ('debug_writer_duplicates', 'src/debug.rs', 'self.write_meta(&layout, 0, true)', 'self.write_meta(&layout, 0, false)', 'debug_writing'),
+    ('debug_grid_rows', 'src/debug.rs', 'grid.rows, grid.columns, grid.width, grid.height', 'grid.rows + 1, grid.columns, grid.width, grid.height', 'debug_dump'),
+    ('debug_overlay_offsets', 'src/debug.rs', 'write!(details, "{x};{y} ")', 'write!(details, "{y};{x} ")', 'debug_dump'),
+
     ('debug_size_label', 'src/debug.rs', '(header size: {header_size})', '(header size: 0)', 'debug_dump'),
     ('debug_hidden_flag', 'src/debug.rs', '"{indent}hidden item: {}", flags & 1 != 0', '"{indent}hidden item: {}", flags & 1 == 0', 'debug_dump'),
     ('debug_nclc_range', 'src/debug.rs', 'u64::from(matrix == 0)', 'u64::from(matrix != 0)', 'debug_dump'),
@@ -256,7 +261,7 @@ def main():
         run = execute([sys.executable, f"tools/test_{suite}.py", "--reference-build", oracle(suite), "--candidate", candidate, *(["--work", str(evidence / "decode")] if suite.startswith("decode_") or suite == "hevc_limits" else []), "--output", str(evidence / f"baseline-{suite}.json")], root, os.environ, evidence / f"baseline-{suite}.log")
         if run.returncode:
             raise SystemExit(f"Baseline {suite} failed; see {evidence}")
-    run = execute(["cargo", "test", "--locked", "-p", "libheifer-capi", "--test", "abi"], root, os.environ, evidence / "baseline-abi.log")
+    run = execute(["cargo", "test", "--locked", "-p", "libheifer-capi", "--test", "abi"], root, dict(os.environ, CARGO_TARGET_DIR=str(root / ".build/abi-baseline")), evidence / "baseline-abi.log")
     if run.returncode:
         raise SystemExit("Baseline ABI test failed")
     results = []

@@ -62,6 +62,7 @@ fn name(kind: &[u8; 4]) -> Option<&'static str> {
         b"imir" => "Image Mirroring",
         b"auxC" => "Image Properties for Auxiliary Images",
         b"clap" => "Clean Aperture",
+        b"elng" => "Extended language",
         _ => return None,
     })
 }
@@ -76,7 +77,7 @@ fn header_text(out: &mut Vec<u8>, indent: &str, kind: &[u8; 4], size: u64, heade
     }
     let _ = writeln!(out, "{indent}size: {size}   (header size: {header_size})");
 }
-fn children(out: &mut Vec<u8>, data: &[u8], depth: usize, indices: bool) {
+fn children(out: &mut Vec<u8>, data: &[u8], depth: usize, indices: bool, owned: Option<&Context>) {
     if depth > 64 {
         return;
     }
@@ -101,12 +102,27 @@ fn children(out: &mut Vec<u8>, data: &[u8], depth: usize, indices: bool) {
         if indices {
             let _ = writeln!(out, "{indent}index: {index}");
         }
-        dump_box(out, &rest[..size], depth);
+        let raw = indices
+            && owned
+                .and_then(|c| c.properties.boxes.get(index - 1))
+                .is_some_and(|p| p.raw);
+        if raw {
+            out.extend_from_slice(indent.as_bytes());
+            out.extend_from_slice(b"Box: ");
+            if h.kind == *b"uuid" {
+                uuid_text(out, &rest[h.header - 16..h.header]);
+            } else {
+                out.extend_from_slice(&h.kind);
+            }
+            let _ = writeln!(out, " -----\n{indent}size: 0   (header size: 0)");
+        } else {
+            dump_box(out, &rest[..size], depth, owned);
+        }
         index += 1;
         rest = &rest[size..];
     }
 }
-fn dump_box(out: &mut Vec<u8>, data: &[u8], depth: usize) {
+fn dump_box(out: &mut Vec<u8>, data: &[u8], depth: usize, owned: Option<&Context>) {
     let Ok(h) = header(data) else {
         return;
     };
@@ -148,6 +164,7 @@ fn dump_box(out: &mut Vec<u8>, data: &[u8], depth: usize) {
             | b"iref"
             | b"mskC"
             | b"auxC"
+            | b"elng"
     );
     let mut r = Cursor::new(&data[h.header..]);
     let vf = if full { r.n(4) } else { 0 };
@@ -157,10 +174,17 @@ fn dump_box(out: &mut Vec<u8>, data: &[u8], depth: usize) {
         out,
         &indent,
         &h.kind,
-        h.size,
-        h.header + if full { 4 } else { 0 },
+        if owned.is_some() { 0 } else { h.size },
+        if owned.is_some() {
+            0
+        } else {
+            h.header + if full { 4 } else { 0 }
+        },
     );
     match &h.kind {
+        b"elng" => {
+            line(out, &indent, "extended_language: ", r.string());
+        }
         b"hvcC" => {
             let ver = r.n(1);
             let p = r.n(1);
@@ -323,11 +347,11 @@ fn dump_box(out: &mut Vec<u8>, data: &[u8], depth: usize) {
             out.push(b'\n');
         }
         b"meta" | b"iprp" | b"ipco" => {
-            children(out, &r.data[r.at..], depth + 1, h.kind == *b"ipco")
+            children(out, &r.data[r.at..], depth + 1, h.kind == *b"ipco", owned)
         }
         b"iinf" => {
             r.n(if version == 0 { 2 } else { 4 });
-            children(out, &r.data[r.at..], depth + 1, false);
+            children(out, &r.data[r.at..], depth + 1, false, owned);
         }
         b"hdlr" => {
             let _ = writeln!(out, "{indent}pre_defined: {}", r.n(4));
@@ -377,6 +401,9 @@ fn dump_box(out: &mut Vec<u8>, data: &[u8], depth: usize) {
                 let method = if version > 0 { r.n(2) & 15 } else { 0 };
                 let reference = r.n(2);
                 let b = r.n(base);
+                let b = owned
+                    .and_then(|c| c.items.locations.get(&(id as u32)))
+                    .map_or(b, |loc| loc.base);
                 let _ = writeln!(
                     out,
                     "{indent}item ID: {id}\n{indent}  construction method: {method}\n{indent}  data_reference_index: {reference:x}\n{indent}  base_offset: {b}"
@@ -508,7 +535,7 @@ impl Context {
                 return out;
             };
             if let Some(ftyp) = data.get(..first.size as usize) {
-                dump_box(&mut out, ftyp, 0);
+                dump_box(&mut out, ftyp, 0, None);
             }
             if self.debug_loaded == 1 {
                 return out;
@@ -535,7 +562,7 @@ impl Context {
             }
             for b in [meta, moov].into_iter().flatten() {
                 out.push(b'\n');
-                dump_box(&mut out, b, 0);
+                dump_box(&mut out, b, 0, None);
             }
         } else {
             let layout = self.items.layout.lock().unwrap();
@@ -550,7 +577,96 @@ impl Context {
                 out.extend_from_slice(&b.to_be_bytes());
             }
             out.push(b'\n');
+            if !layout.meta.is_empty() {
+                let meta = self.write_meta(&layout, 0, true);
+                out.push(b'\n');
+                dump_box(&mut out, &meta, 0, Some(self));
+            }
         }
+        self.debug_dump_item_data(&mut out);
         out
+    }
+}
+
+fn uuid_text(out: &mut Vec<u8>, bytes: &[u8]) {
+    for (i, b) in bytes.iter().enumerate() {
+        if [4, 6, 8, 10].contains(&i) {
+            out.push(b'-');
+        }
+        let _ = write!(out, "{b:02x}");
+    }
+}
+
+impl Context {
+    fn debug_dump_item_data(&self, out: &mut Vec<u8>) {
+        let limits = *self.limits.read().unwrap();
+        let mut details = Vec::new();
+        let has_iref = if let Some(input) = &self.items.input {
+            let mut rest = input.bytes();
+            let mut found = false;
+            while let Ok(h) = header(rest) {
+                let size = if h.size == 0 {
+                    rest.len()
+                } else {
+                    h.size as usize
+                };
+                if size < h.header || size > rest.len() {
+                    break;
+                }
+                if h.kind == *b"meta" {
+                    found = rest
+                        .get(h.header + 4..size)
+                        .and_then(|b| crate::context::children(b).ok())
+                        .is_some_and(|b| b.iter().any(|(kind, _)| kind == b"iref"));
+                }
+                rest = &rest[size..];
+            }
+            found
+        } else {
+            self.items.layout.lock().unwrap().meta.contains(b"iref")
+        };
+        for (&id, item) in &self.items.items {
+            let kind = item.kind.to_be_bytes();
+            if kind != *b"grid" && kind != *b"iovl" {
+                continue;
+            }
+            let Ok(data) = self.items.item_data(id, limits) else {
+                continue;
+            };
+            if kind == *b"grid" {
+                let Ok(grid) = crate::derived::Grid::parse(&data) else {
+                    continue;
+                };
+                let _ = writeln!(
+                    details,
+                    "\nitem ID {id} (grid):\n  rows: {}\n  columns: {}\n  output width: {}\n  output height: {}",
+                    grid.rows, grid.columns, grid.width, grid.height
+                );
+            } else if has_iref {
+                let count = self
+                    .items
+                    .references
+                    .iter()
+                    .find(|r| r.from == id && r.kind == u32::from_be_bytes(*b"dimg"))
+                    .map_or(0, |r| r.to.len());
+                let Ok(overlay) = crate::overlay::Overlay::parse(&data, count) else {
+                    continue;
+                };
+                let [r, g, b, a] = overlay.background;
+                let _ = write!(
+                    details,
+                    "\nitem ID {id} (iovl):\n  version: {}\n  flags: {}\n  background color: {r};{g};{b};{a}\n  canvas size: {}x{}\n  offsets: ",
+                    data[0], data[1], overlay.width, overlay.height
+                );
+                for (x, y) in overlay.offsets {
+                    let _ = write!(details, "{x};{y} ");
+                }
+                details.push(b'\n');
+            }
+        }
+        if !details.is_empty() {
+            out.extend_from_slice(b"\n=== Item Data ===\n");
+            out.extend(details);
+        }
     }
 }

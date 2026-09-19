@@ -971,3 +971,27 @@ Reader CI at d76f48b has passed all platform Rust builds and new reader checks
 including leak detection; its complete mutation run is tracked separately.
 Compatibility implementation continues through these gaps and the remaining
 codecs, callback/resource behavior, platform ABI and downstream acceptance gates.
+
+
+### Mutable writer and derived-item diagnostics
+
+Writer-created box dumps now preserve native zero-size headers, raw/UUID property
+visibility, duplicate references and item base offsets after repeated writes.
+Grid and overlay dumps include dimensions, backgrounds and all image offsets;
+valid and truncated narrow/wide payloads have independent oracle coverage.
+The 480 writer cases and expanded 1,729 input cases pass normal, ASan/UBSan client
+and codec-free comparisons. The four new mutations are detected with 198, 22,
+12 and six semantic differences, without process failures. Default inventory:
+200 mutations. Writer (480), encoding (1,292) and sequence construction (892)
+regressions pass, as do Rust tests, original-header ABI, formatting and Clippy.
+Reports with binary/client/corpus hashes are in `docs/results/debug-writer-*.json`
+and `docs/results/debug-derived-*.json`.
+
+The mutation runner now isolates its baseline ABI Cargo target directory to avoid
+feature-build artifact collisions; it still requires a successful baseline and
+rejects compilation/process failures as mutation detections. Local leak checking
+remains disabled only because of the ptrace limitation; CI retains it. Sequence
+and richer-property diagnostics, loaded-model edits, deep nesting and platform C
+execution remain open. All 465 function records remain partial, and strict
+completion remains false. Continue codec/plugin integration and remaining plan
+gates; these diagnostic checks do not establish whole-library compatibility.

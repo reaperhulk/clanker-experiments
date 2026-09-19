@@ -4,6 +4,7 @@ import argparse,hashlib,json,os,struct,subprocess
 from pathlib import Path
 from test_context import corpus,box,full
 from item_fixtures import item_file,ispe
+from test_decode_overlay import overlay
 
 def cases():
     tests=corpus(Path('tests/upstream'))
@@ -11,6 +12,20 @@ def cases():
         for n in range(1,5):
             data=item_file([dict(id=i+1,kind=b'mski',data=bytes((j*31+i)&255 for j in range(5*7*(depth//8))),props=[ispe(5,7),full(b'mskC',bytes([depth]))],refs={b'thmb':[1]} if i else {}) for i in range(n)])
             tests.append((f'mask-{depth}-{n}',data))
+    for wide in [False,True]:
+        for version in [0,1,255]:
+            for count in [0,1,2,5]:
+                offsets=[(i*13-17,i*11-19) for i in range(count)]
+                data=overlay(width=15,height=19,offsets=offsets,wide=wide,version=version)
+                for n in range(len(data)+1):
+                    items=[dict(id=1,kind=b'iovl',data=data[:n],props=[ispe(15,19)],refs={b'dimg':list(range(2,2+count))})]
+                    items += [dict(id=i+2,kind=b'mski',data=bytes(35),props=[ispe(5,7),full(b'mskC',b'\10')]) for i in range(count)]
+                    tests.append((f'overlay-{wide}-{version}-{count}-{n}',item_file(items)))
+    for flags in [0,1,2,255]:
+        for rows,columns in [(0,0),(1,2),(255,255)]:
+            data=bytes([0,flags,rows,columns])+struct.pack('>II' if flags&1 else '>HH',17,23)
+            for n in range(len(data)+1):
+                tests.append((f'grid-{flags}-{rows}-{columns}-{n}',item_file([dict(id=1,kind=b'grid',data=data[:n],props=[ispe(17,23)],refs={b'dimg':[2]}),dict(id=2,kind=b'mski',data=bytes(35),props=[ispe(5,7),full(b'mskC',b'\10')])])))
     return tests
 
 def main():

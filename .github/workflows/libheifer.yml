@@ -53,6 +53,8 @@ jobs:
       - run: python tools/test_images.py --reference-build .build/reference
       - run: python tools/test_color.py --reference-build .build/reference
       - run: python tools/test_debug_dump.py --reference-build .build/reference
+      - run: python tools/test_debug_writing.py --reference-build .build/reference
+      - run: python tools/test_debug_writing.py --reference-build .build/reference --sanitize --work .build/debug-writing-sanitized --output .build/debug-writing-sanitized-report.json
       - run: python tools/test_debug_dump.py --reference-build .build/reference --sanitize --work .build/debug-sanitized --output .build/debug-sanitized-report.json
       - run: python tools/test_reader_input.py --reference-build .build/reference
       - run: python tools/test_reader_input.py --reference-build .build/reference --sanitize --work .build/reader-sanitized --output .build/reader-sanitized-report.json
@@ -141,6 +143,7 @@ jobs:
       - run: python tools/test_decode_mask.py --reference-build .build/reference
       - run: CARGO_TARGET_DIR=.build/no-codecs cargo build --locked --release -p libheifer-capi --no-default-features
       - run: python tools/test_debug_dump.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --work .build/debug-no-codecs --output .build/debug-no-codecs-report.json
+      - run: python tools/test_debug_writing.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --work .build/debug-writing-no-codecs --output .build/debug-writing-no-codecs-report.json
       - run: python tools/test_reader_input.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --work .build/reader-no-codecs --output .build/reader-no-codecs-report.json
       - run: python tools/test_file_input.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --work .build/file_input-no-codecs --output .build/file_input-no-codecs-report.json
       - run: python tools/test_file_sequence_reading.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --work .build/file_sequence_reading-no-codecs --output .build/file_sequence_reading-no-codecs-report.json

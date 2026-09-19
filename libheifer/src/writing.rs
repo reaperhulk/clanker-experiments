@@ -207,7 +207,7 @@ impl Context {
             number(&mut ftyp, u64::from(*brand), 4);
         }
         let mut out = boxed(*b"ftyp", &ftyp);
-        let metadata = |base: u64| self.write_meta(&layout, base);
+        let metadata = |base: u64| self.write_meta(&layout, base, false);
         let meta_size = if layout.meta.is_empty() {
             0
         } else {
@@ -263,9 +263,24 @@ impl Context {
                 unwritten = true;
             }
         }
+        let mut debug_base = item_base;
+        for id in &self.items.location_order {
+            let loc = self.items.locations.get_mut(id).unwrap();
+            if loc.method == 0
+                && let Some(data) = &loc.owned
+            {
+                loc.base = debug_base;
+                debug_base += data.len() as u64;
+            }
+        }
         Ok(out)
     }
-    fn write_meta(&self, layout: &FileLayout, mdat_base: u64) -> Vec<u8> {
+    pub(crate) fn write_meta(
+        &self,
+        layout: &FileLayout,
+        mdat_base: u64,
+        include_unwritable_references: bool,
+    ) -> Vec<u8> {
         let mut children = Vec::new();
         for kind in &layout.meta {
             match kind {
@@ -426,7 +441,7 @@ impl Context {
                             duplicate = true;
                         }
                     }
-                    if duplicate {
+                    if duplicate && !include_unwritable_references {
                         continue;
                     }
                     let wide = self

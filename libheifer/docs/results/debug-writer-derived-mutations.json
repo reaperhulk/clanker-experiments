@@ -1,0 +1,50 @@
+{
+  "scope": "4 deliberate defects; not comprehensive mutation coverage",
+  "mutations": [
+    {
+      "mutation": "debug_writer_base",
+      "suite": "debug_writing",
+      "source": "src/writing.rs",
+      "before": "loc.base = debug_base;",
+      "after": "loc.base = debug_base + 1;",
+      "candidate_sha256": "f3d5caff68cbbd7ce182d273a17b7dba0961165068496da3d9759cacb2d09a64",
+      "mismatches": 198,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "debug_writer_duplicates",
+      "suite": "debug_writing",
+      "source": "src/debug.rs",
+      "before": "self.write_meta(&layout, 0, true)",
+      "after": "self.write_meta(&layout, 0, false)",
+      "candidate_sha256": "ac8d464db995a8f2e276a2efb4827bf1a4efcdb40d80260a7497eab97e3dafba",
+      "mismatches": 22,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "debug_grid_rows",
+      "suite": "debug_dump",
+      "source": "src/debug.rs",
+      "before": "grid.rows, grid.columns, grid.width, grid.height",
+      "after": "grid.rows + 1, grid.columns, grid.width, grid.height",
+      "candidate_sha256": "fd00e9fbc9a78e371d5f34b4446d9488a898a2efeba2d4bdeb83238ae001327a",
+      "mismatches": 12,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "debug_overlay_offsets",
+      "suite": "debug_dump",
+      "source": "src/debug.rs",
+      "before": "write!(details, \"{x};{y} \")",
+      "after": "write!(details, \"{y};{x} \")",
+      "candidate_sha256": "963669506eeed1e167bc36021fc609e44729475021e6b854e02606af40cceaf9",
+      "mismatches": 6,
+      "process_failures": [],
+      "detected": true
+    }
+  ],
+  "all_detected": true
+}
