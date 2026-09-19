@@ -109,14 +109,25 @@ pub(super) fn encode_image(
     options: &Options,
     input_class: i32,
 ) -> Result<Arc<libheifer::context::ImageInfo>, ContextError> {
+    let forced;
+    let options = if encoder.source.format() == 3 {
+        forced = Options {
+            nclx: Some(Nclx {
+                primaries: 6,
+                transfer: 6,
+                matrix: 6,
+                full_range: true,
+            }),
+            ..options.clone()
+        };
+        &forced
+    } else {
+        options
+    };
     let encoded = encode_coded(image, encoder, copied, options, input_class)?;
     let output = crate::context::lock(context).insert_coded(
         &encoded.image,
-        if encoder.source.format() == 1 {
-            *b"hvc1"
-        } else {
-            *b"av01"
-        },
+        codec_kind(encoder.source.format()),
         encoded.data,
         encoded.properties,
         options,
@@ -172,11 +183,7 @@ pub(super) fn encode_image(
         let mut state = crate::context::lock(context);
         let alpha = state.insert_coded(
             &encoded.image,
-            if encoder.source.format() == 1 {
-                *b"hvc1"
-            } else {
-                *b"av01"
-            },
+            codec_kind(encoder.source.format()),
             encoded.data,
             encoded.properties,
             &alpha_options,
@@ -253,7 +260,10 @@ pub(super) fn encode_coded(
         .ok_or_else(|| ContextError::new(8, 0, "Encoder plugin generated an error: Unspecified"))?;
     let err = unsafe { encode(encoder.state, &image, input_class) };
     if err.code != 0 {
-        return Err(crate::plugin_decoding::callback_error(err, false));
+        return Err(crate::plugin_decoding::callback_error(
+            err,
+            matches!(encoder.source.format(), 7 | 10),
+        ));
     }
     let get = field!(p, get_compressed_data)
         .ok_or_else(|| ContextError::new(8, 0, "Encoder plugin generated an error: Unspecified"))?;
@@ -263,7 +273,10 @@ pub(super) fn encode_coded(
         let mut size = 0;
         let err = unsafe { get(encoder.state, &mut packet, &mut size, ptr::null_mut()) };
         if err.code != 0 {
-            return Err(crate::plugin_decoding::callback_error(err, false));
+            return Err(crate::plugin_decoding::callback_error(
+                err,
+                matches!(encoder.source.format(), 7 | 10),
+            ));
         }
         if packet.is_null() {
             break;
@@ -309,17 +322,42 @@ pub(super) fn encode_coded(
             )
         };
     }
+    let properties = match encoder.source.format() {
+        1 => vec![(property(*b"hvcC", hevc.bytes()?), true)],
+        4 => vec![(property(*b"av1C", config.bytes()), true)],
+        7 | 10 => vec![(j2k_header(image.colorspace), true)],
+        _ => vec![],
+    };
     Ok(Encoded {
         image,
         data,
-        properties: vec![(
-            if is_hevc {
-                property(*b"hvcC", hevc.bytes()?)
-            } else {
-                property(*b"av1C", config.bytes())
-            },
-            true,
-        )],
+        properties,
         size: if is_hevc { hevc.size } else { size },
     })
+}
+
+fn codec_kind(format: i32) -> [u8; 4] {
+    match format {
+        1 => *b"hvc1",
+        3 => *b"jpeg",
+        4 => *b"av01",
+        7 | 10 => *b"j2k1",
+        _ => unreachable!(),
+    }
+}
+fn j2k_header(colorspace: i32) -> Property {
+    let count: u16 = match colorspace {
+        0 | 1 => 3,
+        2 => 1,
+        _ => 0,
+    };
+    let mut data = (10u32 + u32::from(count) * 6).to_be_bytes().to_vec();
+    data.extend_from_slice(b"cdef");
+    data.extend_from_slice(&count.to_be_bytes());
+    for i in 0..count {
+        data.extend_from_slice(&i.to_be_bytes());
+        data.extend_from_slice(&0u16.to_be_bytes());
+        data.extend_from_slice(&(i + 1).to_be_bytes());
+    }
+    property(*b"j2kH", data)
 }

@@ -1,0 +1,12 @@
+{
+  "scope": "Original-header minimized HEVC encoding, NAL configuration and exact repeated writes.",
+  "cases": 762,
+  "mismatches": 0,
+  "client_sanitizers": false,
+  "leak_check": false,
+  "client_sha256": "0cf5bffff6f56a94ee9f567b857aadf419caf1411d23acbe36a201b6f1fc9a67",
+  "corpus_sha256": "7eadadf316e3627bfc3e0e7ac02c61dfdec9702a0a6b55722448c2e61f3d46e2",
+  "differences": [],
+  "reference_sha256": "5cc5713a0503098f20f8a3631e370d43256ebdca0a3209e97d541e6ecf1cd917",
+  "candidate_sha256": "f17ac4ff9d50c0937af0bf625ec40833228999b4bfa34cebc7194ecfb95e151f"
+}

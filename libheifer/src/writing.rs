@@ -174,6 +174,8 @@ impl Context {
             .and_then(|doc| doc.images.get(&doc.primary))
             .and_then(|image| match &image.kind {
                 b"av01" => Some(*b"avif"),
+                b"jpeg" => Some(*b"jpeg"),
+                b"j2k1" => Some(*b"j2ki"),
                 b"hvc1" => {
                     let properties = image.retained_properties.lock().unwrap();
                     let config = properties.iter().find(|p| p.kind == *b"hvcC");

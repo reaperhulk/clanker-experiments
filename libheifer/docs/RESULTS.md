@@ -1082,3 +1082,26 @@ disabled under ptrace; CI retains it. Built-in HEVC encoding is still open, alon
 with oversized/malformed encoder packets, broader compact post-write diagnostics,
 other codecs, sequences and remaining platform/downstream gates. All 465 functions
 remain partial and strict completion remains false; implementation continues.
+
+
+### Registered JPEG-family encoding
+
+Registered JPEG, JPEG2000 and HTJ2K encoders now feed the owned still-image,
+alpha and thumbnail paths. JPEG forces the native output color profile before
+conversion and property insertion. JPEG2000 emits ordered channel-definition
+children, retains separate j2kH container properties for separate images, and
+unpacks callback error prefixes. Ordinary output uses jpeg/j2ki brands; compact
+requests preserve native ordinary-container fallback for these codecs.
+
+All 2,382 original-header callback/pixel/exact-file cases pass normal, ASan/UBSan
+client and codec-free checks. Six new mutations are detected without process
+failures (253 default mutations). HEVC ordinary/compact (762 each), AV1 ordinary/
+compact (441 each), properties, existing encoding and writer regressions pass.
+Rust tests, Clippy, formatting, original-header ABI baseline and the development
+inventory gate pass. Reports and exact build/client/corpus hashes are retained in
+docs/results/other-*. Sanitizer and codec-free binaries were tested in an isolated
+worktree containing the same implementation; the main build independently passed
+the mutation baseline and regressions. Local leak checks remain disabled under
+ptrace; CI retains them. All 465 functions remain partial and strict completion
+remains false. Built-in codec implementations, AVC/VVC hooks, sequence integration,
+allocation/platform/downstream and broader behavioral gates remain open.

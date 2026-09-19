@@ -15,6 +15,13 @@ import sys
 import tempfile
 
 MUTATIONS = [
+    ('jpeg_encoder_forced_profile', 'crates/capi/src/plugin_encoding.rs', 'primaries: 6,', 'primaries: 7,', 'other_encoding'),
+    ('j2k_encoder_channel_count', 'crates/capi/src/plugin_encoding.rs', '0 | 1 => 3,', '0 | 1 => 2,', 'other_encoding'),
+    ('j2k_encoder_channel_association', 'crates/capi/src/plugin_encoding.rs', 'data.extend_from_slice(&(i + 1).to_be_bytes());', 'data.extend_from_slice(&i.to_be_bytes());', 'other_encoding'),
+    ('j2k_encoder_container_dedup', 'src/properties.rs', 'p.kind != *b"j2kH"', 'true', 'other_encoding'),
+    ('j2k_encoder_error_prefix', 'crates/capi/src/plugin_encoding.rs', '                matches!(encoder.source.format(), 7 | 10),\n            ));\n        }\n        if packet.is_null()', '                false,\n            ));\n        }\n        if packet.is_null()', 'other_encoding'),
+    ('jpeg_encoder_brand', 'src/writing.rs', 'b"jpeg" => Some(*b"jpeg"),', 'b"jpeg" => Some(*b"jpgx"),', 'other_encoding'),
+
     ('hevc_encoder_crop', 'src/hevc_config.rs', 'width -= crop_x as u32;', 'width -= 0;', 'hevc_encoding'),
     ('hevc_encoder_profile', 'src/hevc_config.rs', 'self.header[1] = bits.get(8) as u8;', 'self.header[1] = bits.get(8) as u8 ^ 1;', 'hevc_encoding'),
     ('hevc_encoder_dedup', 'src/hevc_config.rs', 'if existing[..common] == nal[..common] {', 'if false && existing[..common] == nal[..common] {', 'hevc_encoding'),

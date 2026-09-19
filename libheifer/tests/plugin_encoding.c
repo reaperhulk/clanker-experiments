@@ -43,10 +43,12 @@ static heif_error encode(void *p,const heif_image *image,heif_image_input_class 
  }
  heif_color_profile_nclx *n=NULL;heif_error e=heif_image_get_nclx_color_profile(image,&n);printf(" color%d",e.code);
  if(n){printf(",%d,%d,%d,%d",n->color_primaries,n->transfer_characteristics,n->matrix_coefficients,n->full_range_flag);heif_nclx_color_profile_free(n);}
+ if(v[8]==3)return (heif_error){8,0,"Encoder plugin generated an error: Unspecified: formatted callback"};
  return (v[8]==1 || (cls==2 && (v[10]&32768)))?(heif_error){8,0,"encode callback"}:ok();
 }
 static heif_error data(void *p,uint8_t **out,int *n,heif_encoded_data_type *type) {
  (void)p;printf(" data%d,%d",poll,type!=NULL);
+ if(v[8]==4 && poll==1)return (heif_error){8,2006,"Encoder plugin generated an error: Invalid parameter value: formatted data callback"};
  if((v[8]==2 || (current_class==2 && (v[10]&65536))) && poll==1)return (heif_error){8,2006,"Usage error: Invalid parameter value: data callback"};
  if(v[10]&262144) {
   if(packet_at+4<=v[11] && v[9]) { uint32_t length;memcpy(&length,packet+packet_at,4);packet_at+=4;if(length>v[11]-packet_at)return (heif_error){8,0,"invalid probe packet"};*out=packet+packet_at;*n=length;packet_at+=length; } else { *out=NULL;*n=0; }
@@ -62,7 +64,7 @@ int main(void) {
  while(fread(v,sizeof(v),1,stdin)==1) {
   if(v[11]>1000000)return 2;packet=malloc(v[11]+1);if(fread(packet,1,v[11],stdin)!=v[11])return 2;
   for(int i=0;i<3;i++){heif_encoder_parameter p={0};p.version=v[0]>=3?2:1;p.name=i==0?"integer":i==1?"boolean":"string";p.type=(heif_encoder_parameter_type)(i+1);size_t n=p.version==1?offsetof(heif_encoder_parameter,has_default):sizeof(p);void *copy=malloc(n);memcpy(copy,&p,n);parameters[i]=copy;}
-  allocations=0;heif_encoder_plugin plugin={0};plugin.plugin_api_version=v[0];plugin.compression_format=(v[10]&262144)?heif_compression_HEVC:heif_compression_AV1;plugin.id_name="encode-probe";plugin.priority=100000;plugin.supports_lossy_compression=1;plugin.get_plugin_name=name;plugin.new_encoder=allocate;plugin.free_encoder=release;plugin.list_parameters=list;plugin.query_input_colorspace=query;plugin.query_input_colorspace2=query2;plugin.encode_image=encode;plugin.get_compressed_data=data;plugin.query_encoded_size=size;plugin.get_parameter_quality=get_int;plugin.set_parameter_quality=set_int;plugin.get_parameter_lossless=get_int;plugin.set_parameter_lossless=set_int;plugin.get_parameter_logging_level=get_int;plugin.set_parameter_logging_level=set_int;plugin.get_parameter_integer=get_named;plugin.set_parameter_integer=set_named;plugin.get_parameter_boolean=get_named;plugin.set_parameter_boolean=set_named;plugin.get_parameter_string=get_string;plugin.set_parameter_string=set_string;
+  allocations=0;heif_encoder_plugin plugin={0};plugin.plugin_api_version=v[0];plugin.compression_format=(v[10]>>20)?(heif_compression_format)(v[10]>>20):(v[10]&262144)?heif_compression_HEVC:heif_compression_AV1;plugin.id_name="encode-probe";plugin.priority=100000;plugin.supports_lossy_compression=1;plugin.get_plugin_name=name;plugin.new_encoder=allocate;plugin.free_encoder=release;plugin.list_parameters=list;plugin.query_input_colorspace=query;plugin.query_input_colorspace2=query2;plugin.encode_image=encode;plugin.get_compressed_data=data;plugin.query_encoded_size=size;plugin.get_parameter_quality=get_int;plugin.set_parameter_quality=set_int;plugin.get_parameter_lossless=get_int;plugin.set_parameter_lossless=set_int;plugin.get_parameter_logging_level=get_int;plugin.set_parameter_logging_level=set_int;plugin.get_parameter_integer=get_named;plugin.set_parameter_integer=set_named;plugin.get_parameter_boolean=get_named;plugin.set_parameter_boolean=set_named;plugin.get_parameter_string=get_string;plugin.set_parameter_string=set_string;
   size_t length=v[0]<=1?END(heif_encoder_plugin,get_compressed_data):v[0]==2?END(heif_encoder_plugin,query_input_colorspace2):v[0]==3?END(heif_encoder_plugin,query_encoded_size):sizeof(plugin);
   heif_encoder_plugin *old=malloc(length);memcpy(old,&plugin,length);error(heif_register_encoder_plugin(old));
   heif_context *ctx=heif_context_alloc();heif_context_set_write_mini_format(ctx,v[10]&64);heif_encoder *encoder=NULL;error(heif_context_get_encoder_for_format(ctx,plugin.compression_format,&encoder));

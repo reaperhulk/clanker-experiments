@@ -280,6 +280,9 @@ impl PropertyStore {
             .iter()
             .position(|p| {
                 p.kind == property.kind
+                    // Native Box::equal does not merge containers with children.
+                    && (p.kind != *b"j2kH"
+                        || ((p.raw || p.data.is_empty()) && (property.raw || property.data.is_empty())))
                     && p.uuid == property.uuid
                     && if p.tai.is_some() {
                         p.tai == property.tai
