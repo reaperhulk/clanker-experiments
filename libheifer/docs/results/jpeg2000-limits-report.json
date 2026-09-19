@@ -1,0 +1,12 @@
+{
+  "scope": "Original-header JPEG2000 allocation and dimension boundaries at read and decode.",
+  "cases": 2297,
+  "mismatches": 0,
+  "client_sanitizers": false,
+  "leak_check": false,
+  "client_sha256": "9b6cafe33f096a88507a0545fed6de411d22f794c392ef2b2b93de624e6c77e4",
+  "corpus_sha256": "6423ec07eed3c57b5a3ad6ddcb3567fd8863368e97a8694110a288a268f835e9",
+  "reference_sha256": "5f1a4b060d9b453dd456772bc240f09a8cc01f21bba6ae8ad124d82d684bbafa",
+  "candidate_sha256": "09dab7b5d69dbabfb266c5ce750c41f7970dbc582ab7918887f6a51b6962d528",
+  "differences": []
+}

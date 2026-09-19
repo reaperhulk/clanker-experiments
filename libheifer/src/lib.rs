@@ -73,3 +73,7 @@ pub mod jpeg;
 
 #[cfg(feature = "jpeg")]
 mod jpeg_header;
+
+#[cfg(feature = "jpeg2000")]
+pub mod jpeg2000;
+pub mod jpeg2000_config;

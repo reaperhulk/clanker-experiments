@@ -7,6 +7,7 @@ import subprocess
 
 HEIF = "4e14f5942c1732ace9611b9522cc991501445463"
 DE265 = "7ba65889d3d6d8a0d99b5360b028243ba843be3a"
+OPENJPEG = "6c4a29b00211eb0430fa0e5e890f1ce5c80f409f"
 JPEG = "7723f50f3f66b9da74376e6d8badb6162464212c"
 DAV1D = "42b2b24fb8819f1ed3643aa9cf2a62f03868e3aa"
 
@@ -22,6 +23,7 @@ def main():
     p.add_argument("--hevc", action="store_true")
     p.add_argument("--av1", action="store_true")
     p.add_argument("--jpeg", action="store_true")
+    p.add_argument("--jpeg2000", action="store_true")
     p.add_argument("--plugins", action="store_true", help="enable native dynamic-plugin oracle with an empty default search path")
     p.add_argument("-j", default="4")
     a = p.parse_args()
@@ -37,7 +39,9 @@ def main():
     # compatibility target; do not let host package discovery change transcripts.
     flags = ["-DCMAKE_DISABLE_FIND_PACKAGE_Brotli=ON", "-DCMAKE_REQUIRE_FIND_PACKAGE_ZLIB=ON",
              f"-DWITH_JPEG_DECODER={'ON' if a.jpeg else 'OFF'}", "-DWITH_JPEG_ENCODER=OFF",
-             "-DWITH_JPEG_DECODER_PLUGIN=OFF", "-DWITH_JPEG_ENCODER_PLUGIN=OFF"]
+             "-DWITH_JPEG_DECODER_PLUGIN=OFF", "-DWITH_JPEG_ENCODER_PLUGIN=OFF",
+             f"-DWITH_OpenJPEG_DECODER={'ON' if a.jpeg2000 else 'OFF'}",
+             "-DWITH_OpenJPEG_DECODER_PLUGIN=OFF", "-DWITH_OpenJPEG_ENCODER=OFF", "-DWITH_OpenJPEG_ENCODER_PLUGIN=OFF"]
     if a.hevc:
         decoder = build.parent / "libde265-source"
         install = build.parent / "libde265-install"
@@ -72,6 +76,23 @@ def main():
         run("ninja", "-C", dbuild, "-j", a.j)
         run("ninja", "-C", dbuild, "install")
         flags += [f"-DDAV1D_INCLUDE_DIR={install / 'include'}", f"-DDAV1D_LIBRARY={install / 'lib/libdav1d.so'}"]
+    if a.jpeg2000:
+        decoder = build.parent / "openjpeg-source"
+        install = build.parent / "openjpeg-install"
+        dbuild = build.parent / "openjpeg-build"
+        if not decoder.exists():
+            run("git", "init", decoder)
+            run("git", "-C", decoder, "remote", "add", "origin", "https://github.com/uclouvain/openjpeg.git")
+            run("git", "-C", decoder, "fetch", "--depth=1", "origin", OPENJPEG)
+            run("git", "-C", decoder, "checkout", "--detach", "FETCH_HEAD")
+        revision = subprocess.check_output(["git", "-C", str(decoder), "rev-parse", "HEAD"], text=True).strip()
+        if revision != OPENJPEG:
+            raise SystemExit("Wrong OpenJPEG reference revision")
+        run(cmake, "-S", decoder, "-B", dbuild, "-DCMAKE_BUILD_TYPE=Release", f"-DCMAKE_INSTALL_PREFIX={install}",
+            "-DCMAKE_INSTALL_LIBDIR=lib", "-DBUILD_CODEC=ON", "-DBUILD_SHARED_LIBS=ON", "-DBUILD_TESTING=OFF")
+        run(cmake, "--build", dbuild, "-j", a.j)
+        run(cmake, "--install", dbuild)
+        flags += [f"-DOpenJPEG_DIR={install / 'lib/cmake/openjpeg-2.5'}"]
     if a.jpeg:
         decoder = build.parent / "libjpeg-turbo-source"
         install = build.parent / "libjpeg-turbo-install"

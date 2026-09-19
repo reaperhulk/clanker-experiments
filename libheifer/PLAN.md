@@ -559,3 +559,45 @@ all functions remain partial and strict completion remains false.
 
 All seven new VVC mutations are detected by semantic differences, with successful
 builds and completed client processes; the default suite now contains 278 defects.
+
+
+### Built-in scalar Rust JPEG2000 decoding
+
+The optional `jpeg2000` feature now supplies pure Rust decoding through a vendored
+std-only hayro-jpeg2000 0.4.0 backend. Native irreversible wavelet normalization,
+round-before-shift precision, signed samples, chroma sampling, zero-filled absent
+tiles, SIZ descriptions, tile-header errors and allocation limits are implemented.
+The default C adapter enables it; native OpenJPEG remains test-only.
+
+A freshly rebuilt pinned OpenJPEG 2.5.4/libheif 1.23.4 oracle passes all 9,725
+sample/conversion, 5,880 complete-prefix/marker, 1,327 retained-handle/description
+and 2,297 allocation-limit cases. Each suite passes ordinary, ASan/UBSan-client
+and separately built codec-free comparisons. All 389 owned successful fixtures
+retain native encoder commands and hashes; 37 native generation failures are
+recorded separately, excluded from parity counts. Shared JPEG (7,325), registered
+decoder (616) and JPEG-family encoder (2,382) regressions pass, as do Rust
+all-feature/no-feature tests, Clippy, formatting, ABI baseline, dependency and
+development inventory checks. The resolved implementation graph has 35 packages;
+the Linux library links only libc, libgcc_s and the loader.
+
+Ten meaningful new mutations are detected through 7, 54, 383, 6, 320, 72, 90, 18,
+8 and 1,118 semantic differences, with successful builds and completed processes
+(288 default mutations). The initial end-marker predicate-only mutation survived
+because the subsequent loop exit returned the same error; it is retained as
+failed evidence. Its replacement incorrectly accepts the truncated marker and is
+detected. No crash or compile failure counts as a detected behavioral defect.
+
+Reports and exact hashes are under docs/results/jpeg2000-*. Large per-case JSON
+reports are retained as reproducible gzip files, with compressed and uncompressed
+hashes in adjacent summaries. Local leak checking remains disabled under ptrace;
+CI retains it. This checkpoint does not claim whole-library instrumentation or
+cross-platform C-client execution. Existing VVC-head CI has passed Rust builds on
+Linux/macOS/Windows and new JPEG/VVC normal and sanitizer clients; its broader
+Linux run was still in progress when checked.
+
+Mixed tile transforms, component-count edge cases, richer JPEG2000 header
+properties, tile-part progression, wider precision, HTJ2K, built-in encoders and
+the remaining sequence/platform/downstream/performance gates remain open. New
+follow-up corpora already reproduce mixed-tile and property differences. All 465
+functions remain partial and strict completion remains false. Implementation
+continues through those gaps.

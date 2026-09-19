@@ -56,6 +56,10 @@ impl Registry {
         self.decoders.push(Arc::new(DecoderRecord {
             source: DecoderSource::Builtin(8),
         }));
+        #[cfg(feature = "jpeg2000")]
+        self.decoders.push(Arc::new(DecoderRecord {
+            source: DecoderSource::Builtin(7),
+        }));
         #[cfg(feature = "jpeg")]
         self.decoders.push(Arc::new(DecoderRecord {
             source: DecoderSource::Builtin(3),
@@ -346,6 +350,7 @@ impl DecoderSource {
     fn name(self) -> *const c_char {
         match self {
             Self::Builtin(8) => c"builtin".as_ptr(),
+            Self::Builtin(7) => c"hayro-jpeg2000".as_ptr(),
             Self::Builtin(3) => c"jpeg-decoder".as_ptr(),
             Self::Builtin(4) => c"rav1d".as_ptr(),
             Self::Builtin(_) => c"rusty_h265".as_ptr(),
@@ -355,6 +360,7 @@ impl DecoderSource {
     fn id(self) -> *const c_char {
         match self {
             Self::Builtin(8) => c"uncompressed".as_ptr(),
+            Self::Builtin(7) => c"hayro-jpeg2000".as_ptr(),
             Self::Builtin(3) => c"jpeg-decoder".as_ptr(),
             Self::Builtin(4) => c"rav1d".as_ptr(),
             Self::Builtin(_) => c"rusty_h265".as_ptr(),

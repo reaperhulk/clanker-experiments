@@ -766,7 +766,7 @@
     ]
   },
   "heif_decode_image": {
-    "notes": "Five direct HEVC fixtures in 23 modes plus 688 generated/real geometry cases: exact visible pixels including monochrome HEVC alpha, crop/rotate/mirror order, fractional boundaries, metadata, errors and output writes. Full codec conformance, derived images, callback orchestration, resource limits, every conversion operator and other codecs remain open. Generated overlay, 8/16-bit mask and adversarial graph transcripts also compare exactly; all remain finite coverage. Registered still-image decoder callbacks additionally pass 616 original-header HEVC/AV1 cases: historical records, selection reuse, exact configuration/payload bytes, allocation/push/flush/poll/free order, raw strict/thread options, callback diagnostics, output planes, transforms and derived composition. Normal, client ASan/UBSan and codec-free builds pass; eight semantic mutations are detected. Sequence/plugin encoding integration, other codec configurations, concurrent unload, exhaustive resource failures and platform C execution remain open. Rust-only AV1/rav1d and compact mini containers now have independent dav1d pixel/error, generated 8/10/12-bit, HDR/property, source-lifetime, callback, resource-limit and codec-free comparisons. Container/bitstream color warnings persist across decodes and full-range correction is optional. Codec conformance, compact diagnostics/writing, invalid bitstream NCLX values, remaining codecs and cross-platform/downstream completion remain open. Optional built-in scalar Rust JPEG decoding has original-header baseline/progressive, restart, lossless grayscale, precision/error, complete-prefix, allocation-limit, sanitizer, codec-free and mutation gates; arithmetic JPEG and broader codec/platform/downstream completion remain open.",
+    "notes": "Five direct HEVC fixtures in 23 modes plus 688 generated/real geometry cases: exact visible pixels including monochrome HEVC alpha, crop/rotate/mirror order, fractional boundaries, metadata, errors and output writes. Full codec conformance, derived images, callback orchestration, resource limits, every conversion operator and other codecs remain open. Generated overlay, 8/16-bit mask and adversarial graph transcripts also compare exactly; all remain finite coverage. Registered still-image decoder callbacks additionally pass 616 original-header HEVC/AV1 cases: historical records, selection reuse, exact configuration/payload bytes, allocation/push/flush/poll/free order, raw strict/thread options, callback diagnostics, output planes, transforms and derived composition. Normal, client ASan/UBSan and codec-free builds pass; eight semantic mutations are detected. Sequence/plugin encoding integration, other codec configurations, concurrent unload, exhaustive resource failures and platform C execution remain open. Rust-only AV1/rav1d and compact mini containers now have independent dav1d pixel/error, generated 8/10/12-bit, HDR/property, source-lifetime, callback, resource-limit and codec-free comparisons. Container/bitstream color warnings persist across decodes and full-range correction is optional. Codec conformance, compact diagnostics/writing, invalid bitstream NCLX values, remaining codecs and cross-platform/downstream completion remain open. Optional built-in scalar Rust JPEG decoding has original-header baseline/progressive, restart, lossless grayscale, precision/error, complete-prefix, allocation-limit, sanitizer, codec-free and mutation gates; arithmetic JPEG and broader codec/platform/downstream completion remain open. Built-in scalar Rust JPEG2000 now has independent original-header OpenJPEG sample/conversion, complete-prefix, retained-handle and limit evidence in normal, sanitizer-client and codec-free builds. Finite coverage; mixed tile transforms, richer properties, HTJ2K, encoding and other full-compatibility gates remain open.",
     "status": "partial",
     "tests": [
       "tests/decode.c",
@@ -796,7 +796,10 @@
       "tools/test_mini_reader.py",
       "tools/test_jpeg.py",
       "tools/test_jpeg_errors.py",
-      "tools/test_jpeg_limits.py"
+      "tools/test_jpeg_limits.py",
+      "tools/test_jpeg2000.py",
+      "tools/test_jpeg2000_errors.py",
+      "tools/test_jpeg2000_limits.py"
     ]
   },
   "heif_decoder_descriptor_get_id_name": {
@@ -2177,7 +2180,7 @@
     ]
   },
   "heif_image_handle_get_chroma_bits_per_pixel": {
-    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open. Derived and mask handle queries also cover cyclic/missing references and partial reloads. Registered still-image decoder callbacks additionally pass 616 original-header HEVC/AV1 cases: historical records, selection reuse, exact configuration/payload bytes, allocation/push/flush/poll/free order, raw strict/thread options, callback diagnostics, output planes, transforms and derived composition. Normal, client ASan/UBSan and codec-free builds pass; eight semantic mutations are detected. Sequence/plugin encoding integration, other codec configurations, concurrent unload, exhaustive resource failures and platform C execution remain open.",
+    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open. Derived and mask handle queries also cover cyclic/missing references and partial reloads. Registered still-image decoder callbacks additionally pass 616 original-header HEVC/AV1 cases: historical records, selection reuse, exact configuration/payload bytes, allocation/push/flush/poll/free order, raw strict/thread options, callback diagnostics, output planes, transforms and derived composition. Normal, client ASan/UBSan and codec-free builds pass; eight semantic mutations are detected. Sequence/plugin encoding integration, other codec configurations, concurrent unload, exhaustive resource failures and platform C execution remain open. Built-in scalar Rust JPEG2000 now has independent original-header OpenJPEG sample/conversion, complete-prefix, retained-handle and limit evidence in normal, sanitizer-client and codec-free builds. Finite coverage; mixed tile transforms, richer properties, HTJ2K, encoding and other full-compatibility gates remain open.",
     "status": "partial",
     "tests": [
       "tests/context.c",
@@ -2186,7 +2189,8 @@
       "tests/decode_uncompressed.c",
       "tools/test_uncompressed_pixels.py",
       "tests/plugin_decoding.c",
-      "tools/test_plugin_decoding.py"
+      "tools/test_plugin_decoding.py",
+      "tools/test_jpeg2000_handles.py"
     ]
   },
   "heif_image_handle_get_cmpd_component_type": {
@@ -2406,7 +2410,7 @@
     ]
   },
   "heif_image_handle_get_luma_bits_per_pixel": {
-    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open. Derived and mask handle queries also cover cyclic/missing references and partial reloads. Registered still-image decoder callbacks additionally pass 616 original-header HEVC/AV1 cases: historical records, selection reuse, exact configuration/payload bytes, allocation/push/flush/poll/free order, raw strict/thread options, callback diagnostics, output planes, transforms and derived composition. Normal, client ASan/UBSan and codec-free builds pass; eight semantic mutations are detected. Sequence/plugin encoding integration, other codec configurations, concurrent unload, exhaustive resource failures and platform C execution remain open.",
+    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open. Derived and mask handle queries also cover cyclic/missing references and partial reloads. Registered still-image decoder callbacks additionally pass 616 original-header HEVC/AV1 cases: historical records, selection reuse, exact configuration/payload bytes, allocation/push/flush/poll/free order, raw strict/thread options, callback diagnostics, output planes, transforms and derived composition. Normal, client ASan/UBSan and codec-free builds pass; eight semantic mutations are detected. Sequence/plugin encoding integration, other codec configurations, concurrent unload, exhaustive resource failures and platform C execution remain open. Built-in scalar Rust JPEG2000 now has independent original-header OpenJPEG sample/conversion, complete-prefix, retained-handle and limit evidence in normal, sanitizer-client and codec-free builds. Finite coverage; mixed tile transforms, richer properties, HTJ2K, encoding and other full-compatibility gates remain open.",
     "status": "partial",
     "tests": [
       "tests/context.c",
@@ -2415,7 +2419,8 @@
       "tests/decode_uncompressed.c",
       "tools/test_uncompressed_pixels.py",
       "tests/plugin_decoding.c",
-      "tools/test_plugin_decoding.py"
+      "tools/test_plugin_decoding.py",
+      "tools/test_jpeg2000_handles.py"
     ]
   },
   "heif_image_handle_get_mastering_display_colour_volume": {

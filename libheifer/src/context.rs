@@ -854,6 +854,27 @@ impl Document {
                 } else {
                     image.error = Some(ContextError::invalid(131, "No 'av1C' box"));
                 }
+            } else if item.kind == *b"j2k1" {
+                if container.property(item.id, *b"j2kH").is_err() {
+                    image.error = Some(ContextError::invalid(0, "Unspecified: No j2kH box found."));
+                } else {
+                    image.colorspace = 0;
+                    image.chroma = 3;
+                    let description = (|| -> Result<Option<(i32, i32)>> {
+                        let data = container.payload(item.id)?;
+                        let reservation = self
+                            .budget
+                            .reserve(data.len() as u64, "decoder input buffer (iloc)")?;
+                        let result = crate::jpeg2000_config::description(&data);
+                        *image.decoder_input.get_mut().unwrap() = Some(DecoderInput {
+                            data: Arc::new(data),
+                            _reservation: reservation,
+                        });
+                        Ok(result)
+                    })();
+                    (image.luma_bits, image.chroma_bits) =
+                        description.ok().flatten().unwrap_or((-1, -1));
+                }
             } else if item.kind == *b"unci" {
                 if let Err(e) = crate::uncompressed::initialize(container, &mut image) {
                     image.error = Some(e);
@@ -952,7 +973,7 @@ impl Document {
                     None
                 };
                 let description = match &item.kind {
-                    b"hvc1" | b"jpeg" => Some((
+                    b"hvc1" | b"jpeg" | b"j2k1" => Some((
                         image.colorspace,
                         image.chroma,
                         image.luma_bits,

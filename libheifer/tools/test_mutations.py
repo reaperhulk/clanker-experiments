@@ -15,6 +15,17 @@ import sys
 import tempfile
 
 MUTATIONS = [
+    ('jpeg2000_absent_tile', 'src/jpeg2000.rs', 'if !component.is_present(x as u32 * dx, y as u32 * dy) {', 'if false && !component.is_present(x as u32 * dx, y as u32 * dy) {', 'jpeg2000_handles'),
+('jpeg2000_tile_order', 'src/jpeg2000.rs', 'if *next != u16::from(record[6]) {', 'if false && *next != u16::from(record[6]) {', 'jpeg2000_errors'),
+    ('jpeg2000_wavelet_normalization', 'vendor/hayro-jpeg2000/src/j2c/decode.rs', 'if irreversible { 0 } else { log_gain }', 'log_gain', 'jpeg2000_pixels'),
+    ('jpeg2000_round_before_shift', 'src/jpeg2000.rs', '(sample.round_ties_even() as i64 + offset)', '((sample + offset as f32).round_ties_even() as i64)', 'jpeg2000_pixels'),
+    ('jpeg2000_signed_level', 'src/jpeg2000.rs', 'let offset = if c.signed { 0 } else { 1i64 << (c.depth - 1) };', 'let offset = 1i64 << (c.depth - 1);', 'jpeg2000_pixels'),
+    ('jpeg2000_chroma_sample', 'src/jpeg2000.rs', 'x * dx as usize', 'x', 'jpeg2000_pixels'),
+    ('jpeg2000_siz_length', 'src/jpeg2000.rs', '!= 38 + 3 * h.components.len()', '< 38 + 3 * h.components.len()', 'jpeg2000_errors'),
+    ('jpeg2000_end_marker', 'src/jpeg2000.rs', 'if end + 2 > data.len() {\n                    return Err(error("opj_decode()"));\n                }', 'if end + 2 > data.len() {\n                    return Ok(());\n                }', 'jpeg2000_errors'),
+    ('jpeg2000_decode_memory', 'src/jpeg2000.rs', 'estimated = estimated.saturating_mul(3);', 'estimated = estimated.saturating_mul(2);', 'jpeg2000_limits'),
+    ('jpeg2000_handle_precision', 'src/jpeg2000_config.rs', 'depth: (c[0] & 127) + 1,', 'depth: (c[0] & 127) + 2,', 'jpeg2000_handles'),
+
     ('vvc_profile', 'src/vvc_config.rs', 'self.profile = b.get(7) as u8;', 'self.profile = b.get(7) as u8 ^ 1;', 'vvc_encoding'),
     ('vvc_configuration_reset', 'src/vvc_config.rs', 'self.config = Configuration::default();', '// omit SPS reset', 'vvc_encoding'),
     ('vvc_sublayer_order', 'src/vvc_config.rs', 'out.push(c.levels[i]);', 'out.push(c.levels[i] ^ 1);', 'vvc_encoding'),
@@ -329,6 +340,7 @@ def main():
     parser.add_argument("--reference-build", required=True)
     parser.add_argument("--plugin-reference-build", default=".build/reference-plugins")
     parser.add_argument("--av1-reference-build", default=".build/reference-av1")
+    parser.add_argument("--jpeg2000-reference-build", default=".build/reference-jpeg2000")
     parser.add_argument("--jpeg-reference-build", default=".build/reference-jpeg")
     parser.add_argument("--candidate", default="target/release/libheifer.so")
     parser.add_argument("--output", default=".build/mutations-report.json")
@@ -341,6 +353,8 @@ def main():
     reference = str(Path(args.reference_build).resolve())
     candidate = str(Path(args.candidate).resolve())
     def oracle(suite):
+        if suite.startswith("jpeg2000_"):
+            return str(Path(args.jpeg2000_reference_build).resolve())
         if suite.startswith("jpeg_"):
             return str(Path(args.jpeg_reference_build).resolve())
         if suite in ('av1', 'av1_limits', 'mini_reader'):
