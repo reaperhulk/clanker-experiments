@@ -14,6 +14,19 @@ pub struct Property {
 impl Property {
     pub(crate) fn parsed(kind: [u8; 4], uuid: Option<[u8; 16]>, data: &[u8]) -> Self {
         let malformed = parse_error(crate::camera::kind(kind, uuid), data).is_some();
+        // These typed boxes serialize their fields, excluding ignored trailing
+        // input bytes. File deduplication compares that serialized form.
+        let size = match &kind {
+            b"clli" => 4,
+            b"mdcv" => 24,
+            b"amve" | b"ndwt" | b"pasp" => 8,
+            _ => data.len(),
+        };
+        let data = if malformed {
+            data
+        } else {
+            &data[..size.min(data.len())]
+        };
         Self {
             kind: if malformed { *b"ERR " } else { kind },
             uuid,
@@ -58,6 +71,32 @@ impl Property {
 /// as error boxes and rejected when their image is interpreted.
 pub(crate) fn parse_error(kind: [u8; 4], data: &[u8]) -> Option<(ContextError, bool)> {
     match &kind {
+        b"clli" if data.len() < 4 => {
+            Some((ContextError::invalid(100, "Unexpected end of file"), true))
+        }
+        b"mdcv" if data.len() < 24 => {
+            Some((ContextError::invalid(100, "Unexpected end of file"), true))
+        }
+        b"amve" | b"pasp" if data.len() < 8 => {
+            Some((ContextError::invalid(100, "Unexpected end of file"), true))
+        }
+        b"ndwt" if data.len() < 4 => {
+            Some((ContextError::invalid(100, "Unexpected end of file"), true))
+        }
+        b"ndwt" if data[0] != 0 => Some((
+            ContextError::new(
+                4,
+                3002,
+                format!(
+                    "Unsupported feature: Unsupported data version: ndwt box data version {} is not implemented yet",
+                    data[0]
+                ),
+            ),
+            true,
+        )),
+        b"ndwt" if data.len() < 8 => {
+            Some((ContextError::invalid(100, "Unexpected end of file"), true))
+        }
         b"taic" | b"itai" => crate::tai::TaiProperty::parse(kind, data)
             .err()
             .map(|e| (e, false)),
@@ -165,6 +204,15 @@ impl PropertyStore {
                 "Unsupported feature: Unspecified: Adding a property to a context that was read from a file is not supported",
             ));
         }
+        self.add_to_file(item, property, essential)
+    }
+    /// ImageItem setters bypass HeifContext's read-only check in the reference.
+    pub(crate) fn add_to_file(
+        &mut self,
+        item: u32,
+        property: Property,
+        essential: bool,
+    ) -> Result<u32, ContextError> {
         self.has_ipco = true;
         self.has_ipma = true;
         // Box equality compares serialized data, so a previously inserted raw

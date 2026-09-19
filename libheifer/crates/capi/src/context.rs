@@ -479,7 +479,10 @@ pub unsafe extern "C" fn heif_image_handle_get_pixel_aspect_ratio(
     let Some(handle) = (unsafe { handle.as_ref() }) else {
         return 0;
     };
-    let ratio = handle.image().pixel_aspect;
+    let ratio = match handle.image().handle_property(*b"pasp") {
+        Some(libheifer::handle_properties::Value::PixelAspect(h, v)) => Some((h, v)),
+        _ => None,
+    };
     if !h.is_null() {
         unsafe { h.write(ratio.unwrap_or((1, 1)).0) };
     }

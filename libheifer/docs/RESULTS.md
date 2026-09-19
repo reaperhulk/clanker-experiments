@@ -8,8 +8,8 @@ with VUI unspecified-color, monochrome-decoding and typed missing-parameter fixe
 
 ## Implemented scope
 
-263 of 465 public functions are exported, plus `heif_error_success`.
-202 functions are missing. Even the exported functions are marked **partial**:
+276 of 465 public functions are exported, plus `heif_error_success`.
+189 functions are missing. Even the exported functions are marked **partial**:
 coverage is finite, platform coverage is incomplete, and one malformed-box
 behavior gap is explicitly retained. There is no claim of a compatible library.
 
@@ -467,3 +467,40 @@ security cases also pass; all new exports remain partial.
 The metadata commit `c038b1c` passed all development CI steps, 49 mutation checks,
 and Rust builds on Linux, macOS and Windows. Only the strict full-API completion
 gate failed; see `docs/results/ci-metadata-report.json`.
+
+## Handle HDR metadata and pixel aspect
+
+Thirteen more APIs cover handle CLLI, mastering display, ambient viewing,
+diffuse white and pixel-aspect setters. All declarations in heif_color.h and
+heif_image.h now have exports, still classified as partial.
+
+Independent original-header clients match 716 cases and 7,160 successful
+decodes. The runner requires ten successful reference decodes per case, so
+malformed fixture setup cannot silently reduce testing to error comparisons.
+The suite compares complete decoded pixel transcripts as well as every HDR
+field, property IDs/types, absent-output sentinels, NULL output/input behavior,
+caller-buffer copies, aliases, changed-content reloads and context release.
+It includes every ndwt version, malformed box prefixes, optional warnings,
+ignored trailing bytes, duplicate/zero values, random fields, native/RGB
+conversion and identity/grid/overlay metadata inheritance.
+
+These tests exposed two implementation bugs: typed-property deduplication
+incorrectly included ignored trailing bytes, and derived images dropped
+inherited HDR/aspect values. Both are fixed. Handle property objects remain
+separate from the context's current file tables: a setter appends to the
+retained image while first-property lookup remains stable; HDR/aspect setters
+bypass the context's read-only restriction, matching the pinned reference.
+
+C-client ASan/UBSan (local leak checking disabled) and the codec-free build pass.
+Six mutations are
+rejected: latest-property lookup (716 mismatches), read-only setter restriction
+(716), zero CLLI insertion (231), retained trailing bytes (10), dropped inherited
+CLLI (8), and accepted ndwt version 1 (1). The default mutation suite now has
+64 deliberately wrong implementations. The 1,786 context, 960 property and 640
+derived-decode regression cases also pass, along with 3,772 property-decode cases.
+Whole-library instrumentation,
+allocation-failure injection, encoding/serialization and platform ABI remain open.
+
+Text commit c08972b passed all development CI steps, 53 mutation checks and
+Rust builds on Linux, macOS and Windows. Only the full-API completion gate
+failed; see docs/results/ci-text-report.json.

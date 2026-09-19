@@ -18,6 +18,7 @@ pub mod derived;
 pub mod error;
 pub mod error_text;
 pub mod geometry;
+pub mod handle_properties;
 #[cfg(feature = "hevc")]
 pub mod hevc;
 pub mod hevc_config;

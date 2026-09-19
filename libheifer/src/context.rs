@@ -476,6 +476,7 @@ pub(crate) struct DecoderInput {
     pub _reservation: crate::security::Reservation,
 }
 pub struct ImageInfo {
+    pub retained_properties: std::sync::Mutex<Vec<Arc<crate::properties::Property>>>,
     pub text_ids: std::sync::Mutex<Vec<u32>>,
     pub tai_timestamp: Option<crate::tai::Timestamp>,
     pub description_error: Option<ContextError>,
@@ -607,6 +608,7 @@ impl Document {
         &mut self,
         container: &Container<'_>,
         items: &crate::items::ItemStore,
+        properties: &crate::properties::PropertyStore,
         text_items: &mut Vec<Arc<crate::text::TextItem>>,
     ) -> Result<()> {
         let images = &mut self.images;
@@ -629,6 +631,15 @@ impl Document {
             }
             let ispe = container.dimensions(item.id).unwrap_or((0, 0));
             let mut image = ImageInfo {
+                retained_properties: std::sync::Mutex::new(
+                    properties
+                        .items
+                        .get(&item.id)
+                        .into_iter()
+                        .flatten()
+                        .filter_map(|index| properties.boxes.get(*index).cloned())
+                        .collect(),
+                ),
                 description_error: None,
                 description_input: None,
                 components: crate::components::ComponentIds::default(),
@@ -906,7 +917,7 @@ impl Document {
                             matrix.principal_point_y -= y;
                         }
                     }
-                    b"pasp" if p.len() >= 8 => {
+                    b"pasp" if p.len() >= 8 && image.pixel_aspect.is_none() => {
                         image.pixel_aspect = Some((
                             u32::from_be_bytes(p[..4].try_into().unwrap()),
                             u32::from_be_bytes(p[4..8].try_into().unwrap()),
@@ -1185,7 +1196,12 @@ impl Context {
         // Interpretation replaces the context's ownership immediately. Old
         // handles retain only their own objects and referenced auxiliary images.
         self.document = None;
-        let outcome = document.interpret(&container, &self.items, &mut self.text_items);
+        let outcome = document.interpret(
+            &container,
+            &self.items,
+            &self.properties,
+            &mut self.text_items,
+        );
         self.document = Some(Arc::new(document));
         outcome
     }

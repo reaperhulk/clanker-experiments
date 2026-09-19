@@ -458,14 +458,26 @@ pub(crate) fn decode_native(
         }
     }
     let bitstream_nclx = image.color.nclx;
+    let inherited_hdr = (
+        image.color.content_light,
+        image.color.mastering,
+        image.color.ambient,
+        image.color.diffuse_white,
+    );
     image.color = info.color.try_clone()?;
+    // A derived image keeps its child's HDR metadata unless the parent has
+    // a corresponding property. Identity and grid construction copy metadata.
+    image.color.content_light = inherited_hdr.0;
+    image.color.mastering = inherited_hdr.1;
+    image.color.ambient = inherited_hdr.2;
+    image.color.diffuse_white = inherited_hdr.3;
     if image.color.nclx.is_none_or(|n| !n.is_defined()) {
         image.color.nclx = bitstream_nclx;
     }
     if let Some(timestamp) = info.tai_timestamp {
         image.tai_timestamp = Some(timestamp);
     }
-    image.pixel_aspect_ratio = info.pixel_aspect.unwrap_or((1, 1));
+    info.apply_handle_properties(&mut image);
     image.premultiplied_alpha = info.premultiplied_alpha;
     visiting.ids.remove(&id);
     Ok(image)

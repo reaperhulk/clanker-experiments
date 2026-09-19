@@ -18,6 +18,7 @@ mod color;
 mod components;
 mod context;
 mod decoding;
+mod handle_color;
 mod image;
 mod items;
 mod metadata;

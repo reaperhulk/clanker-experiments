@@ -1,0 +1,66 @@
+{
+  "scope": "6 deliberate defects; not comprehensive mutation coverage",
+  "mutations": [
+    {
+      "mutation": "handle_first_property",
+      "suite": "handle_color",
+      "source": "src/handle_properties.rs",
+      "before": ".find(|p| !p.raw && p.kind == kind)",
+      "after": ".rfind(|p| !p.raw && p.kind == kind)",
+      "candidate_sha256": "9f547606d31f849c3caa68773c29eb88417fff0a5699c5d72dde9405730a1479",
+      "mismatches": 716,
+      "detected": true
+    },
+    {
+      "mutation": "handle_property_read_only",
+      "suite": "handle_color",
+      "source": "src/handle_properties.rs",
+      "before": "context.properties.add_to_file(self.id, property, false)?;",
+      "after": "context.properties.add(self.id, property, false)?;",
+      "candidate_sha256": "aa868f6e8ba312e420e22df3453d372eae145e6486cc11ca4a08fe297ba8f2d7",
+      "mismatches": 716,
+      "detected": true
+    },
+    {
+      "mutation": "handle_zero_clli",
+      "suite": "handle_color",
+      "source": "src/handle_properties.rs",
+      "before": "if v.max_content_light_level == 0 && v.max_pic_average_light_level == 0 {",
+      "after": "if false {",
+      "candidate_sha256": "50706e579bd76f7c4707097cf2f986488741733111ba17e3bbc77c6aa6135651",
+      "mismatches": 231,
+      "detected": true
+    },
+    {
+      "mutation": "typed_property_trailing_bytes",
+      "suite": "handle_color",
+      "source": "src/properties.rs",
+      "before": "&data[..size.min(data.len())]",
+      "after": "data",
+      "candidate_sha256": "c872ede150227de0d6052e5729f162052014e011c4477751ac190555b70eeba4",
+      "mismatches": 10,
+      "detected": true
+    },
+    {
+      "mutation": "derived_hdr_inheritance",
+      "suite": "handle_color",
+      "source": "src/decoding.rs",
+      "before": "image.color.content_light = inherited_hdr.0;",
+      "after": "image.color.content_light = Default::default();",
+      "candidate_sha256": "a105d2eb01a0209f5bc0c7a2e8ac75d3f63244969c9eef0958cb3b00185748ec",
+      "mismatches": 8,
+      "detected": true
+    },
+    {
+      "mutation": "ndwt_version_warning",
+      "suite": "handle_color",
+      "source": "src/properties.rs",
+      "before": "b\"ndwt\" if data[0] != 0 =>",
+      "after": "b\"ndwt\" if data[0] > 1 =>",
+      "candidate_sha256": "4ff65d3845751afcfe677d90263f0739114cac6a64ca7e4adb8871bb222d9c55",
+      "mismatches": 1,
+      "detected": true
+    }
+  ],
+  "all_detected": true
+}

@@ -55,6 +55,7 @@ python tools/test_context.py --reference-build .build/reference
 python tools/test_items.py --reference-build .build/reference
 python tools/test_add_metadata.py --reference-build .build/reference
 python tools/test_text.py --reference-build .build/reference
+python tools/test_handle_color.py --reference-build .build/reference
 python tools/test_image_area.py --reference-build .build/reference
 python tools/test_metadata_compression.py --reference-build .build/reference
 python tools/test_auxiliary.py --reference-build .build/reference
