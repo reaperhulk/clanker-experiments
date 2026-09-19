@@ -120,6 +120,13 @@ impl ItemStore {
     pub fn add(&mut self, item: Item, data: Vec<u8>) -> Result<u32> {
         self.add_compressed(item, &data, 0)
     }
+    /// Text payloads are materialized into iloc only when the context is written.
+    pub fn add_pending(&mut self, item: Item) -> Result<u32> {
+        self.has_iloc = true;
+        let id = self.mint()?;
+        self.items.insert(id, item);
+        Ok(id)
+    }
     pub fn add_compressed(&mut self, mut item: Item, data: &[u8], compression: i32) -> Result<u32> {
         self.has_iloc = true;
         let id = self.mint()?;

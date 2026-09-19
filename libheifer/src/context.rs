@@ -476,6 +476,7 @@ pub(crate) struct DecoderInput {
     pub _reservation: crate::security::Reservation,
 }
 pub struct ImageInfo {
+    pub text_ids: std::sync::Mutex<Vec<u32>>,
     pub tai_timestamp: Option<crate::tai::Timestamp>,
     pub description_error: Option<ContextError>,
     description_input: Option<DecoderInput>,
@@ -606,6 +607,7 @@ impl Document {
         &mut self,
         container: &Container<'_>,
         items: &crate::items::ItemStore,
+        text_items: &mut Vec<Arc<crate::text::TextItem>>,
     ) -> Result<()> {
         let images = &mut self.images;
         for item in container.items.values() {
@@ -631,6 +633,7 @@ impl Document {
                 description_input: None,
                 components: crate::components::ComponentIds::default(),
                 intrinsic: None,
+                text_ids: std::sync::Mutex::new(Vec::new()),
                 tai_timestamp: None,
                 extrinsic: None,
                 warnings: Vec::new(),
@@ -1068,10 +1071,45 @@ impl Document {
                 }
             }
         }
+        // The reference retains the context's text registry across reads, and
+        // adds one registry entry per target in each ordered text reference.
+        for (&id, item) in &items.items {
+            if item.kind != u32::from_be_bytes(*b"mime") || !matches!(item.compression(), 0 | 3 | 4)
+            {
+                continue;
+            }
+            let content = crate::compression::decompress(
+                items.item_data(id, self.read_limits)?,
+                item.compression(),
+                &self.budget,
+            )?;
+            let text = Arc::new(crate::text::TextItem { id, content });
+            for reference in items
+                .references
+                .iter()
+                .filter(|r| r.from == id && r.kind == u32::from_be_bytes(*b"text"))
+            {
+                for target in &reference.to {
+                    let Some(image) = images.get(target) else {
+                        return Err(ContextError::invalid(
+                            2000,
+                            "Non-existing item ID referenced: Text item assigned to non-existing image",
+                        ));
+                    };
+                    image
+                        .text_ids
+                        .lock()
+                        .unwrap_or_else(std::sync::PoisonError::into_inner)
+                        .push(id);
+                    text_items.push(text.clone());
+                }
+            }
+        }
         Ok(())
     }
 }
 pub struct Context {
+    pub text_items: Vec<Arc<crate::text::TextItem>>,
     pub items: crate::items::ItemStore,
     pub properties: crate::properties::PropertyStore,
     pub budget: Arc<crate::security::Budget>,
@@ -1084,6 +1122,7 @@ impl Default for Context {
     fn default() -> Self {
         let limits = Arc::new(RwLock::new(crate::security::Limits::default()));
         Self {
+            text_items: Vec::new(),
             items: crate::items::ItemStore::default(),
             properties: crate::properties::PropertyStore::default(),
             budget: Arc::new(crate::security::Budget::new(limits.clone())),
@@ -1146,7 +1185,7 @@ impl Context {
         // Interpretation replaces the context's ownership immediately. Old
         // handles retain only their own objects and referenced auxiliary images.
         self.document = None;
-        let outcome = document.interpret(&container, &self.items);
+        let outcome = document.interpret(&container, &self.items, &mut self.text_items);
         self.document = Some(Arc::new(document));
         outcome
     }

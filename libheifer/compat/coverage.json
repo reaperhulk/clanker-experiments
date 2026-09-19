@@ -287,6 +287,15 @@
       "crates/capi/tests/abi.rs"
     ]
   },
+  "heif_context_get_text_item": {
+    "notes": "Linux x86_64 original-header differential: MIME text references, creation and pending payloads, copied content/language strings, malformed fields, compressed content, duplicate references, resource limits, retained handles and text lookup order across changed-content reloads. File serialization, fresh encoded-image language insertion, allocation failures and cross-platform ABI remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/text.c",
+      "tests/items.c",
+      "tools/test_text.py"
+    ]
+  },
   "heif_context_is_top_level_image_ID": {
     "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open. Derived and mask handle queries also cover cyclic/missing references and partial reloads.",
     "status": "partial",
@@ -1206,6 +1215,15 @@
       "tools/test_images.py"
     ]
   },
+  "heif_image_handle_add_text_item": {
+    "notes": "Linux x86_64 original-header differential: MIME text references, creation and pending payloads, copied content/language strings, malformed fields, compressed content, duplicate references, resource limits, retained handles and text lookup order across changed-content reloads. File serialization, fresh encoded-image language insertion, allocation failures and cross-platform ABI remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/text.c",
+      "tests/items.c",
+      "tools/test_text.py"
+    ]
+  },
   "heif_image_handle_free_auxiliary_types": {
     "notes": "512 original-header file transcripts including filters, flags, type ownership, depth SEI values, partial reloads and aliases. Finite Linux x86_64 evidence; broader platform and malformed-file coverage remains open.",
     "status": "partial",
@@ -1383,6 +1401,15 @@
       "tools/test_derived_handles.py"
     ]
   },
+  "heif_image_handle_get_list_of_text_item_ids": {
+    "notes": "Linux x86_64 original-header differential: MIME text references, creation and pending payloads, copied content/language strings, malformed fields, compressed content, duplicate references, resource limits, retained handles and text lookup order across changed-content reloads. File serialization, fresh encoded-image language insertion, allocation failures and cross-platform ABI remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/text.c",
+      "tests/items.c",
+      "tools/test_text.py"
+    ]
+  },
   "heif_image_handle_get_list_of_thumbnail_IDs": {
     "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open. Derived and mask handle queries also cover cyclic/missing references and partial reloads.",
     "status": "partial",
@@ -1490,6 +1517,15 @@
       "tests/context.c",
       "tools/test_context.py",
       "tools/test_derived_handles.py"
+    ]
+  },
+  "heif_image_handle_get_number_of_text_items": {
+    "notes": "Linux x86_64 original-header differential: MIME text references, creation and pending payloads, copied content/language strings, malformed fields, compressed content, duplicate references, resource limits, retained handles and text lookup order across changed-content reloads. File serialization, fresh encoded-image language insertion, allocation failures and cross-platform ABI remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/text.c",
+      "tests/items.c",
+      "tools/test_text.py"
     ]
   },
   "heif_image_handle_get_number_of_thumbnails": {
@@ -2270,6 +2306,51 @@
       "tests/tai.c",
       "tools/test_tai.py",
       "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_text_item_get_content": {
+    "notes": "Linux x86_64 original-header differential: MIME text references, creation and pending payloads, copied content/language strings, malformed fields, compressed content, duplicate references, resource limits, retained handles and text lookup order across changed-content reloads. File serialization, fresh encoded-image language insertion, allocation failures and cross-platform ABI remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/text.c",
+      "tests/items.c",
+      "tools/test_text.py"
+    ]
+  },
+  "heif_text_item_get_id": {
+    "notes": "Linux x86_64 original-header differential: MIME text references, creation and pending payloads, copied content/language strings, malformed fields, compressed content, duplicate references, resource limits, retained handles and text lookup order across changed-content reloads. File serialization, fresh encoded-image language insertion, allocation failures and cross-platform ABI remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/text.c",
+      "tests/items.c",
+      "tools/test_text.py"
+    ]
+  },
+  "heif_text_item_get_property_extended_language": {
+    "notes": "Linux x86_64 original-header differential: MIME text references, creation and pending payloads, copied content/language strings, malformed fields, compressed content, duplicate references, resource limits, retained handles and text lookup order across changed-content reloads. File serialization, fresh encoded-image language insertion, allocation failures and cross-platform ABI remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/text.c",
+      "tests/items.c",
+      "tools/test_text.py"
+    ]
+  },
+  "heif_text_item_release": {
+    "notes": "Linux x86_64 original-header differential: MIME text references, creation and pending payloads, copied content/language strings, malformed fields, compressed content, duplicate references, resource limits, retained handles and text lookup order across changed-content reloads. File serialization, fresh encoded-image language insertion, allocation failures and cross-platform ABI remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/text.c",
+      "tests/items.c",
+      "tools/test_text.py"
+    ]
+  },
+  "heif_text_item_set_extended_language": {
+    "notes": "Linux x86_64 original-header differential: MIME text references, creation and pending payloads, copied content/language strings, malformed fields, compressed content, duplicate references, resource limits, retained handles and text lookup order across changed-content reloads. File serialization, fresh encoded-image language insertion, allocation failures and cross-platform ABI remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/text.c",
+      "tests/items.c",
+      "tools/test_text.py"
     ]
   }
 }

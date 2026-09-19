@@ -4,8 +4,8 @@ This implements an independent Rust library with an optional compatible C ABI,
 targeting the complete libheif 1.23.4 contract. All implementation dependencies
 are pure Rust. Native libheif and libde265 are independent test oracles only.
 
-**Incomplete: 251 of 465 functions are implemented and remain marked partial;
-214 functions are missing.** Keep this PR draft. The strict completion gate
+**Incomplete: 260 of 465 functions are implemented and remain marked partial;
+205 functions are missing.** Keep this PR draft. The strict completion gate
 rejects missing APIs and unvalidated behavior. Unsupported stubs and forwarding
 to libheif do not count toward coverage.
 
@@ -22,7 +22,15 @@ The current implementation includes:
 - Versioned security limits, allocation accounting and ownership across reloads,
   malformed SPS rejection, and image-owned error-message buffers.
 
-This increment adds five metadata-writing APIs. The independent client matches
+This increment adds all nine text-item declarations. Independent clients match
+1,309 cases covering creation, attachments, byte content, language ownership,
+compressed/malformed input, pending payloads and retained lookup state across
+changed-content reloads. C-client ASan/UBSan and codec-free checks pass. The
+suite also exposed and fixed missing/unterminated item-info string handling.
+Four new mutations are rejected, bringing the default set to 53.
+File serialization and fresh encoded-image language insertion remain open.
+
+The metadata-writer increment adds five metadata-writing APIs. The independent client matches
 2,187 cases and complete byte-for-byte payload streams, including Exif offsets,
 XMP compression, URI behavior, foreign handles, reference targets, resource limits
 and metadata visibility after mutation. The same cases pass C-client ASan/UBSan
@@ -57,8 +65,8 @@ binary/client/corpus hashes and per-case evidence are in `docs/results/`;
 `docs/RESULTS.md` records the scope and known gaps. Local sanitizer coverage is
 limited to C clients, with leak checking disabled where ptrace prevents it.
 
-The item/compression commit (`aaf392b`) passed all development CI steps,
-all 41 then-present mutation tests and Rust builds on Linux, macOS and Windows.
+The timestamp commit (`7350505`) passed all development CI steps,
+all 46 then-present mutation tests and Rust builds on Linux, macOS and Windows.
 Only the full-API completion gate failed. Cross-platform ABI, fuzzing, full codec
 conformance, remaining APIs and whole-library memory-safety validation remain open.
 

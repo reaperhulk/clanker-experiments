@@ -153,14 +153,15 @@ impl<'a> Reader<'a> {
     fn fullbox(&mut self) -> Result<(u8, u32)> {
         Ok((self.number(1)? as u8, self.number(3)? as u32))
     }
-    fn string(&mut self) -> Result<Vec<u8>> {
+    fn string(&mut self) -> Vec<u8> {
         let end = self
             .0
             .iter()
             .position(|b| *b == 0)
-            .ok_or(ParseError::Truncated)?;
-        let bytes = self.take(end + 1)?;
-        Ok(bytes[..end].to_vec())
+            .unwrap_or(self.0.len().saturating_sub(1));
+        let bytes = self.0[..end].to_vec();
+        self.0 = self.0.get(end + 1..).unwrap_or_default();
+        bytes
     }
     fn id(&mut self, wide: bool) -> Result<u32> {
         Ok(self.number(if wide { 4 } else { 2 })? as u32)
@@ -273,19 +274,19 @@ impl<'a> Container<'a> {
                 return Err(ParseError::Unsupported);
             }
             let kind = r.fourcc()?;
-            let name = r.string()?;
+            let name = r.string();
             let content_type = if kind == *b"mime" {
-                r.string()?
+                r.string()
             } else {
                 Vec::new()
             };
             let content_encoding = if kind == *b"mime" && !r.0.is_empty() {
-                r.string()?
+                r.string()
             } else {
                 Vec::new()
             };
             let uri_type = if kind == *b"uri " {
-                r.string()?
+                r.string()
             } else {
                 Vec::new()
             };

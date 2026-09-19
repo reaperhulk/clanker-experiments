@@ -8,8 +8,8 @@ with VUI unspecified-color, monochrome-decoding and typed missing-parameter fixe
 
 ## Implemented scope
 
-251 of 465 public functions are exported, plus `heif_error_success`.
-214 functions are missing. Even the exported functions are marked **partial**:
+260 of 465 public functions are exported, plus `heif_error_success`.
+205 functions are missing. Even the exported functions are marked **partial**:
 coverage is finite, platform coverage is incomplete, and one malformed-box
 behavior gap is explicitly retained. There is no claim of a compatible library.
 
@@ -397,3 +397,41 @@ strict full-API completion check failed; see `docs/results/ci-items-report.json`
 All three new defects were detected: shifted Exif offsets (452 cases), raw XMP
 DEFLATE instead of the reference wrapper (42), and wrong reference targets
 (1,910). The default mutation set now contains 49 defects.
+
+
+## Text item APIs
+
+Nine text APIs now have partial implementations. Independent original-header
+clients match 1,309 cases with full file-item payload byte comparison, including
+creation, optional returned handles, pending text payloads, image attachments,
+MIME content of arbitrary bytes, embedded NULs, owned content and languages,
+missing IDs, duplicate references, invalid targets, compressed/truncated content,
+resource limits, all file prefixes, and unterminated item-info strings. The same
+cases pass C-client ASan/UBSan (local leak checking disabled) and the codec-free
+configuration. The payload-stream SHA-256 is
+`693b0f5e160704b413e2b6c77294d7a53a4ea527eb223caddc2d02aae9bc53c7`.
+
+Text objects and their registry survive successful and failed context reads in
+the reference. Duplicate IDs resolve to the earliest retained text object;
+changed-content reload cases exercise that behavior. Image handles retain their
+own text ID lists. Content remains accessible after contexts and image handles
+are released, while language lookup uses the current file's properties.
+New text data and `text` references remain pending until serialization, so raw
+item-data queries before writing correctly report missing data. The separate
+image-container parser now matches the reference's empty/unterminated item-info
+string handling, fixing the URI case found by this suite.
+
+Four text/parser mutations are rejected: discarded retained text registry (736
+mismatches), premature payload insertion (736), latest-ID lookup (11), and
+unterminated-string handling (4). The last mutation initially survived; adding
+independent handle-metadata string queries closed that test gap. The default
+mutation set now contains 53 deliberate defects.
+
+Existing context (1,786), item (2,840), compressed-metadata (430) and security
+(2,927) cases pass when rerun for the changed parser and interpretation path. File
+serialization, language insertion through a newly encoded image, callback
+inputs, allocation failures and cross-platform ABI remain required work.
+
+The preceding timestamp commit `7350505` passed all development CI steps,
+46 mutations and Rust builds on Linux, macOS and Windows. Only the full-API
+completion gate failed; see `docs/results/ci-tai-report.json`.

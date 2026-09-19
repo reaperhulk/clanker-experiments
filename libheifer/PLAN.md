@@ -114,8 +114,8 @@ with ordered color conversion, alpha attachment, transforms and 16-bit packing.
 The derived-image iteration adds grids/identity, cycle/MIAF checks, scoped tile
 workers and four warning/thread-control exports. Overlay composition, raw masks,
 shared-graph decode-operation budgets and dynamic derived queries follow in the next iteration. Six security-limit/allocation exports follow, including context-wide
-allocation accounting and object-specific resource lifetimes. Auxiliary/depth, item-property, six camera-matrix, twenty-two sensor-metadata and thirty-nine component APIs, generic items/compression, twelve TAI timestamp APIs and five metadata writers bring the total to
-251 partial functions, with 214 functions missing. Compatibility work comes first;
+allocation accounting and object-specific resource lifetimes. Auxiliary/depth, item-property, six camera-matrix, twenty-two sensor-metadata and thirty-nine component APIs, generic items/compression, twelve TAI timestamp APIs, five metadata writers and nine text-item APIs bring the total to
+260 partial functions, with 205 functions missing. Compatibility work comes first;
 performance optimization is deferred until the complete compatibility gate passes.
 The full header contract, finite behavioral reports, known differences and
 performance evidence are retained in `compat/` and `docs/results/`.
