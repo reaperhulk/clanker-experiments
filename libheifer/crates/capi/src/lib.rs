@@ -18,6 +18,7 @@ mod color;
 mod components;
 mod context;
 mod decoding;
+mod dynamic_plugins;
 mod encoder;
 mod encoder_parameters;
 mod handle_color;

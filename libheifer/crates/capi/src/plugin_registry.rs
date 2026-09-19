@@ -76,21 +76,35 @@ static REGISTRY: LazyLock<Mutex<Registry>> = LazyLock::new(|| {
     Mutex::new(r)
 });
 pub(super) fn ensure_initialized() {
-    let mut r = REGISTRY.lock().unwrap();
-    if r.count == 0 {
-        if !r.defaults {
-            r.add_defaults();
-        }
-        r.count = 1;
+    if REGISTRY.lock().unwrap().count == 0 {
+        let _ = heif_init(ptr::null_mut());
     }
 }
 #[unsafe(no_mangle)]
 pub extern "C" fn heif_init(_params: *mut c_void) -> HeifError {
-    let mut r = REGISTRY.lock().unwrap();
-    if !r.defaults {
-        r.add_defaults();
+    let first = {
+        let mut r = REGISTRY.lock().unwrap();
+        if !r.defaults {
+            r.add_defaults();
+        }
+        r.count == 0
+    };
+    if first {
+        for path in crate::dynamic_plugins::paths() {
+            let error = unsafe {
+                crate::dynamic_plugins::heif_load_plugins(
+                    path.as_ptr(),
+                    ptr::null_mut(),
+                    ptr::null_mut(),
+                    0,
+                )
+            };
+            if error.code != 0 {
+                return error;
+            }
+        }
     }
-    r.count += 1;
+    REGISTRY.lock().unwrap().count += 1;
     SUCCESS
 }
 #[unsafe(no_mangle)]
@@ -122,6 +136,8 @@ pub extern "C" fn heif_deinit() {
             unsafe { f() }
         }
     }
+    REGISTRY.lock().unwrap().encoders.clear();
+    crate::dynamic_plugins::unload_all();
     let mut r = REGISTRY.lock().unwrap();
     r.encoders.clear();
     r.decoders.clear();
@@ -461,4 +477,27 @@ fn builtin_decoder(format: c_int) -> *const DecoderPlugin {
     } else {
         &HEVC_DECODER.0
     }
+}
+
+pub(super) unsafe fn unregister_encoder(p: *const EncoderPlugin) {
+    if let Some(f) = field!(p, cleanup_plugin) {
+        unsafe { f() }
+    }
+    let mut r = REGISTRY.lock().unwrap();
+    if let Some(i) = r
+        .encoders
+        .iter()
+        .position(|d| matches!(d.source,EncoderSource::External(q) if p==q))
+    {
+        r.encoders.remove(i);
+    }
+}
+
+pub(super) fn decoder_registered(p: *const DecoderPlugin) -> bool {
+    REGISTRY
+        .lock()
+        .unwrap()
+        .decoders
+        .iter()
+        .any(|d| matches!(d.source,DecoderSource::External(q) if p==q))
 }

@@ -1069,6 +1069,16 @@
       "tools/test_brands.py"
     ]
   },
+  "heif_free_plugin_directories": {
+    "notes": "Linux x86_64 plugin-loading-enabled pinned oracle: directory ownership/environment splitting, module diagnostics, version and minimum-library checks, duplicate loads/reloads, bounded bulk outputs, automatic initialization and registry cleanup callbacks. Test modules are pinned to avoid upstream unload UAF; unpinned candidate safety is tested separately. Platform loader ABI, concurrent/reentrant module transactions and every allocation failure remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/dynamic_plugins.c",
+      "tests/dynamic_plugin.c",
+      "tools/test_dynamic_plugins.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
   "heif_get_decoder_descriptors": {
     "notes": "Independent original-header external-plugin callback traces: historical record prefixes, priority/filter/capacity behavior, registration multiplicity, init/deinit and reentrant discovery, allocation errors and cleanup, duplicate parameter validation, forwarding and generic conversion. Normal, codec-free and C sanitizer checks. Actual registered-plugin image encoding/decoding, dynamic loading, resource failures and cross-platform C execution remain open; HEVC discovery honestly identifies the Rust implementation.",
     "status": "partial",
@@ -1114,6 +1124,16 @@
       "tools/test_security.py",
       "tests/security_lifetimes.c",
       "tools/test_security_lifetimes.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_get_plugin_directories": {
+    "notes": "Linux x86_64 plugin-loading-enabled pinned oracle: directory ownership/environment splitting, module diagnostics, version and minimum-library checks, duplicate loads/reloads, bounded bulk outputs, automatic initialization and registry cleanup callbacks. Test modules are pinned to avoid upstream unload UAF; unpinned candidate safety is tested separately. Platform loader ABI, concurrent/reentrant module transactions and every allocation failure remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/dynamic_plugins.c",
+      "tests/dynamic_plugin.c",
+      "tools/test_dynamic_plugins.py",
       "crates/capi/tests/abi.rs"
     ]
   },
@@ -3134,6 +3154,26 @@
       "tools/test_brands.py"
     ]
   },
+  "heif_load_plugin": {
+    "notes": "Linux x86_64 plugin-loading-enabled pinned oracle: directory ownership/environment splitting, module diagnostics, version and minimum-library checks, duplicate loads/reloads, bounded bulk outputs, automatic initialization and registry cleanup callbacks. Test modules are pinned to avoid upstream unload UAF; unpinned candidate safety is tested separately. Platform loader ABI, concurrent/reentrant module transactions and every allocation failure remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/dynamic_plugins.c",
+      "tests/dynamic_plugin.c",
+      "tools/test_dynamic_plugins.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_load_plugins": {
+    "notes": "Linux x86_64 plugin-loading-enabled pinned oracle: directory ownership/environment splitting, module diagnostics, version and minimum-library checks, duplicate loads/reloads, bounded bulk outputs, automatic initialization and registry cleanup callbacks. Test modules are pinned to avoid upstream unload UAF; unpinned candidate safety is tested separately. Platform loader ABI, concurrent/reentrant module transactions and every allocation failure remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/dynamic_plugins.c",
+      "tests/dynamic_plugin.c",
+      "tools/test_dynamic_plugins.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
   "heif_main_brand": {
     "notes": "Tested on Linux x86_64; cross-platform ABI and exhaustive input coverage pending.",
     "status": "partial",
@@ -4177,6 +4217,16 @@
     "tests": [
       "tests/encoding_options.c",
       "tools/test_encoding_options.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_unload_plugin": {
+    "notes": "Linux x86_64 plugin-loading-enabled pinned oracle: directory ownership/environment splitting, module diagnostics, version and minimum-library checks, duplicate loads/reloads, bounded bulk outputs, automatic initialization and registry cleanup callbacks. Test modules are pinned to avoid upstream unload UAF; unpinned candidate safety is tested separately. Platform loader ABI, concurrent/reentrant module transactions and every allocation failure remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/dynamic_plugins.c",
+      "tests/dynamic_plugin.c",
+      "tools/test_dynamic_plugins.py",
       "crates/capi/tests/abi.rs"
     ]
   }

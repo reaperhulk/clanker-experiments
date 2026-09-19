@@ -8,8 +8,8 @@ with VUI unspecified-color, monochrome-decoding and typed missing-parameter fixe
 
 ## Implemented scope
 
-457 of 465 public functions are exported, plus `heif_error_success`.
-8 functions are missing. Even the exported functions are marked **partial**:
+462 of 465 public functions are exported, plus `heif_error_success`.
+3 functions are missing. Even the exported functions are marked **partial**:
 coverage is finite, platform coverage is incomplete, and one malformed-box
 behavior gap is explicitly retained. There is no claim of a compatible library.
 
@@ -882,3 +882,34 @@ I/O and complete resource accounting need further implementation and testing.
 The strict completion gate remains false. Eight unexported APIs are file/reader
 input, debug dumping and dynamic plugin management. Evidence is in
 `docs/results/sequences-*-report.json` and `sequence-reading-*-report.json`.
+
+## Dynamic module checkpoint (462 partial APIs, 3 missing)
+
+Five dynamic plugin APIs now manage OS modules and owned directory arrays.
+A separate, untouched libheif oracle enables plugin loading with an empty default
+search path. Its SHA-256 is `d9441cc137717ab2edbe93f1179ed5e7cbbe60bf30d8681d5b3c83f734afc077`.
+The primary codec oracle remains unchanged. Test modules are caller-supplied C
+fixtures; they are not candidate dependencies or bundled codec implementations.
+
+All 425 original-header cases pass normal, ASan/UBSan-client and codec-free runs:
+environment path splitting/ownership, malformed or missing modules/symbols,
+stable diagnostics, plugin/library version checks, duplicate loads, partial
+unload/reload identity, directory scan capacities, output sentinels, automatic
+initialization errors and registry cleanup callbacks. Five affected suites pass
+6,214 regressions. Rust tests (both feature sets), original-header ABI and strict
+Clippy pass. Local leak detection remains disabled; CI requests it.
+
+Upstream closes modules before dereferencing their info records and does not
+remove unloaded decoder registry entries. Oracle clients pin modules so those
+undefined accesses cannot invalidate comparisons. Two separate unpinned
+candidate probes pass; they are not parity cases. Candidate decoder module
+storage remains alive until registry teardown, and encoder cleanup precedes
+closing its last module reference. The mutation runner now explicitly refuses
+to count mixed process failures and semantic mismatches as detection.
+
+Eight new semantic mutations cover directory splitting, accepted versions,
+load reference counts, reload identity, directory capacity/count/termination
+and cleanup ordering. The inventory is 179 mutations. Remaining gaps include
+concurrent/reentrant module transactions, platform loader behavior, exhaustive
+allocation failures and codec plugin integration. Three exports remain missing:
+file input, reader callbacks and debug dumping. Strict completion remains false.

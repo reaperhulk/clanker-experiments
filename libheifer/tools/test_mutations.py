@@ -15,6 +15,15 @@ import sys
 import tempfile
 
 MUTATIONS = [
+    ('dynamic_trailing_directory', 'crates/capi/src/dynamic_plugins.rs', '            v.pop();', '            // keep the trailing segment', 'dynamic_plugins'),
+    ('dynamic_encoder_version', 'crates/capi/src/dynamic_plugins.rs', 'if field!(p, plugin_api_version) < 4 {', 'if field!(p, plugin_api_version) < 3 {', 'dynamic_plugins'),
+    ('dynamic_repeated_load', 'crates/capi/src/dynamic_plugins.rs', '            p.count += 1;', '            // forget the duplicate reference', 'dynamic_plugins'),
+    ('dynamic_reload_identity', 'crates/capi/src/dynamic_plugins.rs', 'p.matchable && p.handle == handle as usize', 'p.handle == handle as usize', 'dynamic_plugins'),
+    ('dynamic_bulk_capacity', 'crates/capi/src/dynamic_plugins.rs', 'if n == capacity {', 'if n >= capacity {', 'dynamic_plugins'),
+    ('dynamic_bulk_count', 'crates/capi/src/dynamic_plugins.rs', 'count.write(n)', 'count.write(n+1)', 'dynamic_plugins'),
+    ('dynamic_bulk_terminator', 'crates/capi/src/dynamic_plugins.rs', 'out.offset(n as isize).write(ptr::null())', 'out.offset(n as isize).write(0x1234usize as *const PluginInfo)', 'dynamic_plugins'),
+    ('dynamic_cleanup_order', 'crates/capi/src/plugin_registry.rs', '    REGISTRY.lock().unwrap().encoders.clear();\n    crate::dynamic_plugins::unload_all();', '    crate::dynamic_plugins::unload_all();', 'dynamic_plugins'),
+
     ('sequence_default_timescale', 'src/sequences.rs', 'timescale: 90000,', 'timescale: 90001,', 'sequences'),
     ('sequence_fresh_handler', 'src/sequences.rs', 'reported_handler: 0,', 'reported_handler: handler,', 'sequences'),
     ('sequence_reference_order', 'src/sequences.rs', '            ids.push(id);', '            ids.insert(0,id);', 'sequences'),
@@ -210,6 +219,7 @@ def execute(command, cwd, env, log):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--reference-build", required=True)
+    parser.add_argument("--plugin-reference-build", default=".build/reference-plugins")
     parser.add_argument("--candidate", default="target/release/libheifer.so")
     parser.add_argument("--output", default=".build/mutations-report.json")
     parser.add_argument("--only", choices=[m[0] for m in MUTATIONS], action="append", help="Run selected defects; default runs the complete mutation set")
@@ -220,9 +230,11 @@ def main():
     evidence.mkdir(parents=True, exist_ok=True)
     reference = str(Path(args.reference_build).resolve())
     candidate = str(Path(args.candidate).resolve())
+    def oracle(suite):
+        return str(Path(args.plugin_reference_build).resolve()) if suite == "dynamic_plugins" else reference
     # Baselines must pass on this tree before a rejected mutant is meaningful.
     for suite in dict.fromkeys(m[4] for m in mutations if m[4] != "abi"):
-        run = execute([sys.executable, f"tools/test_{suite}.py", "--reference-build", reference, "--candidate", candidate, *(["--work", str(evidence / "decode")] if suite.startswith("decode_") or suite == "hevc_limits" else []), "--output", str(evidence / f"baseline-{suite}.json")], root, os.environ, evidence / f"baseline-{suite}.log")
+        run = execute([sys.executable, f"tools/test_{suite}.py", "--reference-build", oracle(suite), "--candidate", candidate, *(["--work", str(evidence / "decode")] if suite.startswith("decode_") or suite == "hevc_limits" else []), "--output", str(evidence / f"baseline-{suite}.json")], root, os.environ, evidence / f"baseline-{suite}.log")
         if run.returncode:
             raise SystemExit(f"Baseline {suite} failed; see {evidence}")
     run = execute(["cargo", "test", "--locked", "-p", "libheifer-capi", "--test", "abi"], root, os.environ, evidence / "baseline-abi.log")
@@ -256,10 +268,11 @@ def main():
                 else:
                     report_path = evidence / f"{name}.json"
                     report_path.unlink(missing_ok=True)
-                    run = execute([sys.executable, f"tools/test_{suite}.py", "--reference-build", reference, "--candidate", str(library), *(["--work", str(evidence / "decode")] if suite.startswith("decode_") or suite == "hevc_limits" else []), "--output", str(report_path)], root, os.environ, evidence / f"{name}.log")
+                    run = execute([sys.executable, f"tools/test_{suite}.py", "--reference-build", oracle(suite), "--candidate", str(library), *(["--work", str(evidence / "decode")] if suite.startswith("decode_") or suite == "hevc_limits" else []), "--output", str(report_path)], root, os.environ, evidence / f"{name}.log")
                     report = json.loads(report_path.read_text()) if report_path.exists() else {}
                     record["mismatches"] = report.get("mismatches", 0)
-                    record["detected"] = run.returncode == 1 and record["mismatches"] > 0
+                    record["process_failures"] = report.get("process_failures", [])
+                    record["detected"] = run.returncode == 1 and record["mismatches"] > 0 and not record["process_failures"]
                 results.append(record)
                 print(json.dumps(record), flush=True)
             finally:

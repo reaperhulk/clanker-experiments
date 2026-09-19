@@ -1,0 +1,94 @@
+{
+  "scope": "8 deliberate defects; not comprehensive mutation coverage",
+  "mutations": [
+    {
+      "mutation": "dynamic_trailing_directory",
+      "suite": "dynamic_plugins",
+      "source": "crates/capi/src/dynamic_plugins.rs",
+      "before": "            v.pop();",
+      "after": "            // keep the trailing segment",
+      "candidate_sha256": "18d37b4e1f11e770f3fda7d2a1161d6f1e9832ae8eee1275eefa348d17bc20ee",
+      "mismatches": 5,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "dynamic_encoder_version",
+      "suite": "dynamic_plugins",
+      "source": "crates/capi/src/dynamic_plugins.rs",
+      "before": "if field!(p, plugin_api_version) < 4 {",
+      "after": "if field!(p, plugin_api_version) < 3 {",
+      "candidate_sha256": "ac9a82ab2c999aee87d122c07a1f84f4b773daa17b614e995650e30c530214fe",
+      "mismatches": 4,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "dynamic_repeated_load",
+      "suite": "dynamic_plugins",
+      "source": "crates/capi/src/dynamic_plugins.rs",
+      "before": "            p.count += 1;",
+      "after": "            // forget the duplicate reference",
+      "candidate_sha256": "ae79286ad6b16f7feb39243cf56299b185b9c832bf957e693c1da32fdead414c",
+      "mismatches": 129,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "dynamic_reload_identity",
+      "suite": "dynamic_plugins",
+      "source": "crates/capi/src/dynamic_plugins.rs",
+      "before": "p.matchable && p.handle == handle as usize",
+      "after": "p.handle == handle as usize",
+      "candidate_sha256": "a9eea85ee97c2251102dde5b1420472028af0a8193f946c96023a29ef2130aad",
+      "mismatches": 10,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "dynamic_bulk_capacity",
+      "suite": "dynamic_plugins",
+      "source": "crates/capi/src/dynamic_plugins.rs",
+      "before": "if n == capacity {",
+      "after": "if n >= capacity {",
+      "candidate_sha256": "c340a208bdcea3b95f9c51b80e006680715c905cad3ceae5af19986fd5f59fa9",
+      "mismatches": 8,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "dynamic_bulk_count",
+      "suite": "dynamic_plugins",
+      "source": "crates/capi/src/dynamic_plugins.rs",
+      "before": "count.write(n)",
+      "after": "count.write(n+1)",
+      "candidate_sha256": "4b9ac8f62f800f76d5b0f821378e26afd56c479b9c8382de7af82d65dc0d9b5c",
+      "mismatches": 112,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "dynamic_bulk_terminator",
+      "suite": "dynamic_plugins",
+      "source": "crates/capi/src/dynamic_plugins.rs",
+      "before": "out.offset(n as isize).write(ptr::null())",
+      "after": "out.offset(n as isize).write(0x1234usize as *const PluginInfo)",
+      "candidate_sha256": "27aae5ff6c64e5d521e35d37c948c272de46c64389231796b150f59c56b28bd9",
+      "mismatches": 48,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "dynamic_cleanup_order",
+      "suite": "dynamic_plugins",
+      "source": "crates/capi/src/plugin_registry.rs",
+      "before": "    REGISTRY.lock().unwrap().encoders.clear();\n    crate::dynamic_plugins::unload_all();",
+      "after": "    crate::dynamic_plugins::unload_all();",
+      "candidate_sha256": "b3978973faef73bbaf93ce174eb8463442bf31ece8e77328c4f8d52b8afd7e3d",
+      "mismatches": 67,
+      "process_failures": [],
+      "detected": true
+    }
+  ],
+  "all_detected": true
+}
