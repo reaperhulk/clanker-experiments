@@ -25,8 +25,31 @@ pub trait DecodeCallbacks: Sync {
     fn end(&self, step: i32);
     fn canceled(&self) -> bool;
 }
+/// Optional decoder integration supplied by an API adapter. The core remains
+/// independent of foreign plugin layouts and executes transforms/composition.
+pub trait ItemDecoder: Send + Sync {
+    fn validate(&self) -> Result<(), ContextError> {
+        Ok(())
+    }
+    fn decode(
+        &self,
+        document: &Document,
+        id: u32,
+        options: &DecodeOptions,
+    ) -> Result<Image, ContextError>;
+}
+pub trait DecoderProvider: Sync {
+    fn select(
+        &self,
+        format: i32,
+        requested: Option<&[u8]>,
+    ) -> Result<Option<Arc<dyn ItemDecoder>>, ContextError>;
+}
 #[derive(Clone, Copy)]
 pub struct DecodeOptions<'a> {
+    pub decoder_provider: Option<&'a dyn DecoderProvider>,
+    pub num_codec_threads: i32,
+    pub plugin_strict: i32,
     pub callbacks: Option<&'a dyn DecodeCallbacks>,
     pub decoder_id: Option<&'a [u8]>,
     pub max_decoding_threads: i32,
@@ -40,6 +63,9 @@ pub struct DecodeOptions<'a> {
 impl Default for DecodeOptions<'_> {
     fn default() -> Self {
         Self {
+            decoder_provider: None,
+            num_codec_threads: 0,
+            plugin_strict: 0,
             callbacks: None,
             decoder_id: None,
             max_decoding_threads: 4,
@@ -314,147 +340,184 @@ fn decode_native_mode(
     } else {
         None
     };
-    let mut image = match &container.items[&id].kind {
-        b"unci" => {
-            if let Some(pos) = tile {
-                crate::uncompressed::decode_tile(
-                    &container,
-                    id,
-                    Some(document.budget.clone()),
-                    pos,
-                )?
-            } else {
-                crate::uncompressed::decode(&container, id, Some(document.budget.clone()))?
-            }
-        }
-        b"mski" => crate::mask::decode(&container, id, Some(document.budget.clone()))?,
-        b"grid" => {
-            if let Some((x, y)) = tile {
-                let grid = info.grid.ok_or_else(|| {
-                    ContextError::invalid(
-                        119,
-                        "Missing grid images: Grid tile coordinate out of range",
-                    )
-                })?;
-                let child = info
-                    .grid_tiles
+    let format = match &container.items[&id].kind {
+        b"hvc1" => 1,
+        b"avc1" => 2,
+        b"jpeg" => 3,
+        b"av01" => 4,
+        b"vvc1" => 5,
+        b"j2k1" => 7,
+        _ => 0,
+    };
+    let external = if format != 0 && options.decoder_provider.is_some() {
+        let cached = info
+            .item_decoder
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .clone();
+        if let Some(cached) = cached {
+            Some(cached)
+        } else {
+            let decoder = options
+                .decoder_provider
+                .unwrap()
+                .select(format, options.decoder_id)?;
+            if let Some(decoder) = &decoder {
+                *info
+                    .item_decoder
                     .lock()
-                    .unwrap_or_else(std::sync::PoisonError::into_inner)
-                    .get(y.wrapping_mul(grid.columns).wrapping_add(x) as usize)
-                    .copied()
-                    .ok_or_else(|| {
+                    .unwrap_or_else(std::sync::PoisonError::into_inner) = Some(decoder.clone());
+                decoder.validate()?;
+            }
+            decoder
+        }
+    } else {
+        None
+    };
+    let mut image = if let Some(decoder) = external {
+        decoder.decode(document, id, options)?
+    } else {
+        match &container.items[&id].kind {
+            b"unci" => {
+                if let Some(pos) = tile {
+                    crate::uncompressed::decode_tile(
+                        &container,
+                        id,
+                        Some(document.budget.clone()),
+                        pos,
+                    )?
+                } else {
+                    crate::uncompressed::decode(&container, id, Some(document.budget.clone()))?
+                }
+            }
+            b"mski" => crate::mask::decode(&container, id, Some(document.budget.clone()))?,
+            b"grid" => {
+                if let Some((x, y)) = tile {
+                    let grid = info.grid.ok_or_else(|| {
                         ContextError::invalid(
                             119,
                             "Missing grid images: Grid tile coordinate out of range",
                         )
                     })?;
-                if !document.images.contains_key(&child) {
+                    let child = info
+                        .grid_tiles
+                        .lock()
+                        .unwrap_or_else(std::sync::PoisonError::into_inner)
+                        .get(y.wrapping_mul(grid.columns).wrapping_add(x) as usize)
+                        .copied()
+                        .ok_or_else(|| {
+                            ContextError::invalid(
+                                119,
+                                "Missing grid images: Grid tile coordinate out of range",
+                            )
+                        })?;
+                    if !document.images.contains_key(&child) {
+                        return Err(ContextError::invalid(
+                            119,
+                            "Missing grid images: Grid tile references a non-existent item",
+                        ));
+                    }
+                    decode_native_mode(document, child, options, visiting, None, true)?
+                } else {
+                    decode_grid(document, id, options, visiting)?
+                }
+            }
+            b"iovl" => crate::overlay::decode(document, id, options, visiting)?,
+            b"iden" => {
+                if !container.has_references {
                     return Err(ContextError::invalid(
-                        119,
-                        "Missing grid images: Grid tile references a non-existent item",
+                        113,
+                        "No 'iref' box: No iref box available, but needed for iden image",
                     ));
                 }
-                decode_native_mode(document, child, options, visiting, None, true)?
-            } else {
-                decode_grid(document, id, options, visiting)?
-            }
-        }
-        b"iovl" => crate::overlay::decode(document, id, options, visiting)?,
-        b"iden" => {
-            if !container.has_references {
-                return Err(ContextError::invalid(
-                    113,
-                    "No 'iref' box: No iref box available, but needed for iden image",
-                ));
-            }
-            let refs = container.items[&id]
-                .references
-                .get(b"dimg")
-                .map(Vec::as_slice)
-                .unwrap_or_default();
-            if refs.len() > 1 {
-                return Err(ContextError::invalid(
-                    0,
-                    "Unspecified: 'iden' image with more than one reference image",
-                ));
-            }
-            let Some(&child) = refs.first() else {
-                return Err(ContextError::invalid(
-                    0,
-                    "Unspecified: 'iden' image without 'dimg' reference",
-                ));
-            };
-            if child == id {
-                return Err(ContextError::invalid(
-                    0,
-                    "Unspecified: 'iden' image referring to itself",
-                ));
-            }
-            if !document.images.contains_key(&child) {
-                return Err(ContextError::invalid(
-                    0,
-                    "Unspecified: 'iden' image references unavailable image",
-                ));
-            }
-            decode_native(document, child, options, visiting)?
-        }
-        #[cfg(feature = "hevc")]
-        b"hvc1" => {
-            // Each decode replaces the decoder's input extent. The buffer remains
-            // owned by the image item between calls, but is reread on the next call.
-            *info
-                .decoder_input
-                .lock()
-                .unwrap_or_else(std::sync::PoisonError::into_inner) = None;
-            if options.decoder_id.is_some_and(|id| id != b"rusty_h265") {
-                return Err(ContextError::new(
-                    11,
-                    0,
-                    "Error while loading plugin: Unspecified: No decoder with that ID found.",
-                ));
-            }
-            let mut coded_limits = limits;
-            if info.ispe.0 != 0
-                && info.ispe.1 != 0
-                && let Some(padded) =
-                    (u64::from(info.ispe.0) + 64).checked_mul(u64::from(info.ispe.1) + 64)
-            {
-                let maximum = padded.max(65536);
-                if coded_limits.max_image_size_pixels == 0
-                    || maximum < coded_limits.max_image_size_pixels
-                {
-                    coded_limits.max_image_size_pixels = maximum;
+                let refs = container.items[&id]
+                    .references
+                    .get(b"dimg")
+                    .map(Vec::as_slice)
+                    .unwrap_or_default();
+                if refs.len() > 1 {
+                    return Err(ContextError::invalid(
+                        0,
+                        "Unspecified: 'iden' image with more than one reference image",
+                    ));
                 }
+                let Some(&child) = refs.first() else {
+                    return Err(ContextError::invalid(
+                        0,
+                        "Unspecified: 'iden' image without 'dimg' reference",
+                    ));
+                };
+                if child == id {
+                    return Err(ContextError::invalid(
+                        0,
+                        "Unspecified: 'iden' image referring to itself",
+                    ));
+                }
+                if !document.images.contains_key(&child) {
+                    return Err(ContextError::invalid(
+                        0,
+                        "Unspecified: 'iden' image references unavailable image",
+                    ));
+                }
+                decode_native(document, child, options, visiting)?
             }
-            if let Some((width, height)) =
-                crate::hevc_config::coded_size(container.property(id, *b"hvcC")?)?
-            {
-                coded_limits.check_image_size(width, height)?;
-            }
-            let data = {
-                let mut cached = info
+            #[cfg(feature = "hevc")]
+            b"hvc1" => {
+                // Each decode replaces the decoder's input extent. The buffer remains
+                // owned by the image item between calls, but is reread on the next call.
+                *info
                     .decoder_input
                     .lock()
-                    .unwrap_or_else(std::sync::PoisonError::into_inner);
-                if cached.as_ref().is_none_or(|input| input.data.is_empty()) {
-                    let data = container.payload(id)?;
-                    let reservation = document
-                        .budget
-                        .reserve(data.len() as u64, "decoder input buffer (iloc)")?;
-                    *cached = Some(crate::context::DecoderInput {
-                        data: std::sync::Arc::new(data),
-                        _reservation: reservation,
-                    });
+                    .unwrap_or_else(std::sync::PoisonError::into_inner) = None;
+                if options.decoder_id.is_some_and(|id| id != b"rusty_h265") {
+                    return Err(ContextError::new(
+                        11,
+                        0,
+                        "Error while loading plugin: Unspecified: No decoder with that ID found.",
+                    ));
                 }
-                cached.as_ref().unwrap().data.clone()
-            };
-            if data.is_empty() {
-                return Err(ContextError::invalid(
-                    0,
-                    "Unspecified: Input with empty data extent.",
-                ));
-            }
-            crate::hevc::decode_item_from_payload(
+                let mut coded_limits = limits;
+                if info.ispe.0 != 0
+                    && info.ispe.1 != 0
+                    && let Some(padded) =
+                        (u64::from(info.ispe.0) + 64).checked_mul(u64::from(info.ispe.1) + 64)
+                {
+                    let maximum = padded.max(65536);
+                    if coded_limits.max_image_size_pixels == 0
+                        || maximum < coded_limits.max_image_size_pixels
+                    {
+                        coded_limits.max_image_size_pixels = maximum;
+                    }
+                }
+                if let Some((width, height)) =
+                    crate::hevc_config::coded_size(container.property(id, *b"hvcC")?)?
+                {
+                    coded_limits.check_image_size(width, height)?;
+                }
+                let data = {
+                    let mut cached = info
+                        .decoder_input
+                        .lock()
+                        .unwrap_or_else(std::sync::PoisonError::into_inner);
+                    if cached.as_ref().is_none_or(|input| input.data.is_empty()) {
+                        let data = container.payload(id)?;
+                        let reservation = document
+                            .budget
+                            .reserve(data.len() as u64, "decoder input buffer (iloc)")?;
+                        *cached = Some(crate::context::DecoderInput {
+                            data: std::sync::Arc::new(data),
+                            _reservation: reservation,
+                        });
+                    }
+                    cached.as_ref().unwrap().data.clone()
+                };
+                if data.is_empty() {
+                    return Err(ContextError::invalid(
+                        0,
+                        "Unspecified: Input with empty data extent.",
+                    ));
+                }
+                crate::hevc::decode_item_from_payload(
                 &container,
                 id,
                 &data,
@@ -474,13 +537,14 @@ fn decode_native_mode(
                     format!("Decoder plugin generated an error: Unspecified: {e}"),
                 ),
             })?
-        }
-        _ => {
-            return Err(ContextError::new(
-                4,
-                3000,
-                "Unsupported feature: Unsupported codec",
-            ));
+            }
+            _ => {
+                return Err(ContextError::new(
+                    4,
+                    3000,
+                    "Unsupported feature: Unsupported codec",
+                ));
+            }
         }
     };
     if raw {
@@ -775,4 +839,77 @@ fn decode_grid(
     Err(warnings.into_iter().next().unwrap_or_else(|| {
         ContextError::invalid(118, "Invalid grid data: Grid image without tiles")
     }))
+}
+pub fn codec_configuration(
+    container: &crate::container::Container<'_>,
+    id: u32,
+    format: i32,
+) -> Result<Vec<u8>, ContextError> {
+    let mut result = Vec::new();
+    match format {
+        1 => {
+            let config = container.property(id, *b"hvcC")?;
+            let mut at = 23;
+            for _ in 0..*config
+                .get(22)
+                .ok_or_else(|| ContextError::invalid(100, "Unexpected end of file"))?
+            {
+                let header = config
+                    .get(at..at + 3)
+                    .ok_or_else(|| ContextError::invalid(100, "Unexpected end of file"))?;
+                let count = u16::from_be_bytes([header[1], header[2]]);
+                at += 3;
+                for _ in 0..count {
+                    let size = config
+                        .get(at..at + 2)
+                        .ok_or_else(|| ContextError::invalid(100, "Unexpected end of file"))?;
+                    let size = u16::from_be_bytes([size[0], size[1]]) as usize;
+                    at += 2;
+                    let nal = config
+                        .get(at..at + size)
+                        .ok_or_else(|| ContextError::invalid(100, "Unexpected end of file"))?;
+                    at += size;
+                    if !nal.is_empty() {
+                        result.extend_from_slice(&(size as u32).to_be_bytes());
+                        result.extend_from_slice(nal);
+                    }
+                }
+            }
+        }
+        4 => {
+            result.extend_from_slice(
+                container
+                    .property(id, *b"av1C")?
+                    .get(4..)
+                    .ok_or_else(|| ContextError::invalid(100, "Unexpected end of file"))?,
+            );
+        }
+        3 => {
+            if let Ok(config) = container.property(id, *b"jpgC") {
+                result.extend_from_slice(config);
+            }
+        }
+        _ => {}
+    }
+    Ok(result)
+}
+
+/// Keep the compressed input and its memory reservation alive on the image item,
+/// replacing them at each still-image decode as the original API does.
+pub fn decoder_payload(document: &Document, id: u32) -> Result<Arc<Vec<u8>>, ContextError> {
+    let info = &document.images[&id];
+    let mut cached = info
+        .decoder_input
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    *cached = None;
+    let data = document.container()?.payload(id)?;
+    let reservation = document
+        .budget
+        .reserve(data.len() as u64, "decoder input buffer (iloc)")?;
+    *cached = Some(crate::context::DecoderInput {
+        data: Arc::new(data),
+        _reservation: reservation,
+    });
+    Ok(cached.as_ref().unwrap().data.clone())
 }

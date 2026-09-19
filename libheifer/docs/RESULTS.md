@@ -995,3 +995,33 @@ and richer-property diagnostics, loaded-model edits, deep nesting and platform C
 execution remain open. All 465 function records remain partial, and strict
 completion remains false. Continue codec/plugin integration and remaining plan
 gates; these diagnostic checks do not establish whole-library compatibility.
+
+
+### Registered still-image decoder integration
+
+The C adapter now selects and retains registered decoder records, invokes their
+allocation/push/flush/poll/free callbacks, and transfers returned image ownership
+into the Rust transform and derived-image pipeline. The safe Rust core accepts a
+decoder provider without depending on foreign ABI records. This also implements
+AV1 handle initialization (bit depths, chroma, colorspace and missing/configuration
+errors) and exact HEVC/AV1 configuration-byte upload. External plugin hooks are
+optional caller interfaces, not bundled native codec dependencies.
+
+All 616 original-header cases pass exact callback/pixel comparisons in normal,
+ASan/UBSan client and codec-free builds. Cases cover exact historical allocations,
+versions 1–6, selected-record reuse after decoder-ID changes, callback error
+prefix handling, ignored flush failures, 50-poll exhaustion, raw strict/thread
+options, context release before decoding, all AV1 configuration flags, empty
+HEVC NALs, rotations, grids, identity and overlay composition. Eight new mutations
+are detected (507, 16, 6, 507, 30, 539, 8 and 128 differences); default inventory:
+208. Existing context (1,786), registry (224), decode (115), derived (640) and
+HEVC limit (400) cases pass. Formatting, Clippy, Rust tests, original-header ABI,
+dependency audit and the development inventory gate pass. Reports are retained
+in `docs/results/plugin-*.json`; local sanitizer runs explicitly disable leak
+checking under ptrace, while CI retains it.
+
+Registered sequence decoders and encoders, other compressed-codec configuration
+paths, all native codec replacements, exact non-UTF8 diagnostics, every resource
+failure and concurrent unload/platform C behavior remain open. No function has
+been promoted from partial: all 465 exports exist, and the strict full-completion
+gate remains false. Continue with built-in pure Rust AV1 and remaining plan gates.

@@ -238,6 +238,7 @@ pub(crate) fn validate_property(kind: [u8; 4], p: &[u8]) -> Result<()> {
                 ));
             }
         }
+        b"av1C" if p.len() < 4 => return Err(ContextError::truncated()),
         b"mskC" if p.len() < 5 => return Err(ContextError::truncated()),
         b"ispe" if p.len() < 12 => return Err(ContextError::truncated()),
         b"hvcC" => {
@@ -561,6 +562,7 @@ pub(crate) struct DecoderInput {
     pub _reservation: crate::security::Reservation,
 }
 pub struct ImageInfo {
+    pub(crate) item_decoder: std::sync::Mutex<Option<Arc<dyn crate::decoding::ItemDecoder>>>,
     pub gimi_content_id: std::sync::Mutex<Vec<u8>>,
     pub(crate) projection: std::sync::atomic::AtomicI32,
     pub retained_properties: std::sync::Mutex<Vec<Arc<crate::properties::Property>>>,
@@ -577,7 +579,6 @@ pub struct ImageInfo {
     pub last_error: std::sync::Mutex<CString>,
     pub(crate) decode_mutex: std::sync::Mutex<()>,
     pub related_images: Vec<u32>,
-    #[cfg(feature = "hevc")]
     pub(crate) decoder_input: std::sync::Mutex<Option<DecoderInput>>,
     pub(crate) miaf: bool,
     pub kind: [u8; 4],
@@ -610,6 +611,7 @@ impl ImageInfo {
         retained_properties: Vec<Arc<crate::properties::Property>>,
     ) -> Self {
         Self {
+            item_decoder: std::sync::Mutex::new(None),
             gimi_content_id: std::sync::Mutex::new(Vec::new()),
             projection: std::sync::atomic::AtomicI32::new(crate::omaf::FLAT),
             retained_properties: std::sync::Mutex::new(retained_properties),
@@ -626,7 +628,6 @@ impl ImageInfo {
             last_error: std::sync::Mutex::new(CString::new("Success").unwrap()),
             decode_mutex: std::sync::Mutex::new(()),
             related_images: Vec::new(),
-            #[cfg(feature = "hevc")]
             decoder_input: std::sync::Mutex::new(None),
             miaf: true,
             kind,
@@ -821,6 +822,34 @@ impl Document {
                     image.colorspace = if image.chroma == 0 { 2 } else { 0 };
                 } else {
                     image.error = Some(ContextError::invalid(106, "No 'hvcC' box"));
+                }
+            } else if item.kind == *b"av01" {
+                if let Ok(config) = container.property(item.id, *b"av1C") {
+                    if config.len() < 4 {
+                        return Err(ContextError::truncated());
+                    }
+                    let flags = config[2];
+                    image.luma_bits = if flags & 64 == 0 {
+                        8
+                    } else if flags & 32 != 0 {
+                        12
+                    } else {
+                        10
+                    };
+                    image.chroma_bits = image.luma_bits;
+                    image.chroma = if flags & 16 != 0 {
+                        0
+                    } else {
+                        match flags & 12 {
+                            12 => 1,
+                            8 => 2,
+                            0 => 3,
+                            _ => 99,
+                        }
+                    };
+                    image.colorspace = if image.chroma == 0 { 2 } else { 0 };
+                } else {
+                    image.error = Some(ContextError::invalid(131, "No 'av1C' box"));
                 }
             } else if item.kind == *b"unci" {
                 if let Err(e) = crate::uncompressed::initialize(container, &mut image) {

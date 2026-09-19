@@ -688,7 +688,7 @@
     ]
   },
   "heif_decode_image": {
-    "notes": "Five direct HEVC fixtures in 23 modes plus 688 generated/real geometry cases: exact visible pixels including monochrome HEVC alpha, crop/rotate/mirror order, fractional boundaries, metadata, errors and output writes. Full codec conformance, derived images, callback orchestration, resource limits, every conversion operator and other codecs remain open. Generated overlay, 8/16-bit mask and adversarial graph transcripts also compare exactly; all remain finite coverage.",
+    "notes": "Five direct HEVC fixtures in 23 modes plus 688 generated/real geometry cases: exact visible pixels including monochrome HEVC alpha, crop/rotate/mirror order, fractional boundaries, metadata, errors and output writes. Full codec conformance, derived images, callback orchestration, resource limits, every conversion operator and other codecs remain open. Generated overlay, 8/16-bit mask and adversarial graph transcripts also compare exactly; all remain finite coverage. Registered still-image decoder callbacks additionally pass 616 original-header HEVC/AV1 cases: historical records, selection reuse, exact configuration/payload bytes, allocation/push/flush/poll/free order, raw strict/thread options, callback diagnostics, output planes, transforms and derived composition. Normal, client ASan/UBSan and codec-free builds pass; eight semantic mutations are detected. Sequence/plugin encoding integration, other codec configurations, concurrent unload, exhaustive resource failures and platform C execution remain open.",
     "status": "partial",
     "tests": [
       "tests/decode.c",
@@ -705,7 +705,9 @@
       "tools/test_decode_properties.py",
       "tests/decode_uncompressed.c",
       "tools/test_uncompressed_pixels.py",
-      "tools/test_uncompressed_units.py"
+      "tools/test_uncompressed_units.py",
+      "tests/plugin_decoding.c",
+      "tools/test_plugin_decoding.py"
     ]
   },
   "heif_decoder_descriptor_get_id_name": {
@@ -2002,11 +2004,13 @@
     ]
   },
   "heif_image_handle_decode_image_tile": {
-    "notes": "Original-header coded/displayed tile geometry, ordered inverse rotation/mirror/crop, output sentinels and tile-local security limits; exact mask, grid and uncompressed tile pixels, compressed-unit layouts, malformed cmpC/icef, and out-of-range coordinates. Non-Linux C ABI, all custom components/codecs, reader callbacks and exhaustive resource behavior remain open.",
+    "notes": "Original-header coded/displayed tile geometry, ordered inverse rotation/mirror/crop, output sentinels and tile-local security limits; exact mask, grid and uncompressed tile pixels, compressed-unit layouts, malformed cmpC/icef, and out-of-range coordinates. Non-Linux C ABI, all custom components/codecs, reader callbacks and exhaustive resource behavior remain open. Registered still-image decoder callbacks additionally pass 616 original-header HEVC/AV1 cases: historical records, selection reuse, exact configuration/payload bytes, allocation/push/flush/poll/free order, raw strict/thread options, callback diagnostics, output planes, transforms and derived composition. Normal, client ASan/UBSan and codec-free builds pass; eight semantic mutations are detected. Sequence/plugin encoding integration, other codec configurations, concurrent unload, exhaustive resource failures and platform C execution remain open.",
     "status": "partial",
     "tests": [
       "tests/tiling.c",
-      "tools/test_tiling.py"
+      "tools/test_tiling.py",
+      "tests/plugin_decoding.c",
+      "tools/test_plugin_decoding.py"
     ]
   },
   "heif_image_handle_free_auxiliary_types": {
@@ -2064,14 +2068,16 @@
     ]
   },
   "heif_image_handle_get_chroma_bits_per_pixel": {
-    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open. Derived and mask handle queries also cover cyclic/missing references and partial reloads.",
+    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open. Derived and mask handle queries also cover cyclic/missing references and partial reloads. Registered still-image decoder callbacks additionally pass 616 original-header HEVC/AV1 cases: historical records, selection reuse, exact configuration/payload bytes, allocation/push/flush/poll/free order, raw strict/thread options, callback diagnostics, output planes, transforms and derived composition. Normal, client ASan/UBSan and codec-free builds pass; eight semantic mutations are detected. Sequence/plugin encoding integration, other codec configurations, concurrent unload, exhaustive resource failures and platform C execution remain open.",
     "status": "partial",
     "tests": [
       "tests/context.c",
       "tools/test_context.py",
       "tools/test_derived_handles.py",
       "tests/decode_uncompressed.c",
-      "tools/test_uncompressed_pixels.py"
+      "tools/test_uncompressed_pixels.py",
+      "tests/plugin_decoding.c",
+      "tools/test_plugin_decoding.py"
     ]
   },
   "heif_image_handle_get_cmpd_component_type": {
@@ -2291,14 +2297,16 @@
     ]
   },
   "heif_image_handle_get_luma_bits_per_pixel": {
-    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open. Derived and mask handle queries also cover cyclic/missing references and partial reloads.",
+    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open. Derived and mask handle queries also cover cyclic/missing references and partial reloads. Registered still-image decoder callbacks additionally pass 616 original-header HEVC/AV1 cases: historical records, selection reuse, exact configuration/payload bytes, allocation/push/flush/poll/free order, raw strict/thread options, callback diagnostics, output planes, transforms and derived composition. Normal, client ASan/UBSan and codec-free builds pass; eight semantic mutations are detected. Sequence/plugin encoding integration, other codec configurations, concurrent unload, exhaustive resource failures and platform C execution remain open.",
     "status": "partial",
     "tests": [
       "tests/context.c",
       "tools/test_context.py",
       "tools/test_derived_handles.py",
       "tests/decode_uncompressed.c",
-      "tools/test_uncompressed_pixels.py"
+      "tools/test_uncompressed_pixels.py",
+      "tests/plugin_decoding.c",
+      "tools/test_plugin_decoding.py"
     ]
   },
   "heif_image_handle_get_mastering_display_colour_volume": {
@@ -2466,7 +2474,7 @@
     ]
   },
   "heif_image_handle_get_preferred_decoding_colorspace": {
-    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open. Derived and mask handle queries also cover cyclic/missing references and partial reloads.",
+    "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open. Derived and mask handle queries also cover cyclic/missing references and partial reloads. Registered still-image decoder callbacks additionally pass 616 original-header HEVC/AV1 cases: historical records, selection reuse, exact configuration/payload bytes, allocation/push/flush/poll/free order, raw strict/thread options, callback diagnostics, output planes, transforms and derived composition. Normal, client ASan/UBSan and codec-free builds pass; eight semantic mutations are detected. Sequence/plugin encoding integration, other codec configurations, concurrent unload, exhaustive resource failures and platform C execution remain open.",
     "status": "partial",
     "tests": [
       "tests/context.c",
@@ -2475,7 +2483,9 @@
       "tests/error_lifetimes.c",
       "tools/test_error_lifetimes.py",
       "tests/decode_uncompressed.c",
-      "tools/test_uncompressed_pixels.py"
+      "tools/test_uncompressed_pixels.py",
+      "tests/plugin_decoding.c",
+      "tools/test_plugin_decoding.py"
     ]
   },
   "heif_image_handle_get_raw_color_profile": {
@@ -3682,21 +3692,25 @@
     ]
   },
   "heif_register_decoder": {
-    "notes": "Independent original-header external-plugin callback traces: historical record prefixes, priority/filter/capacity behavior, registration multiplicity, init/deinit and reentrant discovery, allocation errors and cleanup, duplicate parameter validation, forwarding and generic conversion. Normal, codec-free and C sanitizer checks. Actual registered-plugin image encoding/decoding, dynamic loading, resource failures and cross-platform C execution remain open; HEVC discovery honestly identifies the Rust implementation.",
+    "notes": "Independent original-header external-plugin callback traces: historical record prefixes, priority/filter/capacity behavior, registration multiplicity, init/deinit and reentrant discovery, allocation errors and cleanup, duplicate parameter validation, forwarding and generic conversion. Normal, codec-free and C sanitizer checks. Actual registered-plugin image encoding/decoding, dynamic loading, resource failures and cross-platform C execution remain open; HEVC discovery honestly identifies the Rust implementation. Registered still-image decoder callbacks additionally pass 616 original-header HEVC/AV1 cases: historical records, selection reuse, exact configuration/payload bytes, allocation/push/flush/poll/free order, raw strict/thread options, callback diagnostics, output planes, transforms and derived composition. Normal, client ASan/UBSan and codec-free builds pass; eight semantic mutations are detected. Sequence/plugin encoding integration, other codec configurations, concurrent unload, exhaustive resource failures and platform C execution remain open.",
     "status": "partial",
     "tests": [
       "tests/plugins.c",
       "tools/test_plugins.py",
-      "crates/capi/tests/abi.rs"
+      "crates/capi/tests/abi.rs",
+      "tests/plugin_decoding.c",
+      "tools/test_plugin_decoding.py"
     ]
   },
   "heif_register_decoder_plugin": {
-    "notes": "Independent original-header external-plugin callback traces: historical record prefixes, priority/filter/capacity behavior, registration multiplicity, init/deinit and reentrant discovery, allocation errors and cleanup, duplicate parameter validation, forwarding and generic conversion. Normal, codec-free and C sanitizer checks. Actual registered-plugin image encoding/decoding, dynamic loading, resource failures and cross-platform C execution remain open; HEVC discovery honestly identifies the Rust implementation.",
+    "notes": "Independent original-header external-plugin callback traces: historical record prefixes, priority/filter/capacity behavior, registration multiplicity, init/deinit and reentrant discovery, allocation errors and cleanup, duplicate parameter validation, forwarding and generic conversion. Normal, codec-free and C sanitizer checks. Actual registered-plugin image encoding/decoding, dynamic loading, resource failures and cross-platform C execution remain open; HEVC discovery honestly identifies the Rust implementation. Registered still-image decoder callbacks additionally pass 616 original-header HEVC/AV1 cases: historical records, selection reuse, exact configuration/payload bytes, allocation/push/flush/poll/free order, raw strict/thread options, callback diagnostics, output planes, transforms and derived composition. Normal, client ASan/UBSan and codec-free builds pass; eight semantic mutations are detected. Sequence/plugin encoding integration, other codec configurations, concurrent unload, exhaustive resource failures and platform C execution remain open.",
     "status": "partial",
     "tests": [
       "tests/plugins.c",
       "tools/test_plugins.py",
-      "crates/capi/tests/abi.rs"
+      "crates/capi/tests/abi.rs",
+      "tests/plugin_decoding.c",
+      "tools/test_plugin_decoding.py"
     ]
   },
   "heif_register_encoder_plugin": {

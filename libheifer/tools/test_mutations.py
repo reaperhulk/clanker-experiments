@@ -15,6 +15,15 @@ import sys
 import tempfile
 
 MUTATIONS = [
+    ('plugin_decode_threads', 'crates/capi/src/plugin_decoding.rs', 'num_threads: options.num_codec_threads,', 'num_threads: options.num_codec_threads + 1,', 'plugin_decoding'),
+    ('plugin_decode_strict', 'crates/capi/src/plugin_decoding.rs', 'strict_decoding: options.plugin_strict,', 'strict_decoding: i32::from(options.strict),', 'plugin_decoding'),
+    ('plugin_decode_poll_limit', 'crates/capi/src/plugin_decoding.rs', 'for _ in 0..50 {', 'for _ in 0..49 {', 'plugin_decoding'),
+    ('plugin_decode_release', 'crates/capi/src/plugin_decoding.rs', 'unsafe { f(self.state) }', 'let _ = f;', 'plugin_decoding'),
+    ('plugin_decode_error_unpack', 'crates/capi/src/plugin_decoding.rs', 'if unpack && let Some(rest) = detail.strip_prefix(code) {', 'if !unpack && let Some(rest) = detail.strip_prefix(code) {', 'plugin_decoding'),
+    ('plugin_decode_cached_selection', 'src/decoding.rs', 'if let Some(cached) = cached {', 'if let Some(cached) = cached.filter(|_| false) {', 'plugin_decoding'),
+    ('plugin_decode_empty_nal', 'src/decoding.rs', 'if !nal.is_empty() {', 'if true {', 'plugin_decoding'),
+    ('av1_handle_depth', 'src/context.rs', '} else if flags & 32 != 0 {', '} else if flags & 32 == 0 {', 'plugin_decoding'),
+
     ('debug_writer_base', 'src/writing.rs', 'loc.base = debug_base;', 'loc.base = debug_base + 1;', 'debug_writing'),
     ('debug_writer_duplicates', 'src/debug.rs', 'self.write_meta(&layout, 0, true)', 'self.write_meta(&layout, 0, false)', 'debug_writing'),
     ('debug_grid_rows', 'src/debug.rs', 'grid.rows, grid.columns, grid.width, grid.height', 'grid.rows + 1, grid.columns, grid.width, grid.height', 'debug_dump'),

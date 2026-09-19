@@ -274,7 +274,9 @@ fn parse(r: &mut Reader<'_>, kind: [u8; 4], level: usize) -> Result {
             r.number(4);
             r.number(4);
         }
-        b"hvcC" => return crate::context::validate_property(kind, data).map_err(Into::into),
+        b"hvcC" | b"av1C" => {
+            return crate::context::validate_property(kind, data).map_err(Into::into);
+        }
         b"mskC" => {
             r.version(255)?;
             r.number(1);

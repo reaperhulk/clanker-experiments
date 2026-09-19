@@ -501,3 +501,47 @@ pub(super) fn decoder_registered(p: *const DecoderPlugin) -> bool {
         .iter()
         .any(|d| matches!(d.source,DecoderSource::External(q) if p==q))
 }
+
+// Snapshot registration before calling plugins: support queries may re-enter discovery.
+pub(super) fn select_decoder(
+    format: i32,
+    requested: Option<&[u8]>,
+) -> Result<Option<*const DecoderPlugin>, libheifer::context::ContextError> {
+    let records = decoders();
+    if let Some(id) = requested {
+        let found = records.iter().any(|r| {
+            let priority = r.source.priority(format);
+            let name = r.source.id();
+            priority > 0 && !name.is_null() && unsafe { CStr::from_ptr(name) }.to_bytes() == id
+        });
+        if !found {
+            return Err(libheifer::context::ContextError::new(
+                11,
+                0,
+                "Error while loading plugin: Unspecified: No decoder with that ID found.",
+            ));
+        }
+    }
+    let mut highest = 0;
+    let mut selected = None;
+    for record in records {
+        let priority = record.source.priority(format);
+        if priority > 0
+            && let Some(requested) = requested
+        {
+            let id = record.source.id();
+            if !id.is_null() && unsafe { CStr::from_ptr(id) }.to_bytes() == requested {
+                selected = Some(record.source);
+                break;
+            }
+        }
+        if priority > highest {
+            highest = priority;
+            selected = Some(record.source);
+        }
+    }
+    Ok(match selected {
+        Some(DecoderSource::External(p)) => Some(p),
+        _ => None,
+    })
+}

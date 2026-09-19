@@ -207,6 +207,7 @@ unsafe fn decode_requested(
         return super::context::report_image(handle.image(), error);
     }
     let callbacks = Callbacks(&options);
+    let provider = crate::plugin_decoding::Provider(std::sync::Arc::downgrade(&handle.shared));
     let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         {
             let output_nclx = unsafe { options.output_image_nclx_profile.as_ref() }.map(|p| {
@@ -219,6 +220,9 @@ unsafe fn decode_requested(
                 }
             });
             let core_options = libheifer::decoding::DecodeOptions {
+                decoder_provider: Some(&provider),
+                num_codec_threads: options.num_codec_threads,
+                plugin_strict: i32::from(options.strict_decoding),
                 callbacks: Some(&callbacks),
                 max_decoding_threads,
                 decoder_id: if options.decoder_id.is_null() {
