@@ -42,6 +42,17 @@ def corpus():
     for kind in [0,1,19,32,34,35,39,40,63,64,127]:
         add(f'nal-{kind}',[sps(7,5),bytes([kind<<1,1,2,3])])
     for nals in [[],[b'\x26\x01'],[b'\x40\x01'],[b'\x44\x01']]:add('missing-sps-'+str(len(cases)),nals)
+    # A preceding valid SPS initializes every native configuration member.
+    # An initial malformed SPS can expose uninitialized native fields and is not parity evidence.
+    prior=sps(9,7,chroma=3,luma=4,color=4)
+    for n in range(1,len(sps(7,5))):
+        add(f'partial-sps-{n}',[prior,sps(7,5)[:n],b'\x26\x01'])
+    for nal in [sps(7,5,chroma=4),sps(7,5,luma=9),sps(7,5,color=9),sps(7,5,crop=(100,0,0,0))]:
+        add(f'invalid-followup-sps-{len(cases)}',[prior,nal,b'\x26\x01'])
+    for size in [65535,65536]:
+        for kind in [32,33,34]:
+            nal=sps(7,5) if kind==33 else bytes([kind<<1,1])
+            add(f'configuration-size-{size}-{kind}',([] if kind==33 else [sps(7,5)])+[nal+bytes(size-len(nal)),b'\x26\x01'])
     for size in [7,1024,1025,32763,32764,32765]:
         for flags in [0,4|2048,256,4096,4096|8192]:
             add(f'payload-size-{size}-{flags}',[sps(7,5),b'\x26\x01'+bytes(size-2)],flags=flags)

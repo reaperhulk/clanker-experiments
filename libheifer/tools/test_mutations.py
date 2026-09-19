@@ -15,6 +15,15 @@ import sys
 import tempfile
 
 MUTATIONS = [
+    ('avc_interlaced_height', 'src/avc_config.rs', 'h *= u64::from(2 - frame);', 'h *= 1;', 'avc_encoding'),
+    ('avc_crop_units', 'src/avc_config.rs', 'let sx = if matches!(self.chroma, 1 | 2) { 2 } else { 1 };', 'let sx = 1;', 'avc_encoding'),
+    ('avc_scaling_break', 'src/avc_config.rs', 'if next == 0 {', 'if next != 0 {', 'avc_encoding'),
+    ('avc_sps_partial', 'src/avc_config.rs', 'let _ = self.parse(nal);', 'self.parse(nal)?;', 'avc_encoding'),
+    ('avc_extended_configuration', 'src/avc_config.rs', 'if !matches!(self.profile, 66 | 77 | 88) {', 'if matches!(self.profile, 66 | 77 | 88) {', 'avc_encoding'),
+    ('avc_parameter_count', 'src/avc_config.rs', 'self.sps.len() > 31', 'self.sps.len() >= 31', 'avc_encoding'),
+    ('configuration_write_prefix', 'src/writing.rs', 'ipco.extend([0; 8]);', 'ipco.extend([1; 8]);', 'avc_encoding'),
+    ('hevc_partial_depth', 'src/hevc_config.rs', 'self.header[17] = 0xf8 | luma as u8;', '// omit partial luma configuration update', 'hevc_encoding'),
+
     ('jpeg_encoder_forced_profile', 'crates/capi/src/plugin_encoding.rs', 'primaries: 6,', 'primaries: 7,', 'other_encoding'),
     ('j2k_encoder_channel_count', 'crates/capi/src/plugin_encoding.rs', '0 | 1 => 3,', '0 | 1 => 2,', 'other_encoding'),
     ('j2k_encoder_channel_association', 'crates/capi/src/plugin_encoding.rs', 'data.extend_from_slice(&(i + 1).to_be_bytes());', 'data.extend_from_slice(&i.to_be_bytes());', 'other_encoding'),

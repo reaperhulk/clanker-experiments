@@ -64,6 +64,7 @@ impl Value {
             data,
             raw: false,
             tai: None,
+            write_error: None,
             gimi_components: None,
         })
     }

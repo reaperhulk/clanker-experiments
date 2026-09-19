@@ -80,6 +80,7 @@ impl ImageInfo {
                 data: value.clone(),
                 raw: false,
                 tai: None,
+                write_error: None,
                 gimi_components: None,
             },
         );
@@ -105,6 +106,7 @@ impl ImageInfo {
                 data: Vec::new(),
                 raw: false,
                 tai: None,
+                write_error: None,
                 gimi_components: Some(Arc::new(Mutex::new(ids))),
             };
             let _ = self.add_gimi_property(ctx, property);

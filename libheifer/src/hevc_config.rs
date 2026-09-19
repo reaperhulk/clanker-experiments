@@ -140,7 +140,7 @@ impl EncoderConfiguration {
         };
         let kind = first >> 1;
         if kind == 33 {
-            self.sps(nal)?;
+            let _ = self.sps(nal);
         }
         if !matches!(kind, 32..=34) {
             return Ok(false);
@@ -166,6 +166,7 @@ impl EncoderConfiguration {
         bits.skip(20);
         let layers = bits.get(3) as usize;
         let nested = bits.get(1) as u8;
+        self.header[21] = (self.header[21] & !4) | (nested << 2);
         self.header[1] = bits.get(8) as u8;
         self.header[2..6].copy_from_slice(&bits.get(32).to_be_bytes());
         bits.skip(48);
@@ -187,11 +188,13 @@ impl EncoderConfiguration {
         if chroma > 3 {
             return Err(invalid("SPS chroma_format_idc out of range"));
         }
+        self.header[16] = 0xfc | chroma as u8;
         if chroma == 3 {
             bits.skip(1);
         }
-        let mut width = bits.ue()?;
-        let mut height = bits.ue()?;
+        self.size.0 = bits.ue()?;
+        self.size.1 = bits.ue()?;
+        let (mut width, mut height) = self.size;
         if bits.get(1) != 0 {
             let left = u64::from(bits.ue()?);
             let right = u64::from(bits.ue()?);
@@ -207,11 +210,13 @@ impl EncoderConfiguration {
             width -= crop_x as u32;
             height -= crop_y as u32;
         }
+        self.size = (width, height);
         let luma = bits.ue()?;
-        let color = bits.ue()?;
         if luma > 8 {
             return Err(invalid("SPS bit_depth_luma_minus8 out of range"));
         }
+        self.header[17] = 0xf8 | luma as u8;
+        let color = bits.ue()?;
         if color > 8 {
             return Err(invalid("SPS bit_depth_chroma_minus8 out of range"));
         }
@@ -230,8 +235,15 @@ impl EncoderConfiguration {
         self.size = (width, height);
         Ok(())
     }
-    pub fn bytes(&self) -> Result<Vec<u8>, ContextError> {
-        let mut bytes = self.header.to_vec();
+    pub fn property(&self) -> crate::properties::Property {
+        let mut bytes = Vec::new();
+        let error = self.write_into(&mut bytes).err();
+        let mut property = crate::encoding::property(*b"hvcC", bytes);
+        property.write_error = error;
+        property
+    }
+    fn write_into(&self, bytes: &mut Vec<u8>) -> Result<(), ContextError> {
+        bytes.extend_from_slice(&self.header);
         bytes.push(self.arrays.len() as u8);
         for (kind, units) in &self.arrays {
             bytes.push(64 | kind);
@@ -239,12 +251,13 @@ impl EncoderConfiguration {
                 .map_err(|_| ContextError::invalid(0, "Too many NAL units in hvcC"))?;
             bytes.extend_from_slice(&count.to_be_bytes());
             for nal in units {
-                let n = u16::try_from(nal.len())
-                    .map_err(|_| ContextError::invalid(0, "NAL unit too large in hvcC"))?;
+                let n = u16::try_from(nal.len()).map_err(|_| {
+                    ContextError::invalid(0, "hvcC NAL unit exceeds maximum size (64kB)")
+                })?;
                 bytes.extend_from_slice(&n.to_be_bytes());
                 bytes.extend_from_slice(nal);
             }
         }
-        Ok(bytes)
+        Ok(())
     }
 }

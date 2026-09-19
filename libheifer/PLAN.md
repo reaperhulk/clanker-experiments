@@ -479,3 +479,33 @@ the mutation baseline and regressions. Local leak checks remain disabled under
 ptrace; CI retains them. All 465 functions remain partial and strict completion
 remains false. Built-in codec implementations, AVC/VVC hooks, sequence integration,
 allocation/platform/downstream and broader behavioral gates remain open.
+
+
+### Registered AVC encoding and configuration write failures
+
+Registered AVC encoders now emit avcC SPS/PPS/extension arrays and length-prefixed
+image packets, preserving native parameter multiplicity, profile fields, scaling
+lists, interlaced geometry, cropping, alpha/thumbnail callbacks and avci brands.
+Failed SPS parsing retains native partial configuration state. HEVC follow-up
+SPS failures now preserve the corresponding initialized fields and dimensions.
+Oversized configurations remain attached to the encoded item. The pinned native
+writer stops the enclosing property containers at a failed child, emits its
+zero-header partial prefix, and still reports successful file output; the owned
+writer reproduces those exact bytes and repeated-write behavior.
+
+All 1,344 AVC and 789 HEVC ordinary/compact cases pass normal, ASan/UBSan client
+and codec-free comparisons. All eight new mutations are detected by 242, 48, 72,
+30, 1,233, one, 21 and one semantic differences, without process failures (261
+default mutations). JPEG-family (2,382), AV1 ordinary/compact (441 each), encoding
+(1,292), writing/diagnostics (480 each), properties (960), GIMI (496) and TAI
+(67,745) regressions pass. Rust all-feature/no-feature tests, formatting, Clippy,
+original-header ABI baseline and development inventory checks pass. Reports and
+exact hashes are retained in docs/results/avc-*. Local leak checking remains
+disabled under ptrace; CI retains it.
+
+The HEVC malformed-follow-up corpus first initializes all configuration members
+with a valid SPS. Initial malformed HEVC configurations that expose indeterminate
+native fields are not counted as parity evidence. Built-in AVC/HEVC encoders,
+VVC integration, other codec replacements, sequences, broader malformed/resource
+and platform/downstream gates remain open. All 465 functions remain partial and
+strict completion remains false. Implementation continues through these gaps.

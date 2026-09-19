@@ -10,6 +10,7 @@ pub struct Property {
     pub data: Vec<u8>,
     pub raw: bool,
     pub tai: Option<crate::tai::TaiProperty>,
+    pub write_error: Option<ContextError>,
     pub gimi_components: Option<Arc<std::sync::Mutex<Vec<CString>>>>,
 }
 impl Property {
@@ -60,6 +61,7 @@ impl Property {
             uuid,
             data: stored,
             raw: !malformed && parsed_raw(kind, uuid),
+            write_error: None,
             gimi_components: if !malformed
                 && kind == *b"uuid"
                 && uuid == Some(crate::gimi::COMPONENT_UUID)
@@ -90,6 +92,7 @@ impl Property {
             data,
             raw: false,
             tai: None,
+            write_error: None,
             gimi_components: None,
         }
     }

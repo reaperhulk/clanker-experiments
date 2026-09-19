@@ -174,6 +174,7 @@ impl Context {
             .and_then(|doc| doc.images.get(&doc.primary))
             .and_then(|image| match &image.kind {
                 b"av01" => Some(*b"avif"),
+                b"avc1" => Some(*b"avci"),
                 b"jpeg" => Some(*b"jpeg"),
                 b"j2k1" => Some(*b"j2ki"),
                 b"hvc1" => {
@@ -414,6 +415,7 @@ impl Context {
                 b"iprp" => {
                     let mut ipco = Vec::new();
                     let mut incomplete = false;
+                    let mut property_failed = false;
                     for prop in &self.properties.boxes {
                         if prop.kind == *b"icef"
                             && !prop.raw
@@ -430,9 +432,19 @@ impl Context {
                             p.extend(prop.uuid.unwrap_or([0; 16]));
                         }
                         p.extend(prop.serialized_data());
+                        if prop.write_error.is_some() {
+                            ipco.extend([0; 8]);
+                            ipco.extend(p);
+                            property_failed = true;
+                            break;
+                        }
                         ipco.extend(boxed(prop.kind, &p));
                     }
                     let mut iprp = boxed(*b"ipco", &ipco);
+                    if property_failed {
+                        children.extend(boxed(*kind, &iprp));
+                        break;
+                    }
                     if incomplete {
                         children.extend(boxed(*kind, &iprp));
                         continue;

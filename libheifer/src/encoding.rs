@@ -19,6 +19,7 @@ pub fn property(kind: [u8; 4], data: Vec<u8>) -> Property {
         data,
         raw: false,
         tai: None,
+        write_error: None,
         gimi_components: None,
     }
 }

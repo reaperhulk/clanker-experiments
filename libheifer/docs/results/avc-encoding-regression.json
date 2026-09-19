@@ -1,0 +1,39 @@
+{
+  "scope": "Original-header image encoding, retained handles, direct decoding and exact serialized image bytes.",
+  "oracle_limitations": [
+    {
+      "library": "reference",
+      "case": "encoded_uncompressed_alpha",
+      "exit": 1,
+      "diagnostic": "AddressSanitizer:DEADLYSIGNAL\n=================================================================\n==139==ERROR: AddressSanitizer: SEGV on unknown address 0x000000000070 (pc 0x7f298fd96fc8 bp 0x7fff2a3aabc0 sp 0x7fff2a3aa8b0 T0)\n==139==The signal is caused by a READ memory access.\n==139==Hint: address points to the zero page.\n    #0 0x7f298fd96fc8 in UncompressedImageCodec::check_header_validity(std::optional<std::shared_ptr<Box_ispe const> const>, std::shared_ptr<Box_cmpd const> const&, std::shared_ptr<Box_uncC const> const&) (/workspace/scratch/a7ea6a52e235/clanker-experiments/libheifer/.build/reference/libheif/libheif.so.1+0x1f1fc8) (BuildId: c21d9f481124859d1c6233b6d880a75bae6ce2c6)\n    #1 0x7f298fd997b7 in UncompressedImageCodec::get_heif_chroma_uncompressed(std::shared_ptr<Box_uncC const> const&, std::shared_ptr<Box_cmpd const> const&, heif_chroma*, heif_colorspace*, bool*) (/workspace/scratch/a7ea6a52e235/clanker-experiments/libheifer/.build/reference/libheif/libheif.so.1+0x1f47b7) (BuildId: c21d9f481124859d1c6233b6d880a75bae6ce2c6)\n    #2 0x7f298fda019e in Decoder_uncompressed::has_alpha_component() const (/workspace/scratch/a7ea6a52e235/clanker-experiments/libheifer/.build/reference/libheif/libheif.so.1+0x1fb19e) (BuildId: c21d9f481124859d1c6233b6d880a75bae6ce2c6)\n    #3 0x7f298fc329eb in HeifContext::has_alpha(unsigned int) const (/workspace/scratch/a7ea6a52e235/clanker-experiments/libheifer/.build/reference/libheif/libheif.so.1+0x8d9eb) (BuildId: c21d9f481124859d1c6233b6d880a75bae6ce2c6)\n    #4 0x7f298fca8069 in heif_image_handle_has_alpha_channel (/workspace/scratch/a7ea6a52e235/clanker-experiments/libheifer/.build/reference/libheif/libheif.so.1+0x103069) (BuildId: c21d9f481124859d1c6233b6d880a75bae6ce2c6)\n    #5 0x55cc42f97970 in main tests/encoding_oracle_failures.c:29\n    #6 0x7f298f3a71c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 274eec488d230825a136fa9c4d85370fed7a0a5e)\n    #7 0x7f298f3a728a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 274eec488d230825a136fa9c4d85370fed7a0a5e)\n    #8 0x55cc42f973a4 in _start (/workspace/scratch/a7ea6a52e235/clanker-experiments/libheifer/.build/encoding/reference-failures+0x23a4) (BuildId: 3e5bfcd389d7f4ff508103fa8d283b9adcdf79a8)\n\nAddressSanitizer can not provide additional info.\nSUMMARY: AddressSanitizer: SEGV (/workspace/scratch/a7ea6a52e235/clanker-experiments/libheifer/.build/reference/libheif/libheif.so.1+0x1f1fc8) (BuildId: c21d9f481124859d1c6233b6d880a75bae6ce2c6) in UncompressedImageCodec::check_header_validity(std::optional<std::shared_ptr<Box_ispe const> const>, std::shared_ptr<Box_cmpd const> const&, std::shared_ptr<Box_uncC const> const&)\n==139==ABORTING\n"
+    },
+    {
+      "library": "reference",
+      "case": "encoded_timestamp_ownership",
+      "exit": 1,
+      "diagnostic": "=================================================================\n==140==ERROR: AddressSanitizer: attempting double-free on 0x503000000700 in thread T0:\n    #0 0x7fe6d671f5e8 in operator delete(void*, unsigned long) ../../../../src/libsanitizer/asan/asan_new_delete.cpp:164\n    #1 0x7fe6d644e16d in ImageDescription::~ImageDescription() (/workspace/scratch/a7ea6a52e235/clanker-experiments/libheifer/.build/reference/libheif/libheif.so.1+0xc316d) (BuildId: c21d9f481124859d1c6233b6d880a75bae6ce2c6)\n    #2 0x7fe6d643c16a in HeifPixelImage::~HeifPixelImage() (/workspace/scratch/a7ea6a52e235/clanker-experiments/libheifer/.build/reference/libheif/libheif.so.1+0xb116a) (BuildId: c21d9f481124859d1c6233b6d880a75bae6ce2c6)\n    #3 0x7fe6d63e1fa6 in std::_Sp_counted_base<(__gnu_cxx::_Lock_policy)2>::_M_release_last_use_cold() (/workspace/scratch/a7ea6a52e235/clanker-experiments/libheifer/.build/reference/libheif/libheif.so.1+0x56fa6) (BuildId: c21d9f481124859d1c6233b6d880a75bae6ce2c6)\n    #4 0x7fe6d6466b77 in heif_image_release (/workspace/scratch/a7ea6a52e235/clanker-experiments/libheifer/.build/reference/libheif/libheif.so.1+0xdbb77) (BuildId: c21d9f481124859d1c6233b6d880a75bae6ce2c6)\n    #5 0x55f76e7d2790 in main tests/encoding_oracle_failures.c:31\n    #6 0x7fe6d5b8d1c9  (/lib/x86_64-linux-gnu/libc.so.6+0x2a1c9) (BuildId: 274eec488d230825a136fa9c4d85370fed7a0a5e)\n    #7 0x7fe6d5b8d28a in __libc_start_main (/lib/x86_64-linux-gnu/libc.so.6+0x2a28a) (BuildId: 274eec488d230825a136fa9c4d85370fed7a0a5e)\n    #8 0x55f76e7d23a4 in _start (/workspace/scratch/a7ea6a52e235/clanker-experiments/libheifer/.build/encoding/reference-failures+0x23a4) (BuildId: 3e5bfcd389d7f4ff508103fa8d283b9adcdf79a8)\n\n0x503000000700 is located 0 bytes inside of 24-byte region [0x503000000700,0x503000000718)\nfreed by thread T0 here:\n    #0 0x7fe6d671f5e8 in operator delete(void*, unsigned long) ../../../../src/libsanitizer/asan/asan_new_delete.cpp:164\n    #1 0x7fe6d644e16d in ImageDescription::~ImageDescription() (/workspace/scratch/a7ea6a52e235/clanker-experiments/libheifer/.build/reference/libheif/libheif.so.1+0xc316d) (BuildId: c21d9f481124859d1c6233b6d880a75bae6ce2c6)\n    #2 0x200020001ffff  (<unknown module>)\n\npreviously allocated by thread T0 here:\n    #0 0x7fe6d671e548 in operator new(unsigned long) ../../../../src/libsanitizer/asan/asan_new_delete.cpp:95\n    #1 0x7fe6d6483841 in heif_tai_timestamp_packet_alloc (/workspace/scratch/a7ea6a52e235/clanker-experiments/libheifer/.build/reference/libheif/libheif.so.1+0xf8841) (BuildId: c21d9f481124859d1c6233b6d880a75bae6ce2c6)\n\nSUMMARY: AddressSanitizer: double-free ../../../../src/libsanitizer/asan/asan_new_delete.cpp:164 in operator delete(void*, unsigned long)\n==140==ABORTING\n"
+    },
+    {
+      "library": "candidate",
+      "case": "encoded_uncompressed_alpha",
+      "exit": 0,
+      "diagnostic": ""
+    },
+    {
+      "library": "candidate",
+      "case": "encoded_timestamp_ownership",
+      "exit": 0,
+      "diagnostic": ""
+    }
+  ],
+  "safety_probe_sha256": "93856d7dc712b5d59848a0497b208078129bb805b08d015e390e4599aab2ab42",
+  "cases": 1292,
+  "mismatches": 0,
+  "client_sanitizers": false,
+  "leak_check": false,
+  "client_sha256": "a679a5e96cc319deaa0e7f285eedf9dda68d2860ec0ab1ff0e57b0653665145f",
+  "corpus_sha256": "b37a0cf7915231edeedad064498f823a64fbe8e245f33917d9afd2905d3368bf",
+  "differences": [],
+  "reference_sha256": "5cc5713a0503098f20f8a3631e370d43256ebdca0a3209e97d541e6ecf1cd917",
+  "candidate_sha256": "22ed59718825286a6ee513de14fbe194e1aef0d84074678888d6bd3fbd239621"
+}

@@ -256,6 +256,8 @@ pub(super) fn encode_coded(
     let mut config = Configuration::from_image(&image);
     let mut hevc = libheifer::hevc_config::EncoderConfiguration::default();
     let is_hevc = encoder.source.format() == 1;
+    let is_avc = encoder.source.format() == 2;
+    let mut avc = libheifer::avc_config::EncoderConfiguration::default();
     let encode = field!(p, encode_image)
         .ok_or_else(|| ContextError::new(8, 0, "Encoder plugin generated an error: Unspecified"))?;
     let err = unsafe { encode(encoder.state, &image, input_class) };
@@ -289,8 +291,12 @@ pub(super) fn encode_coded(
             )
         })?;
         let packet = unsafe { std::slice::from_raw_parts(packet, size) };
-        if is_hevc {
-            if hevc.update(packet)? {
+        if is_hevc || is_avc {
+            if if is_avc {
+                avc.update(packet)?
+            } else {
+                hevc.update(packet)?
+            } {
                 continue;
             }
             data.extend_from_slice(&(size as u32).to_be_bytes());
@@ -301,7 +307,8 @@ pub(super) fn encode_coded(
             .map_err(|_| libheifer::error::Error::ALLOCATION)?;
         data.extend_from_slice(packet);
     }
-    if is_hevc && (hevc.size.0 == 0 || hevc.size.1 == 0) {
+    let coded_size = if is_avc { avc.size } else { hevc.size };
+    if (is_hevc || is_avc) && (coded_size.0 == 0 || coded_size.1 == 0) {
         return Err(ContextError::new(
             8,
             129,
@@ -323,7 +330,8 @@ pub(super) fn encode_coded(
         };
     }
     let properties = match encoder.source.format() {
-        1 => vec![(property(*b"hvcC", hevc.bytes()?), true)],
+        1 => vec![(hevc.property(), true)],
+        2 => vec![(avc.property(), true)],
         4 => vec![(property(*b"av1C", config.bytes()), true)],
         7 | 10 => vec![(j2k_header(image.colorspace), true)],
         _ => vec![],
@@ -332,13 +340,14 @@ pub(super) fn encode_coded(
         image,
         data,
         properties,
-        size: if is_hevc { hevc.size } else { size },
+        size: if is_hevc || is_avc { coded_size } else { size },
     })
 }
 
 fn codec_kind(format: i32) -> [u8; 4] {
     match format {
         1 => *b"hvc1",
+        2 => *b"avc1",
         3 => *b"jpeg",
         4 => *b"av01",
         7 | 10 => *b"j2k1",

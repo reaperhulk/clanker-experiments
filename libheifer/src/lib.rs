@@ -6,6 +6,7 @@ pub mod auxiliary;
 #[cfg(feature = "av1")]
 pub mod av1;
 pub mod av1_config;
+pub mod avc_config;
 mod box_probe;
 pub mod brands;
 pub mod camera;
