@@ -175,3 +175,7 @@ preserve the native partial context. The 496-case independent corpus includes
 unknown FourCC collision regressions, shared aliases, every byte value, sparse
 indices, reload/free and component limits. Normal, codec-free and C-client
 sanitizer runs agree. Encoder/plugin parameter and registry work is next.
+
+### Encoder parameter records checkpoint
+
+Five parameter-query APIs now pass a 2,020-case original-header corpus, including exact historical allocations, raw flags, signed counts, borrowed pointers, optional outputs and output aliasing. Normal, client ASan/UBSan and codec-free runs match; all five deliberate mutations are detected. Plugin public structures and nested parameter fields match original-header ABI layouts. Registry and encoder integration continue next. Full completion remains false: 357 partial functions and 108 missing.

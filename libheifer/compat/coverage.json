@@ -441,6 +441,51 @@
       "crates/capi/tests/abi.rs"
     ]
   },
+  "heif_encoder_parameter_get_name": {
+    "notes": "Original-header parameter records, exact historical prefixes, full raw range flag domain, borrowed arrays and names, optional/aliased outputs, signed counts and errors. Linux x86_64 independent normal, codec-free and client sanitizer validation; platform ABI and integration with plugins remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/encoder_parameters.c",
+      "tools/test_encoder_parameters.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_encoder_parameter_get_type": {
+    "notes": "Original-header parameter records, exact historical prefixes, full raw range flag domain, borrowed arrays and names, optional/aliased outputs, signed counts and errors. Linux x86_64 independent normal, codec-free and client sanitizer validation; platform ABI and integration with plugins remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/encoder_parameters.c",
+      "tools/test_encoder_parameters.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_encoder_parameter_get_valid_integer_range": {
+    "notes": "Original-header parameter records, exact historical prefixes, full raw range flag domain, borrowed arrays and names, optional/aliased outputs, signed counts and errors. Linux x86_64 independent normal, codec-free and client sanitizer validation; platform ABI and integration with plugins remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/encoder_parameters.c",
+      "tools/test_encoder_parameters.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_encoder_parameter_get_valid_integer_values": {
+    "notes": "Original-header parameter records, exact historical prefixes, full raw range flag domain, borrowed arrays and names, optional/aliased outputs, signed counts and errors. Linux x86_64 independent normal, codec-free and client sanitizer validation; platform ABI and integration with plugins remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/encoder_parameters.c",
+      "tools/test_encoder_parameters.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_encoder_parameter_get_valid_string_values": {
+    "notes": "Original-header parameter records, exact historical prefixes, full raw range flag domain, borrowed arrays and names, optional/aliased outputs, signed counts and errors. Linux x86_64 independent normal, codec-free and client sanitizer validation; platform ABI and integration with plugins remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/encoder_parameters.c",
+      "tools/test_encoder_parameters.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
   "heif_encoding_options_alloc": {
     "notes": "Independent defaults, versioned field copies, historical prefix allocations and ABI layouts; encoder integration and allocation failure remain open.",
     "status": "partial",

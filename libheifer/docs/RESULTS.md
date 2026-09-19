@@ -768,3 +768,7 @@ There are 352 partial functions and 113 missing. Encoding round trips, new-image
 property insertion/deduplication, allocation failures, whole-library sanitizer
 instrumentation and cross-platform C execution remain open. The full completion
 gate remains unchanged and fails rather than treating symbol coverage as parity.
+
+### Encoder parameter records
+
+The independent original-header corpus covers 2,020 records and checks five parameter APIs, all 256 range flag values, signed count boundaries, all output-pointer masks, aliased output order, borrowed name/array identity, wrong-type errors and exact historical allocation prefixes. Normal, codec-free and ASan/UBSan client runs have zero mismatches. Five mutations are detected (raw range flags: 496 cases; empty arrays: 312; signed counts: 77; string arrays: 328; alias order: 3). The default suite now contains 119 deliberate defects. Plugin/parameter structure sizes, alignments, top-level offsets and nested parameter offsets match the untouched headers. Strict Clippy and both Rust feature configurations pass. Reports are in `docs/results/encoder-parameters-*.json`. Local leak checking remains disabled under the traced environment; CI requests it. Registry/encoding integration and non-Linux C execution remain open. The inventory now has 357 partial APIs and 108 missing; the strict gate still fails.

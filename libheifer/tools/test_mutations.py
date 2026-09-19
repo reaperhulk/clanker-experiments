@@ -15,6 +15,12 @@ import sys
 import tempfile
 
 MUTATIONS = [
+    ('parameter_raw_range_flag', 'crates/capi/src/encoder_parameters.rs', 'have.write(have_range.into())', 'have.write(i32::from(have_range != 0))', 'encoder_parameters'),
+    ('parameter_empty_array', 'crates/capi/src/encoder_parameters.rs', 'if num_values > 0 && !array.is_null()', 'if num_values >= 0 && !array.is_null()', 'encoder_parameters'),
+    ('parameter_signed_count', 'crates/capi/src/encoder_parameters.rs', 'count.write(num_values)', 'count.write(num_values.max(0))', 'encoder_parameters'),
+    ('parameter_string_values', 'crates/capi/src/encoder_parameters.rs', 'array.write(ptr::addr_of!((*p).value.string.valid_values).read())', 'array.write(ptr::null())', 'encoder_parameters'),
+    ('parameter_alias_order', 'crates/capi/src/encoder_parameters.rs', 'have_max.write(have_range.into())', 'have_max.write(have_range.into()); if !minimum.is_null() { minimum.write(ptr::addr_of!((*p).value.integer.minimum).read()); }', 'encoder_parameters'),
+
     ('gimi_first_property', 'src/gimi.rs', '.find(|p| !p.raw && p.kind == *b"uuid" && p.uuid == Some(CONTENT_UUID))', '.rfind(|p| !p.raw && p.kind == *b"uuid" && p.uuid == Some(CONTENT_UUID))', 'gimi'),
     ('gimi_shared_property', 'src/gimi.rs', '.find_map(|p| p.gimi_components.clone())', '.find_map(|p| p.gimi_components.as_ref().map(|ids| Arc::new(Mutex::new(ids.lock().unwrap().clone()))))', 'gimi'),
     ('gimi_read_only_property', 'src/gimi.rs', 'ctx.properties.add(self.id, property.clone(), false)?;', 'ctx.properties.add_to_file(self.id, property.clone(), false)?;', 'gimi'),

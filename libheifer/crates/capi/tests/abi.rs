@@ -28,7 +28,7 @@ fn public_structs_match_original_header_layouts() {
     let source = work.join("layout.c");
     let binary = work.join("layout");
     let mut c = String::from(
-        "#include <libheif/heif.h>\n#include <libheif/heif_properties.h>\n#include <libheif/heif_components.h>\n#include <libheif/heif_tai_timestamps.h>\n#include <libheif/heif_sequences.h>\n#include <libheif/heif_uncompressed.h>\n#include <libheif/heif_entity_groups.h>\n#include <stddef.h>\n#include <stdio.h>\nint main(void) {\n",
+        "#include <libheif/heif.h>\n#include <libheif/heif_properties.h>\n#include <libheif/heif_components.h>\n#include <libheif/heif_tai_timestamps.h>\n#include <libheif/heif_sequences.h>\n#include <libheif/heif_uncompressed.h>\n#include <libheif/heif_entity_groups.h>\n#include <libheif/heif_plugin.h>\n#include <stddef.h>\n#include <stdio.h>\nint main(void) {\n",
     );
     let mut expected = String::new();
     macro_rules! layout {
@@ -43,6 +43,125 @@ fn public_structs_match_original_header_layouts() {
             expected.push('\n');
         }};
     }
+    layout!(
+        heif_encoder_plugin,
+        heifer::EncoderPlugin,
+        plugin_api_version,
+        compression_format,
+        id_name,
+        priority,
+        supports_lossy_compression,
+        supports_lossless_compression,
+        get_plugin_name,
+        init_plugin,
+        cleanup_plugin,
+        new_encoder,
+        free_encoder,
+        set_parameter_quality,
+        get_parameter_quality,
+        set_parameter_lossless,
+        get_parameter_lossless,
+        set_parameter_logging_level,
+        get_parameter_logging_level,
+        list_parameters,
+        set_parameter_integer,
+        get_parameter_integer,
+        set_parameter_boolean,
+        get_parameter_boolean,
+        set_parameter_string,
+        get_parameter_string,
+        query_input_colorspace,
+        encode_image,
+        get_compressed_data,
+        query_input_colorspace2,
+        query_encoded_size,
+        minimum_required_libheif_version,
+        start_sequence_encoding,
+        encode_sequence_frame,
+        end_sequence_encoding,
+        get_compressed_data2,
+        does_indicate_keyframes
+    );
+    layout!(
+        heif_decoder_plugin,
+        heifer::DecoderPlugin,
+        plugin_api_version,
+        get_plugin_name,
+        init_plugin,
+        deinit_plugin,
+        does_support_format,
+        new_decoder,
+        free_decoder,
+        push_data,
+        decode_image,
+        set_strict_decoding,
+        id_name,
+        decode_next_image,
+        minimum_required_libheif_version,
+        does_support_format2,
+        new_decoder2,
+        push_data2,
+        flush_data,
+        decode_next_image2
+    );
+    layout!(
+        heif_decoder_plugin_options,
+        heifer::DecoderPluginOptions,
+        format,
+        strict_decoding,
+        num_threads,
+        limits
+    );
+    layout!(
+        heif_decoder_plugin_compressed_format_description,
+        heifer::CompressedFormatDescription,
+        format
+    );
+    c.push_str(
+        "printf(\"%zu %zu\", sizeof(heif_encoder_parameter), _Alignof(heif_encoder_parameter));\n",
+    );
+    expected.push_str(&format!(
+        "{} {}",
+        size_of::<heifer::EncoderParameter>(),
+        align_of::<heifer::EncoderParameter>()
+    ));
+    c.push_str("printf(\" %zu\", offsetof(heif_encoder_parameter, version));\n");
+    expected.push_str(&format!(
+        " {}",
+        offset_of!(heifer::EncoderParameter, version)
+    ));
+    c.push_str("printf(\" %zu\", offsetof(heif_encoder_parameter, name));\n");
+    expected.push_str(&format!(" {}", offset_of!(heifer::EncoderParameter, name)));
+    c.push_str("printf(\" %zu\", offsetof(heif_encoder_parameter, type));\n");
+    expected.push_str(&format!(" {}", offset_of!(heifer::EncoderParameter, kind)));
+    c.push_str("printf(\" %zu\", offsetof(heif_encoder_parameter, integer));\n");
+    expected.push_str(&format!(" {}", offset_of!(heifer::EncoderParameter, value)));
+    c.push_str("printf(\" %zu\", offsetof(heif_encoder_parameter, has_default));\n");
+    expected.push_str(&format!(
+        " {}",
+        offset_of!(heifer::EncoderParameter, has_default)
+    ));
+    c.push_str("puts(\"\");\n");
+    expected.push('\n');
+    c.push_str("printf(\"%zu %zu\", sizeof(heif_plugin_info), _Alignof(heif_plugin_info));\n");
+    expected.push_str(&format!(
+        "{} {}",
+        size_of::<heifer::PluginInfo>(),
+        align_of::<heifer::PluginInfo>()
+    ));
+    c.push_str("printf(\" %zu\", offsetof(heif_plugin_info, version));\n");
+    expected.push_str(&format!(" {}", offset_of!(heifer::PluginInfo, version)));
+    c.push_str("printf(\" %zu\", offsetof(heif_plugin_info, type));\n");
+    expected.push_str(&format!(" {}", offset_of!(heifer::PluginInfo, kind)));
+    c.push_str("printf(\" %zu\", offsetof(heif_plugin_info, plugin));\n");
+    expected.push_str(&format!(" {}", offset_of!(heifer::PluginInfo, plugin)));
+    c.push_str("printf(\" %zu\", offsetof(heif_plugin_info, internal_handle));\n");
+    expected.push_str(&format!(
+        " {}",
+        offset_of!(heifer::PluginInfo, internal_handle)
+    ));
+    c.push_str("puts(\"\");\n");
+    expected.push('\n');
     layout!(
         heif_entity_group,
         heifer::EntityGroup,
@@ -276,6 +395,60 @@ fn public_structs_match_original_header_layouts() {
         ambient_light_x,
         ambient_light_y
     );
+    c.push_str("printf(\"%zu\\n\", offsetof(heif_encoder_parameter, integer.default_value));\n");
+    expected.push_str(&format!(
+        "{}\n",
+        offset_of!(heifer::EncoderParameter, value)
+            + offset_of!(heifer::IntegerParameter, default_value)
+    ));
+    c.push_str(
+        "printf(\"%zu\\n\", offsetof(heif_encoder_parameter, integer.have_minimum_maximum));\n",
+    );
+    expected.push_str(&format!(
+        "{}\n",
+        offset_of!(heifer::EncoderParameter, value)
+            + offset_of!(heifer::IntegerParameter, have_minimum_maximum)
+    ));
+    c.push_str("printf(\"%zu\\n\", offsetof(heif_encoder_parameter, integer.minimum));\n");
+    expected.push_str(&format!(
+        "{}\n",
+        offset_of!(heifer::EncoderParameter, value) + offset_of!(heifer::IntegerParameter, minimum)
+    ));
+    c.push_str("printf(\"%zu\\n\", offsetof(heif_encoder_parameter, integer.maximum));\n");
+    expected.push_str(&format!(
+        "{}\n",
+        offset_of!(heifer::EncoderParameter, value) + offset_of!(heifer::IntegerParameter, maximum)
+    ));
+    c.push_str("printf(\"%zu\\n\", offsetof(heif_encoder_parameter, integer.valid_values));\n");
+    expected.push_str(&format!(
+        "{}\n",
+        offset_of!(heifer::EncoderParameter, value)
+            + offset_of!(heifer::IntegerParameter, valid_values)
+    ));
+    c.push_str("printf(\"%zu\\n\", offsetof(heif_encoder_parameter, integer.num_valid_values));\n");
+    expected.push_str(&format!(
+        "{}\n",
+        offset_of!(heifer::EncoderParameter, value)
+            + offset_of!(heifer::IntegerParameter, num_valid_values)
+    ));
+    c.push_str("printf(\"%zu\\n\", offsetof(heif_encoder_parameter, string.default_value));\n");
+    expected.push_str(&format!(
+        "{}\n",
+        offset_of!(heifer::EncoderParameter, value)
+            + offset_of!(heifer::StringParameter, default_value)
+    ));
+    c.push_str("printf(\"%zu\\n\", offsetof(heif_encoder_parameter, string.valid_values));\n");
+    expected.push_str(&format!(
+        "{}\n",
+        offset_of!(heifer::EncoderParameter, value)
+            + offset_of!(heifer::StringParameter, valid_values)
+    ));
+    c.push_str("printf(\"%zu\\n\", offsetof(heif_encoder_parameter, boolean.default_value));\n");
+    expected.push_str(&format!(
+        "{}\n",
+        offset_of!(heifer::EncoderParameter, value)
+            + offset_of!(heifer::BooleanParameter, default_value)
+    ));
     c.push_str("return 0; }\n");
     fs::write(&source, c).unwrap();
     assert!(
