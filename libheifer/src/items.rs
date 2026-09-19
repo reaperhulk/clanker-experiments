@@ -12,6 +12,7 @@ use std::{
 };
 type Result<T> = std::result::Result<T, ContextError>;
 
+#[derive(Clone)]
 pub struct Item {
     pub kind: u32,
     pub hidden: bool,
@@ -44,19 +45,21 @@ impl Item {
         }
     }
 }
+#[derive(Clone)]
 pub struct Reference {
     pub from: u32,
     pub kind: u32,
     pub to: Vec<u32>,
 }
+#[derive(Clone)]
 pub(crate) struct Location {
     pub(crate) method: u64,
-    base: u64,
+    pub(crate) base: u64,
     pub(crate) extents: Vec<(u64, u64)>,
-    pub(crate) owned: Option<Vec<u8>>,
+    pub(crate) owned: Option<Arc<Vec<u8>>>,
 }
 
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub struct ItemStore {
     pub items: BTreeMap<u32, Item>,
     pub references: Vec<Reference>,
@@ -64,8 +67,8 @@ pub struct ItemStore {
     pub(crate) locations: BTreeMap<u32, Location>,
     pub(crate) location_order: Vec<u32>,
     pub layout: crate::writing::SharedLayout,
-    input: Option<Arc<dyn Input>>,
-    idat: Option<(usize, u64)>,
+    pub(crate) input: Option<Arc<dyn Input>>,
+    pub(crate) idat: Option<(usize, u64)>,
 }
 impl ItemStore {
     pub(crate) fn parse_tables(boxes: &[([u8; 4], &[u8])], limits: Limits) -> Result<Self> {
@@ -141,7 +144,7 @@ impl ItemStore {
                 method: 0,
                 base: 0,
                 extents: vec![(0, data.len() as u64)],
-                owned: Some(data),
+                owned: Some(Arc::new(data)),
             },
         );
         Ok(id)
@@ -162,10 +165,14 @@ impl ItemStore {
             method,
             base: 0,
             extents: Vec::new(),
-            owned: Some(Vec::new()),
+            owned: Some(Arc::new(Vec::new())),
         });
-        let bytes = loc.owned.get_or_insert_with(Vec::new);
-        loc.extents.push((bytes.len() as u64, data.len() as u64));
+        let bytes = Arc::make_mut(loc.owned.get_or_insert_with(|| Arc::new(Vec::new())));
+        if let Some((_, len)) = loc.extents.last_mut() {
+            *len = bytes.len() as u64 + data.len() as u64;
+        } else {
+            loc.extents.push((0, data.len() as u64));
+        }
         bytes.try_reserve(data.len()).map_err(|_| allocation())?;
         bytes.extend(data);
         Ok(())

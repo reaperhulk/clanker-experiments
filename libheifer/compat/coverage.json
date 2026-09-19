@@ -167,6 +167,15 @@
       "tools/test_metadata_compression.py"
     ]
   },
+  "heif_context_add_overlay_image": {
+    "status": "partial",
+    "notes": "Independent original-header mask and uncompressed encoding, exact file bytes and all active decoded plane bytes, orientations, versioned options, ICC/NCLX/HDR/GIMI metadata, primary flags, overlays, thumbnail scaling/assignment/output sentinels, and repeated region/text writes. Native freshly encoded uncompressed alpha queries and encoded timestamp ownership fail in isolated ASan probes and are excluded from parity counts; candidate safety probes pass. External codec-plugin integration, other encoders/codecs, custom/sensor configurations, large/resource-failure cases and non-Linux behavior remain open.",
+    "tests": [
+      "tests/encoding.c",
+      "tests/encoding_oracle_failures.c",
+      "tools/test_encoding.py"
+    ]
+  },
   "heif_context_add_precompressed_mime_item": {
     "notes": "Linux x86_64 original-header differential: generic creation, payload bytes, zlib/deflate compression, diagnostics, resource limits, references, language ownership, reloads and malformed item tables. Brotli, file writing, entity/track ID namespaces, allocation failures and cross-platform ABI remain open.",
     "status": "partial",
@@ -192,6 +201,33 @@
       "tests/context.c",
       "tools/test_context.py",
       "tools/test_derived_handles.py"
+    ]
+  },
+  "heif_context_assign_thumbnail": {
+    "status": "partial",
+    "notes": "Independent original-header mask and uncompressed encoding, exact file bytes and all active decoded plane bytes, orientations, versioned options, ICC/NCLX/HDR/GIMI metadata, primary flags, overlays, thumbnail scaling/assignment/output sentinels, and repeated region/text writes. Native freshly encoded uncompressed alpha queries and encoded timestamp ownership fail in isolated ASan probes and are excluded from parity counts; candidate safety probes pass. External codec-plugin integration, other encoders/codecs, custom/sensor configurations, large/resource-failure cases and non-Linux behavior remain open.",
+    "tests": [
+      "tests/encoding.c",
+      "tests/encoding_oracle_failures.c",
+      "tools/test_encoding.py"
+    ]
+  },
+  "heif_context_encode_image": {
+    "status": "partial",
+    "notes": "Independent original-header mask and uncompressed encoding, exact file bytes and all active decoded plane bytes, orientations, versioned options, ICC/NCLX/HDR/GIMI metadata, primary flags, overlays, thumbnail scaling/assignment/output sentinels, and repeated region/text writes. Native freshly encoded uncompressed alpha queries and encoded timestamp ownership fail in isolated ASan probes and are excluded from parity counts; candidate safety probes pass. External codec-plugin integration, other encoders/codecs, custom/sensor configurations, large/resource-failure cases and non-Linux behavior remain open.",
+    "tests": [
+      "tests/encoding.c",
+      "tests/encoding_oracle_failures.c",
+      "tools/test_encoding.py"
+    ]
+  },
+  "heif_context_encode_thumbnail": {
+    "status": "partial",
+    "notes": "Independent original-header mask and uncompressed encoding, exact file bytes and all active decoded plane bytes, orientations, versioned options, ICC/NCLX/HDR/GIMI metadata, primary flags, overlays, thumbnail scaling/assignment/output sentinels, and repeated region/text writes. Native freshly encoded uncompressed alpha queries and encoded timestamp ownership fail in isolated ASan probes and are excluded from parity counts; candidate safety probes pass. External codec-plugin integration, other encoders/codecs, custom/sensor configurations, large/resource-failure cases and non-Linux behavior remain open.",
+    "tests": [
+      "tests/encoding.c",
+      "tests/encoding_oracle_failures.c",
+      "tools/test_encoding.py"
     ]
   },
   "heif_context_free": {
@@ -416,6 +452,15 @@
       "tests/security_lifetimes.c",
       "tools/test_security_lifetimes.py",
       "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_context_set_primary_image": {
+    "status": "partial",
+    "notes": "Independent original-header mask and uncompressed encoding, exact file bytes and all active decoded plane bytes, orientations, versioned options, ICC/NCLX/HDR/GIMI metadata, primary flags, overlays, thumbnail scaling/assignment/output sentinels, and repeated region/text writes. Native freshly encoded uncompressed alpha queries and encoded timestamp ownership fail in isolated ASan probes and are excluded from parity counts; candidate safety probes pass. External codec-plugin integration, other encoders/codecs, custom/sensor configurations, large/resource-failure cases and non-Linux behavior remain open.",
+    "tests": [
+      "tests/encoding.c",
+      "tests/encoding_oracle_failures.c",
+      "tools/test_encoding.py"
     ]
   },
   "heif_context_set_security_limits": {

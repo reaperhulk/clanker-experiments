@@ -15,6 +15,17 @@ import sys
 import tempfile
 
 MUTATIONS = [
+    ('encode_mask_stride', 'src/encoding.rs', '.get(y * plane.stride..y * plane.stride + image.width as usize)', '.get(0..image.width as usize)', 'encoding'),
+    ('encode_orientation', 'src/encoding.rs', '6 => (3, None)', '6 => (1, None)', 'encoding'),
+    ('encode_primary_flag', 'src/encoding.rs', 'old.primary.store(false, Ordering::Relaxed);', 'old.primary.store(true, Ordering::Relaxed);', 'encoding'),
+    ('encode_profile_fallback', 'crates/capi/src/encoding.rs', '        image.color.nclx\n', '        None\n', 'encoding'),
+    ('encode_unc_component_endian', 'src/uncompressed_encode.rs', 'if !dense && cfg!(target_endian = "little")', 'if false', 'encoding'),
+    ('encode_unc_compression_flag', 'src/uncompressed_encode.rs', 'props.push((property(*b"cmpC", cmp), false));', 'props.push((property(*b"cmpC", cmp), true));', 'encoding'),
+    ('encode_thumbnail_noop', 'crates/capi/src/encoding.rs', 'ContextError::new(0, 0, "Success")', 'ContextError::new(5, 2006, "Invalid thumbnail")', 'encoding'),
+    ('encode_thumbnail_direction', 'crates/capi/src/encoding.rs', 'from: image.id,\n                kind: u32::from_be_bytes(*b"thmb"),\n                to: vec![master.id],', 'from: master.id,\n                kind: u32::from_be_bytes(*b"thmb"),\n                to: vec![image.id],', 'encoding'),
+    ('encode_overlay_background', 'src/encoding.rs', 'for n in background {', 'for n in [0u16;4] {', 'encoding'),
+    ('encode_repeated_extent', 'src/items.rs', '*len = bytes.len() as u64 + data.len() as u64;', '*len = data.len() as u64;', 'encoding'),
+
     ('writer_mdat_base', 'src/writing.rs', 'out.len() as u64 + first.len() as u64 + 8', 'out.len() as u64 + first.len() as u64 + 9', 'writing'),
     ('writer_brand_dedup', 'src/writing.rs', 'if !self.brands.contains(&brand) {', 'if true {', 'writing'),
     ('writer_uuid_bytes', 'src/writing.rs', 'p.extend(prop.uuid.unwrap_or([0; 16]));', 'p.extend([0; 16]);', 'writing'),

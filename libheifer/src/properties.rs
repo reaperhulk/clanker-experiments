@@ -187,7 +187,7 @@ pub(crate) fn parse_error(kind: [u8; 4], data: &[u8]) -> Option<(ContextError, b
     }
 }
 
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub struct PropertyStore {
     pub layout: crate::writing::SharedLayout,
     pub read_only: bool,

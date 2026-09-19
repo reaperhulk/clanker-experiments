@@ -8,8 +8,8 @@ with VUI unspecified-color, monochrome-decoding and typed missing-parameter fixe
 
 ## Implemented scope
 
-279 of 465 public functions are exported, plus `heif_error_success`.
-186 functions are missing. Even the exported functions are marked **partial**:
+407 of 465 public functions are exported, plus `heif_error_success`.
+58 functions are missing. Even the exported functions are marked **partial**:
 coverage is finite, platform coverage is incomplete, and one malformed-box
 behavior gap is explicitly retained. There is no claim of a compatible library.
 
@@ -790,3 +790,31 @@ All six mutations are detected by transcript differences: mdat base (198 cases),
 The writer guard is the only subsequent change after 11,478 item/region/property/metadata/text/context regression cases passed. Both feature builds, original-header ABI and strict Clippy passed before that guard; the mutation baseline rechecked ABI afterward. Exact tested binary hashes are retained per report under `docs/results/writing-*.json`.
 
 This is metadata writer coverage, not complete image/sequence writing. New-image encoding integration, region/text round trips, actual compact image output, offsets beyond 32 bits, ID namespace switching, allocation failures, whole-library instrumentation and non-Linux C execution remain open. There are 402 partial APIs and 63 missing; the strict completion gate remains unchanged.
+
+## Encoding checkpoint (407 partial APIs, 58 missing)
+
+Mask and uncompressed still-image encoding, primary changes, thumbnails and
+overlays now have real Rust paths. The original-header 1,292-case corpus checks
+exact container bytes, every active decoded channel byte, planar/packed formats,
+byte order and bit packing, zlib/deflate, historical options, ICC/NCLX/HDR/GIMI,
+orientations, output sentinels, primary flags and repeated region/text writes.
+Regular, codec-free and C-client ASan/UBSan runs have zero mismatches. Local leak
+checking remains disabled because LeakSanitizer cannot operate under tracing;
+CI runs the sanitizer client with leak checking enabled. Both Rust configurations
+build; the default Rust unit and original-header ABI tests pass.
+
+The two native failures are isolated in `tests/encoding_oracle_failures.c`:
+fresh uncompressed alpha queries dereference uninitialized decoder state;
+encoded TAI timestamp ownership triggers a double free. Full diagnostics and
+candidate safety outcomes are in the encoding reports. Neither crash contributes
+a parity match. Source and corpus hashes are recorded; the recovered corpus is
+byte-identical to the pre-recovery corpus, and all reports were regenerated
+against a newly built pinned oracle in the active workspace.
+
+Seven related regressions pass: context 1,786; writing 480; items 2,840;
+uncompressed pixels 2,448; derived 640; overlay 824; mask 1,246 (10,264 total).
+External codec-plugin encode/decode integration, additional codecs/encoders,
+custom/sensor encoder configurations, large/resource-failure cases and non-Linux
+C validation remain open. No full compatibility or performance claim is made.
+
+All ten encoding mutations are detected by transcript mismatches (not crashes or compilation failures): encode_mask_stride 350, encode_orientation 115, encode_primary_flag 24, encode_profile_fallback 16, encode_unc_component_endian 230, encode_unc_compression_flag 280, encode_thumbnail_noop 12, encode_thumbnail_direction 14, encode_overlay_background 8, encode_repeated_extent 24. The default mutation suite contains 147 defects.

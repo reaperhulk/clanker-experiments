@@ -249,3 +249,5 @@ mod gimi;
 
 mod writing;
 pub use writing::Writer;
+
+mod encoding;

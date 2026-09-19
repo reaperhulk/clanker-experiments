@@ -49,3 +49,6 @@ pub mod entity_groups;
 pub mod gimi;
 
 pub mod writing;
+
+pub mod encoding;
+mod uncompressed_encode;

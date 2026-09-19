@@ -115,7 +115,7 @@ The derived-image iteration adds grids/identity, cycle/MIAF checks, scoped tile
 workers and four warning/thread-control exports. Overlay composition, raw masks,
 shared-graph decode-operation budgets and dynamic derived queries follow in the next iteration. Six security-limit/allocation exports follow, including context-wide
 allocation accounting and object-specific resource lifetimes. Auxiliary/depth, item-property, six camera-matrix, twenty-two sensor-metadata and thirty-nine component APIs, generic items/compression, twelve TAI timestamp APIs, five metadata writers nine text-item APIs three image-area APIs thirteen handle color/aspect APIs and three component-definition queries bring the total to
-402 partial functions, with 63 functions missing. Compatibility work comes first;
+407 partial functions, with 58 functions missing. Compatibility work comes first;
 performance optimization is deferred until the complete compatibility gate passes.
 The full header contract, finite behavioral reports, known differences and
 performance evidence are retained in `compat/` and `docs/results/`.
@@ -187,3 +187,19 @@ Thirty-nine APIs add registration, init/deinit, discovery and descriptor queries
 ### File serialization and writer callbacks
 
 Six APIs now serialize ordered metadata boxes, payload extents, properties and references, manage brands/ID mode and invoke caller/file writers. The 480-case independent original-header corpus matches exact bytes, repeated writes, read-back outcomes, callback errors and userdata, reentrant queries, historical writer prefixes, UUIDs and property-index boundaries. Normal, codec-free and ASan/UBSan clients pass. All six semantic mutations are detected; the default suite contains 137 defects. Image/sequence integration, compact image output, large offsets, namespace switching and region/text round trips remain open. Current count: 402 partial APIs, 63 missing; strict completion remains false.
+
+### Image encoding and live file-model integration
+
+Five APIs add mask/uncompressed image encoding, primary-image changes, thumbnails
+and overlays. Exact BMFF and active decoded pixel bytes match 1,292 independent
+original-header cases in regular, codec-free and ASan/UBSan client runs. Context,
+writer, items, uncompressed pixels, derived, overlay and mask regressions also
+match 10,264 cases. Freshly encoded uncompressed alpha queries and encoded TAI
+ownership crash the native oracle in isolated ASan reproducers; they are recorded
+separately and never counted as parity matches. Candidate safety probes pass.
+External codec callback integration, other codecs, sensor configurations,
+allocation failures and complete cross-platform behavior remain open. The strict
+completion gate remains false at 407 partial APIs and 58 missing APIs. Continue
+with tile queries/decode, grid/unci construction and sequence tracks.
+
+All ten encoding mutations are detected by transcript mismatches (not crashes or compilation failures): encode_mask_stride 350, encode_orientation 115, encode_primary_flag 24, encode_profile_fallback 16, encode_unc_component_endian 230, encode_unc_compression_flag 280, encode_thumbnail_noop 12, encode_thumbnail_direction 14, encode_overlay_background 8, encode_repeated_extent 24. The default mutation suite contains 147 defects.

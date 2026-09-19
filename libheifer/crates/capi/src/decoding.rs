@@ -161,7 +161,7 @@ pub unsafe extern "C" fn heif_decode_image(
     let (document, max_decoding_threads, has_iloc) = {
         let context = super::context::lock(&handle.shared);
         (
-            context.document.clone(),
+            context.decoding_document(),
             context.max_decoding_threads,
             context.items.has_iloc,
         )

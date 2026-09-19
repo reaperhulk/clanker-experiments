@@ -525,11 +525,12 @@ pub struct ImageInfo {
     pub related_images: Vec<u32>,
     #[cfg(feature = "hevc")]
     pub(crate) decoder_input: std::sync::Mutex<Option<DecoderInput>>,
+    pub(crate) miaf: bool,
     pub kind: [u8; 4],
     pub grid: Option<crate::derived::Grid>,
     pub overlay: Option<crate::overlay::Overlay>,
     pub id: u32,
-    pub primary: bool,
+    pub primary: std::sync::atomic::AtomicBool,
     pub width: u32,
     pub height: u32,
     pub ispe: (u32, u32),
@@ -545,9 +546,60 @@ pub struct ImageInfo {
     pub metadata: Vec<Arc<Metadata>>,
     pub error: Option<ContextError>,
 }
+impl ImageInfo {
+    pub(crate) fn new(
+        id: u32,
+        kind: [u8; 4],
+        ispe: (u32, u32),
+        retained_properties: Vec<Arc<crate::properties::Property>>,
+    ) -> Self {
+        Self {
+            gimi_content_id: std::sync::Mutex::new(Vec::new()),
+            projection: std::sync::atomic::AtomicI32::new(crate::omaf::FLAT),
+            retained_properties: std::sync::Mutex::new(retained_properties),
+            description_error: None,
+            description_input: None,
+            components: crate::components::ComponentIds::default(),
+            intrinsic: None,
+            region_ids: std::sync::Mutex::new(Vec::new()),
+            text_ids: std::sync::Mutex::new(Vec::new()),
+            tai_timestamp: None,
+            extrinsic: None,
+            warnings: Vec::new(),
+            auxiliary: crate::auxiliary::Auxiliary::default(),
+            last_error: std::sync::Mutex::new(CString::new("Success").unwrap()),
+            decode_mutex: std::sync::Mutex::new(()),
+            related_images: Vec::new(),
+            #[cfg(feature = "hevc")]
+            decoder_input: std::sync::Mutex::new(None),
+            miaf: true,
+            kind,
+            grid: None,
+            overlay: None,
+            id,
+            primary: std::sync::atomic::AtomicBool::new(false),
+            width: 0,
+            height: 0,
+            ispe,
+            luma_bits: -1,
+            chroma_bits: -1,
+            colorspace: 99,
+            chroma: 99,
+            has_alpha: false,
+            premultiplied_alpha: false,
+            pixel_aspect: None,
+            color: ColorMetadata::default(),
+            thumbnails: Vec::new(),
+            metadata: Vec::new(),
+            error: None,
+        }
+    }
+}
+#[derive(Clone)]
 pub struct Document {
+    pub(crate) owned: Option<(crate::items::ItemStore, crate::properties::PropertyStore)>,
     pub budget: Arc<crate::security::Budget>,
-    read_limits: crate::security::Limits,
+    pub(crate) read_limits: crate::security::Limits,
     pub limits: Arc<RwLock<crate::security::Limits>>,
     pub input: Arc<dyn Input>,
     pub images: BTreeMap<u32, Arc<ImageInfo>>,
@@ -625,6 +677,14 @@ impl Document {
     }
 
     pub fn container(&self) -> Result<Container<'_>> {
+        if let Some((items, properties)) = &self.owned {
+            return Ok(Container::from_stores(
+                items,
+                properties,
+                self.primary,
+                self.current_limits(),
+            )?);
+        }
         let mut container = Container::parse_meta_with_limits(
             self.input.bytes(),
             metadata(self.input.bytes(), &self.read_limits, None, None, None)?,
@@ -665,53 +725,20 @@ impl Document {
                 continue;
             }
             let ispe = container.dimensions(item.id).unwrap_or((0, 0));
-            let mut image = ImageInfo {
-                gimi_content_id: std::sync::Mutex::new(Vec::new()),
-                projection: std::sync::atomic::AtomicI32::new(crate::omaf::FLAT),
-                retained_properties: std::sync::Mutex::new(
-                    properties
-                        .items
-                        .get(&item.id)
-                        .into_iter()
-                        .flatten()
-                        .filter_map(|index| properties.boxes.get(*index).cloned())
-                        .collect(),
-                ),
-                description_error: None,
-                description_input: None,
-                components: crate::components::ComponentIds::default(),
-                intrinsic: None,
-                region_ids: std::sync::Mutex::new(Vec::new()),
-                text_ids: std::sync::Mutex::new(Vec::new()),
-                tai_timestamp: None,
-                extrinsic: None,
-                warnings: Vec::new(),
-                auxiliary: crate::auxiliary::Auxiliary::default(),
-                last_error: std::sync::Mutex::new(CString::new("Success").unwrap()),
-                decode_mutex: std::sync::Mutex::new(()),
-                related_images: Vec::new(),
-                #[cfg(feature = "hevc")]
-                decoder_input: std::sync::Mutex::new(None),
-                kind: item.kind,
-                grid: None,
-                overlay: None,
-                id: item.id,
-                primary: item.id == container.primary && !item.hidden,
-                width: 0,
-                height: 0,
+            let mut image = ImageInfo::new(
+                item.id,
+                item.kind,
                 ispe,
-                luma_bits: -1,
-                chroma_bits: -1,
-                colorspace: 99,
-                chroma: 99,
-                has_alpha: false,
-                premultiplied_alpha: item.references.contains_key(b"prem"),
-                pixel_aspect: None,
-                color: ColorMetadata::default(),
-                thumbnails: Vec::new(),
-                metadata: Vec::new(),
-                error: None,
-            };
+                properties
+                    .items
+                    .get(&item.id)
+                    .into_iter()
+                    .flatten()
+                    .filter_map(|index| properties.boxes.get(*index).cloned())
+                    .collect(),
+            );
+            *image.primary.get_mut() = item.id == container.primary && !item.hidden;
+            image.premultiplied_alpha = item.references.contains_key(b"prem");
             if let Some(projection) = image.decoded_projection() {
                 *image.projection.get_mut() = projection;
             }
@@ -845,7 +872,10 @@ impl Document {
                 }
             }
         }
-        if !images.get(&container.primary).is_some_and(|i| i.primary) {
+        if !images
+            .get(&container.primary)
+            .is_some_and(|i| i.primary.load(std::sync::atomic::Ordering::Relaxed))
+        {
             return Err(ContextError::invalid(
                 2000,
                 "Non-existing item ID referenced: 'pitm' box references an unsupported or non-existing image",
@@ -1257,8 +1287,10 @@ impl Default for Context {
     fn default() -> Self {
         let limits = Arc::new(RwLock::new(crate::security::Limits::default()));
         let layout = crate::writing::SharedLayout::default();
-        let mut items = crate::items::ItemStore::default();
-        items.layout = layout.clone();
+        let items = crate::items::ItemStore {
+            layout: layout.clone(),
+            ..Default::default()
+        };
         Self {
             entity_groups: None,
             region_items: Vec::new(),
@@ -1300,6 +1332,7 @@ impl Context {
         if !has_images(&children(&meta[4..])?) {
             if self.document.is_none() {
                 self.document = Some(Arc::new(Document {
+                    owned: None,
                     budget: self.budget.clone(),
                     read_limits: *self
                         .limits
@@ -1316,6 +1349,7 @@ impl Context {
         }
         let container = Container::parse_meta_with_limits(input.bytes(), meta, read_limits)?;
         let mut document = Document {
+            owned: None,
             budget: self.budget.clone(),
             read_limits: *self
                 .limits

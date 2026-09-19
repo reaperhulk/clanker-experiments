@@ -194,6 +194,7 @@ pub struct Item {
 pub struct Container<'a> {
     pub limits: Limits,
     data: &'a [u8],
+    payloads: BTreeMap<u32, &'a [u8]>,
     idat: Option<&'a [u8]>,
     pub primary: u32,
     pub has_references: bool,
@@ -202,6 +203,83 @@ pub struct Container<'a> {
 }
 
 impl<'a> Container<'a> {
+    pub(crate) fn from_stores(
+        store: &'a crate::items::ItemStore,
+        properties: &'a crate::properties::PropertyStore,
+        primary: u32,
+        limits: Limits,
+    ) -> Result<Self> {
+        let data = store.input.as_ref().map_or(&[][..], |input| input.bytes());
+        let mut result = Self {
+            limits,
+            data,
+            payloads: BTreeMap::new(),
+            idat: store.idat.and_then(|(start, len)| {
+                data.get(start..start.saturating_add(len.saturating_sub(8) as usize))
+            }),
+            primary,
+            has_references: !store.references.is_empty(),
+            items: BTreeMap::new(),
+            properties: properties
+                .boxes
+                .iter()
+                .map(|p| BoxView {
+                    kind: p.kind,
+                    uuid: p.uuid,
+                    data: &p.data,
+                })
+                .collect(),
+        };
+        for (&id, item) in &store.items {
+            let mut extents = Vec::new();
+            if let Some(location) = store.locations.get(&id) {
+                if let Some(owned) = &location.owned {
+                    result.payloads.insert(id, owned);
+                }
+                for &(offset, len) in &location.extents {
+                    let start = location
+                        .base
+                        .checked_add(offset)
+                        .ok_or(ParseError::InvalidSize)?;
+                    let end = start.checked_add(len).ok_or(ParseError::InvalidSize)?;
+                    extents.push((
+                        location.owned.is_none() && location.method == 1,
+                        usize::try_from(start).map_err(|_| ParseError::InvalidSize)?
+                            ..usize::try_from(end).map_err(|_| ParseError::InvalidSize)?,
+                    ));
+                }
+            }
+            let mut references = BTreeMap::new();
+            for reference in store.references.iter().filter(|r| r.from == id) {
+                references
+                    .entry(reference.kind.to_be_bytes())
+                    .or_insert_with(|| reference.to.clone());
+            }
+            result.items.insert(
+                id,
+                Item {
+                    id,
+                    kind: item.kind.to_be_bytes(),
+                    hidden: item.hidden,
+                    name: item.name.to_bytes().to_vec(),
+                    content_type: item.content_type.to_bytes().to_vec(),
+                    content_encoding: item.content_encoding.to_bytes().to_vec(),
+                    uri_type: item.uri_type.to_bytes().to_vec(),
+                    properties: properties.items.get(&id).cloned().unwrap_or_default(),
+                    has_properties: properties.items.contains_key(&id),
+                    essential_properties: properties
+                        .essential
+                        .get(&id)
+                        .cloned()
+                        .unwrap_or_default(),
+                    extents,
+                    references,
+                },
+            );
+        }
+        Ok(result)
+    }
+
     pub fn parse(data: &'a [u8]) -> Result<Self> {
         let top = boxes(data, 100)?;
         if !top.iter().any(|b| b.kind == *b"ftyp") {
@@ -241,6 +319,7 @@ impl<'a> Container<'a> {
             return Err(ParseError::Unsupported);
         }
         let mut result = Self {
+            payloads: BTreeMap::new(),
             limits,
             data,
             idat: children.iter().find(|b| b.kind == *b"idat").map(|b| b.data),
@@ -550,6 +629,7 @@ impl<'a> Container<'a> {
         Ok((r.number(4)? as u32, r.number(4)? as u32))
     }
     pub fn payload(&self, id: u32) -> Result<Vec<u8>> {
+        let source = self.payloads.get(&id).copied().unwrap_or(self.data);
         let item = self.items.get(&id).ok_or(ParseError::MissingItem)?;
         let mut bytes = Vec::new();
         for (idat, range) in &item.extents {
@@ -557,7 +637,7 @@ impl<'a> Container<'a> {
             let data = if *idat {
                 self.idat.ok_or(ParseError::MissingItem)?
             } else {
-                self.data
+                source
             };
             // File extents check availability before their memory guard. The
             // idat reader checks its budget before its source-range bounds.
@@ -565,6 +645,12 @@ impl<'a> Container<'a> {
                 return Err(ParseError::Truncated);
             }
             if limit != 0 && (bytes.len() as u64).saturating_add(range.len() as u64) > limit {
+                if self.payloads.contains_key(&id) {
+                    return Err(ParseError::Security {
+                        invalid: false,
+                        message: "iloc item data exceeds the maximum memory block size".into(),
+                    });
+                }
                 return Err(ParseError::Security {
                     invalid: false,
                     message: format!(
@@ -592,6 +678,7 @@ impl<'a> Container<'a> {
         mut remaining: u64,
     ) -> std::result::Result<Vec<u8>, crate::context::ContextError> {
         use crate::context::ContextError;
+        let source = self.payloads.get(&id).copied().unwrap_or(self.data);
         let item = self.items.get(&id).ok_or(ParseError::MissingItem)?;
         let mut out = Vec::new();
         for (idat, range) in &item.extents {
@@ -608,7 +695,7 @@ impl<'a> Container<'a> {
                 })?;
                 data.as_ptr() as usize - self.data.as_ptr() as usize
             } else {
-                if self.data.get(range.clone()).is_none() {
+                if source.get(range.clone()).is_none() {
                     return Err(ContextError::invalid(
                         100,
                         &format!(
@@ -627,6 +714,13 @@ impl<'a> Container<'a> {
             }
             let limit = self.limits.max_memory_block_size;
             if limit != 0 && read > limit.wrapping_sub(out.len() as u64) {
+                if self.payloads.contains_key(&id) {
+                    return Err(ContextError::new(
+                        6,
+                        1000,
+                        "Memory allocation error: Security limit exceeded: iloc item data exceeds the maximum memory block size",
+                    ));
+                }
                 let reported = if *idat { read } else { length };
                 return Err(ContextError::new(
                     6,
@@ -651,7 +745,7 @@ impl<'a> Container<'a> {
                 .ok()
                 .and_then(|v| source_offset.checked_add(v))
                 .ok_or(ParseError::Truncated)?;
-            let data = self.data.get(start..end).ok_or(ParseError::Truncated)?;
+            let data = source.get(start..end).ok_or(ParseError::Truncated)?;
             out.try_reserve(data.len())
                 .map_err(|_| crate::error::Error::ALLOCATION)?;
             out.extend_from_slice(data);

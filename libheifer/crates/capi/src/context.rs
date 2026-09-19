@@ -256,11 +256,11 @@ pub unsafe extern "C" fn heif_context_get_primary_image_ID(
     if out.is_null() {
         return context_null(&mut state);
     }
-    let Some(doc) = state
-        .document
-        .as_ref()
-        .filter(|d| d.images.get(&d.primary).is_some_and(|i| i.primary))
-    else {
+    let Some(doc) = state.document.as_ref().filter(|d| {
+        d.images
+            .get(&d.primary)
+            .is_some_and(|i| i.primary.load(std::sync::atomic::Ordering::Relaxed))
+    }) else {
         return no_primary(&mut state);
     };
     unsafe { out.write(doc.primary) };
@@ -317,11 +317,11 @@ pub unsafe extern "C" fn heif_context_get_primary_image_handle(
     if out.is_null() {
         return context_null(&mut state);
     }
-    let Some(doc) = state
-        .document
-        .clone()
-        .filter(|d| d.images.get(&d.primary).is_some_and(|i| i.primary))
-    else {
+    let Some(doc) = state.document.clone().filter(|d| {
+        d.images
+            .get(&d.primary)
+            .is_some_and(|i| i.primary.load(std::sync::atomic::Ordering::Relaxed))
+    }) else {
         return no_primary(&mut state);
     };
     let id = doc.primary;
@@ -376,7 +376,7 @@ macro_rules! query {
     };
 }
 query!(heif_image_handle_is_primary_image, 0, |i: &ImageInfo| {
-    i32::from(i.primary)
+    i32::from(i.primary.load(std::sync::atomic::Ordering::Relaxed))
 });
 query!(heif_image_handle_get_width, 0, |i: &ImageInfo| dimension(
     i.width

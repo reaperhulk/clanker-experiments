@@ -178,6 +178,14 @@ impl Context {
         if structural {
             layout.compatible(u32::from_be_bytes(*b"mif1"));
         }
+        if structural
+            && self
+                .document
+                .as_ref()
+                .is_some_and(|doc| doc.images.get(&doc.primary).is_some_and(|image| image.miaf))
+        {
+            layout.compatible(u32::from_be_bytes(*b"miaf"));
+        }
         if layout.unif {
             layout.compatible(u32::from_be_bytes(*b"unif"));
         }
@@ -202,7 +210,7 @@ impl Context {
                 if loc.method == 0
                     && let Some(bytes) = &loc.owned
                 {
-                    data.extend(bytes);
+                    data.extend_from_slice(bytes);
                 }
             }
             out.extend(boxed(*b"mdat", &data));
@@ -262,7 +270,7 @@ impl Context {
                         if loc.method == 1
                             && let Some(data) = &loc.owned
                         {
-                            idat.extend(data);
+                            idat.extend_from_slice(data);
                         }
                     }
                     if !idat.is_empty() {
@@ -282,7 +290,7 @@ impl Context {
                     let mut idat_at = 0;
                     for id in &self.items.location_order {
                         let loc = &self.items.locations[id];
-                        let bytes = loc.owned.as_deref().unwrap_or_default();
+                        let bytes = loc.owned.as_deref().map(Vec::as_slice).unwrap_or_default();
                         number(&mut p, u64::from(*id), if wide { 4 } else { 2 });
                         if version > 0 {
                             number(&mut p, loc.method, 2);
