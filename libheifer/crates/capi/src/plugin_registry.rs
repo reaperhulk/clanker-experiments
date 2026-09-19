@@ -56,6 +56,10 @@ impl Registry {
         self.decoders.push(Arc::new(DecoderRecord {
             source: DecoderSource::Builtin(8),
         }));
+        #[cfg(feature = "jpeg")]
+        self.decoders.push(Arc::new(DecoderRecord {
+            source: DecoderSource::Builtin(3),
+        }));
         #[cfg(feature = "av1")]
         self.decoders.push(Arc::new(DecoderRecord {
             source: DecoderSource::Builtin(4),
@@ -342,6 +346,7 @@ impl DecoderSource {
     fn name(self) -> *const c_char {
         match self {
             Self::Builtin(8) => c"builtin".as_ptr(),
+            Self::Builtin(3) => c"jpeg-decoder".as_ptr(),
             Self::Builtin(4) => c"rav1d".as_ptr(),
             Self::Builtin(_) => c"rusty_h265".as_ptr(),
             Self::External(p) => field!(p, get_plugin_name).map_or(ptr::null(), |f| unsafe { f() }),
@@ -350,6 +355,7 @@ impl DecoderSource {
     fn id(self) -> *const c_char {
         match self {
             Self::Builtin(8) => c"uncompressed".as_ptr(),
+            Self::Builtin(3) => c"jpeg-decoder".as_ptr(),
             Self::Builtin(4) => c"rav1d".as_ptr(),
             Self::Builtin(_) => c"rusty_h265".as_ptr(),
             Self::External(p) => {
@@ -447,11 +453,19 @@ unsafe extern "C" fn av1_name() -> *const c_char {
 unsafe extern "C" fn av1_priority(format: c_int) -> c_int {
     if format == 4 { 100 } else { 0 }
 }
+unsafe extern "C" fn jpeg_name() -> *const c_char {
+    c"jpeg-decoder".as_ptr()
+}
+unsafe extern "C" fn jpeg_priority(format: c_int) -> c_int {
+    if format == 3 { 100 } else { 0 }
+}
 const fn builtin_record(format: c_int) -> DecoderPlugin {
     DecoderPlugin {
         plugin_api_version: 5,
         get_plugin_name: if format == 8 {
             Some(uncompressed_name)
+        } else if format == 3 {
+            Some(jpeg_name)
         } else if format == 4 {
             Some(av1_name)
         } else {
@@ -461,6 +475,8 @@ const fn builtin_record(format: c_int) -> DecoderPlugin {
         deinit_plugin: None,
         does_support_format: if format == 8 {
             Some(uncompressed_priority)
+        } else if format == 3 {
+            Some(jpeg_priority)
         } else if format == 4 {
             Some(av1_priority)
         } else {
@@ -473,6 +489,8 @@ const fn builtin_record(format: c_int) -> DecoderPlugin {
         set_strict_decoding: None,
         id_name: if format == 8 {
             c"uncompressed".as_ptr()
+        } else if format == 3 {
+            c"jpeg-decoder".as_ptr()
         } else if format == 4 {
             c"rav1d".as_ptr()
         } else {
@@ -488,11 +506,14 @@ const fn builtin_record(format: c_int) -> DecoderPlugin {
     }
 }
 static UNCOMPRESSED_DECODER: StaticDecoder = StaticDecoder(builtin_record(8));
+static JPEG_DECODER: StaticDecoder = StaticDecoder(builtin_record(3));
 static AV1_DECODER: StaticDecoder = StaticDecoder(builtin_record(4));
 static HEVC_DECODER: StaticDecoder = StaticDecoder(builtin_record(1));
 fn builtin_decoder(format: c_int) -> *const DecoderPlugin {
     if format == 8 {
         &UNCOMPRESSED_DECODER.0
+    } else if format == 3 {
+        &JPEG_DECODER.0
     } else if format == 4 {
         &AV1_DECODER.0
     } else {

@@ -7,6 +7,7 @@ import subprocess
 
 HEIF = "4e14f5942c1732ace9611b9522cc991501445463"
 DE265 = "7ba65889d3d6d8a0d99b5360b028243ba843be3a"
+JPEG = "7723f50f3f66b9da74376e6d8badb6162464212c"
 DAV1D = "42b2b24fb8819f1ed3643aa9cf2a62f03868e3aa"
 
 
@@ -20,6 +21,7 @@ def main():
     p.add_argument("--source", default="tests/upstream")
     p.add_argument("--hevc", action="store_true")
     p.add_argument("--av1", action="store_true")
+    p.add_argument("--jpeg", action="store_true")
     p.add_argument("--plugins", action="store_true", help="enable native dynamic-plugin oracle with an empty default search path")
     p.add_argument("-j", default="4")
     a = p.parse_args()
@@ -33,7 +35,9 @@ def main():
         raise SystemExit("cmake required for reference build")
     # Keep the oracle feature set deterministic. Brotli is a separate, still-open
     # compatibility target; do not let host package discovery change transcripts.
-    flags = ["-DCMAKE_DISABLE_FIND_PACKAGE_Brotli=ON", "-DCMAKE_REQUIRE_FIND_PACKAGE_ZLIB=ON"]
+    flags = ["-DCMAKE_DISABLE_FIND_PACKAGE_Brotli=ON", "-DCMAKE_REQUIRE_FIND_PACKAGE_ZLIB=ON",
+             f"-DWITH_JPEG_DECODER={'ON' if a.jpeg else 'OFF'}", "-DWITH_JPEG_ENCODER=OFF",
+             "-DWITH_JPEG_DECODER_PLUGIN=OFF", "-DWITH_JPEG_ENCODER_PLUGIN=OFF"]
     if a.hevc:
         decoder = build.parent / "libde265-source"
         install = build.parent / "libde265-install"
@@ -68,6 +72,24 @@ def main():
         run("ninja", "-C", dbuild, "-j", a.j)
         run("ninja", "-C", dbuild, "install")
         flags += [f"-DDAV1D_INCLUDE_DIR={install / 'include'}", f"-DDAV1D_LIBRARY={install / 'lib/libdav1d.so'}"]
+    if a.jpeg:
+        decoder = build.parent / "libjpeg-turbo-source"
+        install = build.parent / "libjpeg-turbo-install"
+        dbuild = build.parent / "libjpeg-turbo-build"
+        if not decoder.exists():
+            run("git", "init", decoder)
+            run("git", "-C", decoder, "remote", "add", "origin", "https://github.com/libjpeg-turbo/libjpeg-turbo.git")
+            run("git", "-C", decoder, "fetch", "--depth=1", "origin", JPEG)
+            run("git", "-C", decoder, "checkout", "--detach", "FETCH_HEAD")
+        revision = subprocess.check_output(["git", "-C", str(decoder), "rev-parse", "HEAD"], text=True).strip()
+        if revision != JPEG:
+            raise SystemExit("Wrong libjpeg-turbo reference revision")
+        run(cmake, "-S", decoder, "-B", dbuild, "-DCMAKE_BUILD_TYPE=Release", f"-DCMAKE_INSTALL_PREFIX={install}",
+            "-DCMAKE_INSTALL_LIBDIR=lib", "-DWITH_SIMD=OFF", "-DWITH_TURBOJPEG=OFF", "-DENABLE_SHARED=ON", "-DENABLE_STATIC=OFF")
+        run(cmake, "--build", dbuild, "-j", a.j)
+        run(cmake, "--install", dbuild)
+        flags += ["-DWITH_JPEG_DECODER=ON", "-DWITH_JPEG_DECODER_PLUGIN=OFF", "-DWITH_JPEG_ENCODER=OFF",
+                  f"-DJPEG_INCLUDE_DIR={install / 'include'}", f"-DJPEG_LIBRARY_RELEASE={install / 'lib/libjpeg.so'}"]
     run(cmake, "-S", source, "-B", build, "-DCMAKE_BUILD_TYPE=Release", "-DBUILD_TESTING=OFF", "-DBUILD_DOCUMENTATION=OFF", "-DWITH_EXAMPLES=OFF", "-DWITH_GDK_PIXBUF=OFF", f"-DENABLE_PLUGIN_LOADING={'ON' if a.plugins else 'OFF'}", *(["-DPLUGIN_DIRECTORY="] if a.plugins else []), f"-DWITH_LIBDE265={'ON' if a.hevc else 'OFF'}", "-DWITH_X265=OFF", "-DWITH_X264=OFF", "-DWITH_OpenH264_DECODER=OFF", f"-DWITH_DAV1D={'ON' if a.av1 else 'OFF'}", "-DWITH_DAV1D_PLUGIN=OFF", "-DWITH_AOM_DECODER=OFF", "-DWITH_AOM_ENCODER=OFF", "-DWITH_LIBSHARPYUV=OFF", "-DWITH_UNCOMPRESSED_CODEC=ON", *flags)
     run(cmake, "--build", build, "-j", a.j)
 

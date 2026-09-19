@@ -15,6 +15,17 @@ import sys
 import tempfile
 
 MUTATIONS = [
+    ('jpeg_idct_rounding', 'vendor/jpeg-decoder/src/idct.rs', 'const X_SCALE: i32 = 131072 + (128 << 18);', 'const X_SCALE: i32 = 0 + (128 << 18);', 'jpeg_pixels'),
+    ('jpeg_horizontal_rounding', 'vendor/jpeg-decoder/src/upsampler.rs', '((sample + input[i - 1] as u32 + 1) >> 2)', '((sample + input[i - 1] as u32 + 2) >> 2)', 'jpeg_pixels'),
+    ('jpeg_vertical_rounding', 'vendor/jpeg-decoder/src/upsampler.rs', '((3 * t1 + t0 + 8) >> 4)', '((3 * t1 + t0 + 7) >> 4)', 'jpeg_pixels'),
+    ('jpeg_narrow_upsampling', 'vendor/jpeg-decoder/src/upsampler.rs', 'h2 && input_width <= 2', 'h2 && input_width <= 1', 'jpeg_pixels'),
+    ('jpeg_chroma_scanline', 'src/jpeg.rs', 'let sy = if channel == 0 { y } else { y * 2 };', 'let sy = if channel == 0 { y } else { (y * 2 + 1).min(height as usize - 1) };', 'jpeg_pixels'),
+    ('jpeg_progressive_smoothing', 'vendor/jpeg-decoder/src/smoothing.rs', 'bits[0]>=0 && POS.iter().all(|&p|q[p]!=0)', 'false && bits[0]>=0 && POS.iter().all(|&p|q[p]!=0)', 'jpeg_recovery'),
+    ('jpeg_entropy_recovery', 'vendor/jpeg-decoder/src/decoder.rs', 'if skip_mcu { continue; }', 'if false && skip_mcu { continue; }', 'jpeg_recovery'),
+    ('jpeg_eof_marker', 'src/jpeg.rs', 'let mut decoder = Decoder::new(PaddedInput { data: &data, at: 0 });', 'let mut decoder = Decoder::new(data.as_slice());', 'jpeg_recovery'),
+    ('jpeg_decoder_input_replacement', 'src/decoding.rs', '    *cached = None;', '    // omit prior decoder-input release', 'jpeg_limits'),
+    ('jpeg_decode_memory_estimate', 'src/jpeg.rs', 'let estimated = pixels * info.pixel_format.pixel_bytes() as u64 * 3;', 'let estimated = pixels * info.pixel_format.pixel_bytes() as u64 * 2;', 'jpeg_limits'),
+
     ('avc_interlaced_height', 'src/avc_config.rs', 'h *= u64::from(2 - frame);', 'h *= 1;', 'avc_encoding'),
     ('avc_crop_units', 'src/avc_config.rs', 'let sx = if matches!(self.chroma, 1 | 2) { 2 } else { 1 };', 'let sx = 1;', 'avc_encoding'),
     ('avc_scaling_break', 'src/avc_config.rs', 'if next == 0 {', 'if next != 0 {', 'avc_encoding'),
@@ -310,6 +321,7 @@ def main():
     parser.add_argument("--reference-build", required=True)
     parser.add_argument("--plugin-reference-build", default=".build/reference-plugins")
     parser.add_argument("--av1-reference-build", default=".build/reference-av1")
+    parser.add_argument("--jpeg-reference-build", default=".build/reference-jpeg")
     parser.add_argument("--candidate", default="target/release/libheifer.so")
     parser.add_argument("--output", default=".build/mutations-report.json")
     parser.add_argument("--only", choices=[m[0] for m in MUTATIONS], action="append", help="Run selected defects; default runs the complete mutation set")
@@ -321,6 +333,8 @@ def main():
     reference = str(Path(args.reference_build).resolve())
     candidate = str(Path(args.candidate).resolve())
     def oracle(suite):
+        if suite.startswith("jpeg_"):
+            return str(Path(args.jpeg_reference_build).resolve())
         if suite in ('av1', 'av1_limits', 'mini_reader'):
             return str(Path(args.av1_reference_build).resolve())
         return str(Path(args.plugin_reference_build).resolve()) if suite == "dynamic_plugins" else reference

@@ -1,0 +1,13 @@
+{
+  "scope": "Independent JPEG truncation, marker and frame-description error comparisons.",
+  "cases": 7158,
+  "mismatches": 0,
+  "client_sanitizers": false,
+  "leak_check": false,
+  "client_sha256": "c7cb0444757eb1d323d165c8e0803e2ffff7aabc0c0cbd247c18342dd830311a",
+  "reference_sha256": "5f6f6fa26fb491bbee5911457a5aa11ec873d7e56b6fcc740760593173d50693",
+  "candidate_sha256": "cc5df7efd74473662eac25edf80e04b531e7ee01059ce1671541286118fc0941",
+  "full_report": "jpeg-errors-full.json.gz",
+  "full_report_sha256": "64d7f620d9da9b7fc7a784992e3adb4b735079952ae7c054ebf4b7a19a2fb759",
+  "compressed_report_sha256": "b6fccabc7509c7f0591809cd4b3f25885e698e959c0af2d5140f9f42ba1ecfb6"
+}

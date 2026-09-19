@@ -66,3 +66,9 @@ pub mod tiling;
 pub mod sequences;
 
 pub mod debug;
+
+#[cfg(feature = "jpeg")]
+pub mod jpeg;
+
+#[cfg(feature = "jpeg")]
+mod jpeg_header;

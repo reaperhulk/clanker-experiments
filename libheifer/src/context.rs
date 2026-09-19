@@ -579,7 +579,6 @@ pub struct ImageInfo {
     pub text_ids: std::sync::Mutex<Vec<u32>>,
     pub tai_timestamp: Option<crate::tai::Timestamp>,
     pub description_error: Option<ContextError>,
-    description_input: Option<DecoderInput>,
     pub components: crate::components::ComponentIds,
     pub intrinsic: Option<crate::camera::IntrinsicMatrix>,
     pub extrinsic: Option<crate::camera::ExtrinsicMatrix>,
@@ -626,7 +625,6 @@ impl ImageInfo {
             projection: std::sync::atomic::AtomicI32::new(crate::omaf::FLAT),
             retained_properties: std::sync::Mutex::new(retained_properties),
             description_error: None,
-            description_input: None,
             components: crate::components::ComponentIds::default(),
             intrinsic: None,
             region_ids: std::sync::Mutex::new(Vec::new()),
@@ -891,11 +889,12 @@ impl Document {
                     let reservation = self
                         .budget
                         .reserve(data.len() as u64, "decoder input buffer (iloc)")?;
-                    image.description_input = Some(DecoderInput {
+                    let input = image.decoder_input.get_mut().unwrap();
+                    *input = Some(DecoderInput {
                         data: Arc::new(data),
                         _reservation: reservation,
                     });
-                    let payload = &image.description_input.as_ref().unwrap().data;
+                    let payload = &input.as_ref().unwrap().data;
                     let config = container.property(item.id, *b"jpgC").unwrap_or_default();
                     let mut combined = Vec::new();
                     combined

@@ -11,6 +11,7 @@ import subprocess
 
 REVIEWED = {("libheifer", "0.1.0"), ("libheifer-capi", "0.1.0"), ("rusty_h265", "0.6.0"), ("rusty_h265-accel", "0.6.0"), ("zlib-rs", "0.6.8")}
 REVIEWED |= {
+    ("jpeg-decoder", "0.3.2"),
     ('rav1d', '1.1.0'), ('assert_matches', '1.5.0'), ('atomig', '0.4.3'),
     ('atomig-macro', '0.4.0'), ('bitflags', '2.13.2'), ('byteorder', '1.5.0'),
     ('cfg-if', '1.0.5'), ('heck', '0.5.0'), ('libc', '0.2.189'),
@@ -54,6 +55,11 @@ def main():
                 problems.append('rav1d must enable only Rust 8/16-bit implementations')
             if any(p.suffix.lower() in ('.c', '.cc', '.cpp', '.s', '.asm') for p in root.rglob('*')):
                 problems.append('Native implementation source in rav1d vendor tree')
+        if name[0] == 'jpeg-decoder':
+            if set(features[package['id']]) != {'platform_independent'}:
+                problems.append('jpeg-decoder must use only the reviewed scalar Rust implementation')
+            if any(p.suffix.lower() in ('.c', '.cc', '.cpp', '.s', '.asm') for p in root.rglob('*')):
+                problems.append('Native implementation source in jpeg-decoder vendor tree')
         report.append({"name": name[0], "version": name[1], "source": package["source"], "features": features[package["id"]]})
     Path(".build").mkdir(exist_ok=True)
     Path(".build/dependencies.json").write_text(json.dumps({"packages": report, "problems": problems}, indent=2) + "\n")

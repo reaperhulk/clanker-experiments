@@ -762,7 +762,7 @@
     ]
   },
   "heif_decode_image": {
-    "notes": "Five direct HEVC fixtures in 23 modes plus 688 generated/real geometry cases: exact visible pixels including monochrome HEVC alpha, crop/rotate/mirror order, fractional boundaries, metadata, errors and output writes. Full codec conformance, derived images, callback orchestration, resource limits, every conversion operator and other codecs remain open. Generated overlay, 8/16-bit mask and adversarial graph transcripts also compare exactly; all remain finite coverage. Registered still-image decoder callbacks additionally pass 616 original-header HEVC/AV1 cases: historical records, selection reuse, exact configuration/payload bytes, allocation/push/flush/poll/free order, raw strict/thread options, callback diagnostics, output planes, transforms and derived composition. Normal, client ASan/UBSan and codec-free builds pass; eight semantic mutations are detected. Sequence/plugin encoding integration, other codec configurations, concurrent unload, exhaustive resource failures and platform C execution remain open. Rust-only AV1/rav1d and compact mini containers now have independent dav1d pixel/error, generated 8/10/12-bit, HDR/property, source-lifetime, callback, resource-limit and codec-free comparisons. Container/bitstream color warnings persist across decodes and full-range correction is optional. Codec conformance, compact diagnostics/writing, invalid bitstream NCLX values, remaining codecs and cross-platform/downstream completion remain open.",
+    "notes": "Five direct HEVC fixtures in 23 modes plus 688 generated/real geometry cases: exact visible pixels including monochrome HEVC alpha, crop/rotate/mirror order, fractional boundaries, metadata, errors and output writes. Full codec conformance, derived images, callback orchestration, resource limits, every conversion operator and other codecs remain open. Generated overlay, 8/16-bit mask and adversarial graph transcripts also compare exactly; all remain finite coverage. Registered still-image decoder callbacks additionally pass 616 original-header HEVC/AV1 cases: historical records, selection reuse, exact configuration/payload bytes, allocation/push/flush/poll/free order, raw strict/thread options, callback diagnostics, output planes, transforms and derived composition. Normal, client ASan/UBSan and codec-free builds pass; eight semantic mutations are detected. Sequence/plugin encoding integration, other codec configurations, concurrent unload, exhaustive resource failures and platform C execution remain open. Rust-only AV1/rav1d and compact mini containers now have independent dav1d pixel/error, generated 8/10/12-bit, HDR/property, source-lifetime, callback, resource-limit and codec-free comparisons. Container/bitstream color warnings persist across decodes and full-range correction is optional. Codec conformance, compact diagnostics/writing, invalid bitstream NCLX values, remaining codecs and cross-platform/downstream completion remain open. Optional built-in scalar Rust JPEG decoding has original-header baseline/progressive, restart, lossless grayscale, precision/error, complete-prefix, allocation-limit, sanitizer, codec-free and mutation gates; arithmetic JPEG and broader codec/platform/downstream completion remain open.",
     "status": "partial",
     "tests": [
       "tests/decode.c",
@@ -789,25 +789,34 @@
       "tools/test_mini.py",
       "tools/test_mini_properties.py",
       "tools/test_mini_file.py",
-      "tools/test_mini_reader.py"
+      "tools/test_mini_reader.py",
+      "tools/test_jpeg.py",
+      "tools/test_jpeg_errors.py",
+      "tools/test_jpeg_limits.py"
     ]
   },
   "heif_decoder_descriptor_get_id_name": {
-    "notes": "Independent original-header external-plugin callback traces: historical record prefixes, priority/filter/capacity behavior, registration multiplicity, init/deinit and reentrant discovery, allocation errors and cleanup, duplicate parameter validation, forwarding and generic conversion. Normal, codec-free and C sanitizer checks. Actual registered-plugin image encoding/decoding, dynamic loading, resource failures and cross-platform C execution remain open; HEVC discovery honestly identifies the Rust implementation.",
+    "notes": "Independent original-header external-plugin callback traces: historical record prefixes, priority/filter/capacity behavior, registration multiplicity, init/deinit and reentrant discovery, allocation errors and cleanup, duplicate parameter validation, forwarding and generic conversion. Normal, codec-free and C sanitizer checks. Actual registered-plugin image encoding/decoding, dynamic loading, resource failures and cross-platform C execution remain open; HEVC discovery honestly identifies the Rust implementation. Optional built-in scalar Rust JPEG decoding has original-header baseline/progressive, restart, lossless grayscale, precision/error, complete-prefix, allocation-limit, sanitizer, codec-free and mutation gates; arithmetic JPEG and broader codec/platform/downstream completion remain open.",
     "status": "partial",
     "tests": [
       "tests/plugins.c",
       "tools/test_plugins.py",
-      "crates/capi/tests/abi.rs"
+      "crates/capi/tests/abi.rs",
+      "tools/test_jpeg.py",
+      "tools/test_jpeg_errors.py",
+      "tools/test_jpeg_limits.py"
     ]
   },
   "heif_decoder_descriptor_get_name": {
-    "notes": "Independent original-header external-plugin callback traces: historical record prefixes, priority/filter/capacity behavior, registration multiplicity, init/deinit and reentrant discovery, allocation errors and cleanup, duplicate parameter validation, forwarding and generic conversion. Normal, codec-free and C sanitizer checks. Actual registered-plugin image encoding/decoding, dynamic loading, resource failures and cross-platform C execution remain open; HEVC discovery honestly identifies the Rust implementation.",
+    "notes": "Independent original-header external-plugin callback traces: historical record prefixes, priority/filter/capacity behavior, registration multiplicity, init/deinit and reentrant discovery, allocation errors and cleanup, duplicate parameter validation, forwarding and generic conversion. Normal, codec-free and C sanitizer checks. Actual registered-plugin image encoding/decoding, dynamic loading, resource failures and cross-platform C execution remain open; HEVC discovery honestly identifies the Rust implementation. Optional built-in scalar Rust JPEG decoding has original-header baseline/progressive, restart, lossless grayscale, precision/error, complete-prefix, allocation-limit, sanitizer, codec-free and mutation gates; arithmetic JPEG and broader codec/platform/downstream completion remain open.",
     "status": "partial",
     "tests": [
       "tests/plugins.c",
       "tools/test_plugins.py",
-      "crates/capi/tests/abi.rs"
+      "crates/capi/tests/abi.rs",
+      "tools/test_jpeg.py",
+      "tools/test_jpeg_errors.py",
+      "tools/test_jpeg_limits.py"
     ]
   },
   "heif_decoding_options_alloc": {
@@ -1195,12 +1204,15 @@
     ]
   },
   "heif_get_decoder_descriptors": {
-    "notes": "Independent original-header external-plugin callback traces: historical record prefixes, priority/filter/capacity behavior, registration multiplicity, init/deinit and reentrant discovery, allocation errors and cleanup, duplicate parameter validation, forwarding and generic conversion. Normal, codec-free and C sanitizer checks. Actual registered-plugin image encoding/decoding, dynamic loading, resource failures and cross-platform C execution remain open; HEVC discovery honestly identifies the Rust implementation.",
+    "notes": "Independent original-header external-plugin callback traces: historical record prefixes, priority/filter/capacity behavior, registration multiplicity, init/deinit and reentrant discovery, allocation errors and cleanup, duplicate parameter validation, forwarding and generic conversion. Normal, codec-free and C sanitizer checks. Actual registered-plugin image encoding/decoding, dynamic loading, resource failures and cross-platform C execution remain open; HEVC discovery honestly identifies the Rust implementation. Optional built-in scalar Rust JPEG decoding has original-header baseline/progressive, restart, lossless grayscale, precision/error, complete-prefix, allocation-limit, sanitizer, codec-free and mutation gates; arithmetic JPEG and broader codec/platform/downstream completion remain open.",
     "status": "partial",
     "tests": [
       "tests/plugins.c",
       "tools/test_plugins.py",
-      "crates/capi/tests/abi.rs"
+      "crates/capi/tests/abi.rs",
+      "tools/test_jpeg.py",
+      "tools/test_jpeg_errors.py",
+      "tools/test_jpeg_limits.py"
     ]
   },
   "heif_get_disabled_security_limits": {
@@ -1310,12 +1322,15 @@
     ]
   },
   "heif_have_decoder_for_format": {
-    "notes": "Independent original-header external-plugin callback traces: historical record prefixes, priority/filter/capacity behavior, registration multiplicity, init/deinit and reentrant discovery, allocation errors and cleanup, duplicate parameter validation, forwarding and generic conversion. Normal, codec-free and C sanitizer checks. Actual registered-plugin image encoding/decoding, dynamic loading, resource failures and cross-platform C execution remain open; HEVC discovery honestly identifies the Rust implementation.",
+    "notes": "Independent original-header external-plugin callback traces: historical record prefixes, priority/filter/capacity behavior, registration multiplicity, init/deinit and reentrant discovery, allocation errors and cleanup, duplicate parameter validation, forwarding and generic conversion. Normal, codec-free and C sanitizer checks. Actual registered-plugin image encoding/decoding, dynamic loading, resource failures and cross-platform C execution remain open; HEVC discovery honestly identifies the Rust implementation. Optional built-in scalar Rust JPEG decoding has original-header baseline/progressive, restart, lossless grayscale, precision/error, complete-prefix, allocation-limit, sanitizer, codec-free and mutation gates; arithmetic JPEG and broader codec/platform/downstream completion remain open.",
     "status": "partial",
     "tests": [
       "tests/plugins.c",
       "tools/test_plugins.py",
-      "crates/capi/tests/abi.rs"
+      "crates/capi/tests/abi.rs",
+      "tools/test_jpeg.py",
+      "tools/test_jpeg_errors.py",
+      "tools/test_jpeg_limits.py"
     ]
   },
   "heif_have_encoder_for_format": {

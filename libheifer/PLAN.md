@@ -509,3 +509,37 @@ native fields are not counted as parity evidence. Built-in AVC/HEVC encoders,
 VVC integration, other codec replacements, sequences, broader malformed/resource
 and platform/downstream gates remain open. All 465 functions remain partial and
 strict completion remains false. Implementation continues through these gaps.
+
+
+### Built-in Rust JPEG decoding
+
+The optional `jpeg` feature now supplies built-in decoding through a reviewed
+scalar Rust jpeg-decoder fork. Native full-resolution IDCT and chroma rounding,
+small-component replication, truncated entropy recovery, progressive smoothing,
+scan/marker error ordering, default Huffman tables and lossless grayscale
+predictors/point transforms are implemented. Original-header comparisons include
+2–8-bit lossless samples and native higher-precision/RGB rejection behavior.
+Description parsing and decoding now replace one retained compressed-input
+reservation instead of counting it twice. Native codec sources remain test-only.
+
+All 7,325 decode, 7,158 complete-prefix/error and 2,297 allocation-limit cases pass
+normal, ASan/UBSan client and codec-free comparisons. Ten new deliberate defects
+are detected by 736, 128, 176, 16, 540, three, 15, 33, 15 and four semantic
+differences, without compilation or process failures (271 default mutations).
+Component handles (791), registered decoder callbacks (616), JPEG-family encoders
+(2,382), AVC encoding (1,344) and HEVC ordinary/compact encoding (789 each) pass
+regressions. Rust all-feature/no-feature tests, Clippy, formatting, original-header
+ABI baseline, dependency guard and development coverage checks pass.
+
+The native JPEG oracle was rebuilt with the committed pinned builder. Exact
+binary/client/fixture hashes and all per-case results are retained under
+`docs/results/jpeg-*`; full decode reports are compressed as `.json.gz`, with
+plain JSON summaries recording both compressed and original report hashes.
+Local leak checking is disabled under ptrace; CI retains it and now runs the
+new normal, sanitizer, codec-free and mutation gates. Cross-platform C-client
+coverage is not implied by these Linux results.
+
+Arithmetic JPEG decoding, built-in JPEG and other compressed encoders, remaining
+codec implementations, VVC hooks, sequence integration and the broader behavior,
+platform/downstream/performance requirements remain open. All 465 functions
+remain partial and strict completion remains false. Implementation continues.
