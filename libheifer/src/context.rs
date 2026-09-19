@@ -694,6 +694,10 @@ impl Document {
                 } else {
                     image.error = Some(ContextError::invalid(106, "No 'hvcC' box"));
                 }
+            } else if item.kind == *b"unci" {
+                if let Err(e) = crate::uncompressed::initialize(container, &mut image) {
+                    image.error = Some(e);
+                }
             } else if item.kind == *b"mski" {
                 image.luma_bits = container
                     .property(item.id, *b"mskC")
@@ -1019,6 +1023,7 @@ impl Document {
                 if item.kind != *b"iovl" {
                     i.colorspace = cs;
                     i.chroma = ch;
+                    i.has_alpha |= matches!(ch, 11 | 13 | 15);
                 }
             }
             if item.kind == *b"grid" {

@@ -465,7 +465,11 @@ pub unsafe extern "C" fn heif_image_handle_get_preferred_decoding_colorspace(
     if !colorspace.is_null() {
         unsafe { colorspace.write(preferred_colorspace) };
     }
-    if !chroma.is_null() {
+    let preserve_chroma = handle.image().kind != *b"iovl"
+        && document
+            .first_coded_image(handle.image().id)
+            .is_ok_and(|coded| coded.leaves_preferred_chroma_untouched());
+    if !chroma.is_null() && !preserve_chroma {
         unsafe { chroma.write(preferred_chroma) };
     }
     SUCCESS

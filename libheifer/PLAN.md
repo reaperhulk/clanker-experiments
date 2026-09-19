@@ -119,3 +119,11 @@ allocation accounting and object-specific resource lifetimes. Auxiliary/depth, i
 performance optimization is deferred until the complete compatibility gate passes.
 The full header contract, finite behavioral reports, known differences and
 performance evidence are retained in `compat/` and `docs/results/`.
+
+Uncompressed pixel iteration: all seven decoder factories now have Rust paths.
+The independent client records complete channel/component bytes, format/depth,
+callbacks and retained handles; generated cases cover integer, float and complex
+formats, packing, padding, endian flags and rejected layouts. This adds behavior
+to existing exports; the 279 partial / 186 missing function totals are unchanged.
+Next: uncompressed generic compression and sensor properties, exact range reads
+and resource limits, then remaining codec/API families. No optimization claims.

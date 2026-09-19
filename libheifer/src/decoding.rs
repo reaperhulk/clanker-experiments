@@ -266,6 +266,7 @@ pub(crate) fn decode_native(
     }
     let container = document.container()?;
     let mut image = match &container.items[&id].kind {
+        b"unci" => crate::uncompressed::decode(&container, id, Some(document.budget.clone()))?,
         b"mski" => crate::mask::decode(&container, id, Some(document.budget.clone()))?,
         b"grid" => decode_grid(document, id, options, visiting)?,
         b"iovl" => crate::overlay::decode(document, id, options, visiting)?,

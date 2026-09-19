@@ -315,7 +315,7 @@ fn next(s: State, t: State, o: ColorConversionOptions) -> Vec<(State, Op, u32)> 
             11,
         );
     }
-    if s.ch <= 3 && s.depth > 8 && small && t.depth == 8 {
+    if s.ch <= 3 && s.depth != 8 && small && t.depth == 8 {
         add(
             State {
                 depth: 8,
@@ -663,6 +663,14 @@ fn apply(image: &Image, s: State, t: State, op: Op) -> Result<Image, Error> {
                         let v = sample(p, x, y);
                         let v = if t.depth < p.bit_depth {
                             v >> (p.bit_depth - t.depth)
+                        } else if t.depth == 8 && p.bit_depth < 8 {
+                            let mut bit = 1u32 << (16 - p.bit_depth);
+                            let mut factor = 0;
+                            while bit != 0 {
+                                factor |= bit;
+                                bit >>= p.bit_depth;
+                            }
+                            ((v as u32 * factor) >> 8) as i32
                         } else {
                             (v << (t.depth - p.bit_depth)) | (v >> (2 * p.bit_depth - t.depth))
                         };

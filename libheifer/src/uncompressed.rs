@@ -345,3 +345,220 @@ impl crate::context::ImageInfo {
         definitions.unwrap_or_default()
     }
 }
+
+#[path = "uncompressed_decode.rs"]
+mod decoder;
+pub use decoder::decode;
+
+fn unspecified(message: impl Into<String>) -> ContextError {
+    ContextError::invalid(0, &format!("Unspecified: {}", message.into()))
+}
+fn unsupported(message: impl Into<String>) -> ContextError {
+    ContextError::new(
+        4,
+        3002,
+        format!(
+            "Unsupported feature: Unsupported data version: {}",
+            message.into()
+        ),
+    )
+}
+impl Configuration {
+    pub(crate) fn load(
+        container: &crate::container::Container<'_>,
+        id: u32,
+    ) -> Result<(Self, Option<Vec<Definition>>)> {
+        let data = container
+            .property(id, *b"uncC")
+            .map_err(|_| unspecified("No 'uncC' box found."))?;
+        let mut config = Self::parse(data, None)?;
+        let mut defs = container
+            .property(id, *b"cmpd")
+            .ok()
+            .map(|p| definitions(p, 0))
+            .transpose()?;
+        config.expand(&mut defs);
+        Ok((config, defs))
+    }
+    fn header(&self, defs: Option<&[Definition]>, size: Option<(u32, u32)>) -> Result<()> {
+        let defs = defs.ok_or_else(|| {
+            unsupported("Missing required cmpd or uncC version 1 box for uncompressed codec")
+        })?;
+        for c in &self.components {
+            let d = defs
+                .get(c.index as usize)
+                .ok_or_else(|| unspecified("Invalid component index in uncC box"))?;
+            if d.kind > 7 && !matches!(d.kind, 11 | 12) {
+                return Err(unsupported(format!(
+                    "Uncompressed image with component_type {} is not implemented yet",
+                    d.kind
+                )));
+            }
+        }
+        if let Some((w, h)) = size {
+            if self.columns > w || self.rows > h {
+                return Err(unspecified("More tiles than pixels in uncC box"));
+            }
+            if w % self.columns != 0 || h % self.rows != 0 {
+                return Err(unspecified(
+                    "Invalid tile size (image size not a multiple of the tile size)",
+                ));
+            }
+        }
+        Ok(())
+    }
+    fn color(&self, defs: Option<&[Definition]>) -> Result<(i32, i32, bool)> {
+        self.header(defs, None)?;
+        if self.version == 1 {
+            return match &self.profile {
+                b"rgb3" => Ok((1, 3, false)),
+                b"rgba" | b"abgr" => Ok((1, 3, true)),
+                _ => Err(ContextError::new(
+                    4,
+                    3001,
+                    "Unsupported feature: Unsupported image type: unci image has unsupported profile",
+                )),
+            };
+        }
+        let defs = defs.unwrap();
+        let mut set = 0u32;
+        for c in &self.components {
+            let kind = defs[c.index as usize].kind;
+            if kind != 12 {
+                set |= 1 << kind;
+            }
+        }
+        let alpha = set & (1 << 7) != 0;
+        let color = match set & !(1 << 7) {
+            0x70 => (1, 3),
+            0x0e if !alpha => (
+                0,
+                match self.sampling {
+                    0 => 3,
+                    1 => 2,
+                    2 => 1,
+                    _ => 99,
+                },
+            ),
+            1 | 2 => (2, 0),
+            0x800 if !alpha => (4, 0),
+            _ => return Err(unsupported("Could not determine colourspace")),
+        };
+        Ok((color.0, color.1, alpha))
+    }
+    fn depth(&self, defs: Option<&[Definition]>, chroma: bool) -> i32 {
+        if chroma && self.version == 1 {
+            return 8;
+        }
+        let Some(defs) = defs else {
+            return -1;
+        };
+        let (mut primary, mut alternate) = (0, 0);
+        for c in &self.components {
+            let Some(d) = defs.get(c.index as usize) else {
+                return -1;
+            };
+            if (chroma && matches!(d.kind, 2 | 3)) || (!chroma && d.kind == 1) {
+                primary = primary.max(i32::from(c.bits));
+            }
+            if matches!(d.kind, 0 | 4 | 5 | 6 | 11) {
+                alternate = alternate.max(i32::from(c.bits));
+            }
+        }
+        if primary != 0 {
+            primary
+        } else if alternate != 0 {
+            alternate
+        } else {
+            8
+        }
+    }
+}
+pub(crate) fn initialize(
+    container: &crate::container::Container<'_>,
+    image: &mut crate::context::ImageInfo,
+) -> Result<()> {
+    let (config, defs) = Configuration::load(container, image.id)?;
+    let (cs, ch, alpha) = config.color(defs.as_deref()).unwrap_or((99, 99, false));
+    if let Some(defs) = &defs {
+        for c in &config.components {
+            let Some(d) = defs.get(c.index as usize) else {
+                continue;
+            };
+            let mut desc = crate::components::Description::reference(d.kind);
+            desc.datatype = i32::from(c.format);
+            desc.bit_depth = c.bits;
+            desc.has_data = true;
+            desc.width = if matches!(desc.channel, 1 | 2) && matches!(ch, 1 | 2) {
+                image.ispe.0.div_ceil(2)
+            } else {
+                image.ispe.0
+            };
+            desc.height = if matches!(desc.channel, 1 | 2) && ch == 1 {
+                image.ispe.1.div_ceil(2)
+            } else {
+                image.ispe.1
+            };
+            image.components.add(desc)?;
+        }
+    }
+    container
+        .property(image.id, *b"ispe")
+        .map_err(|_| unspecified("No 'ispe' box found for uncompressed image item."))?;
+    if let Some(c) = config.components.iter().find(|c| c.bits > 128) {
+        return Err(ContextError::new(
+            4,
+            4000,
+            format!(
+                "Unsupported feature: Unsupported bit depth: Uncompressed image with {} bits per component is not supported.",
+                c.bits
+            ),
+        ));
+    }
+    image.luma_bits = config.depth(defs.as_deref(), false);
+    image.chroma_bits = config.depth(defs.as_deref(), true);
+    image.has_alpha = alpha
+        || (config.version != 1
+            && config.header(defs.as_deref(), None).is_ok()
+            && defs.as_ref().is_some_and(|ds| {
+                config
+                    .components
+                    .iter()
+                    .any(|c| ds[c.index as usize].kind == 7)
+            }));
+    (image.colorspace, image.chroma) = if config.version == 1 {
+        (
+            1,
+            match &config.profile {
+                b"rgb3" => 10,
+                b"rgba" | b"abgr" => 11,
+                _ => 99,
+            },
+        )
+    } else {
+        (cs, ch)
+    };
+    if defs.is_none() {
+        image.description_error = Some(unspecified("Missing 'cmpd' box."));
+    }
+    Ok(())
+}
+
+impl crate::context::ImageInfo {
+    /// These version-one profiles leave the caller's preferred chroma untouched.
+    pub fn leaves_preferred_chroma_untouched(&self) -> bool {
+        if self.kind != *b"unci" {
+            return false;
+        }
+        let p = self
+            .retained_properties
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        p.iter()
+            .find(|p| p.kind == *b"uncC" && !p.raw)
+            .is_some_and(|p| {
+                p.data.first() == Some(&1)
+                    && !matches!(p.data.get(4..8), Some(b"rgb3" | b"rgba" | b"abgr"))
+            })
+    }
+}

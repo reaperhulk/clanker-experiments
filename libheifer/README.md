@@ -56,6 +56,7 @@ python tools/test_items.py --reference-build .build/reference
 python tools/test_add_metadata.py --reference-build .build/reference
 python tools/test_text.py --reference-build .build/reference
 python tools/test_uncompressed_config.py --reference-build .build/reference
+python tools/test_uncompressed_pixels.py --reference-build .build/reference
 python tools/test_handle_color.py --reference-build .build/reference
 python tools/test_image_area.py --reference-build .build/reference
 python tools/test_metadata_compression.py --reference-build .build/reference
@@ -144,3 +145,10 @@ output conversion. Multi-component codec paths and content-ID serialization rema
 
 JPEG header descriptions support SOF scanning across jpgC/item data; JPEG pixel
 decoding and complete dynamic read-limit recovery remain unfinished.
+
+Uncompressed image initialization and pixel decoding support the reference's
+component, pixel, mixed, row, tile-component, byte-aligned and block layouts.
+Independent C clients compare complete pixels, component IDs and types, byte order,
+alignment, malformed inputs, conversion and handle lifetimes. These paths require
+no optional codec feature. Generic compressed units, sensor file properties,
+partial-range resource accounting and uncompressed encoding remain open.

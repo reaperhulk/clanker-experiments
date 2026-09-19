@@ -15,6 +15,13 @@ import sys
 import tempfile
 
 MUTATIONS = [
+    ('unc_pixel_value', 'src/uncompressed_decode.rs', 'let bytes = value.to_ne_bytes();', 'let bytes = (value ^ 1).to_ne_bytes();', 'uncompressed_pixels'),
+    ('unc_row_alignment', 'src/uncompressed_decode.rs', 'bits.align(u64::from(align), start);', 'bits.align(0, start);', 'uncompressed_pixels'),
+    ('unc_block_padding', 'src/uncompressed_decode.rs', 'let v = (value >> shift) & ((1u64 << n) - 1);', 'let v = (value >> shift) & ((1u64 << n) - 2);', 'uncompressed_pixels'),
+    ('unc_component_format', 'src/uncompressed.rs', 'desc.datatype = i32::from(c.format);', 'desc.datatype = 0;', 'uncompressed_pixels'),
+    ('unc_preferred_chroma_output', 'crates/capi/src/context.rs', 'if !chroma.is_null() && !preserve_chroma {', 'if !chroma.is_null() { let _ = preserve_chroma;', 'uncompressed_pixels'),
+    ('subbyte_rgb_replication', 'src/conversion.rs', '((v as u32 * factor) >> 8) as i32', '((v as u32 * factor) >> 9) as i32', 'uncompressed_pixels'),
+
     ("filetype_enum", "src/brands.rs", "Supported = 1,", "Supported = 7,", "brands"),
     ("error_code", "src/error.rs", 'Self::new(5, 2001, c"NULL argument passed")', 'Self::new(2, 2001, c"NULL argument passed")', "brands"),
     ("brand_box_truncation", "src/box_probe.rs", "matches!(read_box(&mut r, 0), Err((Failure::End, _)))", "matches!(read_box(&mut r, 0), Err((Failure::Other, _)))", "brand_boxes"),

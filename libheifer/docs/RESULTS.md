@@ -531,3 +531,47 @@ Existing context (1,786), properties (960), security (2,927) and handle-componen
 Image-area commit c75ff63 passed all development CI steps, 58 mutation checks
 and Rust builds on Linux, macOS and Windows. Only the full-API completion gate
 failed; see docs/results/ci-area-report.json.
+
+
+## Uncompressed pixels and retained component descriptions
+
+All seven native decoder factory paths now have Rust implementations: byte-aligned
+components, packed components, block components, pixels, block pixels, mixed chroma,
+and rows (including tile-component ordering). Configuration validation, rejected
+layouts, integer/float/complex data, native-endian output, padding, stable component
+IDs and description queries are covered. RGB bit depths below eight use the
+reference's replication rule when converted to eight bits. Identity images expose
+coded RGBA alpha, and profiles which leave the preferred-chroma output untouched
+preserve that behavior.
+
+The independent original-header C client matches all 2,448 cases and 2,632
+successful decodes. This includes all 79 upstream uncompressed fixtures, every
+1–16-bit depth, 32/64/128-bit storage, both endian orders, component/pixel/row/tile
+alignment, block padding/reversal, all minimized profiles, malformed sizes and
+formats, color-conversion requests, derived items, and a second decode after
+context release. Complete visible channel and component bytes are compared;
+the transcript SHA-256 is
+`e67280ffd6a60243bbf2ba442f02b876a0a0b9720383846ecb193f835b3825c0`.
+Required success checks prevent a shared error path from passing as a decoder.
+
+The same corpus passes with C-client ASan/UBSan (local leak checking disabled)
+and with optional codecs disabled. The 1,786 context, 791 component-handle, 606
+derived-handle and 115 HEVC decode regression cases also pass. Rust tests with all
+features and no default features, original-header struct ABI checks, strict Clippy,
+and the pure-Rust dependency audit pass. Native libraries are only test oracles.
+
+This is finite coverage, not full libheif compatibility. Generic compressed image
+units, sensor file properties, exact partial-range memory accounting, allocation
+failure and concurrency coverage, uncompressed encoding, and additional codec
+families remain open. Existing functions stay partial; there are 279 implemented
+functions and 186 missing functions. No performance improvement is claimed.
+
+Configuration commit 08d75cc passed all development CI steps, 68 mutation checks
+and Rust builds on Linux, macOS and Windows. Handle-color commit b01cb84 likewise
+passed its development checks and 64 mutations. Both failed only the full-API
+completion gate; their job reports are retained in docs/results.
+
+Six additional mutation checks reject wrong pixel values (1,130 mismatches), row
+alignment (126), block extraction (134), component format (378), preferred-chroma
+output writes (52), and sub-byte RGB replication (44). The default mutation suite
+now contains 74 deliberate defects.
