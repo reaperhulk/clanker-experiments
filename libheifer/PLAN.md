@@ -115,7 +115,7 @@ The derived-image iteration adds grids/identity, cycle/MIAF checks, scoped tile
 workers and four warning/thread-control exports. Overlay composition, raw masks,
 shared-graph decode-operation budgets and dynamic derived queries follow in the next iteration. Six security-limit/allocation exports follow, including context-wide
 allocation accounting and object-specific resource lifetimes. Auxiliary/depth, item-property, six camera-matrix, twenty-two sensor-metadata and thirty-nine component APIs, generic items/compression, twelve TAI timestamp APIs, five metadata writers nine text-item APIs three image-area APIs thirteen handle color/aspect APIs and three component-definition queries bring the total to
-352 partial functions, with 113 functions missing. Compatibility work comes first;
+396 partial functions, with 69 functions missing. Compatibility work comes first;
 performance optimization is deferred until the complete compatibility gate passes.
 The full header contract, finite behavioral reports, known differences and
 performance evidence are retained in `compat/` and `docs/results/`.
@@ -179,3 +179,7 @@ sanitizer runs agree. Encoder/plugin parameter and registry work is next.
 ### Encoder parameter records checkpoint
 
 Five parameter-query APIs now pass a 2,020-case original-header corpus, including exact historical allocations, raw flags, signed counts, borrowed pointers, optional outputs and output aliasing. Normal, client ASan/UBSan and codec-free runs match; all five deliberate mutations are detected. Plugin public structures and nested parameter fields match original-header ABI layouts. Registry and encoder integration continue next. Full completion remains false: 357 partial functions and 108 missing.
+
+### Plugin registries and encoder facade checkpoint
+
+Thirty-nine APIs add registration, init/deinit, discovery and descriptor queries, encoder allocation/release, parameter validation and callback dispatch. A 224-case original-header corpus compares callback traces, historical record allocations, borrowed descriptors and context-sensitive errors. Normal, codec-free and client ASan/UBSan runs match; all twelve deliberate mutations are detected, as do context and parameter regressions. The implementation still needs registered-plugin image encode/decode integration, dynamic loading and file writing; discovery/configuration coverage alone does not establish those. The Rust HEVC decoder keeps its own implementation name. Current count: 396 partial APIs, 69 missing.

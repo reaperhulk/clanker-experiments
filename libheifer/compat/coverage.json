@@ -194,6 +194,33 @@
       "tools/test_derived_handles.py"
     ]
   },
+  "heif_context_get_encoder": {
+    "notes": "Independent original-header external-plugin callback traces: historical record prefixes, priority/filter/capacity behavior, registration multiplicity, init/deinit and reentrant discovery, allocation errors and cleanup, duplicate parameter validation, forwarding and generic conversion. Normal, codec-free and C sanitizer checks. Actual registered-plugin image encoding/decoding, dynamic loading, resource failures and cross-platform C execution remain open; HEVC discovery honestly identifies the Rust implementation.",
+    "status": "partial",
+    "tests": [
+      "tests/plugins.c",
+      "tools/test_plugins.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_context_get_encoder_descriptors": {
+    "notes": "Independent original-header external-plugin callback traces: historical record prefixes, priority/filter/capacity behavior, registration multiplicity, init/deinit and reentrant discovery, allocation errors and cleanup, duplicate parameter validation, forwarding and generic conversion. Normal, codec-free and C sanitizer checks. Actual registered-plugin image encoding/decoding, dynamic loading, resource failures and cross-platform C execution remain open; HEVC discovery honestly identifies the Rust implementation.",
+    "status": "partial",
+    "tests": [
+      "tests/plugins.c",
+      "tools/test_plugins.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_context_get_encoder_for_format": {
+    "notes": "Independent original-header external-plugin callback traces: historical record prefixes, priority/filter/capacity behavior, registration multiplicity, init/deinit and reentrant discovery, allocation errors and cleanup, duplicate parameter validation, forwarding and generic conversion. Normal, codec-free and C sanitizer checks. Actual registered-plugin image encoding/decoding, dynamic loading, resource failures and cross-platform C execution remain open; HEVC discovery honestly identifies the Rust implementation.",
+    "status": "partial",
+    "tests": [
+      "tests/plugins.c",
+      "tools/test_plugins.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
   "heif_context_get_entity_groups": {
     "notes": "Independent original-header entity group arrays, filters, exact order/IDs, empty-result pointer state, owned snapshot mutations, releases after context reload/free, malformed boxes, all version bytes and resource limits. Linux x86_64 C ABI, codec-free and C-client sanitizers exercised; cross-platform C calls, allocation-failure injection and writer integration remain open.",
     "status": "partial",
@@ -405,6 +432,24 @@
       "tools/test_uncompressed_units.py"
     ]
   },
+  "heif_decoder_descriptor_get_id_name": {
+    "notes": "Independent original-header external-plugin callback traces: historical record prefixes, priority/filter/capacity behavior, registration multiplicity, init/deinit and reentrant discovery, allocation errors and cleanup, duplicate parameter validation, forwarding and generic conversion. Normal, codec-free and C sanitizer checks. Actual registered-plugin image encoding/decoding, dynamic loading, resource failures and cross-platform C execution remain open; HEVC discovery honestly identifies the Rust implementation.",
+    "status": "partial",
+    "tests": [
+      "tests/plugins.c",
+      "tools/test_plugins.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_decoder_descriptor_get_name": {
+    "notes": "Independent original-header external-plugin callback traces: historical record prefixes, priority/filter/capacity behavior, registration multiplicity, init/deinit and reentrant discovery, allocation errors and cleanup, duplicate parameter validation, forwarding and generic conversion. Normal, codec-free and C sanitizer checks. Actual registered-plugin image encoding/decoding, dynamic loading, resource failures and cross-platform C execution remain open; HEVC discovery honestly identifies the Rust implementation.",
+    "status": "partial",
+    "tests": [
+      "tests/plugins.c",
+      "tools/test_plugins.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
   "heif_decoding_options_alloc": {
     "notes": "Linux x86_64: all 256x256 option-version pairs, defaults, old short allocations, null source, self-copy. Original-header C client ASan/UBSan; cross-platform ABI and allocation-failure injection pending.",
     "status": "partial",
@@ -432,12 +477,147 @@
       "crates/capi/tests/abi.rs"
     ]
   },
+  "heif_deinit": {
+    "notes": "Independent original-header external-plugin callback traces: historical record prefixes, priority/filter/capacity behavior, registration multiplicity, init/deinit and reentrant discovery, allocation errors and cleanup, duplicate parameter validation, forwarding and generic conversion. Normal, codec-free and C sanitizer checks. Actual registered-plugin image encoding/decoding, dynamic loading, resource failures and cross-platform C execution remain open; HEVC discovery honestly identifies the Rust implementation.",
+    "status": "partial",
+    "tests": [
+      "tests/plugins.c",
+      "tools/test_plugins.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
   "heif_depth_representation_info_free": {
     "notes": "512 original-header file transcripts including filters, flags, type ownership, depth SEI values, partial reloads and aliases. Finite Linux x86_64 evidence; broader platform and malformed-file coverage remains open.",
     "status": "partial",
     "tests": [
       "tests/auxiliary.c",
       "tools/test_auxiliary.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_encoder_descriptor_get_compression_format": {
+    "notes": "Independent original-header external-plugin callback traces: historical record prefixes, priority/filter/capacity behavior, registration multiplicity, init/deinit and reentrant discovery, allocation errors and cleanup, duplicate parameter validation, forwarding and generic conversion. Normal, codec-free and C sanitizer checks. Actual registered-plugin image encoding/decoding, dynamic loading, resource failures and cross-platform C execution remain open; HEVC discovery honestly identifies the Rust implementation.",
+    "status": "partial",
+    "tests": [
+      "tests/plugins.c",
+      "tools/test_plugins.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_encoder_descriptor_get_id_name": {
+    "notes": "Independent original-header external-plugin callback traces: historical record prefixes, priority/filter/capacity behavior, registration multiplicity, init/deinit and reentrant discovery, allocation errors and cleanup, duplicate parameter validation, forwarding and generic conversion. Normal, codec-free and C sanitizer checks. Actual registered-plugin image encoding/decoding, dynamic loading, resource failures and cross-platform C execution remain open; HEVC discovery honestly identifies the Rust implementation.",
+    "status": "partial",
+    "tests": [
+      "tests/plugins.c",
+      "tools/test_plugins.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_encoder_descriptor_get_name": {
+    "notes": "Independent original-header external-plugin callback traces: historical record prefixes, priority/filter/capacity behavior, registration multiplicity, init/deinit and reentrant discovery, allocation errors and cleanup, duplicate parameter validation, forwarding and generic conversion. Normal, codec-free and C sanitizer checks. Actual registered-plugin image encoding/decoding, dynamic loading, resource failures and cross-platform C execution remain open; HEVC discovery honestly identifies the Rust implementation.",
+    "status": "partial",
+    "tests": [
+      "tests/plugins.c",
+      "tools/test_plugins.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_encoder_descriptor_supportes_lossless_compression": {
+    "notes": "Independent original-header external-plugin callback traces: historical record prefixes, priority/filter/capacity behavior, registration multiplicity, init/deinit and reentrant discovery, allocation errors and cleanup, duplicate parameter validation, forwarding and generic conversion. Normal, codec-free and C sanitizer checks. Actual registered-plugin image encoding/decoding, dynamic loading, resource failures and cross-platform C execution remain open; HEVC discovery honestly identifies the Rust implementation.",
+    "status": "partial",
+    "tests": [
+      "tests/plugins.c",
+      "tools/test_plugins.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_encoder_descriptor_supportes_lossy_compression": {
+    "notes": "Independent original-header external-plugin callback traces: historical record prefixes, priority/filter/capacity behavior, registration multiplicity, init/deinit and reentrant discovery, allocation errors and cleanup, duplicate parameter validation, forwarding and generic conversion. Normal, codec-free and C sanitizer checks. Actual registered-plugin image encoding/decoding, dynamic loading, resource failures and cross-platform C execution remain open; HEVC discovery honestly identifies the Rust implementation.",
+    "status": "partial",
+    "tests": [
+      "tests/plugins.c",
+      "tools/test_plugins.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_encoder_descriptor_supports_lossless_compression": {
+    "notes": "Independent original-header external-plugin callback traces: historical record prefixes, priority/filter/capacity behavior, registration multiplicity, init/deinit and reentrant discovery, allocation errors and cleanup, duplicate parameter validation, forwarding and generic conversion. Normal, codec-free and C sanitizer checks. Actual registered-plugin image encoding/decoding, dynamic loading, resource failures and cross-platform C execution remain open; HEVC discovery honestly identifies the Rust implementation.",
+    "status": "partial",
+    "tests": [
+      "tests/plugins.c",
+      "tools/test_plugins.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_encoder_descriptor_supports_lossy_compression": {
+    "notes": "Independent original-header external-plugin callback traces: historical record prefixes, priority/filter/capacity behavior, registration multiplicity, init/deinit and reentrant discovery, allocation errors and cleanup, duplicate parameter validation, forwarding and generic conversion. Normal, codec-free and C sanitizer checks. Actual registered-plugin image encoding/decoding, dynamic loading, resource failures and cross-platform C execution remain open; HEVC discovery honestly identifies the Rust implementation.",
+    "status": "partial",
+    "tests": [
+      "tests/plugins.c",
+      "tools/test_plugins.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_encoder_get_name": {
+    "notes": "Independent original-header external-plugin callback traces: historical record prefixes, priority/filter/capacity behavior, registration multiplicity, init/deinit and reentrant discovery, allocation errors and cleanup, duplicate parameter validation, forwarding and generic conversion. Normal, codec-free and C sanitizer checks. Actual registered-plugin image encoding/decoding, dynamic loading, resource failures and cross-platform C execution remain open; HEVC discovery honestly identifies the Rust implementation.",
+    "status": "partial",
+    "tests": [
+      "tests/plugins.c",
+      "tools/test_plugins.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_encoder_get_parameter": {
+    "notes": "Independent original-header external-plugin callback traces: historical record prefixes, priority/filter/capacity behavior, registration multiplicity, init/deinit and reentrant discovery, allocation errors and cleanup, duplicate parameter validation, forwarding and generic conversion. Normal, codec-free and C sanitizer checks. Actual registered-plugin image encoding/decoding, dynamic loading, resource failures and cross-platform C execution remain open; HEVC discovery honestly identifies the Rust implementation.",
+    "status": "partial",
+    "tests": [
+      "tests/plugins.c",
+      "tools/test_plugins.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_encoder_get_parameter_boolean": {
+    "notes": "Independent original-header external-plugin callback traces: historical record prefixes, priority/filter/capacity behavior, registration multiplicity, init/deinit and reentrant discovery, allocation errors and cleanup, duplicate parameter validation, forwarding and generic conversion. Normal, codec-free and C sanitizer checks. Actual registered-plugin image encoding/decoding, dynamic loading, resource failures and cross-platform C execution remain open; HEVC discovery honestly identifies the Rust implementation.",
+    "status": "partial",
+    "tests": [
+      "tests/plugins.c",
+      "tools/test_plugins.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_encoder_get_parameter_integer": {
+    "notes": "Independent original-header external-plugin callback traces: historical record prefixes, priority/filter/capacity behavior, registration multiplicity, init/deinit and reentrant discovery, allocation errors and cleanup, duplicate parameter validation, forwarding and generic conversion. Normal, codec-free and C sanitizer checks. Actual registered-plugin image encoding/decoding, dynamic loading, resource failures and cross-platform C execution remain open; HEVC discovery honestly identifies the Rust implementation.",
+    "status": "partial",
+    "tests": [
+      "tests/plugins.c",
+      "tools/test_plugins.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_encoder_get_parameter_string": {
+    "notes": "Independent original-header external-plugin callback traces: historical record prefixes, priority/filter/capacity behavior, registration multiplicity, init/deinit and reentrant discovery, allocation errors and cleanup, duplicate parameter validation, forwarding and generic conversion. Normal, codec-free and C sanitizer checks. Actual registered-plugin image encoding/decoding, dynamic loading, resource failures and cross-platform C execution remain open; HEVC discovery honestly identifies the Rust implementation.",
+    "status": "partial",
+    "tests": [
+      "tests/plugins.c",
+      "tools/test_plugins.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_encoder_has_default": {
+    "notes": "Independent original-header external-plugin callback traces: historical record prefixes, priority/filter/capacity behavior, registration multiplicity, init/deinit and reentrant discovery, allocation errors and cleanup, duplicate parameter validation, forwarding and generic conversion. Normal, codec-free and C sanitizer checks. Actual registered-plugin image encoding/decoding, dynamic loading, resource failures and cross-platform C execution remain open; HEVC discovery honestly identifies the Rust implementation.",
+    "status": "partial",
+    "tests": [
+      "tests/plugins.c",
+      "tools/test_plugins.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_encoder_list_parameters": {
+    "notes": "Independent original-header external-plugin callback traces: historical record prefixes, priority/filter/capacity behavior, registration multiplicity, init/deinit and reentrant discovery, allocation errors and cleanup, duplicate parameter validation, forwarding and generic conversion. Normal, codec-free and C sanitizer checks. Actual registered-plugin image encoding/decoding, dynamic loading, resource failures and cross-platform C execution remain open; HEVC discovery honestly identifies the Rust implementation.",
+    "status": "partial",
+    "tests": [
+      "tests/plugins.c",
+      "tools/test_plugins.py",
       "crates/capi/tests/abi.rs"
     ]
   },
@@ -483,6 +663,105 @@
     "tests": [
       "tests/encoder_parameters.c",
       "tools/test_encoder_parameters.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_encoder_parameter_integer_valid_range": {
+    "notes": "Independent original-header external-plugin callback traces: historical record prefixes, priority/filter/capacity behavior, registration multiplicity, init/deinit and reentrant discovery, allocation errors and cleanup, duplicate parameter validation, forwarding and generic conversion. Normal, codec-free and C sanitizer checks. Actual registered-plugin image encoding/decoding, dynamic loading, resource failures and cross-platform C execution remain open; HEVC discovery honestly identifies the Rust implementation.",
+    "status": "partial",
+    "tests": [
+      "tests/plugins.c",
+      "tools/test_plugins.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_encoder_parameter_integer_valid_values": {
+    "notes": "Independent original-header external-plugin callback traces: historical record prefixes, priority/filter/capacity behavior, registration multiplicity, init/deinit and reentrant discovery, allocation errors and cleanup, duplicate parameter validation, forwarding and generic conversion. Normal, codec-free and C sanitizer checks. Actual registered-plugin image encoding/decoding, dynamic loading, resource failures and cross-platform C execution remain open; HEVC discovery honestly identifies the Rust implementation.",
+    "status": "partial",
+    "tests": [
+      "tests/plugins.c",
+      "tools/test_plugins.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_encoder_parameter_string_valid_values": {
+    "notes": "Independent original-header external-plugin callback traces: historical record prefixes, priority/filter/capacity behavior, registration multiplicity, init/deinit and reentrant discovery, allocation errors and cleanup, duplicate parameter validation, forwarding and generic conversion. Normal, codec-free and C sanitizer checks. Actual registered-plugin image encoding/decoding, dynamic loading, resource failures and cross-platform C execution remain open; HEVC discovery honestly identifies the Rust implementation.",
+    "status": "partial",
+    "tests": [
+      "tests/plugins.c",
+      "tools/test_plugins.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_encoder_release": {
+    "notes": "Independent original-header external-plugin callback traces: historical record prefixes, priority/filter/capacity behavior, registration multiplicity, init/deinit and reentrant discovery, allocation errors and cleanup, duplicate parameter validation, forwarding and generic conversion. Normal, codec-free and C sanitizer checks. Actual registered-plugin image encoding/decoding, dynamic loading, resource failures and cross-platform C execution remain open; HEVC discovery honestly identifies the Rust implementation.",
+    "status": "partial",
+    "tests": [
+      "tests/plugins.c",
+      "tools/test_plugins.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_encoder_set_logging_level": {
+    "notes": "Independent original-header external-plugin callback traces: historical record prefixes, priority/filter/capacity behavior, registration multiplicity, init/deinit and reentrant discovery, allocation errors and cleanup, duplicate parameter validation, forwarding and generic conversion. Normal, codec-free and C sanitizer checks. Actual registered-plugin image encoding/decoding, dynamic loading, resource failures and cross-platform C execution remain open; HEVC discovery honestly identifies the Rust implementation.",
+    "status": "partial",
+    "tests": [
+      "tests/plugins.c",
+      "tools/test_plugins.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_encoder_set_lossless": {
+    "notes": "Independent original-header external-plugin callback traces: historical record prefixes, priority/filter/capacity behavior, registration multiplicity, init/deinit and reentrant discovery, allocation errors and cleanup, duplicate parameter validation, forwarding and generic conversion. Normal, codec-free and C sanitizer checks. Actual registered-plugin image encoding/decoding, dynamic loading, resource failures and cross-platform C execution remain open; HEVC discovery honestly identifies the Rust implementation.",
+    "status": "partial",
+    "tests": [
+      "tests/plugins.c",
+      "tools/test_plugins.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_encoder_set_lossy_quality": {
+    "notes": "Independent original-header external-plugin callback traces: historical record prefixes, priority/filter/capacity behavior, registration multiplicity, init/deinit and reentrant discovery, allocation errors and cleanup, duplicate parameter validation, forwarding and generic conversion. Normal, codec-free and C sanitizer checks. Actual registered-plugin image encoding/decoding, dynamic loading, resource failures and cross-platform C execution remain open; HEVC discovery honestly identifies the Rust implementation.",
+    "status": "partial",
+    "tests": [
+      "tests/plugins.c",
+      "tools/test_plugins.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_encoder_set_parameter": {
+    "notes": "Independent original-header external-plugin callback traces: historical record prefixes, priority/filter/capacity behavior, registration multiplicity, init/deinit and reentrant discovery, allocation errors and cleanup, duplicate parameter validation, forwarding and generic conversion. Normal, codec-free and C sanitizer checks. Actual registered-plugin image encoding/decoding, dynamic loading, resource failures and cross-platform C execution remain open; HEVC discovery honestly identifies the Rust implementation.",
+    "status": "partial",
+    "tests": [
+      "tests/plugins.c",
+      "tools/test_plugins.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_encoder_set_parameter_boolean": {
+    "notes": "Independent original-header external-plugin callback traces: historical record prefixes, priority/filter/capacity behavior, registration multiplicity, init/deinit and reentrant discovery, allocation errors and cleanup, duplicate parameter validation, forwarding and generic conversion. Normal, codec-free and C sanitizer checks. Actual registered-plugin image encoding/decoding, dynamic loading, resource failures and cross-platform C execution remain open; HEVC discovery honestly identifies the Rust implementation.",
+    "status": "partial",
+    "tests": [
+      "tests/plugins.c",
+      "tools/test_plugins.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_encoder_set_parameter_integer": {
+    "notes": "Independent original-header external-plugin callback traces: historical record prefixes, priority/filter/capacity behavior, registration multiplicity, init/deinit and reentrant discovery, allocation errors and cleanup, duplicate parameter validation, forwarding and generic conversion. Normal, codec-free and C sanitizer checks. Actual registered-plugin image encoding/decoding, dynamic loading, resource failures and cross-platform C execution remain open; HEVC discovery honestly identifies the Rust implementation.",
+    "status": "partial",
+    "tests": [
+      "tests/plugins.c",
+      "tools/test_plugins.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_encoder_set_parameter_string": {
+    "notes": "Independent original-header external-plugin callback traces: historical record prefixes, priority/filter/capacity behavior, registration multiplicity, init/deinit and reentrant discovery, allocation errors and cleanup, duplicate parameter validation, forwarding and generic conversion. Normal, codec-free and C sanitizer checks. Actual registered-plugin image encoding/decoding, dynamic loading, resource failures and cross-platform C execution remain open; HEVC discovery honestly identifies the Rust implementation.",
+    "status": "partial",
+    "tests": [
+      "tests/plugins.c",
+      "tools/test_plugins.py",
       "crates/capi/tests/abi.rs"
     ]
   },
@@ -545,6 +824,15 @@
       "tools/test_brands.py"
     ]
   },
+  "heif_get_decoder_descriptors": {
+    "notes": "Independent original-header external-plugin callback traces: historical record prefixes, priority/filter/capacity behavior, registration multiplicity, init/deinit and reentrant discovery, allocation errors and cleanup, duplicate parameter validation, forwarding and generic conversion. Normal, codec-free and C sanitizer checks. Actual registered-plugin image encoding/decoding, dynamic loading, resource failures and cross-platform C execution remain open; HEVC discovery honestly identifies the Rust implementation.",
+    "status": "partial",
+    "tests": [
+      "tests/plugins.c",
+      "tools/test_plugins.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
   "heif_get_disabled_security_limits": {
     "notes": "Original-header version/prefix, aliasing, mutation, allocation/total-budget, parent-context, image-release and decoder-cache/reload comparisons. Implemented parsing and decode budgets cover existing image families; limits for remaining formats and complete hostile-input allocation safety remain open.",
     "status": "partial",
@@ -553,6 +841,15 @@
       "tools/test_security.py",
       "tests/security_lifetimes.c",
       "tools/test_security_lifetimes.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_get_encoder_descriptors": {
+    "notes": "Independent original-header external-plugin callback traces: historical record prefixes, priority/filter/capacity behavior, registration multiplicity, init/deinit and reentrant discovery, allocation errors and cleanup, duplicate parameter validation, forwarding and generic conversion. Normal, codec-free and C sanitizer checks. Actual registered-plugin image encoding/decoding, dynamic loading, resource failures and cross-platform C execution remain open; HEVC discovery honestly identifies the Rust implementation.",
+    "status": "partial",
+    "tests": [
+      "tests/plugins.c",
+      "tools/test_plugins.py",
       "crates/capi/tests/abi.rs"
     ]
   },
@@ -630,6 +927,24 @@
     "tests": [
       "tests/brands.c",
       "tools/test_brands.py"
+    ]
+  },
+  "heif_have_decoder_for_format": {
+    "notes": "Independent original-header external-plugin callback traces: historical record prefixes, priority/filter/capacity behavior, registration multiplicity, init/deinit and reentrant discovery, allocation errors and cleanup, duplicate parameter validation, forwarding and generic conversion. Normal, codec-free and C sanitizer checks. Actual registered-plugin image encoding/decoding, dynamic loading, resource failures and cross-platform C execution remain open; HEVC discovery honestly identifies the Rust implementation.",
+    "status": "partial",
+    "tests": [
+      "tests/plugins.c",
+      "tools/test_plugins.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_have_encoder_for_format": {
+    "notes": "Independent original-header external-plugin callback traces: historical record prefixes, priority/filter/capacity behavior, registration multiplicity, init/deinit and reentrant discovery, allocation errors and cleanup, duplicate parameter validation, forwarding and generic conversion. Normal, codec-free and C sanitizer checks. Actual registered-plugin image encoding/decoding, dynamic loading, resource failures and cross-platform C execution remain open; HEVC discovery honestly identifies the Rust implementation.",
+    "status": "partial",
+    "tests": [
+      "tests/plugins.c",
+      "tools/test_plugins.py",
+      "crates/capi/tests/abi.rs"
     ]
   },
   "heif_image_add_bayer_component": {
@@ -2287,6 +2602,15 @@
       "crates/capi/tests/abi.rs"
     ]
   },
+  "heif_init": {
+    "notes": "Independent original-header external-plugin callback traces: historical record prefixes, priority/filter/capacity behavior, registration multiplicity, init/deinit and reentrant discovery, allocation errors and cleanup, duplicate parameter validation, forwarding and generic conversion. Normal, codec-free and C sanitizer checks. Actual registered-plugin image encoding/decoding, dynamic loading, resource failures and cross-platform C execution remain open; HEVC discovery honestly identifies the Rust implementation.",
+    "status": "partial",
+    "tests": [
+      "tests/plugins.c",
+      "tools/test_plugins.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
   "heif_item_add_property_user_description": {
     "notes": "Linux x86_64 original-header differential queries/insertion, item-local IDs, raw/UUID ownership, descriptions, transforms, partial read state and malformed associations. Insertion after file reads matches the pinned restriction. Other box classes, writers, allocation failures and cross-platform ABI remain open.",
     "status": "partial",
@@ -3015,6 +3339,33 @@
     "tests": [
       "tests/regions.c",
       "tools/test_regions.py"
+    ]
+  },
+  "heif_register_decoder": {
+    "notes": "Independent original-header external-plugin callback traces: historical record prefixes, priority/filter/capacity behavior, registration multiplicity, init/deinit and reentrant discovery, allocation errors and cleanup, duplicate parameter validation, forwarding and generic conversion. Normal, codec-free and C sanitizer checks. Actual registered-plugin image encoding/decoding, dynamic loading, resource failures and cross-platform C execution remain open; HEVC discovery honestly identifies the Rust implementation.",
+    "status": "partial",
+    "tests": [
+      "tests/plugins.c",
+      "tools/test_plugins.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_register_decoder_plugin": {
+    "notes": "Independent original-header external-plugin callback traces: historical record prefixes, priority/filter/capacity behavior, registration multiplicity, init/deinit and reentrant discovery, allocation errors and cleanup, duplicate parameter validation, forwarding and generic conversion. Normal, codec-free and C sanitizer checks. Actual registered-plugin image encoding/decoding, dynamic loading, resource failures and cross-platform C execution remain open; HEVC discovery honestly identifies the Rust implementation.",
+    "status": "partial",
+    "tests": [
+      "tests/plugins.c",
+      "tools/test_plugins.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_register_encoder_plugin": {
+    "notes": "Independent original-header external-plugin callback traces: historical record prefixes, priority/filter/capacity behavior, registration multiplicity, init/deinit and reentrant discovery, allocation errors and cleanup, duplicate parameter validation, forwarding and generic conversion. Normal, codec-free and C sanitizer checks. Actual registered-plugin image encoding/decoding, dynamic loading, resource failures and cross-platform C execution remain open; HEVC discovery honestly identifies the Rust implementation.",
+    "status": "partial",
+    "tests": [
+      "tests/plugins.c",
+      "tools/test_plugins.py",
+      "crates/capi/tests/abi.rs"
     ]
   },
   "heif_release_item_data": {

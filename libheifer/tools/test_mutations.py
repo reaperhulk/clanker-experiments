@@ -15,6 +15,19 @@ import sys
 import tempfile
 
 MUTATIONS = [
+    ('plugin_encoder_priority', 'crates/capi/src/plugin_registry.rs', 'Self::External(p) => field!(p, priority)', 'Self::External(p) => -field!(p, priority)', 'plugins'),
+    ('plugin_decoder_negative_priority', 'crates/capi/src/plugin_registry.rs', 'if priority != 0 {', 'if priority > 0 {', 'plugins'),
+    ('plugin_decoder_duplicate', 'crates/capi/src/plugin_registry.rs', 'if !r\n        .decoders', 'if true || !r\n        .decoders', 'plugins'),
+    ('plugin_cleanup_order', 'crates/capi/src/plugin_registry.rs', '    REGISTRY.lock().unwrap().decoders.clear();', '    // deliberate: leave decoders until after encoder cleanup', 'plugins'),
+    ('plugin_decoder_count', 'crates/capi/src/plugin_registry.rs', 'let n = count.min(found.len() as c_int);', 'let n = count.max(0).min(found.len() as c_int);', 'plugins'),
+    ('encoder_duplicate_constraints', 'crates/capi/src/encoder.rs', 'for p in unsafe { matching(e, name) } {', 'for p in unsafe { matching(e, name) }.take(1) {', 'plugins'),
+    ('encoder_range_boundary', 'crates/capi/src/encoder.rs', 'value < min', 'value <= min', 'plugins'),
+    ('encoder_allowed_values', 'crates/capi/src/encoder.rs', 'if count > 0', 'if count > 100', 'plugins'),
+    ('encoder_boolean_spelling', 'crates/capi/src/encoder.rs', 'b"true" | b"1"', 'b"true" | b"1" | b"TRUE"', 'plugins'),
+    ('encoder_old_default', 'crates/capi/src/encoder.rs', 'if field!(p, version) < 2 {\n            1', 'if field!(p, version) < 2 {\n            0', 'plugins'),
+    ('encoder_output_terminator', 'crates/capi/src/encoder.rs', 'out.add(n).write(0)', 'out.add(n).write(32)', 'plugins'),
+    ('encoder_unknown_fallback', 'crates/capi/src/encoder.rs', 'unsafe { heif_encoder_set_parameter_string(e, name, value) }\n    }\n}', 'unsupported()\n    }\n}', 'plugins'),
+
     ('parameter_raw_range_flag', 'crates/capi/src/encoder_parameters.rs', 'have.write(have_range.into())', 'have.write(i32::from(have_range != 0))', 'encoder_parameters'),
     ('parameter_empty_array', 'crates/capi/src/encoder_parameters.rs', 'if num_values > 0 && !array.is_null()', 'if num_values >= 0 && !array.is_null()', 'encoder_parameters'),
     ('parameter_signed_count', 'crates/capi/src/encoder_parameters.rs', 'count.write(num_values)', 'count.write(num_values.max(0))', 'encoder_parameters'),

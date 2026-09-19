@@ -119,6 +119,7 @@ impl Input for BorrowedInput {
 }
 #[unsafe(no_mangle)]
 pub extern "C" fn heif_context_alloc() -> *mut HeifContext {
+    super::plugin_registry::ensure_initialized();
     let shared = Arc::new(SharedContext::default());
     super::security::register(&shared);
     super::color::allocate(HeifContext { shared })
