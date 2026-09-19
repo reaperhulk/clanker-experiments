@@ -17,6 +17,7 @@ mod camera;
 mod color;
 mod components;
 mod context;
+mod debug;
 mod decoding;
 mod dynamic_plugins;
 mod encoder;

@@ -58,3 +58,5 @@ pub mod tile_encoding;
 pub mod tiling;
 
 pub mod sequences;
+
+pub mod debug;

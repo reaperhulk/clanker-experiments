@@ -15,6 +15,12 @@ import sys
 import tempfile
 
 MUTATIONS = [
+    ('debug_size_label', 'src/debug.rs', '(header size: {header_size})', '(header size: 0)', 'debug_dump'),
+    ('debug_hidden_flag', 'src/debug.rs', '"{indent}hidden item: {}", flags & 1 != 0', '"{indent}hidden item: {}", flags & 1 == 0', 'debug_dump'),
+    ('debug_nclc_range', 'src/debug.rs', 'u64::from(matrix == 0)', 'u64::from(matrix != 0)', 'debug_dump'),
+    ('debug_short_write', 'crates/capi/src/debug.rs', 'write(fd, dump.as_ptr().cast(), dump.len());', 'write(fd, dump.as_ptr().cast(), dump.len().saturating_sub(1));', 'debug_dump'),
+    ('debug_property_index', 'src/debug.rs', 'let _ = writeln!(out, "{indent}index: {index}");', 'let _ = writeln!(out, "{indent}index: {}", index + 1);', 'debug_dump'),
+
     ('reader_initial_range', 'src/input.rs', 'let mut available = source.request_range(0, 1024);', 'let mut available = source.request_range(0, 31);', 'reader_input'),
     ('reader_message_release', 'crates/capi/src/input.rs', 'unsafe { release(result.reader_error_msg) };', 'let _ = release;', 'reader_input'),
     ('reader_payload_origin', 'crates/capi/src/input.rs', '        Ok(Cow::Owned(data))\n    }\n    fn read_range', '        if let Some(first) = data.first_mut() { *first ^= 1; }\n        Ok(Cow::Owned(data))\n    }\n    fn read_range', 'reader_input'),

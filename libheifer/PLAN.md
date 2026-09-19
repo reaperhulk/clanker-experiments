@@ -115,7 +115,7 @@ The derived-image iteration adds grids/identity, cycle/MIAF checks, scoped tile
 workers and four warning/thread-control exports. Overlay composition, raw masks,
 shared-graph decode-operation budgets and dynamic derived queries follow in the next iteration. Six security-limit/allocation exports follow, including context-wide
 allocation accounting and object-specific resource lifetimes. Auxiliary/depth, item-property, six camera-matrix, twenty-two sensor-metadata and thirty-nine component APIs, generic items/compression, twelve TAI timestamp APIs, five metadata writers nine text-item APIs three image-area APIs thirteen handle color/aspect APIs and three component-definition queries bring the total to
-464 partial functions, with 1 function missing. Compatibility work comes first;
+465 partial functions, with no functions missing. Compatibility work comes first;
 performance optimization is deferred until the complete compatibility gate passes.
 The full header contract, finite behavioral reports, known differences and
 performance evidence are retained in `compat/` and `docs/results/`.
@@ -259,3 +259,29 @@ local sanitizer reports explicitly disable it. CI keeps leak checking enabled.
 Current function coverage: 464 partial, one missing (debug dump). Full behavior,
 remaining codecs, ABI/platform and all acceptance requirements remain open.
 Symbol presence is not full compatibility; the strict gate remains unchanged.
+
+
+### Debug dump export and complete symbol inventory
+
+All 465 public functions and the exported error constant now have Rust symbols.
+Every function remains partial: this is an inventory milestone, not the full
+compatibility gate. The strict gate still fails with zero missing/unexpected
+symbols and all behavioral/platform completion requirements retained.
+
+Debug dumping now emits exact original-header diagnostics for fundamental BMFF
+boxes, HEVC configuration, item locations/references, inline data, color/geometry
+properties and optional-property parse errors. The 901-case corpus exercises
+memory and file inputs, fresh and failed contexts, repeated dumps, invalid/null
+calls and borrowed file-descriptor ownership. Normal, client ASan/UBSan and
+codec-free comparisons pass. All five semantic mutations are detected (452,
+452, 5, 901 and 452 transcript differences); default mutation inventory: 196.
+Context (1,786), reader (4,712) and file-input (929) regressions pass. Original
+header inventory, dependency audit, Rust/ABI tests and Clippy pass. Reports with
+client/corpus/binary hashes are in `docs/results/debug-*.json`.
+
+Owned writer models, sequence and richer-property dumps, derived-item payload
+descriptions, deep nesting and platform C execution remain open for this export.
+Reader CI at d76f48b has passed all platform Rust builds and new reader checks
+including leak detection; its complete mutation run is tracked separately.
+Compatibility implementation continues through these gaps and the remaining
+codecs, callback/resource behavior, platform ABI and downstream acceptance gates.

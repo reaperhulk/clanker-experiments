@@ -1,0 +1,61 @@
+{
+  "scope": "5 deliberate defects; not comprehensive mutation coverage",
+  "mutations": [
+    {
+      "mutation": "debug_size_label",
+      "suite": "debug_dump",
+      "source": "src/debug.rs",
+      "before": "(header size: {header_size})",
+      "after": "(header size: 0)",
+      "candidate_sha256": "e98282c9019480c3d555a3954f8938b94e1db9477ffd90a05f2aedca161d0a87",
+      "mismatches": 452,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "debug_hidden_flag",
+      "suite": "debug_dump",
+      "source": "src/debug.rs",
+      "before": "\"{indent}hidden item: {}\", flags & 1 != 0",
+      "after": "\"{indent}hidden item: {}\", flags & 1 == 0",
+      "candidate_sha256": "a3f8d9f57225e3781143b75fdad655c4da7c7523c846cd032430c14512d4df10",
+      "mismatches": 452,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "debug_nclc_range",
+      "suite": "debug_dump",
+      "source": "src/debug.rs",
+      "before": "u64::from(matrix == 0)",
+      "after": "u64::from(matrix != 0)",
+      "candidate_sha256": "8fa87798825f92646acc9c66439d37c41debfb4fff448d3de78e28b1ad09bfa1",
+      "mismatches": 5,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "debug_short_write",
+      "suite": "debug_dump",
+      "source": "crates/capi/src/debug.rs",
+      "before": "write(fd, dump.as_ptr().cast(), dump.len());",
+      "after": "write(fd, dump.as_ptr().cast(), dump.len().saturating_sub(1));",
+      "candidate_sha256": "5ec4e7883a689a5629cd32cf5d520468edf238c0d013aeaa5dd417d1af92fb96",
+      "mismatches": 901,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "debug_property_index",
+      "suite": "debug_dump",
+      "source": "src/debug.rs",
+      "before": "let _ = writeln!(out, \"{indent}index: {index}\");",
+      "after": "let _ = writeln!(out, \"{indent}index: {}\", index + 1);",
+      "candidate_sha256": "a693e81ce640e41edc040e3adce094d787ccca9bcb310c24ec70d7e6861a7b75",
+      "mismatches": 452,
+      "process_failures": [],
+      "detected": true
+    }
+  ],
+  "all_detected": true
+}

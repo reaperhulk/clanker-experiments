@@ -344,6 +344,7 @@ fn metadata<'a>(
     properties: Option<&mut crate::properties::PropertyStore>,
     mut items: Option<&mut crate::items::ItemStore>,
     entity_groups: Option<&mut Option<crate::entity_groups::EntityGroups>>,
+    mut debug_loaded: Option<&mut u8>,
 ) -> Result<&'a [u8]> {
     if data.len() < 32 {
         return Err(ContextError::invalid(
@@ -455,6 +456,9 @@ fn metadata<'a>(
             .ok_or_else(ContextError::truncated)?;
     }
     if !supported {
+        if let Some(stage) = debug_loaded.as_deref_mut() {
+            *stage = 1;
+        }
         return Err(ContextError::new(
             3,
             0,
@@ -462,6 +466,9 @@ fn metadata<'a>(
         ));
     }
     let Some(meta) = found else {
+        if let Some(stage) = debug_loaded {
+            *stage = 2;
+        }
         return Ok(&[0; 4]);
     };
     if meta.len() < 4 {
@@ -498,6 +505,9 @@ fn metadata<'a>(
             }
             parsed.has_ipma = true;
         }
+    }
+    if let Some(stage) = debug_loaded {
+        *stage = 2;
     }
     required(&boxes, *b"iinf", 111)?;
     if let Some(items) = items.as_deref_mut() {
@@ -735,7 +745,14 @@ impl Document {
         }
         let mut container = Container::parse_meta_with_limits(
             self.input.bytes(),
-            metadata(self.input.bytes(), &self.read_limits, None, None, None)?,
+            metadata(
+                self.input.bytes(),
+                &self.read_limits,
+                None,
+                None,
+                None,
+                None,
+            )?,
             self.read_limits,
         )?;
         container.input = Some(self.input.as_ref());
@@ -1336,6 +1353,7 @@ pub struct Context {
     pub max_decoding_threads: i32,
     pub document: Option<Arc<Document>>,
     pub last_error: CString,
+    pub(crate) debug_loaded: u8,
 }
 impl Default for Context {
     fn default() -> Self {
@@ -1358,6 +1376,7 @@ impl Default for Context {
             budget: Arc::new(crate::security::Budget::new(limits.clone())),
             document: None,
             last_error: CString::default(),
+            debug_loaded: 0,
             limits,
             max_decoding_threads: 4,
         }
@@ -1365,6 +1384,7 @@ impl Default for Context {
 }
 impl Context {
     pub fn read(&mut self, input: Arc<dyn Input>) -> Result<()> {
+        self.debug_loaded = 0;
         self.sequences.timescale = 0;
         self.sequences.duration = 0;
         self.sequences.initialized = false;
@@ -1386,6 +1406,7 @@ impl Context {
             Some(&mut self.properties),
             Some(&mut self.items),
             Some(&mut self.entity_groups),
+            Some(&mut self.debug_loaded),
         )?;
         self.read_sequences(input.clone())?;
         if !has_images(&children(&meta[4..])?) {
