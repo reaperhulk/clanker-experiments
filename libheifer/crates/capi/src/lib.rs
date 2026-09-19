@@ -236,3 +236,6 @@ mod encoding_options;
 pub use encoding_options::{EncodingOptions, SequenceEncodingOptions, UnciParameters};
 
 mod regions;
+
+mod entity_groups;
+pub use entity_groups::EntityGroup;

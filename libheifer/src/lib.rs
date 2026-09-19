@@ -43,3 +43,5 @@ pub mod sequence_sample;
 pub mod omaf;
 
 pub mod regions;
+
+pub mod entity_groups;

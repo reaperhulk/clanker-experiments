@@ -716,3 +716,25 @@ context writer and must be validated when that path is implemented.
 All eight region mutations were detected as transcript mismatches, without
 counting compiler failures or crashes as detection. The default mutation suite
 now contains 103 defects.
+
+## Entity groups (2026-09-19)
+
+Both entity-group APIs now implement filtered snapshots with independently owned
+member arrays, exact group/member order, and stable lifetime after reload/free.
+The 1,196-case original-header corpus exercises every declared group kind, all
+version bytes for the three supported native classes, short full-box/scalar data,
+all payload prefixes, count overflow, security limits, duplicate group boxes,
+unknown children, empty results, caller mutation and disposal. Native parsing
+ignores failed pyramid groups while treating alternative/stereo failures as fatal;
+that distinction is retained. Unknown-only/filtered-out results preserve the
+native allocated-empty versus absent/empty-group-list null distinction.
+
+Normal, codec-free and ASan/UBSan C-client runs have zero mismatches; the same local
+LeakSanitizer limitation applies. Public sizeof/alignof/offsetof checks pass. Five
+semantic mutants are detected through transcript differences, bringing the default
+mutation set to 108. The existing context corpus remains covered separately.
+Reports and exact client/corpus/library hashes are in
+`docs/results/entity-groups-*.json`. There are now 347 partial functions and 118
+missing; the strict completion gate remains unsatisfied. Writer round trips,
+allocation failures, whole-library instrumentation and cross-platform C behavior
+are not established by this corpus.

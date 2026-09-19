@@ -194,6 +194,15 @@
       "tools/test_derived_handles.py"
     ]
   },
+  "heif_context_get_entity_groups": {
+    "notes": "Independent original-header entity group arrays, filters, exact order/IDs, empty-result pointer state, owned snapshot mutations, releases after context reload/free, malformed boxes, all version bytes and resource limits. Linux x86_64 C ABI, codec-free and C-client sanitizers exercised; cross-platform C calls, allocation-failure injection and writer integration remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/entity_groups.c",
+      "tools/test_entity_groups.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
   "heif_context_get_image_handle": {
     "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open. Derived and mask handle queries also cover cyclic/missing references and partial reloads.",
     "status": "partial",
@@ -456,6 +465,15 @@
     "tests": [
       "tests/encoding_options.c",
       "tools/test_encoding_options.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_entity_groups_release": {
+    "notes": "Independent original-header entity group arrays, filters, exact order/IDs, empty-result pointer state, owned snapshot mutations, releases after context reload/free, malformed boxes, all version bytes and resource limits. Linux x86_64 C ABI, codec-free and C-client sanitizers exercised; cross-platform C calls, allocation-failure injection and writer integration remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/entity_groups.c",
+      "tools/test_entity_groups.py",
       "crates/capi/tests/abi.rs"
     ]
   },

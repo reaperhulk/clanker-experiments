@@ -263,7 +263,10 @@ fn validate_limit_boxes(
             b"uncC" => {
                 crate::uncompressed::Configuration::parse(p, Some(limits))?;
             }
-            b"iprp" | b"ipco" => validate_limit_boxes(p, h.kind, limits)?,
+            b"iprp" | b"ipco" | b"grpl" => validate_limit_boxes(p, h.kind, limits)?,
+            b"altr" | b"ster" | b"pymd" => {
+                crate::entity_groups::parse_group(h.kind, p, limits)?;
+            }
             b"iinf" if p.len() >= 6 => {
                 let n = if p[0] == 0 {
                     u32::from(u16::from_be_bytes([p[4], p[5]]))
@@ -312,6 +315,7 @@ fn metadata<'a>(
     limits: &crate::security::Limits,
     properties: Option<&mut crate::properties::PropertyStore>,
     mut items: Option<&mut crate::items::ItemStore>,
+    entity_groups: Option<&mut Option<crate::entity_groups::EntityGroups>>,
 ) -> Result<&'a [u8]> {
     if data.len() < 32 {
         return Err(ContextError::invalid(
@@ -472,6 +476,21 @@ fn metadata<'a>(
         }
         items.seed();
     }
+    if let Some(out) = entity_groups
+        && let Some((_, data)) = boxes.iter().find(|(k, _)| k == b"grpl")
+    {
+        let child_boxes = children(data)?;
+        let mut groups = crate::entity_groups::EntityGroups {
+            children: child_boxes.len(),
+            groups: Vec::new(),
+        };
+        for (kind, data) in child_boxes {
+            if let Some(group) = crate::entity_groups::parse_group(kind, data, limits)? {
+                groups.groups.push(group);
+            }
+        }
+        *out = Some(groups);
+    }
     Ok(meta)
 }
 
@@ -607,7 +626,7 @@ impl Document {
     pub fn container(&self) -> Result<Container<'_>> {
         let mut container = Container::parse_meta_with_limits(
             self.input.bytes(),
-            metadata(self.input.bytes(), &self.read_limits, None, None)?,
+            metadata(self.input.bytes(), &self.read_limits, None, None, None)?,
             self.read_limits,
         )?;
         container.limits = self.current_limits();
@@ -1210,6 +1229,7 @@ impl Document {
     }
 }
 pub struct Context {
+    pub entity_groups: Option<crate::entity_groups::EntityGroups>,
     pub region_items: Vec<Arc<std::sync::Mutex<crate::regions::RegionItem>>>,
     pub text_items: Vec<Arc<crate::text::TextItem>>,
     pub items: crate::items::ItemStore,
@@ -1224,6 +1244,7 @@ impl Default for Context {
     fn default() -> Self {
         let limits = Arc::new(RwLock::new(crate::security::Limits::default()));
         Self {
+            entity_groups: None,
             region_items: Vec::new(),
             text_items: Vec::new(),
             items: crate::items::ItemStore::default(),
@@ -1238,6 +1259,7 @@ impl Default for Context {
 }
 impl Context {
     pub fn read(&mut self, input: Arc<dyn Input>) -> Result<()> {
+        self.entity_groups = None;
         self.items = crate::items::ItemStore::reading(input.clone());
         self.properties = crate::properties::PropertyStore {
             read_only: true,
@@ -1254,6 +1276,7 @@ impl Context {
             &read_limits,
             Some(&mut self.properties),
             Some(&mut self.items),
+            Some(&mut self.entity_groups),
         )?;
         if !has_images(&children(&meta[4..])?) {
             if self.document.is_none() {

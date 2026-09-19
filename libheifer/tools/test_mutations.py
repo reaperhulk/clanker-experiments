@@ -15,6 +15,12 @@ import sys
 import tempfile
 
 MUTATIONS = [
+    ('entity_group_id', 'crates/capi/src/entity_groups.rs', 'entity_group_id: g.id,', 'entity_group_id: g.id.wrapping_add(1),', 'entity_groups'),
+    ('entity_group_filter', 'crates/capi/src/entity_groups.rs', 'g.entities.contains(&item_filter)', 'g.entities.first() == Some(&item_filter)', 'entity_groups'),
+    ('entity_group_empty_result', 'crates/capi/src/entity_groups.rs', 'if groups.children == 0 {', 'if groups.groups.is_empty() {', 'entity_groups'),
+    ('entity_group_pyramid_error', 'src/entity_groups.rs', 'Err(_) if kind == *b"pymd" => Ok(None),', 'Err(_) if kind == *b"altr" => Ok(None),', 'entity_groups'),
+    ('entity_group_member_order', 'src/entity_groups.rs', '(0..count as usize).map(|i| read(12 + 4 * i))', '(0..count as usize).rev().map(|i| read(12 + 4 * i))', 'entity_groups'),
+
     ('region_signed_coordinates', 'src/regions.rs', 'value as i16 as i32', 'value as i32', 'regions'),
     ('region_polygon_minimum', 'src/regions.rs', 'if kind == 3 { 3 } else { 2 }', 'if kind == 3 { 4 } else { 2 }', 'regions'),
     ('region_partial_parse', 'src/regions.rs', 'let Some(g) = r.geometry(kind, limits, budget) else {\n                break;', 'let Some(g) = r.geometry(kind, limits, budget) else {\n                item.regions.clear(); break;', 'regions'),
