@@ -234,3 +234,5 @@ mod omaf;
 
 mod encoding_options;
 pub use encoding_options::{EncodingOptions, SequenceEncodingOptions, UnciParameters};
+
+mod regions;

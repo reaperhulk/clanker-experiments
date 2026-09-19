@@ -679,3 +679,40 @@ There are now 309 partial functions and 156 missing. The full completion gate
 still fails with no inventory inconsistencies; encoding/track integration,
 additional codecs, callbacks, plugins, region APIs and whole-library safety
 validation remain open. No performance claim is made.
+
+## Region objects, geometry, masks, and transforms (2026-09-19)
+
+Thirty-six previously missing region functions are implemented, bringing the
+inventory to 345 partial functions and 120 missing. No status is promoted to
+validated by export presence or a finite corpus.
+
+The independently compiled original-header client exercises every region API.
+The 2,396 generated files/call sequences include 16/32-bit signed coordinates,
+all version bytes, unknown geometry tags, every prefix of two mixed-geometry
+payloads, polygon/polyline cardinality, all inline-mask coding bytes, resource
+limits, ordered references, randomized geometry, rotations/mirrors/apertures,
+zero and signed-overflow reference dimensions, exact hexadecimal floating-point
+results, error strings/out-parameter sentinels, caller-buffer ownership, aliases,
+context reload/free, mask expansion and referenced-image decoding. Full active
+pixel bytes and guard bytes are compared, not hashes alone. Native undefined
+behavior (including an uninitialized referenced-mask ID without a mask reference)
+is excluded explicitly; defensive candidate behavior is not counted as parity.
+
+The oracle exposed two implementation defects during development: reversed
+mirror-axis meaning and use of a clamped clean aperture instead of the region
+transform's unclamped aperture. Both are fixed and retained in the corpus.
+The native transform's repeated x term and partial geometry retention on parser
+failure are preserved as observable behavior.
+
+Regular and codec-free reports each have zero mismatches. ASan/UBSan C clients
+also pass; local LeakSanitizer remains disabled because this environment is
+traced, while CI runs with leak checks. This is not whole-library sanitizer or
+allocation-failure evidence. The existing 1,786-case context corpus and Rust/ABI
+suites pass. The development inventory has no inconsistencies; the strict gate
+still fails on remaining missing and unvalidated APIs. All evidence is in
+`docs/results/regions-*.json`. Region serialization remains tied to the missing
+context writer and must be validated when that path is implemented.
+
+All eight region mutations were detected as transcript mismatches, without
+counting compiler failures or crashes as detection. The default mutation suite
+now contains 103 defects.

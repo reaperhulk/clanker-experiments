@@ -15,6 +15,15 @@ import sys
 import tempfile
 
 MUTATIONS = [
+    ('region_signed_coordinates', 'src/regions.rs', 'value as i16 as i32', 'value as i32', 'regions'),
+    ('region_polygon_minimum', 'src/regions.rs', 'if kind == 3 { 3 } else { 2 }', 'if kind == 3 { 4 } else { 2 }', 'regions'),
+    ('region_partial_parse', 'src/regions.rs', 'let Some(g) = r.geometry(kind, limits, budget) else {\n                break;', 'let Some(g) = r.geometry(kind, limits, budget) else {\n                item.regions.clear(); break;', 'regions'),
+    ('region_transform_x', 'src/regions.rs', 'f64::from(x) * self.a + f64::from(x) * self.b + self.tx', 'f64::from(x) * self.a + f64::from(y) * self.b + self.tx', 'regions'),
+    ('region_mask_default_size', 'src/context.rs', 'geometry.width = image.ispe.0;', 'geometry.width = image.ispe.1;', 'regions'),
+    ('region_reload_registry', 'src/context.rs', 'self.items = crate::items::ItemStore::reading(input.clone());', 'self.region_items.clear();\n        self.items = crate::items::ItemStore::reading(input.clone());', 'regions'),
+    ('region_mask_pixels', 'crates/capi/src/regions.rs', '255\n            } else {', '254\n            } else {', 'regions'),
+    ('region_mask_high_bit', 'crates/capi/src/regions.rs', '& 0x80)', '& 0x40)', 'regions'),
+
     ('encoding_option_default', 'crates/capi/src/encoding_options.rs', 'version: 8,\n            save_alpha_channel: 1,', 'version: 8,\n            save_alpha_channel: 0,', 'encoding_options'),
     ('encoding_option_future_version', 'crates/capi/src/encoding_options.rs', '!(1..=$max).contains(&version)', '!(1..=255).contains(&version)', 'encoding_options'),
     ('encoding_option_copy_boundary', 'crates/capi/src/encoding_options.rs', 'version >= $version', 'version > $version', 'encoding_options'),

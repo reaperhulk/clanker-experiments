@@ -41,3 +41,5 @@ pub const COMPATIBILITY_VERSION: (u8, u8, u8) = (1, 23, 4);
 pub mod sequence_sample;
 
 pub mod omaf;
+
+pub mod regions;

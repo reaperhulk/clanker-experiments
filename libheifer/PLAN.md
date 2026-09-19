@@ -115,7 +115,7 @@ The derived-image iteration adds grids/identity, cycle/MIAF checks, scoped tile
 workers and four warning/thread-control exports. Overlay composition, raw masks,
 shared-graph decode-operation budgets and dynamic derived queries follow in the next iteration. Six security-limit/allocation exports follow, including context-wide
 allocation accounting and object-specific resource lifetimes. Auxiliary/depth, item-property, six camera-matrix, twenty-two sensor-metadata and thirty-nine component APIs, generic items/compression, twelve TAI timestamp APIs, five metadata writers nine text-item APIs three image-area APIs thirteen handle color/aspect APIs and three component-definition queries bring the total to
-309 partial functions, with 156 functions missing. Compatibility work comes first;
+345 partial functions, with 120 functions missing. Compatibility work comes first;
 performance optimization is deferred until the complete compatibility gate passes.
 The full header contract, finite behavioral reports, known differences and
 performance evidence are retained in `compat/` and `docs/results/`.
@@ -151,3 +151,11 @@ copies/releases for still-image, sequence and uncompressed encoding options,
 and orientation composition. Original-header field layouts, exact historical
 allocation prefixes, sanitizers, codec-free runs and mutations are covered.
 These objects do not substitute for the still-missing encoder/track machinery.
+
+Region iteration: all thirty-six region entry points now have implementations.
+The original-header corpus covers owned/retained geometry objects, ordered item
+references, all seven geometry types, partial parsing, exact transformed values,
+full inline/referenced-mask pixels, and context reload/free. Local regular,
+codec-free and ASan/UBSan C-client runs agree on 2,396 cases. Writer serialization,
+allocation-failure injection and cross-platform C validation remain required.
+The strict completeness gate remains enabled while remaining families are built.

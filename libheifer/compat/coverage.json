@@ -276,6 +276,14 @@
       "tools/test_derived_handles.py"
     ]
   },
+  "heif_context_get_region_item": {
+    "notes": "Independent original-header Linux x86_64 transcripts cover every region entry point, all geometries, malformed/truncated input, ordered transforms, exact floating-point values, full mask pixels, sentinels, shared handles, reload/free and resource limits. Writer serialization, cross-platform C ABI behavior and whole-library allocation-failure/sanitizer validation remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/regions.c",
+      "tools/test_regions.py"
+    ]
+  },
   "heif_context_get_security_limits": {
     "notes": "Original-header version/prefix, aliasing, mutation, allocation/total-budget, parent-context, image-release and decoder-cache/reload comparisons. Implemented parsing and decode budgets cover existing image families; limits for remaining formats and complete hostile-input allocation safety remain open.",
     "status": "partial",
@@ -421,6 +429,33 @@
     "tests": [
       "tests/auxiliary.c",
       "tools/test_auxiliary.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_encoding_options_alloc": {
+    "notes": "Independent defaults, versioned field copies, historical prefix allocations and ABI layouts; encoder integration and allocation failure remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/encoding_options.c",
+      "tools/test_encoding_options.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_encoding_options_copy": {
+    "notes": "Independent defaults, versioned field copies, historical prefix allocations and ABI layouts; encoder integration and allocation failure remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/encoding_options.c",
+      "tools/test_encoding_options.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_encoding_options_free": {
+    "notes": "Independent defaults, versioned field copies, historical prefix allocations and ABI layouts; encoder integration and allocation failure remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/encoding_options.c",
+      "tools/test_encoding_options.py",
       "crates/capi/tests/abi.rs"
     ]
   },
@@ -1017,6 +1052,22 @@
       "tools/test_decode_derived.py"
     ]
   },
+  "heif_image_get_duration": {
+    "notes": "Independent owned-sample and image-metadata behavior; track integration and allocation-failure coverage remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/sequence_samples.c",
+      "tools/test_sequence_samples.py"
+    ]
+  },
+  "heif_image_get_gimi_sample_content_id": {
+    "notes": "Independent owned-sample and image-metadata behavior; track integration and allocation-failure coverage remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/sequence_samples.c",
+      "tools/test_sequence_samples.py"
+    ]
+  },
   "heif_image_get_height": {
     "notes": "6553 differential cases on Linux x86_64; other architectures, allocation failure, transforms and codec integration remain open.",
     "status": "partial",
@@ -1086,6 +1137,14 @@
       "tests/components.c",
       "tools/test_components.py",
       "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_image_get_omaf_image_projection": {
+    "notes": "Independent property, description, decoded-image, transform and retained-handle tests; encoding integration remains open.",
+    "status": "partial",
+    "tests": [
+      "tests/omaf.c",
+      "tools/test_omaf.py"
     ]
   },
   "heif_image_get_pixel_aspect_ratio": {
@@ -1249,6 +1308,14 @@
     "tests": [
       "tests/images.c",
       "tools/test_images.py"
+    ]
+  },
+  "heif_image_handle_add_region_item": {
+    "notes": "Independent original-header Linux x86_64 transcripts cover every region entry point, all geometries, malformed/truncated input, ordered transforms, exact floating-point values, full mask pixels, sentinels, shared handles, reload/free and resource limits. Writer serialization, cross-platform C ABI behavior and whole-library allocation-failure/sanitizer validation remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/regions.c",
+      "tools/test_regions.py"
     ]
   },
   "heif_image_handle_add_text_item": {
@@ -1483,6 +1550,14 @@
       "tools/test_derived_handles.py"
     ]
   },
+  "heif_image_handle_get_list_of_region_item_ids": {
+    "notes": "Independent original-header Linux x86_64 transcripts cover every region entry point, all geometries, malformed/truncated input, ordered transforms, exact floating-point values, full mask pixels, sentinels, shared handles, reload/free and resource limits. Writer serialization, cross-platform C ABI behavior and whole-library allocation-failure/sanitizer validation remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/regions.c",
+      "tools/test_regions.py"
+    ]
+  },
   "heif_image_handle_get_list_of_text_item_ids": {
     "notes": "Linux x86_64 original-header differential: MIME text references, creation and pending payloads, copied content/language strings, malformed fields, compressed content, duplicate references, resource limits, retained handles and text lookup order across changed-content reloads. File serialization, fresh encoded-image language insertion, allocation failures and cross-platform ABI remain open.",
     "status": "partial",
@@ -1633,6 +1708,14 @@
       "tools/test_derived_handles.py"
     ]
   },
+  "heif_image_handle_get_number_of_region_items": {
+    "notes": "Independent original-header Linux x86_64 transcripts cover every region entry point, all geometries, malformed/truncated input, ordered transforms, exact floating-point values, full mask pixels, sentinels, shared handles, reload/free and resource limits. Writer serialization, cross-platform C ABI behavior and whole-library allocation-failure/sanitizer validation remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/regions.c",
+      "tools/test_regions.py"
+    ]
+  },
   "heif_image_handle_get_number_of_text_items": {
     "notes": "Linux x86_64 original-header differential: MIME text references, creation and pending payloads, copied content/language strings, malformed fields, compressed content, duplicate references, resource limits, retained handles and text lookup order across changed-content reloads. File serialization, fresh encoded-image language insertion, allocation failures and cross-platform ABI remain open.",
     "status": "partial",
@@ -1649,6 +1732,14 @@
       "tests/context.c",
       "tools/test_context.py",
       "tools/test_derived_handles.py"
+    ]
+  },
+  "heif_image_handle_get_omaf_image_projection": {
+    "notes": "Independent property, description, decoded-image, transform and retained-handle tests; encoding integration remains open.",
+    "status": "partial",
+    "tests": [
+      "tests/omaf.c",
+      "tools/test_omaf.py"
     ]
   },
   "heif_image_handle_get_pixel_aspect_ratio": {
@@ -1869,6 +1960,14 @@
       "tools/test_handle_color.py"
     ]
   },
+  "heif_image_handle_set_omaf_image_projection": {
+    "notes": "Independent property, description, decoded-image, transform and retained-handle tests; encoding integration remains open.",
+    "status": "partial",
+    "tests": [
+      "tests/omaf.c",
+      "tools/test_omaf.py"
+    ]
+  },
   "heif_image_handle_set_pixel_aspect_ratio": {
     "notes": "Linux x86_64 original-header differential checks: retained first-property values, optional output/input pointers, setter ownership, serialization-based deduplication, file mutation despite read-only context, all ndwt versions, property prefixes and warnings, aliases/reloads/releases, successful native/RGB decodes and derived HDR inheritance. Encoding/serialization, allocation failures and cross-platform ABI remain open.",
     "status": "partial",
@@ -1991,6 +2090,14 @@
       "crates/capi/tests/abi.rs"
     ]
   },
+  "heif_image_set_duration": {
+    "notes": "Independent owned-sample and image-metadata behavior; track integration and allocation-failure coverage remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/sequence_samples.c",
+      "tools/test_sequence_samples.py"
+    ]
+  },
   "heif_image_set_gimi_component_content_id": {
     "notes": "Linux x86_64 original-header comparisons: every uint16 reference type, all 1..128 depths, datatype passthrough, descriptions including reference-only IDs, duplicate channels, all typed storage accessors, pointer/stride semantics, owned content IDs and crop/scale. File/codec integration, serialized content IDs, allocation-failure and cross-platform ABI validation remain open.",
     "status": "partial",
@@ -1998,6 +2105,14 @@
       "tests/components.c",
       "tools/test_components.py",
       "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_image_set_gimi_sample_content_id": {
+    "notes": "Independent owned-sample and image-metadata behavior; track integration and allocation-failure coverage remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/sequence_samples.c",
+      "tools/test_sequence_samples.py"
     ]
   },
   "heif_image_set_mastering_display_colour_volume": {
@@ -2025,6 +2140,14 @@
       "tests/color.c",
       "tools/test_color.py",
       "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_image_set_omaf_image_projection": {
+    "notes": "Independent property, description, decoded-image, transform and retained-handle tests; encoding integration remains open.",
+    "status": "partial",
+    "tests": [
+      "tests/omaf.c",
+      "tools/test_omaf.py"
     ]
   },
   "heif_image_set_pixel_aspect_ratio": {
@@ -2386,6 +2509,15 @@
       "crates/capi/tests/abi.rs"
     ]
   },
+  "heif_orientation_concat": {
+    "notes": "Independent defaults, versioned field copies, historical prefix allocations and ABI layouts; encoder integration and allocation failure remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/encoding_options.c",
+      "tools/test_encoding_options.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
   "heif_polarization_angle_is_no_filter": {
     "notes": "Linux x86_64 independent C client: imaging metadata arrays, input copies, exact float/NaN bits, null/error/output behavior, group precedence, all chroma locations, reference component IDs after plane allocation/crop/scale. File codec integration, other component operations, allocation failures and cross-platform ABI remain open.",
     "status": "partial",
@@ -2414,6 +2546,102 @@
       "crates/capi/tests/abi.rs"
     ]
   },
+  "heif_raw_sequence_sample_alloc": {
+    "notes": "Independent owned-sample and image-metadata behavior; track integration and allocation-failure coverage remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/sequence_samples.c",
+      "tools/test_sequence_samples.py"
+    ]
+  },
+  "heif_raw_sequence_sample_get_data": {
+    "notes": "Independent owned-sample and image-metadata behavior; track integration and allocation-failure coverage remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/sequence_samples.c",
+      "tools/test_sequence_samples.py"
+    ]
+  },
+  "heif_raw_sequence_sample_get_data_size": {
+    "notes": "Independent owned-sample and image-metadata behavior; track integration and allocation-failure coverage remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/sequence_samples.c",
+      "tools/test_sequence_samples.py"
+    ]
+  },
+  "heif_raw_sequence_sample_get_duration": {
+    "notes": "Independent owned-sample and image-metadata behavior; track integration and allocation-failure coverage remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/sequence_samples.c",
+      "tools/test_sequence_samples.py"
+    ]
+  },
+  "heif_raw_sequence_sample_get_gimi_sample_content_id": {
+    "notes": "Independent owned-sample and image-metadata behavior; track integration and allocation-failure coverage remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/sequence_samples.c",
+      "tools/test_sequence_samples.py"
+    ]
+  },
+  "heif_raw_sequence_sample_get_tai_timestamp": {
+    "notes": "Independent owned-sample and image-metadata behavior; track integration and allocation-failure coverage remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/sequence_samples.c",
+      "tools/test_sequence_samples.py"
+    ]
+  },
+  "heif_raw_sequence_sample_has_tai_timestamp": {
+    "notes": "Independent owned-sample and image-metadata behavior; track integration and allocation-failure coverage remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/sequence_samples.c",
+      "tools/test_sequence_samples.py"
+    ]
+  },
+  "heif_raw_sequence_sample_release": {
+    "notes": "Independent owned-sample and image-metadata behavior; track integration and allocation-failure coverage remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/sequence_samples.c",
+      "tools/test_sequence_samples.py"
+    ]
+  },
+  "heif_raw_sequence_sample_set_data": {
+    "notes": "Independent owned-sample and image-metadata behavior; track integration and allocation-failure coverage remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/sequence_samples.c",
+      "tools/test_sequence_samples.py"
+    ]
+  },
+  "heif_raw_sequence_sample_set_duration": {
+    "notes": "Independent owned-sample and image-metadata behavior; track integration and allocation-failure coverage remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/sequence_samples.c",
+      "tools/test_sequence_samples.py"
+    ]
+  },
+  "heif_raw_sequence_sample_set_gimi_sample_content_id": {
+    "notes": "Independent owned-sample and image-metadata behavior; track integration and allocation-failure coverage remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/sequence_samples.c",
+      "tools/test_sequence_samples.py"
+    ]
+  },
+  "heif_raw_sequence_sample_set_tai_timestamp": {
+    "notes": "Independent owned-sample and image-metadata behavior; track integration and allocation-failure coverage remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/sequence_samples.c",
+      "tools/test_sequence_samples.py"
+    ]
+  },
   "heif_read_main_brand": {
     "notes": "Tested on Linux x86_64; cross-platform ABI and exhaustive input coverage pending.",
     "status": "partial",
@@ -2428,6 +2656,262 @@
     "tests": [
       "tests/brands.c",
       "tools/test_brands.py"
+    ]
+  },
+  "heif_region_get_ellipse": {
+    "notes": "Independent original-header Linux x86_64 transcripts cover every region entry point, all geometries, malformed/truncated input, ordered transforms, exact floating-point values, full mask pixels, sentinels, shared handles, reload/free and resource limits. Writer serialization, cross-platform C ABI behavior and whole-library allocation-failure/sanitizer validation remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/regions.c",
+      "tools/test_regions.py"
+    ]
+  },
+  "heif_region_get_ellipse_transformed": {
+    "notes": "Independent original-header Linux x86_64 transcripts cover every region entry point, all geometries, malformed/truncated input, ordered transforms, exact floating-point values, full mask pixels, sentinels, shared handles, reload/free and resource limits. Writer serialization, cross-platform C ABI behavior and whole-library allocation-failure/sanitizer validation remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/regions.c",
+      "tools/test_regions.py"
+    ]
+  },
+  "heif_region_get_inline_mask_data": {
+    "notes": "Independent original-header Linux x86_64 transcripts cover every region entry point, all geometries, malformed/truncated input, ordered transforms, exact floating-point values, full mask pixels, sentinels, shared handles, reload/free and resource limits. Writer serialization, cross-platform C ABI behavior and whole-library allocation-failure/sanitizer validation remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/regions.c",
+      "tools/test_regions.py"
+    ]
+  },
+  "heif_region_get_inline_mask_data_len": {
+    "notes": "Independent original-header Linux x86_64 transcripts cover every region entry point, all geometries, malformed/truncated input, ordered transforms, exact floating-point values, full mask pixels, sentinels, shared handles, reload/free and resource limits. Writer serialization, cross-platform C ABI behavior and whole-library allocation-failure/sanitizer validation remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/regions.c",
+      "tools/test_regions.py"
+    ]
+  },
+  "heif_region_get_mask_image": {
+    "notes": "Independent original-header Linux x86_64 transcripts cover every region entry point, all geometries, malformed/truncated input, ordered transforms, exact floating-point values, full mask pixels, sentinels, shared handles, reload/free and resource limits. Writer serialization, cross-platform C ABI behavior and whole-library allocation-failure/sanitizer validation remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/regions.c",
+      "tools/test_regions.py"
+    ]
+  },
+  "heif_region_get_point": {
+    "notes": "Independent original-header Linux x86_64 transcripts cover every region entry point, all geometries, malformed/truncated input, ordered transforms, exact floating-point values, full mask pixels, sentinels, shared handles, reload/free and resource limits. Writer serialization, cross-platform C ABI behavior and whole-library allocation-failure/sanitizer validation remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/regions.c",
+      "tools/test_regions.py"
+    ]
+  },
+  "heif_region_get_point_transformed": {
+    "notes": "Independent original-header Linux x86_64 transcripts cover every region entry point, all geometries, malformed/truncated input, ordered transforms, exact floating-point values, full mask pixels, sentinels, shared handles, reload/free and resource limits. Writer serialization, cross-platform C ABI behavior and whole-library allocation-failure/sanitizer validation remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/regions.c",
+      "tools/test_regions.py"
+    ]
+  },
+  "heif_region_get_polygon_num_points": {
+    "notes": "Independent original-header Linux x86_64 transcripts cover every region entry point, all geometries, malformed/truncated input, ordered transforms, exact floating-point values, full mask pixels, sentinels, shared handles, reload/free and resource limits. Writer serialization, cross-platform C ABI behavior and whole-library allocation-failure/sanitizer validation remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/regions.c",
+      "tools/test_regions.py"
+    ]
+  },
+  "heif_region_get_polygon_points": {
+    "notes": "Independent original-header Linux x86_64 transcripts cover every region entry point, all geometries, malformed/truncated input, ordered transforms, exact floating-point values, full mask pixels, sentinels, shared handles, reload/free and resource limits. Writer serialization, cross-platform C ABI behavior and whole-library allocation-failure/sanitizer validation remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/regions.c",
+      "tools/test_regions.py"
+    ]
+  },
+  "heif_region_get_polygon_points_transformed": {
+    "notes": "Independent original-header Linux x86_64 transcripts cover every region entry point, all geometries, malformed/truncated input, ordered transforms, exact floating-point values, full mask pixels, sentinels, shared handles, reload/free and resource limits. Writer serialization, cross-platform C ABI behavior and whole-library allocation-failure/sanitizer validation remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/regions.c",
+      "tools/test_regions.py"
+    ]
+  },
+  "heif_region_get_polyline_num_points": {
+    "notes": "Independent original-header Linux x86_64 transcripts cover every region entry point, all geometries, malformed/truncated input, ordered transforms, exact floating-point values, full mask pixels, sentinels, shared handles, reload/free and resource limits. Writer serialization, cross-platform C ABI behavior and whole-library allocation-failure/sanitizer validation remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/regions.c",
+      "tools/test_regions.py"
+    ]
+  },
+  "heif_region_get_polyline_points": {
+    "notes": "Independent original-header Linux x86_64 transcripts cover every region entry point, all geometries, malformed/truncated input, ordered transforms, exact floating-point values, full mask pixels, sentinels, shared handles, reload/free and resource limits. Writer serialization, cross-platform C ABI behavior and whole-library allocation-failure/sanitizer validation remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/regions.c",
+      "tools/test_regions.py"
+    ]
+  },
+  "heif_region_get_polyline_points_transformed": {
+    "notes": "Independent original-header Linux x86_64 transcripts cover every region entry point, all geometries, malformed/truncated input, ordered transforms, exact floating-point values, full mask pixels, sentinels, shared handles, reload/free and resource limits. Writer serialization, cross-platform C ABI behavior and whole-library allocation-failure/sanitizer validation remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/regions.c",
+      "tools/test_regions.py"
+    ]
+  },
+  "heif_region_get_rectangle": {
+    "notes": "Independent original-header Linux x86_64 transcripts cover every region entry point, all geometries, malformed/truncated input, ordered transforms, exact floating-point values, full mask pixels, sentinels, shared handles, reload/free and resource limits. Writer serialization, cross-platform C ABI behavior and whole-library allocation-failure/sanitizer validation remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/regions.c",
+      "tools/test_regions.py"
+    ]
+  },
+  "heif_region_get_rectangle_transformed": {
+    "notes": "Independent original-header Linux x86_64 transcripts cover every region entry point, all geometries, malformed/truncated input, ordered transforms, exact floating-point values, full mask pixels, sentinels, shared handles, reload/free and resource limits. Writer serialization, cross-platform C ABI behavior and whole-library allocation-failure/sanitizer validation remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/regions.c",
+      "tools/test_regions.py"
+    ]
+  },
+  "heif_region_get_referenced_mask_ID": {
+    "notes": "Independent original-header Linux x86_64 transcripts cover every region entry point, all geometries, malformed/truncated input, ordered transforms, exact floating-point values, full mask pixels, sentinels, shared handles, reload/free and resource limits. Writer serialization, cross-platform C ABI behavior and whole-library allocation-failure/sanitizer validation remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/regions.c",
+      "tools/test_regions.py"
+    ]
+  },
+  "heif_region_get_type": {
+    "notes": "Independent original-header Linux x86_64 transcripts cover every region entry point, all geometries, malformed/truncated input, ordered transforms, exact floating-point values, full mask pixels, sentinels, shared handles, reload/free and resource limits. Writer serialization, cross-platform C ABI behavior and whole-library allocation-failure/sanitizer validation remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/regions.c",
+      "tools/test_regions.py"
+    ]
+  },
+  "heif_region_item_add_region_ellipse": {
+    "notes": "Independent original-header Linux x86_64 transcripts cover every region entry point, all geometries, malformed/truncated input, ordered transforms, exact floating-point values, full mask pixels, sentinels, shared handles, reload/free and resource limits. Writer serialization, cross-platform C ABI behavior and whole-library allocation-failure/sanitizer validation remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/regions.c",
+      "tools/test_regions.py"
+    ]
+  },
+  "heif_region_item_add_region_inline_mask": {
+    "notes": "Independent original-header Linux x86_64 transcripts cover every region entry point, all geometries, malformed/truncated input, ordered transforms, exact floating-point values, full mask pixels, sentinels, shared handles, reload/free and resource limits. Writer serialization, cross-platform C ABI behavior and whole-library allocation-failure/sanitizer validation remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/regions.c",
+      "tools/test_regions.py"
+    ]
+  },
+  "heif_region_item_add_region_inline_mask_data": {
+    "notes": "Independent original-header Linux x86_64 transcripts cover every region entry point, all geometries, malformed/truncated input, ordered transforms, exact floating-point values, full mask pixels, sentinels, shared handles, reload/free and resource limits. Writer serialization, cross-platform C ABI behavior and whole-library allocation-failure/sanitizer validation remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/regions.c",
+      "tools/test_regions.py"
+    ]
+  },
+  "heif_region_item_add_region_point": {
+    "notes": "Independent original-header Linux x86_64 transcripts cover every region entry point, all geometries, malformed/truncated input, ordered transforms, exact floating-point values, full mask pixels, sentinels, shared handles, reload/free and resource limits. Writer serialization, cross-platform C ABI behavior and whole-library allocation-failure/sanitizer validation remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/regions.c",
+      "tools/test_regions.py"
+    ]
+  },
+  "heif_region_item_add_region_polygon": {
+    "notes": "Independent original-header Linux x86_64 transcripts cover every region entry point, all geometries, malformed/truncated input, ordered transforms, exact floating-point values, full mask pixels, sentinels, shared handles, reload/free and resource limits. Writer serialization, cross-platform C ABI behavior and whole-library allocation-failure/sanitizer validation remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/regions.c",
+      "tools/test_regions.py"
+    ]
+  },
+  "heif_region_item_add_region_polyline": {
+    "notes": "Independent original-header Linux x86_64 transcripts cover every region entry point, all geometries, malformed/truncated input, ordered transforms, exact floating-point values, full mask pixels, sentinels, shared handles, reload/free and resource limits. Writer serialization, cross-platform C ABI behavior and whole-library allocation-failure/sanitizer validation remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/regions.c",
+      "tools/test_regions.py"
+    ]
+  },
+  "heif_region_item_add_region_rectangle": {
+    "notes": "Independent original-header Linux x86_64 transcripts cover every region entry point, all geometries, malformed/truncated input, ordered transforms, exact floating-point values, full mask pixels, sentinels, shared handles, reload/free and resource limits. Writer serialization, cross-platform C ABI behavior and whole-library allocation-failure/sanitizer validation remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/regions.c",
+      "tools/test_regions.py"
+    ]
+  },
+  "heif_region_item_add_region_referenced_mask": {
+    "notes": "Independent original-header Linux x86_64 transcripts cover every region entry point, all geometries, malformed/truncated input, ordered transforms, exact floating-point values, full mask pixels, sentinels, shared handles, reload/free and resource limits. Writer serialization, cross-platform C ABI behavior and whole-library allocation-failure/sanitizer validation remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/regions.c",
+      "tools/test_regions.py"
+    ]
+  },
+  "heif_region_item_get_id": {
+    "notes": "Independent original-header Linux x86_64 transcripts cover every region entry point, all geometries, malformed/truncated input, ordered transforms, exact floating-point values, full mask pixels, sentinels, shared handles, reload/free and resource limits. Writer serialization, cross-platform C ABI behavior and whole-library allocation-failure/sanitizer validation remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/regions.c",
+      "tools/test_regions.py"
+    ]
+  },
+  "heif_region_item_get_list_of_regions": {
+    "notes": "Independent original-header Linux x86_64 transcripts cover every region entry point, all geometries, malformed/truncated input, ordered transforms, exact floating-point values, full mask pixels, sentinels, shared handles, reload/free and resource limits. Writer serialization, cross-platform C ABI behavior and whole-library allocation-failure/sanitizer validation remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/regions.c",
+      "tools/test_regions.py"
+    ]
+  },
+  "heif_region_item_get_number_of_regions": {
+    "notes": "Independent original-header Linux x86_64 transcripts cover every region entry point, all geometries, malformed/truncated input, ordered transforms, exact floating-point values, full mask pixels, sentinels, shared handles, reload/free and resource limits. Writer serialization, cross-platform C ABI behavior and whole-library allocation-failure/sanitizer validation remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/regions.c",
+      "tools/test_regions.py"
+    ]
+  },
+  "heif_region_item_get_reference_size": {
+    "notes": "Independent original-header Linux x86_64 transcripts cover every region entry point, all geometries, malformed/truncated input, ordered transforms, exact floating-point values, full mask pixels, sentinels, shared handles, reload/free and resource limits. Writer serialization, cross-platform C ABI behavior and whole-library allocation-failure/sanitizer validation remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/regions.c",
+      "tools/test_regions.py"
+    ]
+  },
+  "heif_region_item_release": {
+    "notes": "Independent original-header Linux x86_64 transcripts cover every region entry point, all geometries, malformed/truncated input, ordered transforms, exact floating-point values, full mask pixels, sentinels, shared handles, reload/free and resource limits. Writer serialization, cross-platform C ABI behavior and whole-library allocation-failure/sanitizer validation remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/regions.c",
+      "tools/test_regions.py"
+    ]
+  },
+  "heif_region_release": {
+    "notes": "Independent original-header Linux x86_64 transcripts cover every region entry point, all geometries, malformed/truncated input, ordered transforms, exact floating-point values, full mask pixels, sentinels, shared handles, reload/free and resource limits. Writer serialization, cross-platform C ABI behavior and whole-library allocation-failure/sanitizer validation remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/regions.c",
+      "tools/test_regions.py"
+    ]
+  },
+  "heif_region_release_many": {
+    "notes": "Independent original-header Linux x86_64 transcripts cover every region entry point, all geometries, malformed/truncated input, ordered transforms, exact floating-point values, full mask pixels, sentinels, shared handles, reload/free and resource limits. Writer serialization, cross-platform C ABI behavior and whole-library allocation-failure/sanitizer validation remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/regions.c",
+      "tools/test_regions.py"
     ]
   },
   "heif_release_item_data": {
@@ -2446,6 +2930,33 @@
       "tests/items.c",
       "tools/test_items.py",
       "tools/test_metadata_compression.py"
+    ]
+  },
+  "heif_sequence_encoding_options_alloc": {
+    "notes": "Independent defaults, versioned field copies, historical prefix allocations and ABI layouts; encoder integration and allocation failure remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/encoding_options.c",
+      "tools/test_encoding_options.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_sequence_encoding_options_copy": {
+    "notes": "Independent defaults, versioned field copies, historical prefix allocations and ABI layouts; encoder integration and allocation failure remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/encoding_options.c",
+      "tools/test_encoding_options.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_sequence_encoding_options_release": {
+    "notes": "Independent defaults, versioned field copies, historical prefix allocations and ABI layouts; encoder integration and allocation failure remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/encoding_options.c",
+      "tools/test_encoding_options.py",
+      "crates/capi/tests/abi.rs"
     ]
   },
   "heif_string_release": {
@@ -2556,254 +3067,31 @@
       "tools/test_text.py"
     ]
   },
-  "heif_image_get_duration": {
-    "status": "partial",
-    "tests": [
-      "tests/sequence_samples.c",
-      "tools/test_sequence_samples.py"
-    ],
-    "notes": "Independent owned-sample and image-metadata behavior; track integration and allocation-failure coverage remain open."
-  },
-  "heif_image_get_gimi_sample_content_id": {
-    "status": "partial",
-    "tests": [
-      "tests/sequence_samples.c",
-      "tools/test_sequence_samples.py"
-    ],
-    "notes": "Independent owned-sample and image-metadata behavior; track integration and allocation-failure coverage remain open."
-  },
-  "heif_image_set_duration": {
-    "status": "partial",
-    "tests": [
-      "tests/sequence_samples.c",
-      "tools/test_sequence_samples.py"
-    ],
-    "notes": "Independent owned-sample and image-metadata behavior; track integration and allocation-failure coverage remain open."
-  },
-  "heif_image_set_gimi_sample_content_id": {
-    "status": "partial",
-    "tests": [
-      "tests/sequence_samples.c",
-      "tools/test_sequence_samples.py"
-    ],
-    "notes": "Independent owned-sample and image-metadata behavior; track integration and allocation-failure coverage remain open."
-  },
-  "heif_raw_sequence_sample_alloc": {
-    "status": "partial",
-    "tests": [
-      "tests/sequence_samples.c",
-      "tools/test_sequence_samples.py"
-    ],
-    "notes": "Independent owned-sample and image-metadata behavior; track integration and allocation-failure coverage remain open."
-  },
-  "heif_raw_sequence_sample_get_data": {
-    "status": "partial",
-    "tests": [
-      "tests/sequence_samples.c",
-      "tools/test_sequence_samples.py"
-    ],
-    "notes": "Independent owned-sample and image-metadata behavior; track integration and allocation-failure coverage remain open."
-  },
-  "heif_raw_sequence_sample_get_data_size": {
-    "status": "partial",
-    "tests": [
-      "tests/sequence_samples.c",
-      "tools/test_sequence_samples.py"
-    ],
-    "notes": "Independent owned-sample and image-metadata behavior; track integration and allocation-failure coverage remain open."
-  },
-  "heif_raw_sequence_sample_get_duration": {
-    "status": "partial",
-    "tests": [
-      "tests/sequence_samples.c",
-      "tools/test_sequence_samples.py"
-    ],
-    "notes": "Independent owned-sample and image-metadata behavior; track integration and allocation-failure coverage remain open."
-  },
-  "heif_raw_sequence_sample_get_gimi_sample_content_id": {
-    "status": "partial",
-    "tests": [
-      "tests/sequence_samples.c",
-      "tools/test_sequence_samples.py"
-    ],
-    "notes": "Independent owned-sample and image-metadata behavior; track integration and allocation-failure coverage remain open."
-  },
-  "heif_raw_sequence_sample_get_tai_timestamp": {
-    "status": "partial",
-    "tests": [
-      "tests/sequence_samples.c",
-      "tools/test_sequence_samples.py"
-    ],
-    "notes": "Independent owned-sample and image-metadata behavior; track integration and allocation-failure coverage remain open."
-  },
-  "heif_raw_sequence_sample_has_tai_timestamp": {
-    "status": "partial",
-    "tests": [
-      "tests/sequence_samples.c",
-      "tools/test_sequence_samples.py"
-    ],
-    "notes": "Independent owned-sample and image-metadata behavior; track integration and allocation-failure coverage remain open."
-  },
-  "heif_raw_sequence_sample_release": {
-    "status": "partial",
-    "tests": [
-      "tests/sequence_samples.c",
-      "tools/test_sequence_samples.py"
-    ],
-    "notes": "Independent owned-sample and image-metadata behavior; track integration and allocation-failure coverage remain open."
-  },
-  "heif_raw_sequence_sample_set_data": {
-    "status": "partial",
-    "tests": [
-      "tests/sequence_samples.c",
-      "tools/test_sequence_samples.py"
-    ],
-    "notes": "Independent owned-sample and image-metadata behavior; track integration and allocation-failure coverage remain open."
-  },
-  "heif_raw_sequence_sample_set_duration": {
-    "status": "partial",
-    "tests": [
-      "tests/sequence_samples.c",
-      "tools/test_sequence_samples.py"
-    ],
-    "notes": "Independent owned-sample and image-metadata behavior; track integration and allocation-failure coverage remain open."
-  },
-  "heif_raw_sequence_sample_set_gimi_sample_content_id": {
-    "status": "partial",
-    "tests": [
-      "tests/sequence_samples.c",
-      "tools/test_sequence_samples.py"
-    ],
-    "notes": "Independent owned-sample and image-metadata behavior; track integration and allocation-failure coverage remain open."
-  },
-  "heif_raw_sequence_sample_set_tai_timestamp": {
-    "status": "partial",
-    "tests": [
-      "tests/sequence_samples.c",
-      "tools/test_sequence_samples.py"
-    ],
-    "notes": "Independent owned-sample and image-metadata behavior; track integration and allocation-failure coverage remain open."
-  },
-  "heif_image_get_omaf_image_projection": {
-    "status": "partial",
-    "tests": [
-      "tests/omaf.c",
-      "tools/test_omaf.py"
-    ],
-    "notes": "Independent property, description, decoded-image, transform and retained-handle tests; encoding integration remains open."
-  },
-  "heif_image_set_omaf_image_projection": {
-    "status": "partial",
-    "tests": [
-      "tests/omaf.c",
-      "tools/test_omaf.py"
-    ],
-    "notes": "Independent property, description, decoded-image, transform and retained-handle tests; encoding integration remains open."
-  },
-  "heif_image_handle_get_omaf_image_projection": {
-    "status": "partial",
-    "tests": [
-      "tests/omaf.c",
-      "tools/test_omaf.py"
-    ],
-    "notes": "Independent property, description, decoded-image, transform and retained-handle tests; encoding integration remains open."
-  },
-  "heif_image_handle_set_omaf_image_projection": {
-    "status": "partial",
-    "tests": [
-      "tests/omaf.c",
-      "tools/test_omaf.py"
-    ],
-    "notes": "Independent property, description, decoded-image, transform and retained-handle tests; encoding integration remains open."
-  },
-  "heif_orientation_concat": {
-    "status": "partial",
-    "tests": [
-      "tests/encoding_options.c",
-      "tools/test_encoding_options.py",
-      "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Independent defaults, versioned field copies, historical prefix allocations and ABI layouts; encoder integration and allocation failure remain open."
-  },
-  "heif_encoding_options_alloc": {
-    "status": "partial",
-    "tests": [
-      "tests/encoding_options.c",
-      "tools/test_encoding_options.py",
-      "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Independent defaults, versioned field copies, historical prefix allocations and ABI layouts; encoder integration and allocation failure remain open."
-  },
-  "heif_encoding_options_copy": {
-    "status": "partial",
-    "tests": [
-      "tests/encoding_options.c",
-      "tools/test_encoding_options.py",
-      "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Independent defaults, versioned field copies, historical prefix allocations and ABI layouts; encoder integration and allocation failure remain open."
-  },
-  "heif_encoding_options_free": {
-    "status": "partial",
-    "tests": [
-      "tests/encoding_options.c",
-      "tools/test_encoding_options.py",
-      "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Independent defaults, versioned field copies, historical prefix allocations and ABI layouts; encoder integration and allocation failure remain open."
-  },
-  "heif_sequence_encoding_options_alloc": {
-    "status": "partial",
-    "tests": [
-      "tests/encoding_options.c",
-      "tools/test_encoding_options.py",
-      "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Independent defaults, versioned field copies, historical prefix allocations and ABI layouts; encoder integration and allocation failure remain open."
-  },
-  "heif_sequence_encoding_options_copy": {
-    "status": "partial",
-    "tests": [
-      "tests/encoding_options.c",
-      "tools/test_encoding_options.py",
-      "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Independent defaults, versioned field copies, historical prefix allocations and ABI layouts; encoder integration and allocation failure remain open."
-  },
-  "heif_sequence_encoding_options_release": {
-    "status": "partial",
-    "tests": [
-      "tests/encoding_options.c",
-      "tools/test_encoding_options.py",
-      "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Independent defaults, versioned field copies, historical prefix allocations and ABI layouts; encoder integration and allocation failure remain open."
-  },
   "heif_unci_image_parameters_alloc": {
+    "notes": "Independent defaults, versioned field copies, historical prefix allocations and ABI layouts; encoder integration and allocation failure remain open.",
     "status": "partial",
     "tests": [
       "tests/encoding_options.c",
       "tools/test_encoding_options.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Independent defaults, versioned field copies, historical prefix allocations and ABI layouts; encoder integration and allocation failure remain open."
+    ]
   },
   "heif_unci_image_parameters_copy": {
+    "notes": "Independent defaults, versioned field copies, historical prefix allocations and ABI layouts; encoder integration and allocation failure remain open.",
     "status": "partial",
     "tests": [
       "tests/encoding_options.c",
       "tools/test_encoding_options.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Independent defaults, versioned field copies, historical prefix allocations and ABI layouts; encoder integration and allocation failure remain open."
+    ]
   },
   "heif_unci_image_parameters_release": {
+    "notes": "Independent defaults, versioned field copies, historical prefix allocations and ABI layouts; encoder integration and allocation failure remain open.",
     "status": "partial",
     "tests": [
       "tests/encoding_options.c",
       "tools/test_encoding_options.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Independent defaults, versioned field copies, historical prefix allocations and ABI layouts; encoder integration and allocation failure remain open."
+    ]
   }
 }

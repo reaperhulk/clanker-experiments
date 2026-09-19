@@ -490,6 +490,7 @@ pub(crate) struct DecoderInput {
 pub struct ImageInfo {
     pub(crate) projection: std::sync::atomic::AtomicI32,
     pub retained_properties: std::sync::Mutex<Vec<Arc<crate::properties::Property>>>,
+    pub region_ids: std::sync::Mutex<Vec<u32>>,
     pub text_ids: std::sync::Mutex<Vec<u32>>,
     pub tai_timestamp: Option<crate::tai::Timestamp>,
     pub description_error: Option<ContextError>,
@@ -623,6 +624,7 @@ impl Document {
         items: &crate::items::ItemStore,
         properties: &crate::properties::PropertyStore,
         text_items: &mut Vec<Arc<crate::text::TextItem>>,
+        region_items: &mut Vec<Arc<std::sync::Mutex<crate::regions::RegionItem>>>,
     ) -> Result<()> {
         let images = &mut self.images;
         for item in container.items.values() {
@@ -658,6 +660,7 @@ impl Document {
                 description_input: None,
                 components: crate::components::ComponentIds::default(),
                 intrinsic: None,
+                region_ids: std::sync::Mutex::new(Vec::new()),
                 text_ids: std::sync::Mutex::new(Vec::new()),
                 tai_timestamp: None,
                 extrinsic: None,
@@ -1104,6 +1107,71 @@ impl Document {
                 }
             }
         }
+        for (&id, item) in &items.items {
+            if item.kind != u32::from_be_bytes(*b"rgan") {
+                continue;
+            }
+            let data = items.item_data(id, self.read_limits)?;
+            let region = Arc::new(std::sync::Mutex::new(crate::regions::RegionItem::parse(
+                id,
+                &data,
+                self.read_limits,
+                &self.budget,
+            )));
+            for r in items.references.iter().filter(|r| r.from == id) {
+                if r.kind == u32::from_be_bytes(*b"cdsc") {
+                    for target in &r.to {
+                        let Some(image) = images.get(target) else {
+                            return Err(ContextError::invalid(
+                                2000,
+                                "Non-existing item ID referenced: Region item assigned to non-existing image",
+                            ));
+                        };
+                        image
+                            .region_ids
+                            .lock()
+                            .unwrap_or_else(std::sync::PoisonError::into_inner)
+                            .push(id);
+                        region_items.push(region.clone());
+                    }
+                }
+                if r.kind == u32::from_be_bytes(*b"mask") {
+                    let mut region = region
+                        .lock()
+                        .unwrap_or_else(std::sync::PoisonError::into_inner);
+                    let mut masks = r.to.iter();
+                    for geometry in &mut region.regions {
+                        if geometry.kind != 4 {
+                            continue;
+                        }
+                        let Some(target) = masks.next() else {
+                            return Err(ContextError::invalid(
+                                0,
+                                "Unspecified: Region mask reference with non-existing mask image reference",
+                            ));
+                        };
+                        let Some(image) = images.get(target) else {
+                            return Err(ContextError::invalid(
+                                0,
+                                "Unspecified: Region mask referenced item is not an image",
+                            ));
+                        };
+                        if let Some(error) = &image.error {
+                            return Err(error.clone());
+                        }
+                        let geometry = Arc::get_mut(geometry).unwrap();
+                        geometry.referenced = *target;
+                        if geometry.width == 0 {
+                            geometry.width = image.ispe.0;
+                        }
+                        if geometry.height == 0 {
+                            geometry.height = image.ispe.1;
+                        }
+                        self.top_level.retain(|id| id != target);
+                    }
+                }
+            }
+        }
         // The reference retains the context's text registry across reads, and
         // adds one registry entry per target in each ordered text reference.
         for (&id, item) in &items.items {
@@ -1142,6 +1210,7 @@ impl Document {
     }
 }
 pub struct Context {
+    pub region_items: Vec<Arc<std::sync::Mutex<crate::regions::RegionItem>>>,
     pub text_items: Vec<Arc<crate::text::TextItem>>,
     pub items: crate::items::ItemStore,
     pub properties: crate::properties::PropertyStore,
@@ -1155,6 +1224,7 @@ impl Default for Context {
     fn default() -> Self {
         let limits = Arc::new(RwLock::new(crate::security::Limits::default()));
         Self {
+            region_items: Vec::new(),
             text_items: Vec::new(),
             items: crate::items::ItemStore::default(),
             properties: crate::properties::PropertyStore::default(),
@@ -1223,6 +1293,7 @@ impl Context {
             &self.items,
             &self.properties,
             &mut self.text_items,
+            &mut self.region_items,
         );
         self.document = Some(Arc::new(document));
         outcome
