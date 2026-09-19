@@ -30,11 +30,13 @@ def corpus():
         for n in [0,1,7,8,15,24,31,32,len(data)-1,len(data)-8]:cases.append((name+'-prefix-'+str(n),data[:n]))
     return cases
 
+CLIENT="tests/sequence_reading.c"
+
 def main():
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--reference-build',required=True);p.add_argument('--candidate',default='target/release/libheifer.so');p.add_argument('--output',default='.build/sequence-reading-report.json');p.add_argument('--work',default='.build/sequence-reading');p.add_argument('--sanitize',action='store_true');p.add_argument('--no-leak-check',action='store_true');a=p.parse_args();work=Path(a.work).resolve();inc=work/'include/libheif';inc.mkdir(parents=True,exist_ok=True);ref=Path(a.reference_build).resolve();(inc/'heif_version.h').write_bytes((ref/'libheif/heif_version.h').read_bytes());libs={'reference':ref/'libheif/libheif.so','candidate':Path(a.candidate).resolve()};env=dict(os.environ)
     if a.sanitize:env['UBSAN_OPTIONS']='halt_on_error=1'
     if a.no_leak_check:env['ASAN_OPTIONS']='detect_leaks=0'
-    for name,lib in libs.items():subprocess.run(['cc','-std=c11','-O2','-Werror',*(['-fsanitize=address,undefined','-fno-omit-frame-pointer'] if a.sanitize else []),'-Itests/upstream/libheif/api',f'-I{inc.parent}','tests/sequence_reading.c',str(lib),f'-Wl,-rpath,{lib.parent}','-o',str(work/name)],check=True)
+    for name,lib in libs.items():subprocess.run(['cc','-std=c11','-O2','-Werror',*(['-fsanitize=address,undefined','-fno-omit-frame-pointer'] if a.sanitize else []),'-Itests/upstream/libheif/api',f'-I{inc.parent}',CLIENT,str(lib),f'-Wl,-rpath,{lib.parent}','-o',str(work/name)],check=True)
     cases=corpus();diff=[];fail=[]
     for i,(name,data) in enumerate(cases):
         path=work/(str(i)+'.heif');path.write_bytes(data);out={}
@@ -45,6 +47,6 @@ def main():
         if None in out.values():continue
         if out['reference']!=out['candidate']:
             x,y=out['reference'],out['candidate'];at=next((j for j,(u,v) in enumerate(zip(x,y)) if u!=v),min(len(x),len(y)));diff.append(dict(case=name,index=i,offset=at,reference=x[max(0,at-30):at+250].decode(),candidate=y[max(0,at-30):at+250].decode()))
-    report=dict(scope=__doc__,cases=len(cases),mismatches=len(diff),process_failures=fail,differences=diff,client_sanitizers=a.sanitize,leak_check=a.sanitize and not a.no_leak_check,client_sha256=hashlib.sha256(Path('tests/sequence_reading.c').read_bytes()+Path('tests/sequences.c').read_bytes()).hexdigest(),corpus_sha256=hashlib.sha256(b''.join(data for _,data in cases)).hexdigest(),**{k+'_sha256':hashlib.sha256(v.read_bytes()).hexdigest() for k,v in libs.items()});Path(a.output).write_text(json.dumps(report,indent=2)+'\n');print(json.dumps({k:v for k,v in report.items() if k!='differences'},indent=2));print(json.dumps(diff[:6],indent=2));
+    report=dict(scope=__doc__,cases=len(cases),mismatches=len(diff),process_failures=fail,differences=diff,client_sanitizers=a.sanitize,leak_check=a.sanitize and not a.no_leak_check,client_sha256=hashlib.sha256(Path(CLIENT).read_bytes()+Path('tests/sequences.c').read_bytes()).hexdigest(),corpus_sha256=hashlib.sha256(b''.join(data for _,data in cases)).hexdigest(),**{k+'_sha256':hashlib.sha256(v.read_bytes()).hexdigest() for k,v in libs.items()});Path(a.output).write_text(json.dumps(report,indent=2)+'\n');print(json.dumps({k:v for k,v in report.items() if k!='differences'},indent=2));print(json.dumps(diff[:6],indent=2));
     if diff or fail:raise SystemExit(1)
 if __name__=='__main__':main()

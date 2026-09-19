@@ -77,24 +77,6 @@
       "crates/capi/tests/abi.rs"
     ]
   },
-  "heif_context_add_XMP_metadata": {
-    "notes": "Linux x86_64 original-header differential: Exif signature offsets, XMP compression branches and exact bytes, invalid generic types, URI behavior, foreign handles, reloads, references, resource limits and unchanged handle metadata. File serialization, allocation-failure behavior and cross-platform ABI remain open.",
-    "status": "partial",
-    "tests": [
-      "tests/add_metadata.c",
-      "tests/items.c",
-      "tools/test_add_metadata.py"
-    ]
-  },
-  "heif_context_add_XMP_metadata2": {
-    "notes": "Linux x86_64 original-header differential: Exif signature offsets, XMP compression branches and exact bytes, invalid generic types, URI behavior, foreign handles, reloads, references, resource limits and unchanged handle metadata. File serialization, allocation-failure behavior and cross-platform ABI remain open.",
-    "status": "partial",
-    "tests": [
-      "tests/add_metadata.c",
-      "tests/items.c",
-      "tools/test_add_metadata.py"
-    ]
-  },
   "heif_context_add_compatible_brand": {
     "notes": "Original-header exact metadata-only BMFF bytes and read-back, output files and I/O-failure behavior, callback errors/reentrant queries, invalid writer versions with historical prefixes, optional userdata, explicit brands, UUID and large property indices. Region/text serialization infrastructure added, but in-memory image/sequence encoding round trips, mini images, namespace switching and allocation failures remain open.",
     "status": "partial",
@@ -242,6 +224,24 @@
       "crates/capi/tests/abi.rs"
     ],
     "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open."
+  },
+  "heif_context_add_XMP_metadata": {
+    "notes": "Linux x86_64 original-header differential: Exif signature offsets, XMP compression branches and exact bytes, invalid generic types, URI behavior, foreign handles, reloads, references, resource limits and unchanged handle metadata. File serialization, allocation-failure behavior and cross-platform ABI remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/add_metadata.c",
+      "tests/items.c",
+      "tools/test_add_metadata.py"
+    ]
+  },
+  "heif_context_add_XMP_metadata2": {
+    "notes": "Linux x86_64 original-header differential: Exif signature offsets, XMP compression branches and exact bytes, invalid generic types, URI behavior, foreign handles, reloads, references, resource limits and unchanged handle metadata. File serialization, allocation-failure behavior and cross-platform ABI remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/add_metadata.c",
+      "tests/items.c",
+      "tools/test_add_metadata.py"
+    ]
   },
   "heif_context_alloc": {
     "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open. Derived and mask handle queries also cover cyclic/missing references and partial reloads.",
@@ -397,7 +397,7 @@
       "tools/test_derived_handles.py"
     ]
   },
-  "heif_context_get_primary_image_ID": {
+  "heif_context_get_primary_image_handle": {
     "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open. Derived and mask handle queries also cover cyclic/missing references and partial reloads.",
     "status": "partial",
     "tests": [
@@ -406,7 +406,7 @@
       "tools/test_derived_handles.py"
     ]
   },
-  "heif_context_get_primary_image_handle": {
+  "heif_context_get_primary_image_ID": {
     "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open. Derived and mask handle queries also cover cyclic/missing references and partial reloads.",
     "status": "partial",
     "tests": [
@@ -517,6 +517,18 @@
       "crates/capi/tests/abi.rs"
     ],
     "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open."
+  },
+  "heif_context_read_from_file": {
+    "notes": "Retained file source, range-based media reads, metadata snapshot offsets, missing-file errors and old-handle ownership. Recovered after local environment failure; full independent/sanitizer/codec-free and sparse-file validation are required in CI. Callback input, detailed I/O failure state and metadata allocation accounting remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/file_input.c",
+      "tests/file_sequence_reading.c",
+      "tests/file_sparse.c",
+      "tools/test_file_input.py",
+      "tools/test_file_sequence_reading.py",
+      "tools/test_file_sparse.py"
+    ]
   },
   "heif_context_read_from_memory": {
     "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open. Derived and mask handle queries also cover cyclic/missing references and partial reloads.",
@@ -1806,14 +1818,6 @@
       "tools/test_images.py"
     ]
   },
-  "heif_image_get_plane2": {
-    "notes": "6553 differential cases on Linux x86_64; other architectures, allocation failure, transforms and codec integration remain open.",
-    "status": "partial",
-    "tests": [
-      "tests/images.c",
-      "tools/test_images.py"
-    ]
-  },
   "heif_image_get_plane_readonly": {
     "notes": "6553 differential cases on Linux x86_64; other architectures, allocation failure, transforms and codec integration remain open.",
     "status": "partial",
@@ -1823,6 +1827,14 @@
     ]
   },
   "heif_image_get_plane_readonly2": {
+    "notes": "6553 differential cases on Linux x86_64; other architectures, allocation failure, transforms and codec integration remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/images.c",
+      "tools/test_images.py"
+    ]
+  },
+  "heif_image_get_plane2": {
     "notes": "6553 differential cases on Linux x86_64; other architectures, allocation failure, transforms and codec integration remain open.",
     "status": "partial",
     "tests": [

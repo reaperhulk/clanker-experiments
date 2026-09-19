@@ -204,7 +204,7 @@ impl ItemStore {
             }
             out.try_reserve_exact(data.len())
                 .map_err(|_| allocation())?;
-            out.extend_from_slice(data);
+            out.extend_from_slice(&data);
             return Ok(out);
         }
         let source = self.input.as_ref().map_or(&[][..], |i| i.bytes());
@@ -229,7 +229,7 @@ impl ItemStore {
                     ));
                 }
                 let end = relative.checked_add(size);
-                if end.is_none_or(|n| n > source.len() as u64) {
+                if end.is_none_or(|n| n > self.input.as_ref().map_or(0, |i| i.length())) {
                     return Err(ContextError::invalid(
                         100,
                         &format!(
@@ -251,7 +251,10 @@ impl ItemStore {
                 if relative_end > box_size {
                     return Err(truncated());
                 }
-                let start = (at as u64).checked_add(relative).ok_or_else(truncated)?;
+                let base = self.input.as_ref().map_or(at as u64, |input| {
+                    input.original_offset(&input.bytes()[at..])
+                });
+                let start = base.checked_add(relative).ok_or_else(truncated)?;
                 (start, start.checked_add(size).ok_or_else(truncated)?)
             } else {
                 return Err(ContextError::new(
@@ -263,15 +266,21 @@ impl ItemStore {
                     ),
                 ));
             };
-            let data = source
-                .get(
-                    usize::try_from(start).map_err(|_| truncated())?
-                        ..usize::try_from(end).map_err(|_| truncated())?,
+            let data = if let Some(input) = &self.input {
+                input.read_range(start, end - start)?
+            } else {
+                std::borrow::Cow::Borrowed(
+                    source
+                        .get(
+                            usize::try_from(start).map_err(|_| truncated())?
+                                ..usize::try_from(end).map_err(|_| truncated())?,
+                        )
+                        .ok_or_else(truncated)?,
                 )
-                .ok_or_else(truncated)?;
+            };
             out.try_reserve_exact(data.len())
                 .map_err(|_| allocation())?;
-            out.extend_from_slice(data);
+            out.extend_from_slice(&data);
         }
         Ok(out)
     }

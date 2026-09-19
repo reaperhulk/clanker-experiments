@@ -52,6 +52,12 @@ jobs:
       - run: python tools/test_brand_boxes.py --reference-build .build/reference --sanitize --output .build/brand-boxes-sanitized-report.json
       - run: python tools/test_images.py --reference-build .build/reference
       - run: python tools/test_color.py --reference-build .build/reference
+      - run: python tools/test_file_input.py --reference-build .build/reference --work .build/file_input-normal --output .build/file_input-normal-report.json
+      - run: python tools/test_file_input.py --reference-build .build/reference --sanitize --work .build/file_input-sanitized --output .build/file_input-sanitized-report.json
+      - run: python tools/test_file_sequence_reading.py --reference-build .build/reference --work .build/file_sequence_reading-normal --output .build/file_sequence_reading-normal-report.json
+      - run: python tools/test_file_sequence_reading.py --reference-build .build/reference --sanitize --work .build/file_sequence_reading-sanitized --output .build/file_sequence_reading-sanitized-report.json
+      - run: python tools/test_file_sparse.py --reference-build .build/reference --work .build/file_sparse-normal --output .build/file_sparse-normal-report.json
+      - run: python tools/test_file_sparse.py --reference-build .build/reference --sanitize --work .build/file_sparse-sanitized --output .build/file_sparse-sanitized-report.json
       - run: python tools/test_context.py --reference-build .build/reference
       - run: python tools/test_items.py --reference-build .build/reference
       - run: python tools/test_add_metadata.py --reference-build .build/reference
@@ -129,6 +135,9 @@ jobs:
       - run: python tools/test_decode_overlay.py --reference-build .build/reference
       - run: python tools/test_decode_mask.py --reference-build .build/reference
       - run: CARGO_TARGET_DIR=.build/no-codecs cargo build --locked --release -p libheifer-capi --no-default-features
+      - run: python tools/test_file_input.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --work .build/file_input-no-codecs --output .build/file_input-no-codecs-report.json
+      - run: python tools/test_file_sequence_reading.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --work .build/file_sequence_reading-no-codecs --output .build/file_sequence_reading-no-codecs-report.json
+      - run: python tools/test_file_sparse.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --work .build/file_sparse-no-codecs --output .build/file_sparse-no-codecs-report.json
       - run: python tools/test_gimi.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --output .build/no-codecs-gimi-report.json
       - run: python tools/test_encoder_parameters.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --output .build/no-codecs-encoder-parameters-report.json
       - run: python tools/test_dynamic_plugins.py --reference-build .build/reference-plugins --candidate .build/no-codecs/release/libheifer.so --work .build/dynamic-plugins-no-codecs --output .build/dynamic-plugins-no-codecs-report.json

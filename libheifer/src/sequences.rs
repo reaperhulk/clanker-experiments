@@ -282,7 +282,7 @@ impl Track {
         let idx = self.next as usize % self.ranges.len();
         let mut s = RawSample::default();
         let (offset, size) = self.ranges[idx];
-        s.set_data(self.read_range(offset, u64::from(size))?)
+        s.set_data(&self.read_range(offset, u64::from(size))?)
             .map_err(|_| ContextError::new(6, 0, "Out of memory"))?;
         s.metadata.duration = self.durations.get(idx).copied().unwrap_or(0);
         for (kind, ranges) in &self.aux_ranges {
@@ -292,14 +292,14 @@ impl Track {
                 }
                 let bytes = self.read_range(offset, u64::from(size))?;
                 if kind.kind == u32::from_be_bytes(*b"suid") {
-                    s.metadata.content_id = decode_string(bytes)?;
+                    s.metadata.content_id = decode_string(&bytes)?;
                 }
                 if kind.kind == u32::from_be_bytes(*b"stai") {
                     if bytes.len() != 9 {
                         return Err(invalid("Wrong size of TAI timestamp data"));
                     }
                     let mut data = vec![0; 4];
-                    data.extend(bytes);
+                    data.extend_from_slice(&bytes);
                     if let TaiProperty::Timestamp(t) = TaiProperty::parse(*b"itai", &data)? {
                         s.timestamp = Some(Box::new(t));
                     }
@@ -309,12 +309,12 @@ impl Track {
         self.next = self.next.wrapping_add(1);
         Ok(s)
     }
-    fn read_range(&self, offset: u64, size: u64) -> Result<&[u8]> {
-        let data = self.input.as_ref().map_or(&[][..], |x| x.bytes());
+    fn read_range(&self, offset: u64, size: u64) -> Result<std::borrow::Cow<'_, [u8]>> {
+        let length = self.input.as_ref().map_or(0, |x| x.length());
         let end = offset
             .checked_add(size)
             .ok_or_else(|| invalid("Chunk file offset overflows 64-bit range."))?;
-        if end > data.len() as u64 {
+        if end > length {
             return Err(ContextError::invalid(
                 100,
                 &format!(
@@ -322,7 +322,10 @@ impl Track {
                 ),
             ));
         }
-        Ok(&data[offset as usize..end as usize])
+        self.input
+            .as_ref()
+            .ok_or_else(|| invalid("Missing sequence input"))?
+            .read_range(offset, size)
     }
     pub fn first_uri(&self) -> Result<&[u8]> {
         if self.entry_kind == 0 {

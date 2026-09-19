@@ -23,6 +23,7 @@ pub mod handle_properties;
 pub mod hevc;
 pub mod hevc_config;
 pub mod image;
+pub mod input;
 pub mod items;
 pub mod jpeg_config;
 pub mod mask;

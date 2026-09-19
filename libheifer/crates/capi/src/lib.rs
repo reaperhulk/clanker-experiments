@@ -23,6 +23,7 @@ mod encoder;
 mod encoder_parameters;
 mod handle_color;
 mod image;
+mod input;
 mod items;
 mod metadata;
 mod plugin_registry;

@@ -11,7 +11,7 @@ use std::{
     sync::{Arc, RwLock},
 };
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ContextError {
     pub code: i32,
     pub subcode: i32,
@@ -41,6 +41,7 @@ impl std::error::Error for ContextError {}
 impl From<ParseError> for ContextError {
     fn from(e: ParseError) -> Self {
         match e {
+            ParseError::Input(error) => error,
             ParseError::Truncated => Self::truncated(),
             ParseError::MissingItemProperties(id) => Self::invalid(
                 116,
@@ -98,6 +99,26 @@ type Result<T> = std::result::Result<T, ContextError>;
 /// Foreign borrowed buffers implement this trait only in the unsafe C adapter.
 pub trait Input: Send + Sync {
     fn bytes(&self) -> &[u8];
+    fn length(&self) -> u64 {
+        self.bytes().len() as u64
+    }
+    fn original_offset(&self, data: &[u8]) -> u64 {
+        (data.as_ptr() as usize - self.bytes().as_ptr() as usize) as u64
+    }
+    fn read_range(&self, offset: u64, size: u64) -> Result<std::borrow::Cow<'_, [u8]>> {
+        let end = offset.checked_add(size).ok_or_else(ContextError::truncated)?;
+        let start = usize::try_from(offset).map_err(|_| ContextError::truncated())?;
+        let end = usize::try_from(end).map_err(|_| ContextError::truncated())?;
+        self.bytes()
+            .get(start..end)
+            .map(std::borrow::Cow::Borrowed)
+            .ok_or_else(ContextError::truncated)
+    }
+}
+impl std::fmt::Debug for dyn Input + '_ {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Input").field("length", &self.length()).finish()
+    }
 }
 impl Input for Vec<u8> {
     fn bytes(&self) -> &[u8] {
@@ -106,12 +127,12 @@ impl Input for Vec<u8> {
 }
 
 #[derive(Clone, Copy)]
-struct Header {
-    kind: [u8; 4],
-    size: u64,
-    header: usize,
+pub(crate) struct Header {
+    pub(crate) kind: [u8; 4],
+    pub(crate) size: u64,
+    pub(crate) header: usize,
 }
-fn header(data: &[u8]) -> Result<Header> {
+pub(crate) fn header(data: &[u8]) -> Result<Header> {
     let bytes = data.get(..8).ok_or_else(ContextError::truncated)?;
     let mut size = u32::from_be_bytes(bytes[..4].try_into().unwrap()) as u64;
     let kind = bytes[4..8].try_into().unwrap();
@@ -700,6 +721,7 @@ impl Document {
             metadata(self.input.bytes(), &self.read_limits, None, None, None)?,
             self.read_limits,
         )?;
+        container.input = Some(self.input.as_ref());
         container.limits = self.current_limits();
         Ok(container)
     }
@@ -1367,7 +1389,8 @@ impl Context {
             }
             return Ok(());
         }
-        let container = Container::parse_meta_with_limits(input.bytes(), meta, read_limits)?;
+        let mut container = Container::parse_meta_with_limits(input.bytes(), meta, read_limits)?;
+        container.input = Some(input.as_ref());
         let mut document = Document {
             owned: None,
             budget: self.budget.clone(),

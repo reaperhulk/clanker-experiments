@@ -7,6 +7,7 @@ use std::ops::Range;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ParseError {
+    Input(crate::context::ContextError),
     Truncated,
     InvalidSize,
     InvalidField,
@@ -194,6 +195,7 @@ pub struct Item {
 pub struct Container<'a> {
     pub limits: Limits,
     data: &'a [u8],
+    pub(crate) input: Option<&'a dyn crate::context::Input>,
     payloads: BTreeMap<u32, &'a [u8]>,
     idat: Option<&'a [u8]>,
     pub primary: u32,
@@ -213,6 +215,7 @@ impl<'a> Container<'a> {
         let mut result = Self {
             limits,
             data,
+            input: store.input.as_deref(),
             payloads: BTreeMap::new(),
             idat: store.idat.and_then(|(start, len)| {
                 data.get(start..start.saturating_add(len.saturating_sub(8) as usize))
@@ -319,6 +322,7 @@ impl<'a> Container<'a> {
             return Err(ParseError::Unsupported);
         }
         let mut result = Self {
+            input: None,
             payloads: BTreeMap::new(),
             limits,
             data,
@@ -628,6 +632,12 @@ impl<'a> Container<'a> {
         r.fullbox()?;
         Ok((r.number(4)? as u32, r.number(4)? as u32))
     }
+    fn source_length(&self, id: u32) -> u64 {
+        self.payloads.get(&id).map_or_else(
+            || self.input.map_or(self.data.len() as u64, |i| i.length()),
+            |p| p.len() as u64,
+        )
+    }
     pub fn payload(&self, id: u32) -> Result<Vec<u8>> {
         let source = self.payloads.get(&id).copied().unwrap_or(self.data);
         let item = self.items.get(&id).ok_or(ParseError::MissingItem)?;
@@ -641,7 +651,7 @@ impl<'a> Container<'a> {
             };
             // File extents check availability before their memory guard. The
             // idat reader checks its budget before its source-range bounds.
-            if !idat && data.get(range.clone()).is_none() {
+            if !idat && range.end as u64 > self.source_length(id) {
                 return Err(ParseError::Truncated);
             }
             if limit != 0 && (bytes.len() as u64).saturating_add(range.len() as u64) > limit {
@@ -661,11 +671,20 @@ impl<'a> Container<'a> {
                     ),
                 });
             }
-            let slice = data.get(range.clone()).ok_or(ParseError::Truncated)?;
+            let slice = if !self.payloads.contains_key(&id)
+                && let Some(input) = self.input
+            {
+                let offset = if *idat { input.original_offset(data) } else { 0 };
+                input
+                    .read_range(offset + range.start as u64, range.len() as u64)
+                    .map_err(ParseError::Input)?
+            } else {
+                std::borrow::Cow::Borrowed(data.get(range.clone()).ok_or(ParseError::Truncated)?)
+            };
             bytes
                 .try_reserve_exact(slice.len())
                 .map_err(|_| ParseError::Limit)?;
-            bytes.extend_from_slice(slice);
+            bytes.extend_from_slice(&slice);
         }
         Ok(bytes)
     }
@@ -693,9 +712,12 @@ impl<'a> Container<'a> {
                         "No 'idat' box: idat box referenced in iref box is not present in file",
                     )
                 })?;
-                data.as_ptr() as usize - self.data.as_ptr() as usize
+                self.input.map_or_else(
+                    || data.as_ptr() as usize - self.data.as_ptr() as usize,
+                    |input| input.original_offset(data) as usize,
+                )
             } else {
-                if source.get(range.clone()).is_none() {
+                if range.end as u64 > self.source_length(id) {
                     return Err(ContextError::invalid(
                         100,
                         &format!(
@@ -745,10 +767,16 @@ impl<'a> Container<'a> {
                 .ok()
                 .and_then(|v| source_offset.checked_add(v))
                 .ok_or(ParseError::Truncated)?;
-            let data = source.get(start..end).ok_or(ParseError::Truncated)?;
+            let data = if !self.payloads.contains_key(&id)
+                && let Some(input) = self.input
+            {
+                input.read_range(start as u64, (end - start) as u64)?
+            } else {
+                std::borrow::Cow::Borrowed(source.get(start..end).ok_or(ParseError::Truncated)?)
+            };
             out.try_reserve(data.len())
                 .map_err(|_| crate::error::Error::ALLOCATION)?;
-            out.extend_from_slice(data);
+            out.extend_from_slice(&data);
             remaining -= read;
         }
         if remaining != 0 {
