@@ -573,7 +573,11 @@ impl Context {
             let layout = self.items.layout.lock().unwrap();
             header_text(&mut out, "", b"ftyp", 0, 0);
             line(&mut out, "", "major brand: ", &layout.major.to_be_bytes());
-            line(&mut out, "", "minor version: ", b"0");
+            if layout.minor >= 0x20202020 {
+                line(&mut out, "", "minor version: ", &layout.minor.to_be_bytes());
+            } else {
+                let _ = writeln!(out, "minor version: {}", layout.minor);
+            }
             out.extend_from_slice(b"compatible brands: ");
             for (i, b) in layout.brands.iter().enumerate() {
                 if i != 0 {

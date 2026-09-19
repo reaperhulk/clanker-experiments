@@ -1,0 +1,12 @@
+{
+  "scope": "Original-header exact dumps of mutable writer objects before and after repeated writes, including metadata, references, brands and raw/UUID properties.",
+  "cases": 480,
+  "mismatches": 0,
+  "client_sanitizers": false,
+  "leak_check": false,
+  "client_sha256": "7b0c8158e8447d0f79f6822896ad0280f5229c8f8055ce521c03398c597bcad6",
+  "corpus_sha256": "b3e1f0876ae0d6167af0398965f19bafd7451281e1227299c280ec1048de8475",
+  "differences": [],
+  "reference_sha256": "5cc5713a0503098f20f8a3631e370d43256ebdca0a3209e97d541e6ecf1cd917",
+  "candidate_sha256": "4fd90278b455809a3e779e26740ee6b0dcf03afa1ab029c989be06f381292ac5"
+}

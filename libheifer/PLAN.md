@@ -399,3 +399,35 @@ Evidence and exact artifact hashes are in `docs/results/mini-debug-*.json`.
 Local leak detection remains disabled under ptrace; CI retains it. All 465
 functions remain partial. Compact output requires the still-image encoder path;
 registered encoder integration and the other codec/behavioral gates continue.
+
+
+### Registered AV1 encoding and compact output
+
+Registered AV1 encoders now receive converted pixels and versioned input queries,
+legacy packet polling, encoded-size queries and normal/alpha/thumbnail input
+classes. Alpha encoding allocates a separate encoder and copies dedicated and
+generic parameters using historical ABI prefixes. Callback failures preserve
+native partial context state. AV1 sequence headers populate av1C configuration;
+padded coded images emit native clean-aperture fractions and dimension errors.
+The codec-independent core now writes eligible minimized containers, including
+alpha configuration inheritance, ICC, Exif/XMP, HDR, orientation and size-width
+boundaries, and retains native ordinary-file fallback and repeated-write brands.
+These optional caller-supplied codec hooks do not introduce bundled C codecs.
+
+The two 441-case original-header suites pass exact callback, pixel and file-byte
+comparisons in normal, ASan/UBSan client and codec-free builds. All 14 new mutations
+are detected without process failures (240 default mutations). Existing encoding
+(1,292), writing/diagnostics (480 each), tiled encoding (966) and sequence (892)
+cases pass. Rust all-feature/no-feature tests, Clippy, formatting, ABI baseline,
+dependency audit and development inventory checks pass. Exact hashes and results
+are retained in docs/results/plugin-encoding-*, mini-encoding-* and encoder-*.
+Local leak checking remains disabled under ptrace; CI retains it. Completed CI
+at c9a2da7 passed its development checks, leak checks, all 212 executed mutations
+and platform Rust builds; only the deliberately strict completion gate failed.
+
+All 465 function records remain partial and strict completion remains false.
+Built-in AV1 encoding, other registered codec encoders, sequence codec integration,
+remaining codec replacements, exhaustive behavior, platform C execution and
+external downstream/performance gates remain open. Compact output's HEVC and
+post-write diagnostics paths still need their own end-to-end oracle coverage.
+Continue through those gaps; finite corpus parity is not full compatibility.

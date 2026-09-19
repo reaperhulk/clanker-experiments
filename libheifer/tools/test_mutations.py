@@ -15,6 +15,20 @@ import sys
 import tempfile
 
 MUTATIONS = [
+    ('encoder_empty_pixi', 'src/encoding.rs', 'image.plane(ch).map_or(0, |p| p.bit_depth)', 'image.plane(ch).map_or(1, |p| p.bit_depth)', 'plugin_encoding'),
+    ('encoder_versioned_query', 'crates/capi/src/plugin_encoding.rs', 'if version >= 2 {', 'if version >= 3 {', 'plugin_encoding'),
+    ('encoder_input_class', 'crates/capi/src/plugin_encoding.rs', 'encode(encoder.state, &image, input_class)', 'encode(encoder.state, &image, input_class + 1)', 'plugin_encoding'),
+    ('encoder_packet_configuration', 'crates/capi/src/plugin_encoding.rs', 'config.update(packet);', '// omit sequence configuration', 'plugin_encoding'),
+    ('encoder_alpha_class', 'crates/capi/src/plugin_encoding.rs', 'encode_av1(&alpha, &alpha_encoder, copied, options, 2)?', 'encode_av1(&alpha, &alpha_encoder, copied, options, 1)?', 'plugin_encoding'),
+    ('encoder_parameter_copy', 'crates/capi/src/plugin_encoding.rs', 'set(out.state, value);', 'set(out.state, value + 1);', 'plugin_encoding'),
+    ('encoder_packet_bytes', 'crates/capi/src/plugin_encoding.rs', 'data.extend_from_slice(packet);', 'data.extend_from_slice(packet); data.push(0);', 'plugin_encoding'),
+    ('encoder_clap_range', 'src/encoding.rs', 'encoded_size.0 - image.width > (1u32 << 31)', 'encoded_size.0 - image.width >= (1u32 << 31)', 'plugin_encoding'),
+    ('mini_writer_orientation', 'src/mini_write.rs', 'orientation = crate::geometry::orientation_concat(orientation, transform);', 'orientation = 1; let _ = transform;', 'mini_encoding'),
+    ('mini_writer_alpha_inheritance', 'src/mini_write.rs', 'alpha_data.is_empty() || alpha_config == config', 'alpha_data.is_empty()', 'mini_encoding'),
+    ('mini_writer_metadata_width', 'src/mini_write.rs', '> 1024', '>= 1024', 'mini_encoding'),
+    ('mini_writer_item_width', 'src/mini_write.rs', 'main_data.len() > 32768', 'main_data.len() >= 32768', 'mini_encoding'),
+    ('mini_writer_brand', 'src/mini_write.rs', 'b"mif3".as_slice()', 'b"mif1".as_slice()', 'mini_encoding'),
+    ('mini_writer_diffuse_white', 'src/mini_write.rs', '4 => bits.bytes(p.get(4..).unwrap_or_default()),', '4 => bits.bytes(p.get(..4).unwrap_or_default()),', 'mini_encoding'),
     ('mini_debug_gain_depth', 'src/mini.rs', 'value!("gainmap_bit_depth", bits.depth(gain_float, true)?);', 'value!("gainmap_bit_depth", bits.depth(gain_float, true)? + 1);', 'mini_debug'),
     ('mini_debug_hdr_primaries', 'src/mini.rs', 'bits.get(32) as i32', 'bits.get(32) as i64', 'mini_debug'),
     ('mini_debug_failed_expansion', 'src/context.rs', 'if let Some(error) = expansion_error {', 'if let Some(error) = expansion_error { self.debug_loaded = 0;', 'mini_debug'),

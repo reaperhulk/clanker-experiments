@@ -5,6 +5,7 @@
 pub mod auxiliary;
 #[cfg(feature = "av1")]
 pub mod av1;
+pub mod av1_config;
 mod box_probe;
 pub mod brands;
 pub mod camera;
@@ -31,6 +32,7 @@ pub mod jpeg_config;
 pub mod mask;
 pub mod metadata;
 mod mini;
+mod mini_write;
 pub mod overlay;
 pub mod properties;
 pub mod security;

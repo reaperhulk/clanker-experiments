@@ -46,23 +46,43 @@ pub unsafe extern "C" fn heif_context_encode_image(
         two_profiles: copied.save_two_colr_boxes_when_ICC_and_nclx_available != 0,
         no_nclx: copied.macOS_compatibility_workaround_no_nclx_profile != 0,
     };
-    let mut state = lock(&ctx.shared);
-    let result = match encoder.source.format() {
-        9 => state.encode_mask(image, &opts),
-        8 => state.encode_uncompressed(
+    let external = if matches!(
+        encoder.source,
+        crate::plugin_registry::EncoderSource::External(_)
+    ) && encoder.source.format() == 4
+    {
+        Some(crate::plugin_encoding::encode_image(
+            &ctx.shared,
             image,
+            encoder,
+            &copied,
             &opts,
-            if copied.unci_parameters.is_null() {
-                0
-            } else {
-                unsafe { ptr::addr_of!((*copied.unci_parameters).compression).read() }
-            },
-        ),
-        _ => Err(ContextError::new(
-            4,
-            6003,
-            "Unsupported feature: Support for this compression format has not been built in",
-        )),
+            1,
+        ))
+    } else {
+        None
+    };
+    let mut state = lock(&ctx.shared);
+    let result = if let Some(encoded) = external {
+        encoded
+    } else {
+        match encoder.source.format() {
+            9 => state.encode_mask(image, &opts),
+            8 => state.encode_uncompressed(
+                image,
+                &opts,
+                if copied.unci_parameters.is_null() {
+                    0
+                } else {
+                    unsafe { ptr::addr_of!((*copied.unci_parameters).compression).read() }
+                },
+            ),
+            _ => Err(ContextError::new(
+                4,
+                6003,
+                "Unsupported feature: Support for this compression format has not been built in",
+            )),
+        }
     };
     match result {
         Err(error) => report(&mut state, error),
@@ -230,22 +250,39 @@ pub unsafe extern "C" fn heif_context_encode_thumbnail(
         two_profiles: copied.save_two_colr_boxes_when_ICC_and_nclx_available != 0,
         no_nclx: copied.macOS_compatibility_workaround_no_nclx_profile != 0,
     };
-    let result = match encoder.source.format() {
-        9 => state.encode_mask(&scaled, &opts),
-        8 => state.encode_uncompressed(
-            &scaled,
-            &opts,
-            if copied.unci_parameters.is_null() {
-                0
-            } else {
-                unsafe { ptr::addr_of!((*copied.unci_parameters).compression).read() }
-            },
-        ),
-        _ => Err(ContextError::new(
-            4,
-            6003,
-            "Unsupported feature: Support for this compression format has not been built in",
-        )),
+    let external = if matches!(
+        encoder.source,
+        crate::plugin_registry::EncoderSource::External(_)
+    ) && encoder.source.format() == 4
+    {
+        drop(state);
+        let result =
+            crate::plugin_encoding::encode_image(&ctx.shared, &scaled, encoder, &copied, &opts, 4);
+        state = lock(&ctx.shared);
+        Some(result)
+    } else {
+        None
+    };
+    let result = if let Some(result) = external {
+        result
+    } else {
+        match encoder.source.format() {
+            9 => state.encode_mask(&scaled, &opts),
+            8 => state.encode_uncompressed(
+                &scaled,
+                &opts,
+                if copied.unci_parameters.is_null() {
+                    0
+                } else {
+                    unsafe { ptr::addr_of!((*copied.unci_parameters).compression).read() }
+                },
+            ),
+            _ => Err(ContextError::new(
+                4,
+                6003,
+                "Unsupported feature: Support for this compression format has not been built in",
+            )),
+        }
     };
     match result {
         Err(error) => report(&mut state, error),

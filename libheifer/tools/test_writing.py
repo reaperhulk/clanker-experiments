@@ -2,6 +2,7 @@
 """Original-header writer callbacks, exact serialized metadata bytes, repeated writes, brands, property/reference layout and read-back."""
 import argparse,hashlib,json,os,struct,subprocess,random
 from pathlib import Path
+CLIENT = "tests/writing.c"
 
 def corpus():
     cases=[]
@@ -21,7 +22,7 @@ def corpus():
 def main():
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--reference-build',required=True);p.add_argument('--candidate',default='target/release/libheifer.so');p.add_argument('--output',default='.build/writing-report.json');p.add_argument('--work');p.add_argument('--sanitize',action='store_true');p.add_argument('--no-leak-check',action='store_true');a=p.parse_args()
     if a.no_leak_check and not a.sanitize:p.error('--no-leak-check requires --sanitize')
-    output=Path(a.output);output.unlink(missing_ok=True);work=Path(a.work or ('.build/writing-sanitized' if a.sanitize else '.build/writing')).resolve();inc=work/'include/libheif';inc.mkdir(parents=True,exist_ok=True);ref=Path(a.reference_build).resolve();(inc/'heif_version.h').write_bytes((ref/'libheif/heif_version.h').read_bytes());libs={'reference':ref/'libheif/libheif.so','candidate':Path(a.candidate).resolve()};hashes={k:hashlib.sha256(v.read_bytes()).hexdigest() for k,v in libs.items()};client=Path('tests/writing.c');client_hash=hashlib.sha256(client.read_bytes()).hexdigest();cases,payload=corpus();lines={};env=dict(os.environ)
+    output=Path(a.output);output.unlink(missing_ok=True);work=Path(a.work or ('.build/writing-sanitized' if a.sanitize else '.build/writing')).resolve();inc=work/'include/libheif';inc.mkdir(parents=True,exist_ok=True);ref=Path(a.reference_build).resolve();(inc/'heif_version.h').write_bytes((ref/'libheif/heif_version.h').read_bytes());libs={'reference':ref/'libheif/libheif.so','candidate':Path(a.candidate).resolve()};hashes={k:hashlib.sha256(v.read_bytes()).hexdigest() for k,v in libs.items()};client=Path(CLIENT);client_hash=hashlib.sha256(client.read_bytes()).hexdigest();cases,payload=corpus();lines={};env=dict(os.environ)
     if a.sanitize:env['UBSAN_OPTIONS']='halt_on_error=1'
     if a.no_leak_check:env['ASAN_OPTIONS']='detect_leaks=0'
     for name,lib in libs.items():

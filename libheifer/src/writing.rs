@@ -13,6 +13,7 @@ pub type SharedLayout = Arc<Mutex<FileLayout>>;
 #[derive(Clone)]
 pub struct FileLayout {
     pub major: u32,
+    pub minor: u32,
     pub brands: Vec<u32>,
     pub meta: Vec<[u8; 4]>,
     pub image: bool,
@@ -25,6 +26,7 @@ impl Default for FileLayout {
     fn default() -> Self {
         Self {
             major: 0,
+            minor: 0,
             brands: Vec::new(),
             meta: Vec::new(),
             image: false,
@@ -166,8 +168,17 @@ impl Context {
         let mut layout = self.items.layout.lock().unwrap();
         let structural =
             layout.image && !self.items.items.is_empty() && layout.meta.contains(b"iprp");
+        let image_brand = self
+            .document
+            .as_ref()
+            .and_then(|doc| doc.images.get(&doc.primary))
+            .and_then(|image| match &image.kind {
+                b"av01" => Some(*b"avif"),
+                b"hvc1" => Some(*b"heic"),
+                _ => None,
+            });
         if layout.major == 0 && structural {
-            layout.major = u32::from_be_bytes(*b"mif1");
+            layout.major = u32::from_be_bytes(image_brand.unwrap_or(*b"mif1"));
         }
         if !self.sequences.tracks.is_empty() && layout.major == 0 {
             layout.major = u32::from_be_bytes(*b"msf1");
@@ -181,6 +192,9 @@ impl Context {
         }
         if structural {
             layout.compatible(u32::from_be_bytes(*b"mif1"));
+            if let Some(brand) = image_brand {
+                layout.compatible(u32::from_be_bytes(brand));
+            }
         }
         if structural
             && self
@@ -196,6 +210,15 @@ impl Context {
         }
         if layout.unif {
             layout.compatible(u32::from_be_bytes(*b"unif"));
+        }
+        layout.minor = 0;
+        if layout.mini
+            && let Some((out, brand)) = self.write_mini(layout.primary)
+        {
+            layout.major = u32::from_be_bytes(*b"mif3");
+            layout.minor = brand;
+            layout.brands.clear();
+            return Ok(out);
         }
         let snapshot = layout.clone();
         drop(layout);

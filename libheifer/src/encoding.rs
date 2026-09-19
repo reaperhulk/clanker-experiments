@@ -136,9 +136,46 @@ impl Context {
         image: &Image,
         kind: [u8; 4],
         data: Vec<u8>,
-        mut properties: Vec<(Property, bool)>,
+        properties: Vec<(Property, bool)>,
         options: &Options,
     ) -> Result<Arc<ImageInfo>> {
+        self.insert_coded(
+            image,
+            kind,
+            data,
+            properties,
+            options,
+            (image.width, image.height),
+        )
+    }
+    pub fn insert_coded(
+        &mut self,
+        image: &Image,
+        kind: [u8; 4],
+        data: Vec<u8>,
+        mut properties: Vec<(Property, bool)>,
+        options: &Options,
+        encoded_size: (u32, u32),
+    ) -> Result<Arc<ImageInfo>> {
+        if encoded_size.0 < image.width || encoded_size.1 < image.height {
+            return Err(ContextError::new(
+                5,
+                2006,
+                "Usage error: Invalid parameter value: Clean aperture is larger than the image",
+            ));
+        }
+        if encoded_size != (image.width, image.height)
+            && (image.width > i32::MAX as u32
+                || image.height > i32::MAX as u32
+                || encoded_size.0 - image.width > (1u32 << 31)
+                || encoded_size.1 - image.height > (1u32 << 31))
+        {
+            return Err(ContextError::new(
+                5,
+                2006,
+                "Usage error: Invalid parameter value: Clean aperture values exceed the supported range",
+            ));
+        }
         if let Some(raw) = &image.color.raw {
             let mut data = raw.profile_type.to_be_bytes().to_vec();
             data.extend(&raw.data);
@@ -156,9 +193,35 @@ impl Context {
             properties.push((property(*b"colr", data), false));
         }
         let mut ispe = vec![0; 4];
-        ispe.extend(image.width.to_be_bytes());
-        ispe.extend(image.height.to_be_bytes());
+        ispe.extend(encoded_size.0.to_be_bytes());
+        ispe.extend(encoded_size.1.to_be_bytes());
         properties.push((property(*b"ispe", ispe), matches!(&kind, b"mski" | b"unci")));
+        if encoded_size != (image.width, image.height) {
+            let mut clap = Vec::new();
+            let offset = |delta: u32| {
+                let value = -i64::from(delta);
+                if delta > 65536 {
+                    ((value / 2) as u32, 1)
+                } else {
+                    (value as u32, 2)
+                }
+            };
+            let horizontal = offset(encoded_size.0 - image.width);
+            let vertical = offset(encoded_size.1 - image.height);
+            for n in [
+                image.width,
+                1,
+                image.height,
+                1,
+                horizontal.0,
+                horizontal.1,
+                vertical.0,
+                vertical.1,
+            ] {
+                clap.extend(n.to_be_bytes());
+            }
+            properties.push((property(*b"clap", clap), true));
+        }
         let channels: &[i32] = match image.colorspace {
             2 => &[0],
             0 => &[0, 1, 2],
@@ -166,18 +229,11 @@ impl Context {
             1 => &[10, 10, 10],
             _ => &[],
         };
-        let bits: Option<Vec<_>> = channels
+        let bits: Vec<_> = channels
             .iter()
-            .map(|&ch| {
-                image
-                    .plane(ch)
-                    .filter(|p| (1..=255).contains(&p.bit_depth))
-                    .map(|p| p.bit_depth)
-            })
+            .map(|&ch| image.plane(ch).map_or(0, |p| p.bit_depth))
             .collect();
-        if let Some(bits) = bits
-            && !bits.is_empty()
-        {
+        if !bits.is_empty() {
             let mut data = vec![0, 0, 0, 0, bits.len() as u8];
             data.extend(bits);
             properties.push((property(*b"pixi", data), false));
@@ -220,8 +276,9 @@ impl Context {
             .flatten()
             .map(|&i| self.properties.boxes[i].clone())
             .collect();
-        let mut info = ImageInfo::new(id, kind, (image.width, image.height), retained);
-        info.miaf = image.colorspace != 0
+        let mut info = ImageInfo::new(id, kind, encoded_size, retained);
+        info.miaf = kind == *b"av01"
+            || image.colorspace != 0
             || (!matches!(image.chroma, 1 | 2) || image.width.is_multiple_of(2))
                 && (image.chroma != 1 || image.height.is_multiple_of(2));
         info.width = image.width;
@@ -249,6 +306,36 @@ impl Context {
             }
         }
         Ok(self.register_image(info))
+    }
+    pub fn attach_encoded_alpha(
+        &mut self,
+        main: &ImageInfo,
+        alpha: &ImageInfo,
+        premultiplied: bool,
+    ) -> Result<()> {
+        self.items.add_reference(crate::items::Reference {
+            from: alpha.id,
+            kind: u32::from_be_bytes(*b"auxl"),
+            to: vec![main.id],
+        });
+        let p = property(
+            *b"auxC",
+            [
+                &[0u8; 4][..],
+                b"urn:mpeg:mpegB:cicp:systems:auxiliary:alpha\0",
+            ]
+            .concat(),
+        );
+        self.properties.add_to_file(alpha.id, p.clone(), true)?;
+        alpha.retained_properties.lock().unwrap().push(Arc::new(p));
+        if premultiplied {
+            self.items.add_reference(crate::items::Reference {
+                from: main.id,
+                kind: u32::from_be_bytes(*b"prem"),
+                to: vec![alpha.id],
+            });
+        }
+        Ok(())
     }
     pub(crate) fn register_image(&mut self, info: ImageInfo) -> Arc<ImageInfo> {
         let id = info.id;

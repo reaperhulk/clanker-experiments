@@ -47,7 +47,7 @@ impl DecoderProvider for Provider {
         )
     }
 }
-fn callback_error(error: HeifError, unpack: bool) -> ContextError {
+pub(super) fn callback_error(error: HeifError, unpack: bool) -> ContextError {
     let code = libheifer::error_text::code_text(error.code);
     let subcode = libheifer::error_text::subcode_text(error.subcode);
     let text = if error.message.is_null() {

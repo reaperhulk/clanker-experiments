@@ -29,6 +29,7 @@ pub use input::{Reader, ReaderRangeResult};
 mod items;
 mod metadata;
 mod plugin_decoding;
+mod plugin_encoding;
 mod plugin_registry;
 mod plugin_types;
 pub use plugin_types::*;
