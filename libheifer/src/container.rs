@@ -671,6 +671,9 @@ impl<'a> Container<'a> {
                     ),
                 });
             }
+            if *idat && data.get(range.clone()).is_none() {
+                return Err(ParseError::Truncated);
+            }
             let slice = if !self.payloads.contains_key(&id)
                 && let Some(input) = self.input
             {

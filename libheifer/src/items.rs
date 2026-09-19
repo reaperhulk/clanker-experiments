@@ -204,7 +204,7 @@ impl ItemStore {
             }
             out.try_reserve_exact(data.len())
                 .map_err(|_| allocation())?;
-            out.extend_from_slice(&data);
+            out.extend_from_slice(data);
             return Ok(out);
         }
         let source = self.input.as_ref().map_or(&[][..], |i| i.bytes());
