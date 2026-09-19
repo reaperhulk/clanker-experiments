@@ -251,6 +251,12 @@ fn validate_limit_boxes(
         let h = header(data)?;
         let p = body(data, h)?;
         match &h.kind {
+            b"cmpd" => {
+                crate::uncompressed::definitions(p, limits.max_components)?;
+            }
+            b"uncC" => {
+                crate::uncompressed::Configuration::parse(p, Some(limits))?;
+            }
             b"iprp" | b"ipco" => validate_limit_boxes(p, h.kind, limits)?,
             b"iinf" if p.len() >= 6 => {
                 let n = if p[0] == 0 {

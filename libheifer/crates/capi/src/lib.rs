@@ -27,6 +27,7 @@ mod security;
 mod sensor;
 mod tai;
 mod text;
+mod uncompressed;
 pub use decoding::DecodingOptions;
 pub use properties::UserDescription;
 pub use security::SecurityLimits;

@@ -4,6 +4,7 @@ use crate::context::ContextError;
 
 #[derive(Clone, Copy, Debug)]
 pub struct Limits {
+    pub version: u8,
     pub max_image_size_pixels: u64,
     pub max_number_of_tiles: u64,
     pub max_bayer_pattern_pixels: u32,
@@ -25,6 +26,7 @@ pub struct Limits {
 impl Default for Limits {
     fn default() -> Self {
         Self {
+            version: 4,
             max_image_size_pixels: 1_073_741_824,
             max_number_of_tiles: 16_777_216,
             max_bayer_pattern_pixels: 256,

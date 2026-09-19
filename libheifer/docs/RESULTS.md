@@ -8,8 +8,8 @@ with VUI unspecified-color, monochrome-decoding and typed missing-parameter fixe
 
 ## Implemented scope
 
-276 of 465 public functions are exported, plus `heif_error_success`.
-189 functions are missing. Even the exported functions are marked **partial**:
+279 of 465 public functions are exported, plus `heif_error_success`.
+186 functions are missing. Even the exported functions are marked **partial**:
 coverage is finite, platform coverage is incomplete, and one malformed-box
 behavior gap is explicitly retained. There is no claim of a compatible library.
 
@@ -504,3 +504,30 @@ allocation-failure injection, encoding/serialization and platform ABI remain ope
 Text commit c08972b passed all development CI steps, 53 mutation checks and
 Rust builds on Linux, macOS and Windows. Only the full-API completion gate
 failed; see docs/results/ci-text-report.json.
+
+## Uncompressed configuration and component definition queries
+
+Three component-definition APIs and pure Rust cmpd/uncC parsing now match 2,364
+independent original-header cases, including all 19 predefined profiles,
+explicit/synthetic component tables, unsigned type boundaries, raw URI bytes and
+ownership after context/handle release. Configurations are attached to mask items
+to test these properties independently of uncompressed-image initialization.
+Pixel decoding, encoding and initialization of uncompressed items remain open.
+
+The corpus covers every configuration version and every sampling, interleave,
+block-size and flag byte; component formats, bit depths and alignments; truncated
+headers and strings; component/tile limits; and pixel-size limits gated by the
+security-structure version. The Rust limit snapshot now retains that version.
+The same cases pass C-client ASan/UBSan (local leak checking disabled) and the
+codec-free build. The first run found a truncated-table diagnostic difference;
+the final diagnostic matches the reference.
+
+Four new mutations are rejected: component-limit boundary (8 mismatches),
+unterminated URI handling (27), ignored limit version (30), and reversed RGB
+component definitions (3). The default set contains 68 deliberate defects.
+Existing context (1,786), properties (960), security (2,927) and handle-component
+(791) cases pass. All new exports remain partial.
+
+Image-area commit c75ff63 passed all development CI steps, 58 mutation checks
+and Rust builds on Linux, macOS and Windows. Only the full-API completion gate
+failed; see docs/results/ci-area-report.json.

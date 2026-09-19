@@ -1314,6 +1314,22 @@
       "tools/test_derived_handles.py"
     ]
   },
+  "heif_image_handle_get_cmpd_component_type": {
+    "notes": "Linux x86_64 original-header checks of component types, all predefined profiles, explicit/synthetic tables, NULL/boundary indices, raw URI bytes, string ownership after release/reload, box prefixes, field validation and versioned security limits. Tests attach configuration boxes to mask items; uncompressed-image initialization and decoding remain open in the following iteration.",
+    "status": "partial",
+    "tests": [
+      "tests/uncompressed_config.c",
+      "tools/test_uncompressed_config.py"
+    ]
+  },
+  "heif_image_handle_get_cmpd_component_type_uri": {
+    "notes": "Linux x86_64 original-header checks of component types, all predefined profiles, explicit/synthetic tables, NULL/boundary indices, raw URI bytes, string ownership after release/reload, box prefixes, field validation and versioned security limits. Tests attach configuration boxes to mask items; uncompressed-image initialization and decoding remain open in the following iteration.",
+    "status": "partial",
+    "tests": [
+      "tests/uncompressed_config.c",
+      "tools/test_uncompressed_config.py"
+    ]
+  },
   "heif_image_handle_get_color_profile_type": {
     "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open. Derived and mask handle queries also cover cyclic/missing references and partial reloads.",
     "status": "partial",
@@ -1554,6 +1570,14 @@
       "tests/auxiliary.c",
       "tools/test_auxiliary.py",
       "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_image_handle_get_number_of_cmpd_components": {
+    "notes": "Linux x86_64 original-header checks of component types, all predefined profiles, explicit/synthetic tables, NULL/boundary indices, raw URI bytes, string ownership after release/reload, box prefixes, field validation and versioned security limits. Tests attach configuration boxes to mask items; uncompressed-image initialization and decoding remain open in the following iteration.",
+    "status": "partial",
+    "tests": [
+      "tests/uncompressed_config.c",
+      "tools/test_uncompressed_config.py"
     ]
   },
   "heif_image_handle_get_number_of_components": {

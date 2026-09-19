@@ -4,8 +4,8 @@ This implements an independent Rust library with an optional compatible C ABI,
 targeting the complete libheif 1.23.4 contract. All implementation dependencies
 are pure Rust. Native libheif and libde265 are independent test oracles only.
 
-**Incomplete: 276 of 465 functions are implemented and remain marked partial;
-189 functions are missing.** Keep this PR draft. The strict completion gate
+**Incomplete: 279 of 465 functions are implemented and remain marked partial;
+186 functions are missing.** Keep this PR draft. The strict completion gate
 rejects missing APIs and unvalidated behavior. Unsupported stubs and forwarding
 to libheif do not count toward coverage.
 
@@ -22,7 +22,13 @@ The current implementation includes:
 - Versioned security limits, allocation accounting and ownership across reloads,
   malformed SPS rejection, and image-owned error-message buffers.
 
-This increment adds thirteen handle HDR/aspect APIs. Independent clients match
+This increment adds three component-definition queries and pure Rust cmpd/uncC
+configuration parsing. Independent clients match 2,364 cases, including profiles,
+URI ownership, malformed inputs and versioned limits; sanitizer and codec-free
+runs pass. Four new mutations are detected, bringing the default set to 68.
+Uncompressed-image initialization and pixel decoding are the next implementation work.
+
+The HDR increment adds thirteen handle HDR/aspect APIs. Independent clients match
 716 cases and 7,160 successful decodes, including metadata inheritance, retained
 properties, malformed boxes and setter behavior across reloads. C-client ASan/UBSan
 passes. Six added mutations are detected; the default suite contains 64 defects.

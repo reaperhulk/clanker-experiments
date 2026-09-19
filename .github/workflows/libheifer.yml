@@ -55,6 +55,8 @@ jobs:
       - run: python tools/test_items.py --reference-build .build/reference
       - run: python tools/test_add_metadata.py --reference-build .build/reference
       - run: python tools/test_text.py --reference-build .build/reference
+      - run: python tools/test_uncompressed_config.py --reference-build .build/reference
+      - run: python tools/test_uncompressed_config.py --reference-build .build/reference --sanitize --output .build/uncompressed-config-sanitized-report.json
       - run: python tools/test_handle_color.py --reference-build .build/reference
       - run: python tools/test_handle_color.py --reference-build .build/reference --sanitize --output .build/handle-color-sanitized-report.json
       - run: python tools/test_image_area.py --reference-build .build/reference
@@ -92,6 +94,7 @@ jobs:
       - run: python tools/test_decode_overlay.py --reference-build .build/reference
       - run: python tools/test_decode_mask.py --reference-build .build/reference
       - run: CARGO_TARGET_DIR=.build/no-codecs cargo build --locked --release -p libheifer-capi --no-default-features
+      - run: python tools/test_uncompressed_config.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --output .build/no-codecs-uncompressed-config-report.json
       - run: python tools/test_handle_color.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --output .build/no-codecs-handle-color-report.json
       - run: python tools/test_image_area.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --output .build/no-codecs-image-area-report.json
       - run: python tools/test_text.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --output .build/no-codecs-text-report.json

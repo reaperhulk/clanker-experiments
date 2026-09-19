@@ -258,6 +258,7 @@ pub(super) unsafe fn allocation_budget(input: *const SecurityLimits) -> Option<A
 
 unsafe fn snapshot(p: *const SecurityLimits) -> Limits {
     Limits {
+        version: unsafe { (*p).version },
         max_image_size_pixels: unsafe { (*p).max_image_size_pixels },
         max_number_of_tiles: unsafe { (*p).max_number_of_tiles },
         max_bayer_pattern_pixels: unsafe { (*p).max_bayer_pattern_pixels },
