@@ -267,7 +267,11 @@ impl ItemStore {
                 ));
             };
             let data = if let Some(input) = &self.input {
-                input.read_range(start, end - start)?
+                if loc.method == 1 {
+                    input.read_idat(start, end - start)?
+                } else {
+                    input.read_range(start, end - start)?
+                }
             } else {
                 std::borrow::Cow::Borrowed(
                     source

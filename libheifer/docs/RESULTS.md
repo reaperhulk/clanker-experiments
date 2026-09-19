@@ -764,7 +764,7 @@ semantic defects plus the existing empty-sample-ID mutation are checked; the
 six new entries bring the default mutation suite to 114. Reports under
 `docs/results/gimi-*.json` identify the exact binaries, client and corpus.
 
-There are 352 partial functions and 113 missing. Encoding round trips, new-image
+There are 352 partial functions and 111 missing. Encoding round trips, new-image
 property insertion/deduplication, allocation failures, whole-library sanitizer
 instrumentation and cross-platform C execution remain open. The full completion
 gate remains unchanged and fails rather than treating symbol coverage as parity.
@@ -913,3 +913,35 @@ and cleanup ordering. The inventory is 179 mutations. Remaining gaps include
 concurrent/reentrant module transactions, platform loader behavior, exhaustive
 allocation failures and codec plugin integration. Three exports remain missing:
 file input, reader callbacks and debug dumping. Strict completion remains false.
+
+
+### Reader input and expanded sequence truncations
+
+The file-input checkpoint `e57bfbb` passed all development CI gates, including
+all 184 mutations, original-header file/sequence/sparse clients, ASan/UBSan with
+leak checking, codec-free runs and Linux/macOS/Windows Rust builds. Only the
+strict full-completion gate failed. Extracted CI evidence, including binary
+hashes and all nine file reports, is in `docs/results/file-input-ci-e57.json`.
+
+Reader callbacks now retain caller-owned tables/userdata for payload reads,
+respect historical table prefixes, handle range results and owned error messages,
+and distinguish inline data waits from file-extent range requests. All 4,712
+original-header cases pass normal, client ASan/UBSan and codec-free builds.
+Five reader mutations are detected by semantic differences. The read-call
+schedule is not yet compared; reentrancy, growing input, precise allocation
+budgets and complete sequence callback behavior remain required.
+
+Every truncation of the three independent sequence fixtures is now exercised:
+2,117 cases per input path, matching in memory and from files under normal,
+client ASan/UBSan and codec-free builds. This fixed truncated movie suberrors
+and uncompressed frame advancement/terminal errors after failed reads. Two
+additional mutations are detected (1,659 and 44 differences); the default
+mutation inventory is now 191. Construction (892), context/handles (1,786),
+file input (929), and sparse-file (3) regressions pass. Exact hashes and reports
+are retained in `docs/results/reader-*.json`.
+
+Local leak checking still fails because LeakSanitizer cannot run under ptrace;
+local sanitizer reports explicitly disable it. CI keeps leak checking enabled.
+Current function coverage: 464 partial, one missing (debug dump). Full behavior,
+remaining codecs, ABI/platform and all acceptance requirements remain open.
+Symbol presence is not full compatibility; the strict gate remains unchanged.

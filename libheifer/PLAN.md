@@ -115,7 +115,7 @@ The derived-image iteration adds grids/identity, cycle/MIAF checks, scoped tile
 workers and four warning/thread-control exports. Overlay composition, raw masks,
 shared-graph decode-operation budgets and dynamic derived queries follow in the next iteration. Six security-limit/allocation exports follow, including context-wide
 allocation accounting and object-specific resource lifetimes. Auxiliary/depth, item-property, six camera-matrix, twenty-two sensor-metadata and thirty-nine component APIs, generic items/compression, twelve TAI timestamp APIs, five metadata writers nine text-item APIs three image-area APIs thirteen handle color/aspect APIs and three component-definition queries bring the total to
-462 partial functions, with 3 functions missing. Compatibility work comes first;
+464 partial functions, with 1 function missing. Compatibility work comes first;
 performance optimization is deferred until the complete compatibility gate passes.
 The full header contract, finite behavioral reports, known differences and
 performance evidence are retained in `compat/` and `docs/results/`.
@@ -186,7 +186,7 @@ Thirty-nine APIs add registration, init/deinit, discovery and descriptor queries
 
 ### File serialization and writer callbacks
 
-Six APIs now serialize ordered metadata boxes, payload extents, properties and references, manage brands/ID mode and invoke caller/file writers. The 480-case independent original-header corpus matches exact bytes, repeated writes, read-back outcomes, callback errors and userdata, reentrant queries, historical writer prefixes, UUIDs and property-index boundaries. Normal, codec-free and ASan/UBSan clients pass. All six semantic mutations are detected; the default suite contains 137 defects. Image/sequence integration, compact image output, large offsets, namespace switching and region/text round trips remain open. Current count: 402 partial APIs, 63 missing; strict completion remains false.
+Six APIs now serialize ordered metadata boxes, payload extents, properties and references, manage brands/ID mode and invoke caller/file writers. The 480-case independent original-header corpus matches exact bytes, repeated writes, read-back outcomes, callback errors and userdata, reentrant queries, historical writer prefixes, UUIDs and property-index boundaries. Normal, codec-free and ASan/UBSan clients pass. All six semantic mutations are detected; the default suite contains 137 defects. Image/sequence integration, compact image output, large offsets, namespace switching and region/text round trips remain open. Current count: 402 partial APIs, 61 missing; strict completion remains false.
 
 ### Image encoding and live file-model integration
 
@@ -227,3 +227,35 @@ stable stderr diagnostics; ASan/UBSan clients and codec-free runs pass. Unpinned
 module safety probes are separate from native parity. Eight loader mutations
 bring the inventory to 179. Continue file/reader input and debug dump, then
 remaining behavior, codec, resource and platform gates.
+
+
+### Reader input and expanded sequence truncations
+
+The file-input checkpoint `e57bfbb` passed all development CI gates, including
+all 184 mutations, original-header file/sequence/sparse clients, ASan/UBSan with
+leak checking, codec-free runs and Linux/macOS/Windows Rust builds. Only the
+strict full-completion gate failed. Extracted CI evidence, including binary
+hashes and all nine file reports, is in `docs/results/file-input-ci-e57.json`.
+
+Reader callbacks now retain caller-owned tables/userdata for payload reads,
+respect historical table prefixes, handle range results and owned error messages,
+and distinguish inline data waits from file-extent range requests. All 4,712
+original-header cases pass normal, client ASan/UBSan and codec-free builds.
+Five reader mutations are detected by semantic differences. The read-call
+schedule is not yet compared; reentrancy, growing input, precise allocation
+budgets and complete sequence callback behavior remain required.
+
+Every truncation of the three independent sequence fixtures is now exercised:
+2,117 cases per input path, matching in memory and from files under normal,
+client ASan/UBSan and codec-free builds. This fixed truncated movie suberrors
+and uncompressed frame advancement/terminal errors after failed reads. Two
+additional mutations are detected (1,659 and 44 differences); the default
+mutation inventory is now 191. Construction (892), context/handles (1,786),
+file input (929), and sparse-file (3) regressions pass. Exact hashes and reports
+are retained in `docs/results/reader-*.json`.
+
+Local leak checking still fails because LeakSanitizer cannot run under ptrace;
+local sanitizer reports explicitly disable it. CI keeps leak checking enabled.
+Current function coverage: 464 partial, one missing (debug dump). Full behavior,
+remaining codecs, ABI/platform and all acceptance requirements remain open.
+Symbol presence is not full compatibility; the strict gate remains unchanged.

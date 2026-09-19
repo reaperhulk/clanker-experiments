@@ -77,6 +77,24 @@
       "crates/capi/tests/abi.rs"
     ]
   },
+  "heif_context_add_XMP_metadata": {
+    "notes": "Linux x86_64 original-header differential: Exif signature offsets, XMP compression branches and exact bytes, invalid generic types, URI behavior, foreign handles, reloads, references, resource limits and unchanged handle metadata. File serialization, allocation-failure behavior and cross-platform ABI remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/add_metadata.c",
+      "tests/items.c",
+      "tools/test_add_metadata.py"
+    ]
+  },
+  "heif_context_add_XMP_metadata2": {
+    "notes": "Linux x86_64 original-header differential: Exif signature offsets, XMP compression branches and exact bytes, invalid generic types, URI behavior, foreign handles, reloads, references, resource limits and unchanged handle metadata. File serialization, allocation-failure behavior and cross-platform ABI remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/add_metadata.c",
+      "tests/items.c",
+      "tools/test_add_metadata.py"
+    ]
+  },
   "heif_context_add_compatible_brand": {
     "notes": "Original-header exact metadata-only BMFF bytes and read-back, output files and I/O-failure behavior, callback errors/reentrant queries, invalid writer versions with historical prefixes, optional userdata, explicit brands, UUID and large property indices. Region/text serialization infrastructure added, but in-memory image/sequence encoding round trips, mini images, namespace switching and allocation failures remain open.",
     "status": "partial",
@@ -204,6 +222,7 @@
     ]
   },
   "heif_context_add_uri_metadata_sequence_track": {
+    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/sequences.c",
@@ -211,36 +230,17 @@
       "tools/test_sequences.py",
       "tools/test_sequence_reading.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open."
-  },
-  "heif_context_add_visual_sequence_track": {
-    "status": "partial",
-    "tests": [
-      "tests/sequences.c",
-      "tests/sequence_reading.c",
-      "tools/test_sequences.py",
-      "tools/test_sequence_reading.py",
-      "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open."
-  },
-  "heif_context_add_XMP_metadata": {
-    "notes": "Linux x86_64 original-header differential: Exif signature offsets, XMP compression branches and exact bytes, invalid generic types, URI behavior, foreign handles, reloads, references, resource limits and unchanged handle metadata. File serialization, allocation-failure behavior and cross-platform ABI remain open.",
-    "status": "partial",
-    "tests": [
-      "tests/add_metadata.c",
-      "tests/items.c",
-      "tools/test_add_metadata.py"
     ]
   },
-  "heif_context_add_XMP_metadata2": {
-    "notes": "Linux x86_64 original-header differential: Exif signature offsets, XMP compression branches and exact bytes, invalid generic types, URI behavior, foreign handles, reloads, references, resource limits and unchanged handle metadata. File serialization, allocation-failure behavior and cross-platform ABI remain open.",
+  "heif_context_add_visual_sequence_track": {
+    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open.",
     "status": "partial",
     "tests": [
-      "tests/add_metadata.c",
-      "tests/items.c",
-      "tools/test_add_metadata.py"
+      "tests/sequences.c",
+      "tests/sequence_reading.c",
+      "tools/test_sequences.py",
+      "tools/test_sequence_reading.py",
+      "crates/capi/tests/abi.rs"
     ]
   },
   "heif_context_alloc": {
@@ -397,7 +397,7 @@
       "tools/test_derived_handles.py"
     ]
   },
-  "heif_context_get_primary_image_handle": {
+  "heif_context_get_primary_image_ID": {
     "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open. Derived and mask handle queries also cover cyclic/missing references and partial reloads.",
     "status": "partial",
     "tests": [
@@ -406,7 +406,7 @@
       "tools/test_derived_handles.py"
     ]
   },
-  "heif_context_get_primary_image_ID": {
+  "heif_context_get_primary_image_handle": {
     "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open. Derived and mask handle queries also cover cyclic/missing references and partial reloads.",
     "status": "partial",
     "tests": [
@@ -435,6 +435,7 @@
     ]
   },
   "heif_context_get_sequence_duration": {
+    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/sequences.c",
@@ -442,10 +443,10 @@
       "tools/test_sequences.py",
       "tools/test_sequence_reading.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open."
+    ]
   },
   "heif_context_get_sequence_timescale": {
+    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/sequences.c",
@@ -453,8 +454,7 @@
       "tools/test_sequences.py",
       "tools/test_sequence_reading.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open."
+    ]
   },
   "heif_context_get_text_item": {
     "notes": "Linux x86_64 original-header differential: MIME text references, creation and pending payloads, copied content/language strings, malformed fields, compressed content, duplicate references, resource limits, retained handles and text lookup order across changed-content reloads. File serialization, fresh encoded-image language insertion, allocation failures and cross-platform ABI remain open.",
@@ -466,6 +466,7 @@
     ]
   },
   "heif_context_get_track": {
+    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/sequences.c",
@@ -473,10 +474,10 @@
       "tools/test_sequences.py",
       "tools/test_sequence_reading.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open."
+    ]
   },
   "heif_context_get_track_ids": {
+    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/sequences.c",
@@ -484,10 +485,10 @@
       "tools/test_sequences.py",
       "tools/test_sequence_reading.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open."
+    ]
   },
   "heif_context_has_sequence": {
+    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/sequences.c",
@@ -495,8 +496,7 @@
       "tools/test_sequences.py",
       "tools/test_sequence_reading.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open."
+    ]
   },
   "heif_context_is_top_level_image_ID": {
     "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open. Derived and mask handle queries also cover cyclic/missing references and partial reloads.",
@@ -508,6 +508,7 @@
     ]
   },
   "heif_context_number_of_sequence_tracks": {
+    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/sequences.c",
@@ -515,11 +516,10 @@
       "tools/test_sequences.py",
       "tools/test_sequence_reading.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open."
+    ]
   },
   "heif_context_read_from_file": {
-    "notes": "Retained file source, range-based media reads, metadata snapshot offsets, missing-file errors and old-handle ownership. Recovered after local environment failure; full independent/sanitizer/codec-free and sparse-file validation are required in CI. Callback input, detailed I/O failure state and metadata allocation accounting remain open.",
+    "notes": "929 original-header cases, 212 sequence fixtures and three 16-GiB sparse files passed normal, ASan/UBSan with leak checking and codec-free CI at e57bfbb. Five file mutations and all 184 baseline mutations passed. Expanded 2,117 sequence cases now also pass normal/client sanitizer/codec-free checks. Complete resource accounting, file-change semantics and platform C execution remain open.",
     "status": "partial",
     "tests": [
       "tests/file_input.c",
@@ -560,6 +560,15 @@
       "tools/test_uncompressed_units.py"
     ]
   },
+  "heif_context_read_from_reader": {
+    "notes": "Retained callback table/userdata, historical prefixes, version-2 struct returns, inline/file extents, size bisection and error-message ownership. 4,712 original-header cases pass normal, ASan/UBSan clients and codec-free builds; five reader mutations detected through semantic differences. Read-call granularity, callback reentrancy, allocation budgets, complete growing-input/sequence behavior and cross-platform C execution remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/reader_input.c",
+      "tools/test_reader_input.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
   "heif_context_set_major_brand": {
     "notes": "Original-header exact metadata-only BMFF bytes and read-back, output files and I/O-failure behavior, callback errors/reentrant queries, invalid writer versions with historical prefixes, optional userdata, explicit brands, UUID and large property indices. Region/text serialization infrastructure added, but in-memory image/sequence encoding round trips, mini images, namespace switching and allocation failures remain open.",
     "status": "partial",
@@ -591,6 +600,7 @@
     ]
   },
   "heif_context_set_number_of_sequence_repetitions": {
+    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/sequences.c",
@@ -598,8 +608,7 @@
       "tools/test_sequences.py",
       "tools/test_sequence_reading.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open."
+    ]
   },
   "heif_context_set_primary_image": {
     "notes": "Independent original-header mask and uncompressed encoding, exact file bytes and all active decoded plane bytes, orientations, versioned options, ICC/NCLX/HDR/GIMI metadata, primary flags, overlays, thumbnail scaling/assignment/output sentinels, and repeated region/text writes. Native freshly encoded uncompressed alpha queries and encoded timestamp ownership fail in isolated ASan probes and are excluded from parity counts; candidate safety probes pass. External codec-plugin integration, other encoders/codecs, custom/sensor configurations, large/resource-failure cases and non-Linux behavior remain open.",
@@ -622,6 +631,7 @@
     ]
   },
   "heif_context_set_sequence_timescale": {
+    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/sequences.c",
@@ -629,8 +639,7 @@
       "tools/test_sequences.py",
       "tools/test_sequence_reading.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open."
+    ]
   },
   "heif_context_set_unif": {
     "notes": "Original-header exact metadata-only BMFF bytes and read-back, output files and I/O-failure behavior, callback errors/reentrant queries, invalid writer versions with historical prefixes, optional userdata, explicit brands, UUID and large property indices. Region/text serialization infrastructure added, but in-memory image/sequence encoding round trips, mini images, namespace switching and allocation failures remain open.",
@@ -1818,6 +1827,14 @@
       "tools/test_images.py"
     ]
   },
+  "heif_image_get_plane2": {
+    "notes": "6553 differential cases on Linux x86_64; other architectures, allocation failure, transforms and codec integration remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/images.c",
+      "tools/test_images.py"
+    ]
+  },
   "heif_image_get_plane_readonly": {
     "notes": "6553 differential cases on Linux x86_64; other architectures, allocation failure, transforms and codec integration remain open.",
     "status": "partial",
@@ -1827,14 +1844,6 @@
     ]
   },
   "heif_image_get_plane_readonly2": {
-    "notes": "6553 differential cases on Linux x86_64; other architectures, allocation failure, transforms and codec integration remain open.",
-    "status": "partial",
-    "tests": [
-      "tests/images.c",
-      "tools/test_images.py"
-    ]
-  },
-  "heif_image_get_plane2": {
     "notes": "6553 differential cases on Linux x86_64; other architectures, allocation failure, transforms and codec integration remain open.",
     "status": "partial",
     "tests": [
@@ -3843,6 +3852,7 @@
     ]
   },
   "heif_track_add_raw_sequence_sample": {
+    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/sequences.c",
@@ -3850,10 +3860,10 @@
       "tools/test_sequences.py",
       "tools/test_sequence_reading.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open."
+    ]
   },
   "heif_track_add_reference_to_track": {
+    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/sequences.c",
@@ -3861,10 +3871,10 @@
       "tools/test_sequences.py",
       "tools/test_sequence_reading.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open."
+    ]
   },
   "heif_track_decode_next_image": {
+    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/sequences.c",
@@ -3872,10 +3882,10 @@
       "tools/test_sequences.py",
       "tools/test_sequence_reading.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open."
+    ]
   },
   "heif_track_encode_end_of_sequence": {
+    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/sequences.c",
@@ -3883,10 +3893,10 @@
       "tools/test_sequences.py",
       "tools/test_sequence_reading.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open."
+    ]
   },
   "heif_track_encode_sequence_image": {
+    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/sequences.c",
@@ -3894,10 +3904,10 @@
       "tools/test_sequences.py",
       "tools/test_sequence_reading.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open."
+    ]
   },
   "heif_track_find_referring_tracks": {
+    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/sequences.c",
@@ -3905,10 +3915,10 @@
       "tools/test_sequences.py",
       "tools/test_sequence_reading.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open."
+    ]
   },
   "heif_track_get_auxiliary_info_type": {
+    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/sequences.c",
@@ -3916,10 +3926,10 @@
       "tools/test_sequences.py",
       "tools/test_sequence_reading.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open."
+    ]
   },
   "heif_track_get_auxiliary_info_type_urn": {
+    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/sequences.c",
@@ -3927,10 +3937,10 @@
       "tools/test_sequences.py",
       "tools/test_sequence_reading.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open."
+    ]
   },
   "heif_track_get_gimi_track_content_id": {
+    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/sequences.c",
@@ -3938,10 +3948,10 @@
       "tools/test_sequences.py",
       "tools/test_sequence_reading.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open."
+    ]
   },
   "heif_track_get_id": {
+    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/sequences.c",
@@ -3949,10 +3959,10 @@
       "tools/test_sequences.py",
       "tools/test_sequence_reading.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open."
+    ]
   },
   "heif_track_get_image_resolution": {
+    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/sequences.c",
@@ -3960,10 +3970,10 @@
       "tools/test_sequences.py",
       "tools/test_sequence_reading.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open."
+    ]
   },
   "heif_track_get_next_raw_sequence_sample": {
+    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/sequences.c",
@@ -3971,10 +3981,10 @@
       "tools/test_sequences.py",
       "tools/test_sequence_reading.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open."
+    ]
   },
   "heif_track_get_number_of_repetitions": {
+    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/sequences.c",
@@ -3982,10 +3992,10 @@
       "tools/test_sequences.py",
       "tools/test_sequence_reading.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open."
+    ]
   },
   "heif_track_get_number_of_sample_aux_infos": {
+    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/sequences.c",
@@ -3993,10 +4003,10 @@
       "tools/test_sequences.py",
       "tools/test_sequence_reading.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open."
+    ]
   },
   "heif_track_get_number_of_track_reference_of_type": {
+    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/sequences.c",
@@ -4004,10 +4014,10 @@
       "tools/test_sequences.py",
       "tools/test_sequence_reading.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open."
+    ]
   },
   "heif_track_get_number_of_track_reference_types": {
+    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/sequences.c",
@@ -4015,10 +4025,10 @@
       "tools/test_sequences.py",
       "tools/test_sequence_reading.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open."
+    ]
   },
   "heif_track_get_references_from_track": {
+    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/sequences.c",
@@ -4026,10 +4036,10 @@
       "tools/test_sequences.py",
       "tools/test_sequence_reading.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open."
+    ]
   },
   "heif_track_get_sample_aux_info_types": {
+    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/sequences.c",
@@ -4037,10 +4047,10 @@
       "tools/test_sequences.py",
       "tools/test_sequence_reading.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open."
+    ]
   },
   "heif_track_get_sample_entry_type_of_first_cluster": {
+    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/sequences.c",
@@ -4048,10 +4058,10 @@
       "tools/test_sequences.py",
       "tools/test_sequence_reading.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open."
+    ]
   },
   "heif_track_get_tai_clock_info_of_first_cluster": {
+    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/sequences.c",
@@ -4059,10 +4069,10 @@
       "tools/test_sequences.py",
       "tools/test_sequence_reading.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open."
+    ]
   },
   "heif_track_get_timescale": {
+    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/sequences.c",
@@ -4070,10 +4080,10 @@
       "tools/test_sequences.py",
       "tools/test_sequence_reading.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open."
+    ]
   },
   "heif_track_get_track_handler_type": {
+    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/sequences.c",
@@ -4081,10 +4091,10 @@
       "tools/test_sequences.py",
       "tools/test_sequence_reading.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open."
+    ]
   },
   "heif_track_get_track_reference_types": {
+    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/sequences.c",
@@ -4092,10 +4102,10 @@
       "tools/test_sequences.py",
       "tools/test_sequence_reading.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open."
+    ]
   },
   "heif_track_get_urim_sample_entry_uri_of_first_cluster": {
+    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/sequences.c",
@@ -4103,10 +4113,10 @@
       "tools/test_sequences.py",
       "tools/test_sequence_reading.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open."
+    ]
   },
   "heif_track_has_alpha_channel": {
+    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/sequences.c",
@@ -4114,10 +4124,10 @@
       "tools/test_sequences.py",
       "tools/test_sequence_reading.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open."
+    ]
   },
   "heif_track_options_alloc": {
+    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/sequences.c",
@@ -4125,10 +4135,10 @@
       "tools/test_sequences.py",
       "tools/test_sequence_reading.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open."
+    ]
   },
   "heif_track_options_enable_sample_gimi_content_ids": {
+    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/sequences.c",
@@ -4136,10 +4146,10 @@
       "tools/test_sequences.py",
       "tools/test_sequence_reading.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open."
+    ]
   },
   "heif_track_options_enable_sample_tai_timestamps": {
+    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/sequences.c",
@@ -4147,10 +4157,10 @@
       "tools/test_sequences.py",
       "tools/test_sequence_reading.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open."
+    ]
   },
   "heif_track_options_release": {
+    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/sequences.c",
@@ -4158,10 +4168,10 @@
       "tools/test_sequences.py",
       "tools/test_sequence_reading.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open."
+    ]
   },
   "heif_track_options_set_gimi_track_id": {
+    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/sequences.c",
@@ -4169,10 +4179,10 @@
       "tools/test_sequences.py",
       "tools/test_sequence_reading.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open."
+    ]
   },
   "heif_track_options_set_interleaved_sample_aux_infos": {
+    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/sequences.c",
@@ -4180,10 +4190,10 @@
       "tools/test_sequences.py",
       "tools/test_sequence_reading.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open."
+    ]
   },
   "heif_track_options_set_timescale": {
+    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/sequences.c",
@@ -4191,10 +4201,10 @@
       "tools/test_sequences.py",
       "tools/test_sequence_reading.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open."
+    ]
   },
   "heif_track_release": {
+    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open.",
     "status": "partial",
     "tests": [
       "tests/sequences.c",
@@ -4202,8 +4212,7 @@
       "tools/test_sequences.py",
       "tools/test_sequence_reading.py",
       "crates/capi/tests/abi.rs"
-    ],
-    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open."
+    ]
   },
   "heif_unci_image_parameters_alloc": {
     "notes": "Independent defaults, versioned field copies, historical prefix allocations and ABI layouts; encoder integration and allocation failure remain open.",

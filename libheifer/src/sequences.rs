@@ -1099,7 +1099,7 @@ impl Track {
         options: crate::decoding::DecodeOptions,
         ignore_editlist: bool,
     ) -> Result<crate::image::Image> {
-        if ignore_editlist && self.next as usize >= self.ranges.len() {
+        if !self.decode_failed && ignore_editlist && self.next as usize >= self.ranges.len() {
             return Err(ContextError::new(
                 13,
                 0,
@@ -1116,7 +1116,12 @@ impl Track {
         let sample = match self.next_raw() {
             Ok(s) => s,
             Err(e) => {
-                self.decode_failed = true;
+                if self.entry_kind == u32::from_be_bytes(*b"uncv") {
+                    self.next = self.next.wrapping_add(1);
+                    self.decode_failed = u64::from(self.next) >= self.output_count;
+                } else {
+                    self.decode_failed = true;
+                }
                 return Err(e);
             }
         };

@@ -24,6 +24,7 @@ mod encoder_parameters;
 mod handle_color;
 mod image;
 mod input;
+pub use input::{Reader, ReaderRangeResult};
 mod items;
 mod metadata;
 mod plugin_registry;

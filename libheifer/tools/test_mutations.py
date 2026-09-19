@@ -15,6 +15,14 @@ import sys
 import tempfile
 
 MUTATIONS = [
+    ('reader_initial_range', 'src/input.rs', 'let mut available = source.request_range(0, 1024);', 'let mut available = source.request_range(0, 31);', 'reader_input'),
+    ('reader_message_release', 'crates/capi/src/input.rs', 'unsafe { release(result.reader_error_msg) };', 'let _ = release;', 'reader_input'),
+    ('reader_payload_origin', 'crates/capi/src/input.rs', '        Ok(Cow::Owned(data))\n    }\n    fn read_range', '        if let Some(first) = data.first_mut() { *first ^= 1; }\n        Ok(Cow::Owned(data))\n    }\n    fn read_range', 'reader_input'),
+    ('reader_idat_wait', 'crates/capi/src/input.rs', 'if status == 1 || status == 2 {', 'if status == 0 || status == 2 {', 'reader_input'),
+    ('reader_initial_timeout', 'crates/capi/src/input.rs', '1 => 0,', '1 => end,', 'reader_input'),
+    ('sequence_short_movie', 'src/context.rs', '151,\n                    "No \'moov\' box: Cannot read full moov box"', '100,\n                    "No \'moov\' box: Cannot read full moov box"', 'sequence_reading'),
+    ('sequence_failed_frame_advance', 'src/sequences.rs', 'self.decode_failed = u64::from(self.next) >= self.output_count;', 'self.next = self.next.wrapping_sub(1);\n                    self.decode_failed = u64::from(self.next) >= self.output_count;', 'sequence_reading'),
+
     ("file_snapshot_origin", "src/input.rs", "|(start, offset, _)| offset + (at - start) as u64", "|(start, offset, _)| offset + (at - start) as u64 + 1", "file_input"),
     ("file_source_boundary", "src/input.rs", "is_none_or(|n| n > self.length())", "is_none_or(|n| n >= self.length())", "file_sequence_reading"),
     ("file_failed_open_state", "crates/capi/src/input.rs", "    let _ = state.read(Arc::new(Vec::<u8>::new()));", "    // deliberately retain the old file tables", "file_input"),

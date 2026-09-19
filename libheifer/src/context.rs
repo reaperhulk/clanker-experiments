@@ -105,6 +105,9 @@ pub trait Input: Send + Sync {
     fn original_offset(&self, data: &[u8]) -> u64 {
         (data.as_ptr() as usize - self.bytes().as_ptr() as usize) as u64
     }
+    fn read_idat(&self, offset: u64, size: u64) -> Result<std::borrow::Cow<'_, [u8]>> {
+        self.read_range(offset, size)
+    }
     fn read_range(&self, offset: u64, size: u64) -> Result<std::borrow::Cow<'_, [u8]>> {
         let end = offset
             .checked_add(size)
@@ -426,6 +429,16 @@ fn metadata<'a>(
             }
             found = Some(body(&data[pos as usize..], h)?);
         } else if h.kind == *b"moov" {
+            if h.size != 0
+                && pos
+                    .checked_add(h.size)
+                    .is_none_or(|n| n > data.len() as u64)
+            {
+                return Err(ContextError::invalid(
+                    151,
+                    "No 'moov' box: Cannot read full moov box",
+                ));
+            }
             body(&data[pos as usize..], h)?;
             sequence_found = true;
         } else if h.kind == *b"mini" {

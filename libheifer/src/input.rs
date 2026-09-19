@@ -30,7 +30,109 @@ pub struct Snapshot {
     regions: Vec<(usize, u64, usize)>,
     pub length: u64,
 }
+/// A potentially growing source. Requests return the available end position.
+pub trait RangeSource: Read + Seek {
+    fn request_range(&mut self, start: u64, end: u64) -> u64;
+}
 impl Snapshot {
+    pub fn read_ranges<R: RangeSource>(source: &mut R) -> Result<Self> {
+        let mut out = Self {
+            bytes: Vec::new(),
+            regions: Vec::new(),
+            length: u64::MAX,
+        };
+        let mut available = source.request_range(0, 1024);
+        if available < 32 {
+            return Ok(out);
+        }
+        let prefix = take(source, 0, 32)?;
+        let Ok(first) = header(&prefix) else {
+            out.append(0, &prefix)?;
+            return Ok(out);
+        };
+        if first.kind != *b"ftyp"
+            || first.size == 0
+            || first.size > available
+            || first.size < first.header as u64
+        {
+            out.append(0, &prefix)?;
+            return Ok(out);
+        }
+        out.append(0, &take(source, 0, first.size)?)?;
+        let mut offset = first.size;
+        let mut found = false;
+        loop {
+            let end = offset.checked_add(32).ok_or_else(eof)?;
+            if end > available {
+                available = source.request_range(offset, end);
+            }
+            if end > available {
+                if found {
+                    break;
+                }
+                return Err(ContextError::invalid(
+                    0,
+                    "Unspecified: Insufficient input data",
+                ));
+            }
+            let mut prefix = take(source, offset, 32)?;
+            let Ok(h) = header(&prefix) else {
+                out.append(offset, &prefix)?;
+                break;
+            };
+            if h.size != 0 && h.size < h.header as u64 {
+                out.append(offset, &prefix)?;
+                break;
+            }
+            if matches!(&h.kind, b"meta" | b"moov" | b"mini") {
+                let (code, name, category) = match &h.kind {
+                    b"meta" => (104, "meta", "No 'meta' box"),
+                    b"moov" => (151, "moov", "No 'moov' box"),
+                    _ => (149, "mini", "Unsupported or invalid 'mini' box"),
+                };
+                let end = if h.size == 0 {
+                    available = source.request_range(offset, u64::MAX);
+                    if available <= offset {
+                        return Err(ContextError::invalid(
+                            code,
+                            &format!("{category}: Cannot read {name} box with unspecified size"),
+                        ));
+                    }
+                    available
+                } else {
+                    offset.checked_add(h.size).ok_or_else(|| {
+                        ContextError::invalid(
+                            code,
+                            &format!("{category}: Cannot read {name} box with invalid size"),
+                        )
+                    })?
+                };
+                if end > available {
+                    available = source.request_range(offset, end);
+                }
+                if end > available {
+                    return Err(ContextError::invalid(
+                        code,
+                        &format!("{category}: Cannot read full {name} box"),
+                    ));
+                }
+                out.append(offset, &take(source, offset, end - offset)?)?;
+                found = true;
+            } else {
+                if h.size != 0 {
+                    prefix[..4].copy_from_slice(&32u32.to_be_bytes());
+                }
+                out.append(offset, &prefix)?;
+            }
+            if h.size == 0 {
+                break;
+            }
+            offset = offset.checked_add(h.size).ok_or_else(|| {
+                ContextError::invalid(0, "Unspecified: Box size too large, integer overflow")
+            })?;
+        }
+        Ok(out)
+    }
     fn append(&mut self, offset: u64, bytes: &[u8]) -> Result<()> {
         self.bytes
             .try_reserve(bytes.len())

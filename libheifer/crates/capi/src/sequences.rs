@@ -644,7 +644,7 @@ pub unsafe extern "C" fn heif_track_decode_next_image(
         return Error::NULL.into();
     };
     let mut t = track.track.lock().unwrap();
-    if u64::from(t.next) >= t.output_count {
+    if !t.decode_failed && u64::from(t.next) >= t.output_count {
         unsafe { out.write(ptr::null_mut()) };
         return Error::new(13, 0, c"End of sequence").into();
     }

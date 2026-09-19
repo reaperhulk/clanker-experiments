@@ -27,7 +27,7 @@ def corpus():
             if kind in [b'stts',b'stsc',b'stco']:
                 for count in [0,1,4,0xffffffff]:
                     b=bytearray(data);b[at+12:at+16]=count.to_bytes(4,'big');cases.append((name+'-'+k+'-count-'+str(count),bytes(b)))
-        for n in [0,1,7,8,15,24,31,32,len(data)-1,len(data)-8]:cases.append((name+'-prefix-'+str(n),data[:n]))
+        for n in range(len(data)):cases.append((name+'-prefix-'+str(n),data[:n]))
     return cases
 
 CLIENT="tests/sequence_reading.c"

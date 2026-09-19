@@ -44,6 +44,27 @@ fn public_structs_match_original_header_layouts() {
         }};
     }
     layout!(
+        heif_reader_range_request_result,
+        heifer::ReaderRangeResult,
+        status,
+        range_end,
+        reader_error_code,
+        reader_error_msg
+    );
+    layout!(
+        heif_reader,
+        heifer::Reader,
+        reader_api_version,
+        get_position,
+        read,
+        seek,
+        wait_for_file_size,
+        request_range,
+        preload_range_hint,
+        release_file_range,
+        release_error_msg
+    );
+    layout!(
         heif_image_tiling,
         heifer::Tiling,
         version,

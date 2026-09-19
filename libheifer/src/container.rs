@@ -682,9 +682,12 @@ impl<'a> Container<'a> {
                 } else {
                     0
                 };
-                input
-                    .read_range(offset + range.start as u64, range.len() as u64)
-                    .map_err(ParseError::Input)?
+                if *idat {
+                    input.read_idat(offset + range.start as u64, range.len() as u64)
+                } else {
+                    input.read_range(offset + range.start as u64, range.len() as u64)
+                }
+                .map_err(ParseError::Input)?
             } else {
                 std::borrow::Cow::Borrowed(data.get(range.clone()).ok_or(ParseError::Truncated)?)
             };
@@ -777,7 +780,11 @@ impl<'a> Container<'a> {
             let data = if !self.payloads.contains_key(&id)
                 && let Some(input) = self.input
             {
-                input.read_range(start as u64, (end - start) as u64)?
+                if *idat {
+                    input.read_idat(start as u64, (end - start) as u64)?
+                } else {
+                    input.read_range(start as u64, (end - start) as u64)?
+                }
             } else {
                 std::borrow::Cow::Borrowed(source.get(start..end).ok_or(ParseError::Truncated)?)
             };
