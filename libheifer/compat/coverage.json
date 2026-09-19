@@ -77,6 +77,51 @@
       "crates/capi/tests/abi.rs"
     ]
   },
+  "heif_context_add_XMP_metadata": {
+    "notes": "Linux x86_64 original-header differential: Exif signature offsets, XMP compression branches and exact bytes, invalid generic types, URI behavior, foreign handles, reloads, references, resource limits and unchanged handle metadata. File serialization, allocation-failure behavior and cross-platform ABI remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/add_metadata.c",
+      "tests/items.c",
+      "tools/test_add_metadata.py"
+    ]
+  },
+  "heif_context_add_XMP_metadata2": {
+    "notes": "Linux x86_64 original-header differential: Exif signature offsets, XMP compression branches and exact bytes, invalid generic types, URI behavior, foreign handles, reloads, references, resource limits and unchanged handle metadata. File serialization, allocation-failure behavior and cross-platform ABI remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/add_metadata.c",
+      "tests/items.c",
+      "tools/test_add_metadata.py"
+    ]
+  },
+  "heif_context_add_exif_metadata": {
+    "notes": "Linux x86_64 original-header differential: Exif signature offsets, XMP compression branches and exact bytes, invalid generic types, URI behavior, foreign handles, reloads, references, resource limits and unchanged handle metadata. File serialization, allocation-failure behavior and cross-platform ABI remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/add_metadata.c",
+      "tests/items.c",
+      "tools/test_add_metadata.py"
+    ]
+  },
+  "heif_context_add_generic_metadata": {
+    "notes": "Linux x86_64 original-header differential: Exif signature offsets, XMP compression branches and exact bytes, invalid generic types, URI behavior, foreign handles, reloads, references, resource limits and unchanged handle metadata. File serialization, allocation-failure behavior and cross-platform ABI remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/add_metadata.c",
+      "tests/items.c",
+      "tools/test_add_metadata.py"
+    ]
+  },
+  "heif_context_add_generic_uri_metadata": {
+    "notes": "Linux x86_64 original-header differential: Exif signature offsets, XMP compression branches and exact bytes, invalid generic types, URI behavior, foreign handles, reloads, references, resource limits and unchanged handle metadata. File serialization, allocation-failure behavior and cross-platform ABI remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/add_metadata.c",
+      "tests/items.c",
+      "tools/test_add_metadata.py"
+    ]
+  },
   "heif_context_add_item": {
     "notes": "Linux x86_64 original-header differential: generic creation, payload bytes, zlib/deflate compression, diagnostics, resource limits, references, language ownership, reloads and malformed item tables. Brotli, file writing, entity/track ID namespaces, allocation failures and cross-platform ABI remain open.",
     "status": "partial",

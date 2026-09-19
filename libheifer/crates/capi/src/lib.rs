@@ -20,6 +20,7 @@ mod context;
 mod decoding;
 mod image;
 mod items;
+mod metadata;
 mod properties;
 mod security;
 mod sensor;

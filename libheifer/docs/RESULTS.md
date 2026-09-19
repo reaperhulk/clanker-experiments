@@ -8,8 +8,8 @@ with VUI unspecified-color, monochrome-decoding and typed missing-parameter fixe
 
 ## Implemented scope
 
-246 of 465 public functions are exported, plus `heif_error_success`.
-219 functions are missing. Even the exported functions are marked **partial**:
+251 of 465 public functions are exported, plus `heif_error_success`.
+214 functions are missing. Even the exported functions are marked **partial**:
 coverage is finite, platform coverage is incomplete, and one malformed-box
 behavior gap is explicitly retained. There is no claim of a compatible library.
 
@@ -361,3 +361,39 @@ serialized-only TAI equality (799), clock bit shifts (534), missing decoded
 timestamps (569) and stale file tables after reload (1,091). Passing baselines
 and the exact mutant hashes are in `tai-mutations-report.json`. The default
 mutation set now contains 46 defects.
+
+
+## Metadata writer entry points
+
+Five metadata insertion APIs add Exif, XMP, compressed XMP, generic fourcc and
+URI metadata items, bringing the exported-function count to 251 (all partial).
+The original-header client reuses the independent item snapshots and compares
+2,187 cases, including complete byte-for-byte returned payload streams
+(SHA-256 `b0e076c79432122bbeefb69d44416e8dbd39af17d3a3c5d1f13ee5d4f98a3c93`).
+All cases also match with codec features disabled and in the C-client ASan/UBSan
+run (local leak checking disabled; CI enables it).
+
+The scope includes hidden items, type/content strings, Exif offsets and signature
+scan boundaries, every compression branch, malformed generic types, output-ID
+sentinels, foreign/retained image handles, failed reloads, `cdsc` targets, resource
+limits, payload ownership after context destruction and existing handle metadata.
+The implementation preserves the reference's distinct XMP DEFLATE behavior: that
+entry point wraps data in a zlib stream while labeling the encoding `deflate`.
+It also preserves acceptance of nonempty Exif data without a TIFF marker, the
+ignored URI-type argument in the URI metadata writer, and unchanged handle
+metadata snapshots after adding file-level metadata. Generic MIME insertion
+retains its separate raw-DEFLATE behavior. These are observed compatibility
+semantics, not recommended file conventions.
+
+All declarations in `heif_metadata.h` now have exports; context file serialization,
+allocation-failure equivalence, additional codec configurations and cross-platform
+ABI remain required. Three mutation checks target Exif offsets, the XMP wrapper
+and metadata reference targets. Reports are in `docs/results/add-metadata-*`.
+
+The item/compression commit `aaf392b` passed all development CI steps, all 41
+then-present mutations and Rust builds on Linux, macOS and Windows. Only the
+strict full-API completion check failed; see `docs/results/ci-items-report.json`.
+
+All three new defects were detected: shifted Exif offsets (452 cases), raw XMP
+DEFLATE instead of the reference wrapper (42), and wrong reference targets
+(1,910). The default mutation set now contains 49 defects.

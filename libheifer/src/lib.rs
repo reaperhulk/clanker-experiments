@@ -25,6 +25,7 @@ pub mod image;
 pub mod items;
 pub mod jpeg_config;
 pub mod mask;
+pub mod metadata;
 pub mod overlay;
 pub mod properties;
 pub mod security;
