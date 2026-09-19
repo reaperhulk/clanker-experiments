@@ -479,6 +479,9 @@ pub(crate) fn decode_native(
         image.tai_timestamp = Some(timestamp);
     }
     info.apply_handle_properties(&mut image);
+    if let Some(content_id) = info.decoded_content_id() {
+        image.sample.content_id = content_id;
+    }
     if let Some(projection) = info.decoded_projection() {
         image.projection = projection;
     }

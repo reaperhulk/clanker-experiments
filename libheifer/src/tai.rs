@@ -100,6 +100,7 @@ impl TaiProperty {
             data,
             raw: false,
             tai: Some(self),
+            gimi_components: None,
         }
     }
 }

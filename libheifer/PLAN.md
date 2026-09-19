@@ -115,7 +115,7 @@ The derived-image iteration adds grids/identity, cycle/MIAF checks, scoped tile
 workers and four warning/thread-control exports. Overlay composition, raw masks,
 shared-graph decode-operation budgets and dynamic derived queries follow in the next iteration. Six security-limit/allocation exports follow, including context-wide
 allocation accounting and object-specific resource lifetimes. Auxiliary/depth, item-property, six camera-matrix, twenty-two sensor-metadata and thirty-nine component APIs, generic items/compression, twelve TAI timestamp APIs, five metadata writers nine text-item APIs three image-area APIs thirteen handle color/aspect APIs and three component-definition queries bring the total to
-347 partial functions, with 118 functions missing. Compatibility work comes first;
+352 partial functions, with 113 functions missing. Compatibility work comes first;
 performance optimization is deferred until the complete compatibility gate passes.
 The full header contract, finite behavioral reports, known differences and
 performance evidence are retained in `compat/` and `docs/results/`.
@@ -166,3 +166,12 @@ with ordered/filterable IDs and exact null-versus-empty result behavior. The
 version bytes, truncation, duplicates, limits and snapshots across reload/free.
 Original-header layouts, ASan/UBSan C clients, codec-free builds and five new
 behavioral mutations pass. Writer integration remains open.
+
+GIMI handle iteration: five missing APIs now implement owned content-ID strings,
+shared mutable component-ID properties and read-only-context setter semantics.
+File IDs propagate through decoded, derived and scaled images. Embedded NULs
+retain presence separately from the visible C string; malformed property errors
+preserve the native partial context. The 496-case independent corpus includes
+unknown FourCC collision regressions, shared aliases, every byte value, sparse
+indices, reload/free and component limits. Normal, codec-free and C-client
+sanitizer runs agree. Encoder/plugin parameter and registry work is next.

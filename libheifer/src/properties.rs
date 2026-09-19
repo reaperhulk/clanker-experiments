@@ -10,10 +10,33 @@ pub struct Property {
     pub data: Vec<u8>,
     pub raw: bool,
     pub tai: Option<crate::tai::TaiProperty>,
+    pub gimi_components: Option<Arc<std::sync::Mutex<Vec<CString>>>>,
 }
 impl Property {
-    pub(crate) fn parsed(kind: [u8; 4], uuid: Option<[u8; 16]>, data: &[u8]) -> Self {
-        let malformed = parse_error(crate::camera::kind(kind, uuid), data).is_some();
+    pub fn serialized_data(&self) -> Vec<u8> {
+        if let Some(ids) = &self.gimi_components {
+            let ids = ids
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            let mut data = (ids.len() as u32).to_be_bytes().to_vec();
+            for id in ids.iter() {
+                data.extend_from_slice(id.to_bytes_with_nul());
+            }
+            data
+        } else {
+            self.data.clone()
+        }
+    }
+
+    pub(crate) fn parsed(
+        kind: [u8; 4],
+        uuid: Option<[u8; 16]>,
+        data: &[u8],
+        max_components: u32,
+    ) -> Self {
+        let malformed = parse_error(crate::camera::kind(kind, uuid), data).is_some()
+            || (uuid == Some(crate::gimi::COMPONENT_UUID)
+                && crate::gimi::parse_components(data, max_components).is_err());
         // These typed boxes serialize their fields, excluding ignored trailing
         // input bytes. File deduplication compares that serialized form.
         let size = match &kind {
@@ -37,6 +60,16 @@ impl Property {
             uuid,
             data: stored,
             raw: !malformed && parsed_raw(kind, uuid),
+            gimi_components: if !malformed
+                && kind == *b"uuid"
+                && uuid == Some(crate::gimi::COMPONENT_UUID)
+            {
+                crate::gimi::parse_components(data, 0)
+                    .ok()
+                    .map(|ids| Arc::new(std::sync::Mutex::new(ids)))
+            } else {
+                None
+            },
             tai: if matches!(&kind, b"taic" | b"itai") {
                 crate::tai::TaiProperty::parse(kind, data).ok()
             } else {
@@ -57,6 +90,7 @@ impl Property {
             data,
             raw: false,
             tai: None,
+            gimi_components: None,
         }
     }
     pub fn description(&self) -> [CString; 4] {
@@ -248,7 +282,7 @@ impl PropertyStore {
                     && if p.tai.is_some() {
                         p.tai == property.tai
                     } else {
-                        p.data == property.data
+                        p.serialized_data() == property.serialized_data()
                     }
             })
             .unwrap_or_else(|| {

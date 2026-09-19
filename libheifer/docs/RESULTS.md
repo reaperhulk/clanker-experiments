@@ -738,3 +738,33 @@ Reports and exact client/corpus/library hashes are in
 missing; the strict completion gate remains unsatisfied. Writer round trips,
 allocation failures, whole-library instrumentation and cross-platform C behavior
 are not established by this corpus.
+
+## GIMI handle identifiers (2026-09-19)
+
+Five previously absent handle APIs now expose mutable content-ID descriptions
+and shared component-ID properties. Component mutations preserve property-object
+identity across image aliases; property equality uses current serialized values.
+Sample IDs retain full file bytes, including embedded NULs, while each returned C
+string is independently owned. Descriptions changed in a read-only context are
+distinct from retained file properties used when decoding.
+
+The 496-case original-header corpus compares exact errors, output sentinels,
+property lists, string presence/contents/ownership, shared images and independent
+contexts, sparse component indices, all byte values, embedded NULs, every prefix
+of a multi-string property, limits and overflow counts. It checks malformed
+properties and failures after an earlier image was initialized, decoded/derived/
+scaled content IDs, full active pixel bytes, and handles retained across reload
+and context release. Unknown FourCC boxes cannot collide with internal UUID types.
+
+Normal, codec-free and ASan/UBSan C-client runs match. Local leak checking remains
+disabled under tracing; CI requests it. The 960-case property and 713-case sequence
+sample corpora also match after the shared-property and sample-storage changes.
+Rust feature builds, strict clippy and original-header layouts pass. Six new
+semantic defects plus the existing empty-sample-ID mutation are checked; the
+six new entries bring the default mutation suite to 114. Reports under
+`docs/results/gimi-*.json` identify the exact binaries, client and corpus.
+
+There are 352 partial functions and 113 missing. Encoding round trips, new-image
+property insertion/deduplication, allocation failures, whole-library sanitizer
+instrumentation and cross-platform C execution remain open. The full completion
+gate remains unchanged and fails rather than treating symbol coverage as parity.

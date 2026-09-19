@@ -64,6 +64,7 @@ impl Value {
             data,
             raw: false,
             tai: None,
+            gimi_components: None,
         })
     }
     fn parse(p: &Property) -> Option<Self> {

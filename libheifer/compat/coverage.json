@@ -1505,6 +1505,22 @@
       "crates/capi/tests/abi.rs"
     ]
   },
+  "heif_image_handle_get_gimi_component_content_id": {
+    "notes": "Independent original-header handle content IDs and shared mutable component-ID properties: owned string copies, embedded NUL/presence, sparse indices, parser truncation/limits, retained failure state, shared-image aliases, decoded/derived/scaled IDs, read-only setters and reload/free. Linux x86_64 regular/codec-free/C-client sanitizer coverage; encoding round trips, allocation failure and platform C coverage remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/gimi.c",
+      "tools/test_gimi.py"
+    ]
+  },
+  "heif_image_handle_get_gimi_content_id": {
+    "notes": "Independent original-header handle content IDs and shared mutable component-ID properties: owned string copies, embedded NUL/presence, sparse indices, parser truncation/limits, retained failure state, shared-image aliases, decoded/derived/scaled IDs, read-only setters and reload/free. Linux x86_64 regular/codec-free/C-client sanitizer coverage; encoding round trips, allocation failure and platform C coverage remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/gimi.c",
+      "tools/test_gimi.py"
+    ]
+  },
   "heif_image_handle_get_height": {
     "notes": "Linux x86_64 original-header comparisons of direct HEVC item descriptions, metadata/color/thumbnail queries, copied and borrowed input, handle/context aliases, reload state and malformed inputs. Other image types, compressed metadata, callback/file input, configurable budgets, full box semantics and cross-platform ABI remain open. Derived and mask handle queries also cover cyclic/missing references and partial reloads.",
     "status": "partial",
@@ -1886,6 +1902,14 @@
       "crates/capi/tests/abi.rs"
     ]
   },
+  "heif_image_handle_has_gimi_component_content_ids": {
+    "notes": "Independent original-header handle content IDs and shared mutable component-ID properties: owned string copies, embedded NUL/presence, sparse indices, parser truncation/limits, retained failure state, shared-image aliases, decoded/derived/scaled IDs, read-only setters and reload/free. Linux x86_64 regular/codec-free/C-client sanitizer coverage; encoding round trips, allocation failure and platform C coverage remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/gimi.c",
+      "tools/test_gimi.py"
+    ]
+  },
   "heif_image_handle_has_mastering_display_colour_volume": {
     "notes": "Linux x86_64 original-header differential checks: retained first-property values, optional output/input pointers, setter ownership, serialization-based deduplication, file mutation despite read-only context, all ndwt versions, property prefixes and warnings, aliases/reloads/releases, successful native/RGB decodes and derived HDR inheritance. Encoding/serialization, allocation failures and cross-platform ABI remain open.",
     "status": "partial",
@@ -1958,6 +1982,22 @@
       "tests/handle_color.c",
       "tests/transforms.c",
       "tools/test_handle_color.py"
+    ]
+  },
+  "heif_image_handle_set_gimi_component_content_id": {
+    "notes": "Independent original-header handle content IDs and shared mutable component-ID properties: owned string copies, embedded NUL/presence, sparse indices, parser truncation/limits, retained failure state, shared-image aliases, decoded/derived/scaled IDs, read-only setters and reload/free. Linux x86_64 regular/codec-free/C-client sanitizer coverage; encoding round trips, allocation failure and platform C coverage remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/gimi.c",
+      "tools/test_gimi.py"
+    ]
+  },
+  "heif_image_handle_set_gimi_content_id": {
+    "notes": "Independent original-header handle content IDs and shared mutable component-ID properties: owned string copies, embedded NUL/presence, sparse indices, parser truncation/limits, retained failure state, shared-image aliases, decoded/derived/scaled IDs, read-only setters and reload/free. Linux x86_64 regular/codec-free/C-client sanitizer coverage; encoding round trips, allocation failure and platform C coverage remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/gimi.c",
+      "tools/test_gimi.py"
     ]
   },
   "heif_image_handle_set_mastering_display_colour_volume": {

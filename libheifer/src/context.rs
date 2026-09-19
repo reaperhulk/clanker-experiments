@@ -441,7 +441,7 @@ fn metadata<'a>(
                 validate_property(kind, p)?;
             }
             if properties.is_some() {
-                parsed.boxes = crate::container::property_boxes(ipco)?;
+                parsed.boxes = crate::container::property_boxes(ipco, limits.max_components)?;
             }
             parsed.has_ipco = true;
         }
@@ -507,6 +507,7 @@ pub(crate) struct DecoderInput {
     pub _reservation: crate::security::Reservation,
 }
 pub struct ImageInfo {
+    pub gimi_content_id: std::sync::Mutex<Vec<u8>>,
     pub(crate) projection: std::sync::atomic::AtomicI32,
     pub retained_properties: std::sync::Mutex<Vec<Arc<crate::properties::Property>>>,
     pub region_ids: std::sync::Mutex<Vec<u32>>,
@@ -665,6 +666,7 @@ impl Document {
             }
             let ispe = container.dimensions(item.id).unwrap_or((0, 0));
             let mut image = ImageInfo {
+                gimi_content_id: std::sync::Mutex::new(Vec::new()),
                 projection: std::sync::atomic::AtomicI32::new(crate::omaf::FLAT),
                 retained_properties: std::sync::Mutex::new(
                     properties
@@ -865,8 +867,13 @@ impl Document {
                     ),
                 ));
             }
-            for (kind, p) in container.properties(item.id)? {
-                if let Some((error, optional)) = crate::properties::parse_error(kind, p) {
+            for (kind, uuid, p) in container.property_records(item.id)? {
+                if uuid == Some(crate::gimi::COMPONENT_UUID) {
+                    crate::gimi::parse_components(p, self.read_limits.max_components)?;
+                }
+                if let Some((error, optional)) =
+                    crate::properties::parse_error(crate::camera::kind(kind, uuid), p)
+                {
                     if optional {
                         image.warnings.push(error.into());
                     } else {
@@ -987,6 +994,12 @@ impl Document {
                     }
                     _ => {}
                 }
+            }
+            if let Some(value) = image.decoded_content_id() {
+                *image
+                    .gimi_content_id
+                    .lock()
+                    .unwrap_or_else(std::sync::PoisonError::into_inner) = value;
             }
         }
         let mut thumbnails = BTreeSet::new();

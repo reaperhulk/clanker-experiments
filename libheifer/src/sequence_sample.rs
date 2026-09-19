@@ -1,12 +1,11 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 //! Owned sequence sample payloads and metadata, independent of track storage.
 use crate::{error::Error, tai::Timestamp};
-use std::ffi::CString;
 
 #[derive(Clone, Debug, Default)]
 pub struct SampleMetadata {
     pub duration: u32,
-    pub content_id: CString,
+    pub content_id: Vec<u8>,
 }
 
 #[derive(Debug, Default)]

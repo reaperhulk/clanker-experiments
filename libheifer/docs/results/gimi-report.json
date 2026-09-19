@@ -1,0 +1,12 @@
+{
+  "scope": "Original-header GIMI handle IDs, shared component properties, owned C strings, decoded metadata and reload/free lifetimes.",
+  "cases": 496,
+  "mismatches": 0,
+  "client_sanitizers": false,
+  "leak_check": false,
+  "client_sha256": "b5f98765b5f99086187e5b191dc2136ea5123e4549e0ec8745814957fdfbd47d",
+  "corpus_sha256": "c315da41759dc21a85f6447786023b173235a9d0faecbfd0e49630f3c1fcaad1",
+  "differences": [],
+  "reference_sha256": "5d70927cded8be6d1b4da912971aed75d426ba079c84d0b8462785ec5b9c92f7",
+  "candidate_sha256": "9394f74bd7a71caafa1d180834d76169ed78f4664e706422fac306a2e6921e82"
+}

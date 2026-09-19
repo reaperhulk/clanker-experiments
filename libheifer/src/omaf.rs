@@ -23,6 +23,7 @@ impl ImageInfo {
             data: vec![0, 0, 0, 0, value as u8],
             raw: false,
             tai: None,
+            gimi_components: None,
         };
         self.retained_properties
             .lock()

@@ -1,0 +1,76 @@
+{
+  "scope": "7 deliberate defects; not comprehensive mutation coverage",
+  "mutations": [
+    {
+      "mutation": "gimi_first_property",
+      "suite": "gimi",
+      "source": "src/gimi.rs",
+      "before": ".find(|p| !p.raw && p.kind == *b\"uuid\" && p.uuid == Some(CONTENT_UUID))",
+      "after": ".rfind(|p| !p.raw && p.kind == *b\"uuid\" && p.uuid == Some(CONTENT_UUID))",
+      "candidate_sha256": "e380f3797cf8c9c14f082836318a1526aa5dce5f727b9c1670583c6ba5aa7f13",
+      "mismatches": 28,
+      "detected": true
+    },
+    {
+      "mutation": "gimi_shared_property",
+      "suite": "gimi",
+      "source": "src/gimi.rs",
+      "before": ".find_map(|p| p.gimi_components.clone())",
+      "after": ".find_map(|p| p.gimi_components.as_ref().map(|ids| Arc::new(Mutex::new(ids.lock().unwrap().clone()))))",
+      "candidate_sha256": "5993da88bb98b309b83765ab99335e6393a89e2f7e63d5b436480d44016f410c",
+      "mismatches": 439,
+      "detected": true
+    },
+    {
+      "mutation": "gimi_read_only_property",
+      "suite": "gimi",
+      "source": "src/gimi.rs",
+      "before": "ctx.properties.add(self.id, property.clone(), false)?;",
+      "after": "ctx.properties.add_to_file(self.id, property.clone(), false)?;",
+      "candidate_sha256": "983e06baeb0de0b5e97678d033bef2f6a0ea00039235b102938aaaa7ff3ce8f7",
+      "mismatches": 446,
+      "detected": true
+    },
+    {
+      "mutation": "gimi_decoded_id",
+      "suite": "gimi",
+      "source": "src/decoding.rs",
+      "before": "image.sample.content_id = content_id;",
+      "after": "image.sample.content_id = Vec::new(); let _ = content_id;",
+      "candidate_sha256": "8996a957f9a9f0007991ba3908a5eaafd4a54b5203ee5c06ddd7c5ed6c809e38",
+      "mismatches": 496,
+      "detected": true
+    },
+    {
+      "mutation": "gimi_embedded_nul_presence",
+      "suite": "gimi",
+      "source": "crates/capi/src/gimi.rs",
+      "before": "if v.is_empty() {",
+      "after": "if v.is_empty() || v.first() == Some(&0) {",
+      "candidate_sha256": "892e82a27d7d53358789ebc08f5bc1a31f2153baf589a9e1fa0e63518600ec88",
+      "mismatches": 33,
+      "detected": true
+    },
+    {
+      "mutation": "gimi_component_terminator",
+      "suite": "gimi",
+      "source": "src/gimi.rs",
+      "before": ".unwrap_or(data.len() - 1);",
+      "after": ".unwrap_or(data.len().saturating_sub(2));",
+      "candidate_sha256": "dc9eccf49df720fbbc07e3c188e9485257d785c6f8bf6f7b4358cfae49f22e66",
+      "mismatches": 4,
+      "detected": true
+    },
+    {
+      "mutation": "sample_id_empty",
+      "suite": "sequence_samples",
+      "source": "crates/capi/src/sequence_sample.rs",
+      "before": "if $empty_null && v.$field.content_id.is_empty()",
+      "after": "if v.$field.content_id.is_empty()",
+      "candidate_sha256": "bf9b1d06d51abd1203a335ee7c2310f7606ce2bb4a5b6c335d7fb0b3892434d4",
+      "mismatches": 713,
+      "detected": true
+    }
+  ],
+  "all_detected": true
+}

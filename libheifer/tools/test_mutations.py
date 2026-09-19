@@ -15,6 +15,13 @@ import sys
 import tempfile
 
 MUTATIONS = [
+    ('gimi_first_property', 'src/gimi.rs', '.find(|p| !p.raw && p.kind == *b"uuid" && p.uuid == Some(CONTENT_UUID))', '.rfind(|p| !p.raw && p.kind == *b"uuid" && p.uuid == Some(CONTENT_UUID))', 'gimi'),
+    ('gimi_shared_property', 'src/gimi.rs', '.find_map(|p| p.gimi_components.clone())', '.find_map(|p| p.gimi_components.as_ref().map(|ids| Arc::new(Mutex::new(ids.lock().unwrap().clone()))))', 'gimi'),
+    ('gimi_read_only_property', 'src/gimi.rs', 'ctx.properties.add(self.id, property.clone(), false)?;', 'ctx.properties.add_to_file(self.id, property.clone(), false)?;', 'gimi'),
+    ('gimi_decoded_id', 'src/decoding.rs', 'image.sample.content_id = content_id;', 'image.sample.content_id = Vec::new(); let _ = content_id;', 'gimi'),
+    ('gimi_embedded_nul_presence', 'crates/capi/src/gimi.rs', 'if v.is_empty() {', 'if v.is_empty() || v.first() == Some(&0) {', 'gimi'),
+    ('gimi_component_terminator', 'src/gimi.rs', '.unwrap_or(data.len() - 1);', '.unwrap_or(data.len().saturating_sub(2));', 'gimi'),
+
     ('entity_group_id', 'crates/capi/src/entity_groups.rs', 'entity_group_id: g.id,', 'entity_group_id: g.id.wrapping_add(1),', 'entity_groups'),
     ('entity_group_filter', 'crates/capi/src/entity_groups.rs', 'g.entities.contains(&item_filter)', 'g.entities.first() == Some(&item_filter)', 'entity_groups'),
     ('entity_group_empty_result', 'crates/capi/src/entity_groups.rs', 'if groups.children == 0 {', 'if groups.groups.is_empty() {', 'entity_groups'),

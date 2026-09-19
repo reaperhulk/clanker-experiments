@@ -28,6 +28,7 @@ impl std::fmt::Display for ParseError {
 }
 impl std::error::Error for ParseError {}
 type Result<T> = std::result::Result<T, ParseError>;
+pub type PropertyRecord<'a> = ([u8; 4], Option<[u8; 16]>, &'a [u8]);
 
 #[derive(Clone, Copy, Debug)]
 struct BoxView<'a> {
@@ -120,12 +121,16 @@ pub(crate) fn parse_associations(data: &[u8], limits: Limits) -> Result<Associat
 
 pub(crate) fn property_boxes(
     data: &[u8],
+    max_components: u32,
 ) -> Result<Vec<std::sync::Arc<crate::properties::Property>>> {
     boxes(data, usize::MAX)?
         .into_iter()
         .map(|p| {
             Ok(std::sync::Arc::new(crate::properties::Property::parsed(
-                p.kind, p.uuid, p.data,
+                p.kind,
+                p.uuid,
+                p.data,
+                max_components,
             )))
         })
         .collect()
@@ -484,6 +489,17 @@ impl<'a> Container<'a> {
         Ok(item.properties.iter().map(|i| {
             let p = self.properties[*i];
             (crate::camera::kind(p.kind, p.uuid), p.data)
+        }))
+    }
+    pub fn property_records(
+        &self,
+        id: u32,
+    ) -> Result<impl Iterator<Item = PropertyRecord<'a>> + '_> {
+        let item = self.items.get(&id).ok_or(ParseError::MissingItem)?;
+        self.check_properties(item)?;
+        Ok(item.properties.iter().map(|i| {
+            let p = self.properties[*i];
+            (p.kind, p.uuid, p.data)
         }))
     }
     fn check_properties(&self, item: &Item) -> Result<()> {

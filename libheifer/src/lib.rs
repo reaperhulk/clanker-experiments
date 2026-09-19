@@ -45,3 +45,5 @@ pub mod omaf;
 pub mod regions;
 
 pub mod entity_groups;
+
+pub mod gimi;

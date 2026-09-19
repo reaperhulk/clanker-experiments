@@ -2,7 +2,7 @@
 use crate::{HeifError, SUCCESS};
 use libheifer::{error::Error, image::Image, sequence_sample::RawSample, tai::Timestamp};
 use std::{
-    ffi::{CStr, CString, c_char, c_int},
+    ffi::{CStr, c_char, c_int},
     ptr,
 };
 
@@ -83,15 +83,15 @@ macro_rules! metadata {
             if $empty_null && v.$field.content_id.is_empty() {
                 return ptr::null();
             }
-            v.$field.content_id.clone().into_raw()
+            libheifer::gimi::c_string(&v.$field.content_id).into_raw()
         }
         #[unsafe(no_mangle)]
         pub unsafe extern "C" fn $id_set(value: *mut $ty, id: *const c_char) {
             if let Some(v) = unsafe { value.as_mut() } {
                 v.$field.content_id = if id.is_null() {
-                    CString::default()
+                    Vec::new()
                 } else {
-                    unsafe { CStr::from_ptr(id) }.to_owned()
+                    unsafe { CStr::from_ptr(id) }.to_bytes().to_vec()
                 };
             }
         }
