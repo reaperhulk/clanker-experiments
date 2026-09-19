@@ -37,3 +37,5 @@ pub mod uncompressed;
 
 /// The API contract version, not the completeness of this implementation.
 pub const COMPATIBILITY_VERSION: (u8, u8, u8) = (1, 23, 4);
+
+pub mod sequence_sample;

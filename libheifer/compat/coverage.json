@@ -2555,5 +2555,133 @@
       "tests/items.c",
       "tools/test_text.py"
     ]
+  },
+  "heif_image_get_duration": {
+    "status": "partial",
+    "tests": [
+      "tests/sequence_samples.c",
+      "tools/test_sequence_samples.py"
+    ],
+    "notes": "Independent owned-sample and image-metadata behavior; track integration and allocation-failure coverage remain open."
+  },
+  "heif_image_get_gimi_sample_content_id": {
+    "status": "partial",
+    "tests": [
+      "tests/sequence_samples.c",
+      "tools/test_sequence_samples.py"
+    ],
+    "notes": "Independent owned-sample and image-metadata behavior; track integration and allocation-failure coverage remain open."
+  },
+  "heif_image_set_duration": {
+    "status": "partial",
+    "tests": [
+      "tests/sequence_samples.c",
+      "tools/test_sequence_samples.py"
+    ],
+    "notes": "Independent owned-sample and image-metadata behavior; track integration and allocation-failure coverage remain open."
+  },
+  "heif_image_set_gimi_sample_content_id": {
+    "status": "partial",
+    "tests": [
+      "tests/sequence_samples.c",
+      "tools/test_sequence_samples.py"
+    ],
+    "notes": "Independent owned-sample and image-metadata behavior; track integration and allocation-failure coverage remain open."
+  },
+  "heif_raw_sequence_sample_alloc": {
+    "status": "partial",
+    "tests": [
+      "tests/sequence_samples.c",
+      "tools/test_sequence_samples.py"
+    ],
+    "notes": "Independent owned-sample and image-metadata behavior; track integration and allocation-failure coverage remain open."
+  },
+  "heif_raw_sequence_sample_get_data": {
+    "status": "partial",
+    "tests": [
+      "tests/sequence_samples.c",
+      "tools/test_sequence_samples.py"
+    ],
+    "notes": "Independent owned-sample and image-metadata behavior; track integration and allocation-failure coverage remain open."
+  },
+  "heif_raw_sequence_sample_get_data_size": {
+    "status": "partial",
+    "tests": [
+      "tests/sequence_samples.c",
+      "tools/test_sequence_samples.py"
+    ],
+    "notes": "Independent owned-sample and image-metadata behavior; track integration and allocation-failure coverage remain open."
+  },
+  "heif_raw_sequence_sample_get_duration": {
+    "status": "partial",
+    "tests": [
+      "tests/sequence_samples.c",
+      "tools/test_sequence_samples.py"
+    ],
+    "notes": "Independent owned-sample and image-metadata behavior; track integration and allocation-failure coverage remain open."
+  },
+  "heif_raw_sequence_sample_get_gimi_sample_content_id": {
+    "status": "partial",
+    "tests": [
+      "tests/sequence_samples.c",
+      "tools/test_sequence_samples.py"
+    ],
+    "notes": "Independent owned-sample and image-metadata behavior; track integration and allocation-failure coverage remain open."
+  },
+  "heif_raw_sequence_sample_get_tai_timestamp": {
+    "status": "partial",
+    "tests": [
+      "tests/sequence_samples.c",
+      "tools/test_sequence_samples.py"
+    ],
+    "notes": "Independent owned-sample and image-metadata behavior; track integration and allocation-failure coverage remain open."
+  },
+  "heif_raw_sequence_sample_has_tai_timestamp": {
+    "status": "partial",
+    "tests": [
+      "tests/sequence_samples.c",
+      "tools/test_sequence_samples.py"
+    ],
+    "notes": "Independent owned-sample and image-metadata behavior; track integration and allocation-failure coverage remain open."
+  },
+  "heif_raw_sequence_sample_release": {
+    "status": "partial",
+    "tests": [
+      "tests/sequence_samples.c",
+      "tools/test_sequence_samples.py"
+    ],
+    "notes": "Independent owned-sample and image-metadata behavior; track integration and allocation-failure coverage remain open."
+  },
+  "heif_raw_sequence_sample_set_data": {
+    "status": "partial",
+    "tests": [
+      "tests/sequence_samples.c",
+      "tools/test_sequence_samples.py"
+    ],
+    "notes": "Independent owned-sample and image-metadata behavior; track integration and allocation-failure coverage remain open."
+  },
+  "heif_raw_sequence_sample_set_duration": {
+    "status": "partial",
+    "tests": [
+      "tests/sequence_samples.c",
+      "tools/test_sequence_samples.py"
+    ],
+    "notes": "Independent owned-sample and image-metadata behavior; track integration and allocation-failure coverage remain open."
+  },
+  "heif_raw_sequence_sample_set_gimi_sample_content_id": {
+    "status": "partial",
+    "tests": [
+      "tests/sequence_samples.c",
+      "tools/test_sequence_samples.py"
+    ],
+    "notes": "Independent owned-sample and image-metadata behavior; track integration and allocation-failure coverage remain open."
+  },
+  "heif_raw_sequence_sample_set_tai_timestamp": {
+    "status": "partial",
+    "tests": [
+      "tests/sequence_samples.c",
+      "tools/test_sequence_samples.py"
+    ],
+    "notes": "Independent owned-sample and image-metadata behavior; track integration and allocation-failure coverage remain open."
   }
 }

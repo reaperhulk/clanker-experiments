@@ -15,6 +15,12 @@ import sys
 import tempfile
 
 MUTATIONS = [
+    ('sample_payload_copy', 'src/sequence_sample.rs', 'self.data.extend_from_slice(data);', 'self.data.extend(data.iter().map(|v| v ^ 1));', 'sequence_samples'),
+    ('sample_empty_storage', 'src/sequence_sample.rs', 'self.data.capacity() != 0', '!self.data.is_empty()', 'sequence_samples'),
+    ('sample_duration', 'crates/capi/src/sequence_sample.rs', 'v.$field.duration = duration;', 'v.$field.duration = duration.wrapping_add(1);', 'sequence_samples'),
+    ('sample_timestamp_presence', 'crates/capi/src/sequence_sample.rs', 'sample.timestamp = Some(copy);', 'sample.timestamp = None; let _ = copy;', 'sequence_samples'),
+    ('sample_id_empty', 'crates/capi/src/sequence_sample.rs', 'if $empty_null && v.$field.content_id.is_empty()', 'if v.$field.content_id.is_empty()', 'sequence_samples'),
+    ('sample_transform_metadata', 'src/image.rs', '        )?\n        .with_budget(self.budget.clone());\n        out.warnings = self.warnings.clone();\n        out.color = self.color.try_clone()?;\n        out.sensor = self.sensor.clone();\n        out.sample = self.sample.clone();', '        )?\n        .with_budget(self.budget.clone());\n        out.warnings = self.warnings.clone();\n        out.color = self.color.try_clone()?;\n        out.sensor = self.sensor.clone();\n        out.sample = crate::sequence_sample::SampleMetadata::default();', 'sequence_samples'),
     ('unc_compression_wrapper', 'src/uncompressed_compression.rs', 'b"zlib" => 4,', 'b"zlib" => 3,', 'uncompressed_units'),
     ('unc_unit_type', 'src/uncompressed_compression.rs', 'if unit > 4 {', 'if unit > 3 {', 'uncompressed_units'),
     ('unc_unit_index', 'src/uncompressed_compression.rs', '.get(tile as usize)', '.get(0)', 'uncompressed_units'),

@@ -599,3 +599,34 @@ all-feature/no-default-feature tests and strict Clippy. No C dependency was adde
 This extends existing exports, leaving 279 partial and 186 missing functions.
 Brotli-enabled oracle/candidate support, exact cumulative resource accounting,
 allocation failure injection and full-library instrumentation remain open.
+
+## Sequence sample objects and image sample metadata
+
+Sixteen additional exports implement owned raw sample data, duration and GIMI
+content IDs, version-aware timestamp copying and image sample metadata. Buffer
+and string setters copy caller memory; string getters return independently owned
+copies; timestamp getters borrow sample-owned storage. Image metadata propagates
+through crop, scale, conversion and canvas construction.
+
+The original-header C client matches 713 cases: empty/filled/shrunk buffers,
+all 256 timestamp version bytes, full-width duration values, all string lengths
+through 255 bytes, NULL string clearing, timestamp replacement, one-byte
+version-zero inputs and ownership after source/sample release. Crop/scale
+propagation is independently exercised; canvas/track integration remains open.
+Every operation expected to succeed is required to return success. The same
+corpus passes C-client ASan/UBSan (local leak checking disabled) and codec-free
+builds. Rust all-feature/no-default-feature tests, ABI checks and strict Clippy
+pass. The inventory now has 295 partial functions and 170 missing functions.
+
+Five initial mutations were rejected: payload bytes (688 mismatches), empty
+buffer storage (688), duration (712), timestamp presence (713), and empty-string
+semantics (713). An initial canvas-propagation mutation survived, exposing that
+this corpus does not exercise canvas construction. The retained failed report
+records that limitation. A separate crop-propagation mutation is rejected with
+695 mismatches and replaces the unexercised canvas mutation in the default suite.
+The default suite now contains 86 deliberate defects.
+
+The pinned reference dereferences NULL timestamp inputs. They are excluded from
+behavioral equality claims, rather than counted as matching errors. Candidate
+NULL handling is defensive. Allocation-failure injection, track integration,
+sequence file round trips and universal compatibility remain open.

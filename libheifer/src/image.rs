@@ -144,6 +144,7 @@ impl From<crate::context::ContextError> for DecodingWarning {
 
 #[derive(Debug)]
 pub struct Image {
+    pub sample: crate::sequence_sample::SampleMetadata,
     pub tai_timestamp: Option<crate::tai::Timestamp>,
     pub sensor: crate::sensor::SensorMetadata,
     pub component_ids: crate::components::ComponentIds,
@@ -191,6 +192,7 @@ impl Image {
             chroma = 3;
         }
         Ok(Self {
+            sample: crate::sequence_sample::SampleMetadata::default(),
             sensor: crate::sensor::SensorMetadata::default(),
             tai_timestamp: None,
             component_ids: crate::components::ComponentIds::default(),
@@ -551,6 +553,7 @@ impl Image {
             .with_budget(self.budget.clone());
         out.color = self.color.try_clone()?;
         out.sensor = self.sensor.clone();
+        out.sample = self.sample.clone();
         out.tai_timestamp = self.tai_timestamp;
         out.pixel_aspect_ratio = self.pixel_aspect_ratio;
         out.premultiplied_alpha = self.premultiplied_alpha;
@@ -634,6 +637,7 @@ impl Image {
         out.warnings = self.warnings.clone();
         out.color = self.color.try_clone()?;
         out.sensor = self.sensor.clone();
+        out.sample = self.sample.clone();
         out.tai_timestamp = self.tai_timestamp;
         out.pixel_aspect_ratio = self.pixel_aspect_ratio;
         out.premultiplied_alpha = self.premultiplied_alpha;
@@ -679,6 +683,7 @@ impl Image {
         out.warnings = self.warnings.clone();
         out.color = self.color.try_clone()?;
         out.sensor = self.sensor.clone();
+        out.sample = self.sample.clone();
         out.tai_timestamp = self.tai_timestamp;
         out.pixel_aspect_ratio = self.pixel_aspect_ratio;
         out.premultiplied_alpha = self.premultiplied_alpha;
