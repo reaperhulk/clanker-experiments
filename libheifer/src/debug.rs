@@ -540,6 +540,11 @@ impl Context {
             if self.debug_loaded == 1 {
                 return out;
             }
+            if let Some(mini) = input.minimized_diagnostic() {
+                out.push(b'\n');
+                out.extend_from_slice(mini);
+                return out;
+            }
             let mut rest = data.get(first.size as usize..).unwrap_or_default();
             let mut meta = None;
             let mut moov = None;

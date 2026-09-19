@@ -24,7 +24,10 @@ def fixture(width=31, height=17, orientation=1, chroma=1, depth=8,
             float_depth=False, alpha=False, premultiplied=False, cicp=None,
             icc=b'', exif=b'', xmp=b'', compressed=False, brand=b'avif',
             explicit=False, config=None, alpha_config=b'', hdr=0,
-            gain=False, tmap_icc=b'', version=0, large=False, coded_data=b'coded-image-placeholder'):
+            gain=False, tmap_icc=b'', version=0, large=False, coded_data=b'coded-image-placeholder',
+            gain_same_size=False, gain_chroma=1, gain_float=False, gain_depth=10,
+            tmap_cicp=(9, 16, 9), cclv_flags=0xff, hdr_bias=0,
+            gain_config=b'', codec_types=(b'zzzz', b'xxxx')):
     if config is None:
         config = bytes.fromhex('81000c00') if brand != b'heic' else bytes.fromhex('01016000000090000000000078f000fcfdf8f800000f00')
     if compressed:
@@ -55,38 +58,44 @@ def fixture(width=31, height=17, orientation=1, chroma=1, depth=8,
     if cicp is not None:
         for value in cicp: b.put(value, 8)
     if explicit:
-        b.put(int.from_bytes(b'zzzz', 'big'), 32)
-        b.put(int.from_bytes(b'xxxx', 'big'), 32)
+        for kind in codec_types: b.put(int.from_bytes(kind, 'big'), 32)
     if hdr or gain:
         b.put(gain)
         if gain:
-            b.put(0)
-            b.put(6, dimensions)
-            b.put(8, dimensions)
+            b.put(gain_same_size)
+            if not gain_same_size:
+                b.put(6, dimensions)
+                b.put(8, dimensions)
             b.put(6, 8)
             b.put(1)
-            b.put(1, 2)
-            b.put(1)
-            b.put(0)
-            b.put(0)
-            b.put(1)
-            b.put(1, 3)
+            b.put(gain_chroma, 2)
+            if gain_chroma in (1, 2): b.put(1)
+            if gain_chroma == 1: b.put(0)
+            b.put(gain_float)
+            if gain_float: b.put(gain_depth.bit_length() - 5, 2)
+            else:
+                b.put(gain_depth != 8)
+                if gain_depth != 8: b.put(gain_depth - 9, 3)
             b.put(bool(tmap_icc))
-            b.put(1)
-            for value in (9, 16, 9): b.put(value, 8)
-            b.put(1)
+            b.put(tmap_cicp is not None)
+            if tmap_cicp is not None:
+                for value in tmap_cicp: b.put(value, 8)
+                b.put(1)
         for tone_map in range(2 if gain else 1):
             for bit in range(6): b.put(bool(hdr & (1 << bit)))
             if hdr & 1:
                 b.put(1000 + tone_map, 16)
                 b.put(200, 16)
             if hdr & 2:
-                for value in range(8): b.put(value * 3000, 16)
+                for value in range(8): b.put(value * 3000 + tone_map * hdr_bias, 16)
                 b.put(10000000, 32)
                 b.put(100, 32)
             if hdr & 4:
-                b.put(0xff, 8)
-                for value in range(9): b.put(0xff000000 + value, 32)
+                b.put(cclv_flags, 8)
+                if cclv_flags & 32:
+                    for value in range(6): b.put(0xff000000 + value, 32)
+                for i, flag in enumerate([16, 8, 4]):
+                    if cclv_flags & flag: b.put(0xff000006 + i, 32)
             if hdr & 8:
                 b.put(10000, 32)
                 b.put(15635, 16)
@@ -95,7 +104,7 @@ def fixture(width=31, height=17, orientation=1, chroma=1, depth=8,
                 for value in range(4): b.put(value, 32)
             if hdr & 32: b.put(2030000, 32)
     if icc or exif or xmp or gain: b.put(large)
-    config_bits = 12 if large or max(len(config), len(alpha_config)) >= 8 else 3
+    config_bits = 12 if large or max(len(config), len(alpha_config), len(gain_config)) >= 8 else 3
     b.put(config_bits == 12)
     b.put(large)
     metadata_bits, item_bits = (20, 28) if large else (10, 15)
@@ -104,7 +113,7 @@ def fixture(width=31, height=17, orientation=1, chroma=1, depth=8,
     if gain:
         b.put(len(gain_meta), metadata_bits)
         b.put(len(gain_data), item_bits)
-        b.put(0, config_bits)
+        b.put(len(gain_config), config_bits)
     b.put(len(config), config_bits)
     b.put(len(data) - 1, item_bits)
     if alpha:
@@ -113,7 +122,7 @@ def fixture(width=31, height=17, orientation=1, chroma=1, depth=8,
     if exif or xmp: b.put(compressed)
     if exif: b.put(len(exif) - 1, metadata_bits)
     if xmp: b.put(len(xmp) - 1, metadata_bits)
-    payload = b.bytes() + config + alpha_config + icc + tmap_icc + gain_meta + alpha_data + gain_data + data + exif + xmp
+    payload = b.bytes() + config + alpha_config + gain_config + icc + tmap_icc + gain_meta + alpha_data + gain_data + data + exif + xmp
     return test_context.box(b'ftyp', b'mif3' + brand) + test_context.box(b'mini', payload)
 
 

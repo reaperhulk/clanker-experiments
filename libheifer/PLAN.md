@@ -381,3 +381,21 @@ gate remains false. AV1 encoding, other codec replacements, sequence/encoder
 plugin integration, exhaustive behavior and platform/downstream/performance gates
 remain open; implementation continues rather than treating finite corpus parity
 or symbol presence as full compatibility.
+
+
+### Minimized box diagnostics
+
+Compact inputs now retain their original mini diagnostic fields and physical
+chunk offsets. Dumps preserve native spelling, raw FourCC bytes, inherited
+configuration sizes, signed HDR primaries, gain-map metadata and successfully
+parsed boxes after unsupported-brand expansion failures. The independent
+original-header client compares exact bytes, repeated calls, descriptor ownership,
+memory/file reads and failed reloads across 1,372 cases. Normal, ASan/UBSan client
+and codec-free runs pass. Four mutations are detected by 424, 296, three and 424
+semantic differences, with no process failures (226 default mutations).
+Compact context/property regressions (1,990 each), ordinary diagnostics (1,729),
+Rust all-feature/no-feature tests, Clippy, formatting and original-header ABI pass.
+Evidence and exact artifact hashes are in `docs/results/mini-debug-*.json`.
+Local leak detection remains disabled under ptrace; CI retains it. All 465
+functions remain partial. Compact output requires the still-image encoder path;
+registered encoder integration and the other codec/behavioral gates continue.

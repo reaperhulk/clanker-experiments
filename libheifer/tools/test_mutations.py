@@ -15,6 +15,10 @@ import sys
 import tempfile
 
 MUTATIONS = [
+    ('mini_debug_gain_depth', 'src/mini.rs', 'value!("gainmap_bit_depth", bits.depth(gain_float, true)?);', 'value!("gainmap_bit_depth", bits.depth(gain_float, true)? + 1);', 'mini_debug'),
+    ('mini_debug_hdr_primaries', 'src/mini.rs', 'bits.get(32) as i32', 'bits.get(32) as i64', 'mini_debug'),
+    ('mini_debug_failed_expansion', 'src/context.rs', 'if let Some(error) = expansion_error {', 'if let Some(error) = expansion_error { self.debug_loaded = 0;', 'mini_debug'),
+    ('mini_debug_config_inheritance', 'src/mini.rs', '"gainmap_item_codec_config size",', '"gainmap_item_code_config size",', 'mini_debug'),
     ('mini_partial_items', 'src/context.rs', 'if input.is_minimized() {', 'if false && input.is_minimized() {', 'mini_reader'),
     ('reader_empty_timeout', 'crates/capi/src/input.rs', 'None => Ok(Cow::Borrowed(&[])),', 'None => Err(eof()),', 'mini_reader'),
     ('mini_reader_payload_budget', 'src/input.rs', 'crate::mini::payload_budget(amount)?;', 'crate::mini::payload_budget(amount + 1)?;', 'mini_reader'),

@@ -102,6 +102,9 @@ pub trait Input: Send + Sync {
     fn metadata_limits(&self, limits: crate::security::Limits) -> crate::security::Limits {
         limits
     }
+    fn minimized_diagnostic(&self) -> Option<&[u8]> {
+        None
+    }
     fn is_minimized(&self) -> bool {
         false
     }
@@ -1431,10 +1434,14 @@ impl Context {
             .limits
             .read()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let input = crate::mini::expand(input)?;
+        let (input, expansion_error) = crate::mini::expand(input)?;
         self.items.input = Some(input.clone());
         let parsing_limits = input.metadata_limits(read_limits);
         if input.is_minimized() {
+            self.debug_loaded = 2;
+            if let Some(error) = expansion_error {
+                return Err(error);
+            }
             // Native expansion installs infe entries before parsing the embedded
             // codec configuration; failed configuration reads retain those items.
             let first = header(input.bytes())?;

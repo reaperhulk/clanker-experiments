@@ -262,13 +262,14 @@
     ]
   },
   "heif_context_debug_dump_boxes_to_file": {
-    "notes": "1,729 original-header input cases and 480 mutable writer cases compare exact dump bytes, repeated calls/writes and borrowed descriptor ownership. Fundamental boxes, HEVC configuration, item locations/references, color/geometry, optional-property errors, raw/UUID writer properties and grid/overlay payload descriptions including all truncations. Normal, ASan/UBSan clients and codec-free checks pass; nine semantic mutations detect incorrect output. Sequence/richer property diagnostics, loaded-model edits, deep nesting, allocation failures and platform C execution remain open.",
+    "notes": "1,729 original-header input cases and 480 mutable writer cases compare exact dump bytes, repeated calls/writes and borrowed descriptor ownership. Fundamental boxes, HEVC configuration, item locations/references, color/geometry, optional-property errors, raw/UUID writer properties and grid/overlay payload descriptions including all truncations. Normal, ASan/UBSan clients and codec-free checks pass; nine semantic mutations detect incorrect output. Sequence/richer property diagnostics, loaded-model edits, deep nesting, allocation failures and platform C execution remain open. Compact mini diagnostics now retain original fields, HDR and gain-map data, physical offsets and parsed boxes after unsupported-brand failures; 1,372 exact original-header cases pass, with four detected mutations. Compact writing and complete model/platform behavior remain open.",
     "status": "partial",
     "tests": [
       "tests/debug_dump.c",
       "tools/test_debug_dump.py",
       "tests/debug_writing.c",
-      "tools/test_debug_writing.py"
+      "tools/test_debug_writing.py",
+      "tools/test_mini_debug.py"
     ]
   },
   "heif_context_encode_grid": {

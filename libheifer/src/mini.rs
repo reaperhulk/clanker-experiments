@@ -5,7 +5,7 @@ use crate::{
     security::{Budget, Limits},
     writing::{boxed, full, number},
 };
-use std::{borrow::Cow, sync::Arc};
+use std::{borrow::Cow, io::Write, sync::Arc};
 type Result<T> = std::result::Result<T, ContextError>;
 
 struct Bits<'a> {
@@ -46,7 +46,7 @@ impl Bits<'_> {
     fn field(&mut self, out: &mut Vec<u8>, bytes: usize) {
         number(out, u64::from(self.get(bytes * 8)), bytes);
     }
-    fn hdr(&mut self) -> Vec<Vec<u8>> {
+    fn hdr(&mut self) -> (Vec<Vec<u8>>, bool) {
         let flags: Vec<_> = (0..6).map(|_| self.flag()).collect();
         let mut properties = Vec::new();
         for (index, kind) in [*b"clli", *b"mdcv", *b"cclv", *b"amve", *b"reve", *b"ndwt"]
@@ -103,7 +103,7 @@ impl Bits<'_> {
                 properties.push(boxed(kind, &data));
             }
         }
-        properties
+        (properties, flags[4])
     }
 }
 fn invalid(message: &str) -> ContextError {
@@ -113,11 +113,118 @@ fn invalid(message: &str) -> ContextError {
     )
 }
 
+fn dump_hdr(out: &mut Vec<u8>, prefix: &str, properties: &[Vec<u8>], reve: bool) {
+    for kind in [*b"clli", *b"mdcv", *b"cclv", *b"amve", *b"reve", *b"ndwt"] {
+        if kind == *b"reve" {
+            let _ = writeln!(out, "{prefix}reve_flag: {}", u8::from(reve));
+            continue;
+        }
+        let name = std::str::from_utf8(&kind).unwrap();
+        let Some(property) = properties.iter().find(|p| p[4..8] == kind) else {
+            let _ = writeln!(out, "{prefix}{name}: ---");
+            continue;
+        };
+        let mut bits = Bits {
+            data: &property[8..],
+            at: 0,
+        };
+        match &kind {
+            b"clli" => {
+                // The upstream main-image diagnostic spells this key "ccli".
+                let name = if prefix.is_empty() { "ccli" } else { "clli" };
+                let _ = writeln!(
+                    out,
+                    "{prefix}{name}.max_content_light_level: {}",
+                    bits.get(16)
+                );
+                let _ = writeln!(
+                    out,
+                    "{prefix}{name}.max_pic_average_light_level: {}",
+                    bits.get(16)
+                );
+            }
+            b"mdcv" => {
+                let values: Vec<_> = (0..8).map(|_| bits.get(16)).collect();
+                let _ = writeln!(
+                    out,
+                    "{prefix}mdcv.display_primaries (x,y): ({};{}), ({};{}), ({};{})",
+                    values[0], values[1], values[2], values[3], values[4], values[5]
+                );
+                let _ = writeln!(
+                    out,
+                    "{prefix}mdcv.white point (x,y): ({};{})",
+                    values[6], values[7]
+                );
+                let _ = writeln!(
+                    out,
+                    "{prefix}mdcv.max display mastering luminance: {}",
+                    bits.get(32)
+                );
+                let _ = writeln!(
+                    out,
+                    "{prefix}mdcv.min display mastering luminance: {}",
+                    bits.get(32)
+                );
+            }
+            b"cclv" => {
+                let flags = bits.get(8);
+                for (flag, key) in [
+                    (32, "primaries"),
+                    (16, "min_luminance_value"),
+                    (8, "max_luminance_value"),
+                    (4, "avg_luminance_value"),
+                ] {
+                    let _ = writeln!(
+                        out,
+                        "{prefix}cclv.ccv_{key}_present_flag: {}",
+                        u8::from(flags & flag != 0)
+                    );
+                }
+                if flags & 32 != 0 {
+                    let values: Vec<_> = (0..6).map(|_| bits.get(32) as i32).collect();
+                    let _ = writeln!(
+                        out,
+                        "{prefix}cclv.ccv_primaries (x,y): ({};{}), ({};{}), ({};{})",
+                        values[0], values[1], values[2], values[3], values[4], values[5]
+                    );
+                }
+                for (flag, key) in [(16, "min"), (8, "max"), (4, "avg")] {
+                    if flags & flag != 0 {
+                        let _ = writeln!(
+                            out,
+                            "{prefix}cclv.ccv_{key}_luminance_value: {}",
+                            bits.get(32)
+                        );
+                    }
+                }
+            }
+            b"amve" => {
+                let _ = writeln!(out, "{prefix}amve.ambient_illumination: {}", bits.get(32));
+                let _ = writeln!(out, "{prefix}amve.ambient_light_x: {}", bits.get(16));
+                let _ = writeln!(out, "{prefix}amve.ambient_light_y: {}", bits.get(16));
+            }
+            b"ndwt" => {
+                bits.get(32); // FullBox version and flags.
+                let _ = writeln!(
+                    out,
+                    "{prefix}ndwt.diffuse_white_luminance: {}",
+                    bits.get(32)
+                );
+            }
+            _ => unreachable!(),
+        }
+    }
+}
+
 struct ExpandedInput {
     metadata: Vec<u8>,
+    diagnostic: Vec<u8>,
     source: Arc<dyn Input>,
 }
 impl Input for ExpandedInput {
+    fn minimized_diagnostic(&self) -> Option<&[u8]> {
+        Some(&self.diagnostic)
+    }
     fn is_minimized(&self) -> bool {
         true
     }
@@ -145,6 +252,7 @@ impl Input for ExpandedInput {
 }
 
 struct Mini<'a> {
+    diagnostic: Vec<u8>,
     width: u32,
     height: u32,
     depth: u8,
@@ -160,7 +268,14 @@ struct Mini<'a> {
 impl<'a> Mini<'a> {
     fn parse(data: &'a [u8], offset: u64, limits: &Limits) -> Result<Self> {
         let mut bits = Bits { data, at: 0 };
-        bits.get(2); // The native reader retains, but does not reject, versions.
+        let mut diagnostic = Vec::new();
+        macro_rules! value {
+            ($name:expr, $v:expr) => {
+                let _ = writeln!(diagnostic, "{}: {}", $name, $v);
+            };
+        }
+        let version = bits.get(2); // Retained, not rejected by the native reader.
+        value!("version", version);
         let explicit_codec = bits.flag();
         let float = bits.flag();
         let full_range = bits.flag();
@@ -170,20 +285,38 @@ impl<'a> Mini<'a> {
         let icc = bits.flag();
         let exif = bits.flag();
         let xmp = bits.flag();
+        for (name, flag) in [
+            ("explicit_codec_types_flag", explicit_codec),
+            ("float_flag", float),
+            ("full_range_flag", full_range),
+            ("alpha_flag", alpha),
+            ("explicit_cicp_flag", cicp),
+            ("hdr_flag", hdr),
+            ("icc_flag", icc),
+            ("exif_flag", exif),
+            ("xmp_flag", xmp),
+        ] {
+            value!(name, u8::from(flag));
+        }
         let chroma = bits.get(2);
         let orientation = bits.get(3) + 1;
         let dimension_bits = if bits.flag() { 15 } else { 7 };
         let width = bits.get(dimension_bits) + 1;
         let height = bits.get(dimension_bits) + 1;
+        value!("chroma_subsampling", chroma);
+        value!("orientation", orientation);
+        value!("width", width);
+        value!("height", height);
         if matches!(chroma, 1 | 2) {
-            bits.flag();
+            value!("chroma_is_horizontally_centered", u8::from(bits.flag()));
         }
         if chroma == 1 {
-            bits.flag();
+            value!("chroma_is_vertically_centered", u8::from(bits.flag()));
         }
         let depth = bits.depth(float, false)?;
+        value!("bit_depth", depth);
         if alpha {
-            bits.flag();
+            value!("alpha_is_premultiplied", u8::from(bits.flag()));
         } // Native expansion does not install prem.
         let (cp, tc, mc) = if cicp {
             (bits.get(8), bits.get(8), bits.get(8))
@@ -199,37 +332,74 @@ impl<'a> Mini<'a> {
             number(&mut nclx, u64::from(value), 2);
         }
         nclx.push(u8::from(full_range) << 7);
+        value!("colour_primaries", cp);
+        value!("transfer_characteristics", tc);
+        value!("matrix_coefficients", mc);
         if explicit_codec {
-            bits.get(32);
-            bits.get(32);
+            for name in ["infe_type", "codec_config_type"] {
+                let code = bits.get(32);
+                let _ = write!(diagnostic, "{name}: ");
+                diagnostic.extend(code.to_be_bytes());
+                let _ = writeln!(diagnostic, " ({code})");
+            }
         }
         let gain = hdr && bits.flag();
+        if hdr {
+            value!("gainmap_flag", u8::from(gain));
+        }
         let mut tmap_icc = false;
         if gain {
-            if !bits.flag() {
-                bits.get(dimension_bits);
-                bits.get(dimension_bits);
-            }
-            bits.get(8);
-            bits.flag();
+            let (gain_width, gain_height) = if bits.flag() {
+                (width, height)
+            } else {
+                (bits.get(dimension_bits) + 1, bits.get(dimension_bits) + 1)
+            };
+            value!("gainmap_width", gain_width);
+            value!("gainmap_height", gain_height);
+            value!("gainmap_matrix_coefficients", bits.get(8));
+            value!("gainmap_full_range_flag", u8::from(bits.flag()));
             let gain_chroma = bits.get(2);
+            value!("gainmap_chroma_subsampling", gain_chroma);
             if matches!(gain_chroma, 1 | 2) {
-                bits.flag();
+                value!(
+                    "gainmap_chroma_is_horizontally_centred",
+                    u8::from(bits.flag())
+                );
             }
             if gain_chroma == 1 {
-                bits.flag();
+                value!(
+                    "gainmap_chroma_is_vertically_centred",
+                    u8::from(bits.flag())
+                );
             }
             let gain_float = bits.flag();
-            bits.depth(gain_float, true)?;
+            value!("gainmap_float_flag", u8::from(gain_float));
+            value!("gainmap_bit_depth", bits.depth(gain_float, true)?);
             tmap_icc = bits.flag();
-            if bits.flag() {
-                bits.get(24);
-                bits.flag();
+            value!("tmap_icc_flag", u8::from(tmap_icc));
+            let tmap_cicp = bits.flag();
+            value!("tmap_explicit_cicp_flag", u8::from(tmap_cicp));
+            if tmap_cicp {
+                for name in [
+                    "tmap_colour_primaries",
+                    "tmap_transfer_characteristics",
+                    "tmap_matrix_coefficients",
+                ] {
+                    value!(name, bits.get(8));
+                }
+                value!("tmap_full_range_flag", u8::from(bits.flag()));
             }
         }
-        let hdr = if hdr { bits.hdr() } else { Vec::new() };
+        let hdr = if hdr {
+            let (properties, reve) = bits.hdr();
+            dump_hdr(&mut diagnostic, "", &properties, reve);
+            properties
+        } else {
+            Vec::new()
+        };
         if gain {
-            bits.hdr();
+            let (properties, reve) = bits.hdr();
+            dump_hdr(&mut diagnostic, "tmap_", &properties, reve);
         }
         let meta_bits = if (icc || exif || xmp || gain) && bits.flag() {
             20
@@ -307,6 +477,27 @@ impl<'a> Mini<'a> {
         let icc = take(icc_size);
         take(tmap_icc_size);
         take(gain_metadata_size);
+        for (name, size) in [
+            ("alpha_item_code_config size", alpha_config.len() as u32),
+            (
+                "gainmap_item_codec_config size",
+                if gain_data_size == 0 {
+                    0
+                } else if gain_config_size == 0 {
+                    config_size
+                } else {
+                    gain_config_size
+                },
+            ),
+            ("main_item_code_config size", config_size),
+            ("icc_data size", icc_size),
+            ("tmap_icc_data size", tmap_icc_size),
+            ("gainmap_metadata size", gain_metadata_size),
+        ] {
+            if size != 0 {
+                value!(name, size);
+            }
+        }
         let mut extents = Vec::new();
         for (id, size) in [
             (2, alpha_data_size),
@@ -316,6 +507,18 @@ impl<'a> Mini<'a> {
             (7, xmp_size),
         ] {
             if size != 0 {
+                let name = match id {
+                    2 => "alpha_item_data",
+                    4 => "gainmap_item_data",
+                    6 => "exif_data",
+                    7 => "xmp_data",
+                    _ => "main_item_data",
+                };
+                let _ = writeln!(
+                    diagnostic,
+                    "{name} offset: {}, size: {size}",
+                    offset + at as u64
+                );
                 if id != 4 {
                     extents.push((id, offset + at as u64, size));
                 }
@@ -324,6 +527,7 @@ impl<'a> Mini<'a> {
         }
         extents.sort_by_key(|&(id, _, _)| id);
         Ok(Self {
+            diagnostic,
             width,
             height,
             depth,
@@ -483,20 +687,20 @@ pub(crate) fn payload_budget(size: u64) -> Result<crate::security::Reservation> 
     let budget = Arc::new(Budget::new(Arc::new(std::sync::RwLock::new(limits))));
     Ok(budget.reserve(size, "MinimizedImageBox payload")?)
 }
-pub(crate) fn expand(input: Arc<dyn Input>) -> Result<Arc<dyn Input>> {
+pub(crate) fn expand(input: Arc<dyn Input>) -> Result<(Arc<dyn Input>, Option<ContextError>)> {
     let bytes = input.bytes();
     // Leave the ordinary reader responsible for malformed initial headers.
     if bytes.len() < 32 {
-        return Ok(input);
+        return Ok((input, None));
     }
     let Ok(first) = header(bytes) else {
-        return Ok(input);
+        return Ok((input, None));
     };
     if first.kind != *b"ftyp"
         || first.size < (first.header + 8) as u64
         || first.size > bytes.len() as u64
     {
-        return Ok(input);
+        return Ok((input, None));
     }
     let mut at = first.size as usize;
     let mut found = None;
@@ -509,7 +713,7 @@ pub(crate) fn expand(input: Arc<dyn Input>) -> Result<Arc<dyn Input>> {
                 .map_err(|_| ContextError::invalid(100, "Unexpected end of file"))?
         };
         if size < h.header {
-            return Ok(input);
+            return Ok((input, None));
         }
         if h.kind == *b"mini" {
             let data = bytes
@@ -527,7 +731,15 @@ pub(crate) fn expand(input: Arc<dyn Input>) -> Result<Arc<dyn Input>> {
                 ..Limits::default()
             };
             let _reservation = payload_budget(data.len() as u64)?;
-            found = Some(Mini::parse(data, input.original_offset(data), &limits)?);
+            let mut mini = Mini::parse(data, input.original_offset(data), &limits)?;
+            let mut diagnostic = format!(
+                "Box: mini -----\nsize: {}   (header size: {})\n",
+                h.size, h.header
+            )
+            .into_bytes();
+            diagnostic.append(&mut mini.diagnostic);
+            mini.diagnostic = diagnostic;
+            found = Some(mini);
         }
         if h.size == 0 {
             break;
@@ -537,12 +749,23 @@ pub(crate) fn expand(input: Arc<dyn Input>) -> Result<Arc<dyn Input>> {
             .ok_or_else(|| ContextError::invalid(100, "Unexpected end of file"))?;
     }
     let Some(mini) = found else {
-        return Ok(input);
+        return Ok((input, None));
     };
+    let diagnostic = mini.diagnostic.clone();
     let mut metadata = bytes[..first.size as usize].to_vec();
-    metadata.extend(mini.metadata(&bytes[first.header + 4..first.header + 8])?);
-    Ok(Arc::new(ExpandedInput {
-        metadata,
-        source: input,
-    }))
+    let error = match mini.metadata(&bytes[first.header + 4..first.header + 8]) {
+        Ok(expanded) => {
+            metadata.extend(expanded);
+            None
+        }
+        Err(error) => Some(error),
+    };
+    Ok((
+        Arc::new(ExpandedInput {
+            metadata,
+            diagnostic,
+            source: input,
+        }),
+        error,
+    ))
 }
