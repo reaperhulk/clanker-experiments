@@ -8,8 +8,8 @@ with VUI unspecified-color, monochrome-decoding and typed missing-parameter fixe
 
 ## Implemented scope
 
-234 of 465 public functions are exported, plus `heif_error_success`.
-231 functions are missing. Even the exported functions are marked **partial**:
+246 of 465 public functions are exported, plus `heif_error_success`.
+219 functions are missing. Even the exported functions are marked **partial**:
 coverage is finite, platform coverage is incomplete, and one malformed-box
 behavior gap is explicitly retained. There is no claim of a compatible library.
 
@@ -325,3 +325,39 @@ Huffman tree tie-breaking (338), overwritten inflate diagnostics (84) and
 skipped compressed handle metadata (134). All baselines pass; compiler errors
 and client crashes are not counted. The default mutation set now has 41 defects.
 Both new suites also match in the build with every codec feature disabled.
+
+
+## TAI timestamps and clock descriptions
+
+The next increment adds all twelve declarations from `heif_tai_timestamps.h`,
+remaining partial for the full contract. Both public struct layouts match the
+original headers, bringing the ABI layout suite to nineteen structs.
+The independent C client matches 67,745 cases: all 65,536 uint8 source/destination
+version pairs; aliased copies and exact version-zero prefixes; raw flag values;
+in-memory clock/timestamp properties and typed equality despite identical
+serialized bytes; duplicate properties; every box version, prefix and flag byte;
+owned copies after context/image destruction; image crop/scale; HEVC and mask
+output; identity, grid, overlay and alpha propagation; and retained handles after
+successful/failed reloads. The complete suite also passes C-client ASan/UBSan
+(local leak checking disabled). The codec-free configuration is compared on the
+67,728-case subset without HEVC inputs, with the excluded scope explicit in its
+report. Nine real-HEVC variants and eight synthetic HEVC cases are excluded there.
+
+A failed read clears file tables while preserving prior image objects. The
+adapter now reports missing current-file `iloc`/`iref` when decoding retained
+handles in that state. Broader interactions with partially installed new tables,
+reader callbacks and old decoder caches remain required coverage.
+Timestamp parsing is fatal on truncated boxes; stored values preserve arbitrary
+C flag bytes, while file parsing converts the packed status bits to booleans.
+Raw and typed properties retain their distinct lookup/equality behavior.
+
+Existing item (2,840), property (960), context (1,786), error-lifetime (144) and
+brand-box (93,398) comparisons also pass during this increment. Each report
+records its exact candidate binary hash. Sequence timestamp APIs, serialization,
+allocation failures, cross-platform ABI and full-library equivalence remain open.
+
+Five new deliberate defects are rejected: version-copy gating (1,054 cases),
+serialized-only TAI equality (799), clock bit shifts (534), missing decoded
+timestamps (569) and stale file tables after reload (1,091). Passing baselines
+and the exact mutant hashes are in `tai-mutations-report.json`. The default
+mutation set now contains 46 defects.

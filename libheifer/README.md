@@ -59,6 +59,7 @@ python tools/test_properties.py --reference-build .build/reference
 python tools/test_decode_properties.py --reference-build .build/reference
 python tools/test_camera.py --reference-build .build/reference
 python tools/test_sensor.py --reference-build .build/reference
+python tools/test_tai.py --reference-build .build/reference
 python tools/test_components.py --reference-build .build/reference
 python tools/test_component_handles.py --reference-build .build/reference
 python tools/test_context.py --reference-build .build/reference --sanitize --output .build/context-sanitized-report.json

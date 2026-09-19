@@ -137,6 +137,7 @@ impl From<crate::context::ContextError> for DecodingWarning {
 
 #[derive(Debug)]
 pub struct Image {
+    pub tai_timestamp: Option<crate::tai::Timestamp>,
     pub sensor: crate::sensor::SensorMetadata,
     pub component_ids: crate::components::ComponentIds,
     pub budget: Option<std::sync::Arc<crate::security::Budget>>,
@@ -184,6 +185,7 @@ impl Image {
         }
         Ok(Self {
             sensor: crate::sensor::SensorMetadata::default(),
+            tai_timestamp: None,
             component_ids: crate::components::ComponentIds::default(),
             budget: None,
             last_error: std::sync::Mutex::new(std::ffi::CString::default()),
@@ -542,6 +544,7 @@ impl Image {
             .with_budget(self.budget.clone());
         out.color = self.color.try_clone()?;
         out.sensor = self.sensor.clone();
+        out.tai_timestamp = self.tai_timestamp;
         out.pixel_aspect_ratio = self.pixel_aspect_ratio;
         out.premultiplied_alpha = self.premultiplied_alpha;
         for p in &self.planes {
@@ -624,6 +627,7 @@ impl Image {
         out.warnings = self.warnings.clone();
         out.color = self.color.try_clone()?;
         out.sensor = self.sensor.clone();
+        out.tai_timestamp = self.tai_timestamp;
         out.pixel_aspect_ratio = self.pixel_aspect_ratio;
         out.premultiplied_alpha = self.premultiplied_alpha;
         for source in &self.planes {
@@ -668,6 +672,7 @@ impl Image {
         out.warnings = self.warnings.clone();
         out.color = self.color.try_clone()?;
         out.sensor = self.sensor.clone();
+        out.tai_timestamp = self.tai_timestamp;
         out.pixel_aspect_ratio = self.pixel_aspect_ratio;
         out.premultiplied_alpha = self.premultiplied_alpha;
         for source in &self.planes {

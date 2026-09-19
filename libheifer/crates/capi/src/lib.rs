@@ -23,6 +23,7 @@ mod items;
 mod properties;
 mod security;
 mod sensor;
+mod tai;
 pub use decoding::DecodingOptions;
 pub use properties::UserDescription;
 pub use security::SecurityLimits;

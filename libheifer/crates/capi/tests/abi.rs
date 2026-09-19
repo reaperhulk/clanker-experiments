@@ -28,7 +28,7 @@ fn public_structs_match_original_header_layouts() {
     let source = work.join("layout.c");
     let binary = work.join("layout");
     let mut c = String::from(
-        "#include <libheif/heif.h>\n#include <libheif/heif_properties.h>\n#include <libheif/heif_components.h>\n#include <stddef.h>\n#include <stdio.h>\nint main(void) {\n",
+        "#include <libheif/heif.h>\n#include <libheif/heif_properties.h>\n#include <libheif/heif_components.h>\n#include <libheif/heif_tai_timestamps.h>\n#include <stddef.h>\n#include <stdio.h>\nint main(void) {\n",
     );
     let mut expected = String::new();
     macro_rules! layout {
@@ -43,6 +43,24 @@ fn public_structs_match_original_header_layouts() {
             expected.push('\n');
         }};
     }
+    layout!(
+        heif_tai_clock_info,
+        libheifer::tai::ClockInfo,
+        version,
+        time_uncertainty,
+        clock_resolution,
+        clock_drift_rate,
+        clock_type
+    );
+    layout!(
+        heif_tai_timestamp_packet,
+        libheifer::tai::Timestamp,
+        version,
+        tai_timestamp,
+        synchronization_state,
+        timestamp_generation_failure,
+        timestamp_is_modified
+    );
     layout!(
         heif_complex32,
         libheifer::components::Complex32,

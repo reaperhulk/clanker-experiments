@@ -190,6 +190,9 @@ fn has_images(boxes: &[([u8; 4], &[u8])]) -> bool {
         .is_some_and(|(_, b)| b.get(8..12) == Some(b"pict"))
 }
 pub(crate) fn validate_property(kind: [u8; 4], p: &[u8]) -> Result<()> {
+    if matches!(&kind, b"taic" | b"itai") {
+        crate::tai::TaiProperty::parse(kind, p)?;
+    }
     match &kind {
         b"auxC" => {
             if p.len() < 4 {
@@ -473,6 +476,7 @@ pub(crate) struct DecoderInput {
     pub _reservation: crate::security::Reservation,
 }
 pub struct ImageInfo {
+    pub tai_timestamp: Option<crate::tai::Timestamp>,
     pub description_error: Option<ContextError>,
     description_input: Option<DecoderInput>,
     pub components: crate::components::ComponentIds,
@@ -627,6 +631,7 @@ impl Document {
                 description_input: None,
                 components: crate::components::ComponentIds::default(),
                 intrinsic: None,
+                tai_timestamp: None,
                 extrinsic: None,
                 warnings: Vec::new(),
                 auxiliary: crate::auxiliary::Auxiliary::default(),
@@ -835,6 +840,13 @@ impl Document {
             }
             for (kind, p) in container.properties(item.id)? {
                 match &kind {
+                    b"itai" if image.tai_timestamp.is_none() => {
+                        if let Ok(crate::tai::TaiProperty::Timestamp(value)) =
+                            crate::tai::TaiProperty::parse(kind, p)
+                        {
+                            image.tai_timestamp = Some(value);
+                        }
+                    }
                     b"cmin" => {
                         if let Ok(matrix) = crate::camera::intrinsic(p, image.ispe.0, image.ispe.1)
                         {

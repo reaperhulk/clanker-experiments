@@ -62,6 +62,8 @@ jobs:
       - run: python tools/test_decode_properties.py --reference-build .build/reference
       - run: python tools/test_camera.py --reference-build .build/reference
       - run: python tools/test_sensor.py --reference-build .build/reference
+      - run: python tools/test_tai.py --reference-build .build/reference
+      - run: python tools/test_tai.py --reference-build .build/reference --sanitize --output .build/tai-sanitized-report.json
       - run: python tools/test_components.py --reference-build .build/reference
       - run: python tools/test_component_handles.py --reference-build .build/reference
       - run: python tools/test_component_handles.py --reference-build .build/reference --sanitize --output .build/component-handles-sanitized-report.json
@@ -82,6 +84,7 @@ jobs:
       - run: python tools/test_decode_overlay.py --reference-build .build/reference
       - run: python tools/test_decode_mask.py --reference-build .build/reference
       - run: CARGO_TARGET_DIR=.build/no-codecs cargo build --locked --release -p libheifer-capi --no-default-features
+      - run: python tools/test_tai.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --without-hevc --output .build/no-codecs-tai-report.json
       - run: python tools/test_items.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --output .build/no-codecs-items-report.json
       - run: python tools/test_metadata_compression.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --output .build/no-codecs-metadata-compression-report.json
       - run: python tools/test_auxiliary.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --output .build/no-codecs-auxiliary-report.json

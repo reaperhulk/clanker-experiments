@@ -224,6 +224,7 @@ pub unsafe extern "C" fn heif_item_add_raw_property(
             uuid,
             data: owned,
             raw: true,
+            tai: None,
         },
         essential != 0,
     ) {

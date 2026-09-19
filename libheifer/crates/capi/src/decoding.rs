@@ -158,13 +158,30 @@ pub unsafe extern "C" fn heif_decode_image(
     unsafe {
         heif_decoding_options_copy(&mut options, input_options);
     }
-    let (document, max_decoding_threads) = {
+    let (document, max_decoding_threads, has_iloc) = {
         let context = super::context::lock(&handle.shared);
-        (context.document.clone(), context.max_decoding_threads)
+        (
+            context.document.clone(),
+            context.max_decoding_threads,
+            context.items.has_iloc,
+        )
     };
     let Some(document) = document else {
         return Error::new(2, 2000, c"Invalid input: Non-existing item ID referenced").into();
     };
+    // A failed reload preserves the image model but clears file tables. Data
+    // lookup belongs to the current file even when the handle predates it.
+    if !has_iloc && document.images.contains_key(&handle.id) {
+        let error = if document.images[&handle.id].kind == *b"iden" {
+            ContextError::invalid(
+                113,
+                "No 'iref' box: No iref box available, but needed for iden image",
+            )
+        } else {
+            ContextError::invalid(110, "No 'iloc' box")
+        };
+        return super::context::report_image(handle.image(), error);
+    }
     let callbacks = Callbacks(&options);
     let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         {

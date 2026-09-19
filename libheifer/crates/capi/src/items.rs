@@ -478,6 +478,7 @@ pub unsafe extern "C" fn heif_item_set_property_extended_language(
             uuid: None,
             data,
             raw: false,
+            tai: None,
         },
         false,
     ) {

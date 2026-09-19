@@ -1135,6 +1135,15 @@
       "crates/capi/tests/abi.rs"
     ]
   },
+  "heif_image_get_tai_timestamp": {
+    "notes": "Linux x86_64 original-header differential: all 65536 uint8 version pairs, version-zero prefixes, raw flag bytes, clock/timestamp property equality and ownership, box prefixes and versions, HEVC/mask/derived decode propagation, crop/scale and reloads. Sequence timing, file writing, allocation failures and cross-platform ABI remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/tai.c",
+      "tools/test_tai.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
   "heif_image_get_used_component_ids": {
     "notes": "Linux x86_64 original-header comparisons: every uint16 reference type, all 1..128 depths, datatype passthrough, descriptions including reference-only IDs, duplicate channels, all typed storage accessors, pointer/stride semantics, owned content IDs and crop/scale. File/codec integration, serialized content IDs, allocation-failure and cross-platform ABI validation remain open.",
     "status": "partial",
@@ -1759,6 +1768,15 @@
       "crates/capi/tests/abi.rs"
     ]
   },
+  "heif_image_set_tai_timestamp": {
+    "notes": "Linux x86_64 original-header differential: all 65536 uint8 version pairs, version-zero prefixes, raw flag bytes, clock/timestamp property equality and ownership, box prefixes and versions, HEVC/mask/derived decode propagation, crop/scale and reloads. Sequence timing, file writing, allocation failures and cross-platform ABI remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/tai.c",
+      "tools/test_tai.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
   "heif_item_add_property_user_description": {
     "notes": "Linux x86_64 original-header differential queries/insertion, item-local IDs, raw/UUID ownership, descriptions, transforms, partial read state and malformed associations. Insertion after file reads matches the pinned restriction. Other box classes, writers, allocation failures and cross-platform ABI remain open.",
     "status": "partial",
@@ -1860,6 +1878,24 @@
       "tests/properties.c",
       "tools/test_properties.py",
       "tools/test_decode_properties.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_item_get_property_tai_clock_info": {
+    "notes": "Linux x86_64 original-header differential: all 65536 uint8 version pairs, version-zero prefixes, raw flag bytes, clock/timestamp property equality and ownership, box prefixes and versions, HEVC/mask/derived decode propagation, crop/scale and reloads. Sequence timing, file writing, allocation failures and cross-platform ABI remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/tai.c",
+      "tools/test_tai.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_item_get_property_tai_timestamp": {
+    "notes": "Linux x86_64 original-header differential: all 65536 uint8 version pairs, version-zero prefixes, raw flag bytes, clock/timestamp property equality and ownership, box prefixes and versions, HEVC/mask/derived decode propagation, crop/scale and reloads. Sequence timing, file writing, allocation failures and cross-platform ABI remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/tai.c",
+      "tools/test_tai.py",
       "crates/capi/tests/abi.rs"
     ]
   },
@@ -1967,6 +2003,24 @@
       "tests/items.c",
       "tools/test_items.py",
       "tools/test_metadata_compression.py"
+    ]
+  },
+  "heif_item_set_property_tai_clock_info": {
+    "notes": "Linux x86_64 original-header differential: all 65536 uint8 version pairs, version-zero prefixes, raw flag bytes, clock/timestamp property equality and ownership, box prefixes and versions, HEVC/mask/derived decode propagation, crop/scale and reloads. Sequence timing, file writing, allocation failures and cross-platform ABI remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/tai.c",
+      "tools/test_tai.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_item_set_property_tai_timestamp": {
+    "notes": "Linux x86_64 original-header differential: all 65536 uint8 version pairs, version-zero prefixes, raw flag bytes, clock/timestamp property equality and ownership, box prefixes and versions, HEVC/mask/derived decode propagation, crop/scale and reloads. Sequence timing, file writing, allocation failures and cross-platform ABI remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/tai.c",
+      "tools/test_tai.py",
+      "crates/capi/tests/abi.rs"
     ]
   },
   "heif_list_compatible_brands": {
@@ -2117,6 +2171,60 @@
       "tests/items.c",
       "tools/test_items.py",
       "tools/test_metadata_compression.py"
+    ]
+  },
+  "heif_tai_clock_info_alloc": {
+    "notes": "Linux x86_64 original-header differential: all 65536 uint8 version pairs, version-zero prefixes, raw flag bytes, clock/timestamp property equality and ownership, box prefixes and versions, HEVC/mask/derived decode propagation, crop/scale and reloads. Sequence timing, file writing, allocation failures and cross-platform ABI remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/tai.c",
+      "tools/test_tai.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_tai_clock_info_copy": {
+    "notes": "Linux x86_64 original-header differential: all 65536 uint8 version pairs, version-zero prefixes, raw flag bytes, clock/timestamp property equality and ownership, box prefixes and versions, HEVC/mask/derived decode propagation, crop/scale and reloads. Sequence timing, file writing, allocation failures and cross-platform ABI remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/tai.c",
+      "tools/test_tai.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_tai_clock_info_release": {
+    "notes": "Linux x86_64 original-header differential: all 65536 uint8 version pairs, version-zero prefixes, raw flag bytes, clock/timestamp property equality and ownership, box prefixes and versions, HEVC/mask/derived decode propagation, crop/scale and reloads. Sequence timing, file writing, allocation failures and cross-platform ABI remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/tai.c",
+      "tools/test_tai.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_tai_timestamp_packet_alloc": {
+    "notes": "Linux x86_64 original-header differential: all 65536 uint8 version pairs, version-zero prefixes, raw flag bytes, clock/timestamp property equality and ownership, box prefixes and versions, HEVC/mask/derived decode propagation, crop/scale and reloads. Sequence timing, file writing, allocation failures and cross-platform ABI remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/tai.c",
+      "tools/test_tai.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_tai_timestamp_packet_copy": {
+    "notes": "Linux x86_64 original-header differential: all 65536 uint8 version pairs, version-zero prefixes, raw flag bytes, clock/timestamp property equality and ownership, box prefixes and versions, HEVC/mask/derived decode propagation, crop/scale and reloads. Sequence timing, file writing, allocation failures and cross-platform ABI remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/tai.c",
+      "tools/test_tai.py",
+      "crates/capi/tests/abi.rs"
+    ]
+  },
+  "heif_tai_timestamp_packet_release": {
+    "notes": "Linux x86_64 original-header differential: all 65536 uint8 version pairs, version-zero prefixes, raw flag bytes, clock/timestamp property equality and ownership, box prefixes and versions, HEVC/mask/derived decode propagation, crop/scale and reloads. Sequence timing, file writing, allocation failures and cross-platform ABI remain open.",
+    "status": "partial",
+    "tests": [
+      "tests/tai.c",
+      "tools/test_tai.py",
+      "crates/capi/tests/abi.rs"
     ]
   }
 }

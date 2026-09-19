@@ -462,6 +462,9 @@ pub(crate) fn decode_native(
     if image.color.nclx.is_none_or(|n| !n.is_defined()) {
         image.color.nclx = bitstream_nclx;
     }
+    if let Some(timestamp) = info.tai_timestamp {
+        image.tai_timestamp = Some(timestamp);
+    }
     image.pixel_aspect_ratio = info.pixel_aspect.unwrap_or((1, 1));
     image.premultiplied_alpha = info.premultiplied_alpha;
     visiting.ids.remove(&id);

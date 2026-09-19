@@ -9,6 +9,7 @@ pub struct Property {
     pub uuid: Option<[u8; 16]>,
     pub data: Vec<u8>,
     pub raw: bool,
+    pub tai: Option<crate::tai::TaiProperty>,
 }
 impl Property {
     pub(crate) fn parsed(kind: [u8; 4], uuid: Option<[u8; 16]>, data: &[u8]) -> Self {
@@ -18,6 +19,11 @@ impl Property {
             uuid,
             data: data.to_vec(),
             raw: !malformed && parsed_raw(kind, uuid),
+            tai: if matches!(&kind, b"taic" | b"itai") {
+                crate::tai::TaiProperty::parse(kind, data).ok()
+            } else {
+                None
+            },
         }
     }
 
@@ -32,6 +38,7 @@ impl Property {
             uuid: None,
             data,
             raw: false,
+            tai: None,
         }
     }
     pub fn description(&self) -> [CString; 4] {
@@ -51,6 +58,9 @@ impl Property {
 /// as error boxes and rejected when their image is interpreted.
 pub(crate) fn parse_error(kind: [u8; 4], data: &[u8]) -> Option<(ContextError, bool)> {
     match &kind {
+        b"taic" | b"itai" => crate::tai::TaiProperty::parse(kind, data)
+            .err()
+            .map(|e| (e, false)),
         b"cmin" => crate::camera::intrinsic(data, 0, 0)
             .err()
             .map(|e| (e, true)),
@@ -163,7 +173,13 @@ impl PropertyStore {
             .boxes
             .iter()
             .position(|p| {
-                p.kind == property.kind && p.uuid == property.uuid && p.data == property.data
+                p.kind == property.kind
+                    && p.uuid == property.uuid
+                    && if p.tai.is_some() {
+                        p.tai == property.tai
+                    } else {
+                        p.data == property.data
+                    }
             })
             .unwrap_or_else(|| {
                 self.boxes.push(Arc::new(property));
