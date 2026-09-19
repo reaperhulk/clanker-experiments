@@ -257,6 +257,8 @@ pub(super) fn encode_coded(
     let mut hevc = libheifer::hevc_config::EncoderConfiguration::default();
     let is_hevc = encoder.source.format() == 1;
     let is_avc = encoder.source.format() == 2;
+    let is_vvc = encoder.source.format() == 5;
+    let mut vvc = libheifer::vvc_config::EncoderConfiguration::default();
     let mut avc = libheifer::avc_config::EncoderConfiguration::default();
     let encode = field!(p, encode_image)
         .ok_or_else(|| ContextError::new(8, 0, "Encoder plugin generated an error: Unspecified"))?;
@@ -291,8 +293,10 @@ pub(super) fn encode_coded(
             )
         })?;
         let packet = unsafe { std::slice::from_raw_parts(packet, size) };
-        if is_hevc || is_avc {
-            if if is_avc {
+        if is_hevc || is_avc || is_vvc {
+            if if is_vvc {
+                vvc.update(packet)
+            } else if is_avc {
                 avc.update(packet)?
             } else {
                 hevc.update(packet)?
@@ -333,6 +337,7 @@ pub(super) fn encode_coded(
         1 => vec![(hevc.property(), true)],
         2 => vec![(avc.property(), true)],
         4 => vec![(property(*b"av1C", config.bytes()), true)],
+        5 => vec![(vvc.property(), true)],
         7 | 10 => vec![(j2k_header(image.colorspace), true)],
         _ => vec![],
     };
@@ -350,6 +355,7 @@ fn codec_kind(format: i32) -> [u8; 4] {
         2 => *b"avc1",
         3 => *b"jpeg",
         4 => *b"av01",
+        5 => *b"vvc1",
         7 | 10 => *b"j2k1",
         _ => unreachable!(),
     }

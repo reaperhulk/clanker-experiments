@@ -543,3 +543,19 @@ Arithmetic JPEG decoding, built-in JPEG and other compressed encoders, remaining
 codec implementations, VVC hooks, sequence integration and the broader behavior,
 platform/downstream/performance requirements remain open. All 465 functions
 remain partial and strict completion remains false. Implementation continues.
+
+### Registered VVC encoder checkpoint
+
+VVC encoder callbacks now create profile/tier/level and sublayer configuration,
+parameter-set arrays, framed media data, image brands and ordinary image/alpha
+output. Fresh partial SPS records replace previous configuration just as the
+pinned reference does. All 1,509 independent original-header callback/file cases
+match in regular, ASan/UBSan-client and codec-free runs, including full/partial
+SPS fields, duplicate arrays, 65,535/65,536 NAL counts and byte lengths, and
+partial writer output. Native invalid multi-layer SPS paths that index absent
+vectors remain excluded from parity evidence. Built-in VVC coding, reader/decoder
+configuration, sequence integration and the other mandatory gates remain open;
+all functions remain partial and strict completion remains false.
+
+All seven new VVC mutations are detected by semantic differences, with successful
+builds and completed client processes; the default suite now contains 278 defects.

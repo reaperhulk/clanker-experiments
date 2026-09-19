@@ -1,0 +1,12 @@
+{
+  "scope": "Original-header VVC encoder configuration, callbacks, alpha and exact serialized files.",
+  "cases": 1509,
+  "mismatches": 0,
+  "client_sanitizers": false,
+  "leak_check": false,
+  "client_sha256": "0cf5bffff6f56a94ee9f567b857aadf419caf1411d23acbe36a201b6f1fc9a67",
+  "corpus_sha256": "1fc85c4803b6b7f3c528df573541d9724cdf38061be31ebd8e2d9a2419fdb469",
+  "differences": [],
+  "reference_sha256": "5cc5713a0503098f20f8a3631e370d43256ebdca0a3209e97d541e6ecf1cd917",
+  "candidate_sha256": "39df1283790233a291aa04a6f08379c9a7f81dda17a2bd0ce841135b3d87ee42"
+}

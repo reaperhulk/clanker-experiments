@@ -15,6 +15,14 @@ import sys
 import tempfile
 
 MUTATIONS = [
+    ('vvc_profile', 'src/vvc_config.rs', 'self.profile = b.get(7) as u8;', 'self.profile = b.get(7) as u8 ^ 1;', 'vvc_encoding'),
+    ('vvc_configuration_reset', 'src/vvc_config.rs', 'self.config = Configuration::default();', '// omit SPS reset', 'vvc_encoding'),
+    ('vvc_sublayer_order', 'src/vvc_config.rs', 'out.push(c.levels[i]);', 'out.push(c.levels[i] ^ 1);', 'vvc_encoding'),
+    ('vvc_dimensions', 'src/vvc_config.rs', 'out.extend_from_slice(&c.width.to_be_bytes());', 'out.extend_from_slice(&c.height.to_be_bytes());', 'vvc_encoding'),
+    ('vvc_parameter_count', 'src/vvc_config.rs', 'u16::try_from(units.len())', 'u16::try_from(units.len() + 1)', 'vvc_encoding'),
+    ('vvc_array_completeness', 'src/vvc_config.rs', 'out.push(128 | kind);', 'out.push(*kind);', 'vvc_encoding'),
+    ('vvc_brand', 'src/writing.rs', 'b"vvc1" => Some(*b"vvic"),', 'b"vvc1" => Some(*b"vvis"),', 'vvc_encoding'),
+
     ('jpeg_idct_rounding', 'vendor/jpeg-decoder/src/idct.rs', 'const X_SCALE: i32 = 131072 + (128 << 18);', 'const X_SCALE: i32 = 0 + (128 << 18);', 'jpeg_pixels'),
     ('jpeg_horizontal_rounding', 'vendor/jpeg-decoder/src/upsampler.rs', '((sample + input[i - 1] as u32 + 1) >> 2)', '((sample + input[i - 1] as u32 + 2) >> 2)', 'jpeg_pixels'),
     ('jpeg_vertical_rounding', 'vendor/jpeg-decoder/src/upsampler.rs', '((3 * t1 + t0 + 8) >> 4)', '((3 * t1 + t0 + 7) >> 4)', 'jpeg_pixels'),

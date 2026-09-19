@@ -1169,3 +1169,37 @@ Arithmetic JPEG decoding, built-in JPEG and other compressed encoders, remaining
 codec implementations, VVC hooks, sequence integration and the broader behavior,
 platform/downstream/performance requirements remain open. All 465 functions
 remain partial and strict completion remains false. Implementation continues.
+
+## Registered VVC encoder callbacks
+
+The in-tree Rust VVC configuration parser/writer and callback integration match
+1,509 original-header cases in all three builds: normal, ASan/UBSan C clients,
+and codec-free. Evidence is retained in `results/vvc-*-report.json`; shared AVC,
+HEVC, JPEG-family, AV1 and writer regression reports also match. Local sanitizer
+leak checks are disabled under ptrace; CI requests leak checking. These runs
+instrument the C clients, not all Rust or native dependency internals.
+
+The corpus compares callbacks, input pixels, output/error writes, retained
+image dimensions, and repeated exact BMFF bytes. It covers historical plugin
+prefixes, encoded-size callbacks, profiles/tiers/levels, sublayer order,
+subprofiles, SPS crop/precision/partial records, missing parameter sets, every
+NAL type, duplicates, alpha, metadata and 16-bit NAL count/length boundaries.
+The native encoder deliberately ignores the SPS display size for VVC and uses
+its versioned encoded-size callback; the candidate preserves that behavior.
+The native writer indexes absent vectors for certain malformed multi-layer SPS
+records; those undefined paths are excluded and are not claimed as matches.
+
+Candidate: `cef2dadf7d4b5a6da045cf04285d13914af9e915970581f65d0926f27c6af28e`.
+Codec-free: `39df1283790233a291aa04a6f08379c9a7f81dda17a2bd0ce841135b3d87ee42`.
+Pinned libheif oracle: `5cc5713a0503098f20f8a3631e370d43256ebdca0a3209e97d541e6ecf1cd917`.
+Corpus: `1fc85c4803b6b7f3c528df573541d9724cdf38061be31ebd8e2d9a2419fdb469`.
+Original-header client: `0cf5bffff6f56a94ee9f567b857aadf419caf1411d23acbe36a201b6f1fc9a67`.
+
+Rust tests (all features and no defaults), original-header ABI, Clippy, formatting,
+header inventory, dependency audit and development coverage pass. Built-in VVC
+coding, VVC reader/decoder configuration and sequence integration still require
+implementation and evidence. No entry is promoted from partial; strict completion
+remains false.
+
+All seven new VVC mutations are detected by semantic differences, with successful
+builds and completed client processes; the default suite now contains 278 defects.

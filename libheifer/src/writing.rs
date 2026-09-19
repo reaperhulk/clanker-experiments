@@ -175,6 +175,7 @@ impl Context {
             .and_then(|image| match &image.kind {
                 b"av01" => Some(*b"avif"),
                 b"avc1" => Some(*b"avci"),
+                b"vvc1" => Some(*b"vvic"),
                 b"jpeg" => Some(*b"jpeg"),
                 b"j2k1" => Some(*b"j2ki"),
                 b"hvc1" => {
