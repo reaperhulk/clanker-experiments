@@ -1245,3 +1245,41 @@ the remaining sequence/platform/downstream/performance gates remain open. New
 follow-up corpora already reproduce mixed-tile and property differences. All 465
 functions remain partial and strict completion remains false. Implementation
 continues through those gaps.
+
+
+### JPEG2000 per-tile and property follow-up
+
+Per-tile wavelet and multi-component transforms now use each tile's coding
+parameters and sample rectangle, including odd row tails and common component
+subsampling. Raw codestream parsing preserves native component-count error
+ordering. Oversized declared packet segments fail decoding while compatible
+trailing packet-header padding remains accepted. Nested j2kH containers validate
+cdef, cmap, pclr and j2kL, preserve native limit/error ordering, and produce exact
+typed diagnostics. Child boxes cannot exceed their containing byte range.
+
+Fresh independent comparisons pass 3,424 mixed-tile/component cases, 40 common
+sampling cases, 1,589 property cases, 2,763 component/child-limit cases, and 1,572
+exact diagnostics. Each suite passes normal, ASan/UBSan-client and codec-free
+runs. The 9,725 sample/conversion and 5,880 marker regressions pass, together with
+4,712 reader, 1,786 context and 1,729 ordinary-diagnostic cases. Rust all-feature
+and no-default tests, Clippy, formatting, original-header ABI, inventory and
+resolved dependency checks pass. All reported evidence was rebuilt after a
+workspace reset; unpublished pre-reset results are not counted.
+
+Ten new mutations detect 4, 2,968, 2,880, 1,728, 16, 24, 72, 12, 6 and 228 semantic
+differences; the existing incomplete-end-marker mutation detects 18. The default
+inventory is 298. The initial transform-tail execution was interrupted by a
+PermissionError launching the native client and produced no report. It is not
+counted as a detected defect or a semantic survivor; the isolated rerun completes
+and detects 1,728 differences. Both attempts and the interrupted log are retained.
+
+Exact per-case reports and binary/client/corpus hashes are under
+`docs/results/jpeg2000-followup-*`. Local sanitizer clients disable leak checking
+under ptrace; CI retains it. Whole-library instrumentation and complete platform
+execution are not claimed. Eight additional owned native-generated codestreams
+retain encoder commands, source revision and input/output/binary hashes.
+
+Tile-part progression changes, wider precision, HTJ2K, built-in encoders, complete
+sequence behavior and the remaining platform/downstream/performance gates stay
+open. All 465 functions remain partial; strict completion remains false. The next
+implementation is pure Rust AVC decoding with a pinned OpenH264 test oracle.

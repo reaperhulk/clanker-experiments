@@ -22,3 +22,7 @@ Repository descriptions and upstream conformance claims are leads, not our test
 results. A decoder successfully handling the example image is not complete codec
 support. Lossy encoders require interop plus matched quality/rate-distortion
 benchmarks; they cannot be judged faster by lowering quality.
+
+JPEG2000 follow-up: per-tile transforms, common sampling, component-count error
+ordering and nested channel/palette/layer properties now have normal, sanitizer
+and codec-free evidence in `results/jpeg2000-followup-*`. JPEG2000 remains partial.

@@ -269,7 +269,10 @@
       "tools/test_debug_dump.py",
       "tests/debug_writing.c",
       "tools/test_debug_writing.py",
-      "tools/test_mini_debug.py"
+      "tools/test_mini_debug.py",
+      "tools/test_jpeg2000_properties.py",
+      "tools/test_jpeg2000_property_limits.py",
+      "tools/test_jpeg2000_debug.py"
     ]
   },
   "heif_context_encode_grid": {
@@ -572,7 +575,10 @@
       "tools/test_mini.py",
       "tools/test_mini_properties.py",
       "tools/test_mini_file.py",
-      "tools/test_mini_reader.py"
+      "tools/test_mini_reader.py",
+      "tools/test_jpeg2000_properties.py",
+      "tools/test_jpeg2000_property_limits.py",
+      "tools/test_jpeg2000_debug.py"
     ]
   },
   "heif_context_read_from_memory": {
@@ -596,7 +602,10 @@
       "tools/test_mini.py",
       "tools/test_mini_properties.py",
       "tools/test_mini_file.py",
-      "tools/test_mini_reader.py"
+      "tools/test_mini_reader.py",
+      "tools/test_jpeg2000_properties.py",
+      "tools/test_jpeg2000_property_limits.py",
+      "tools/test_jpeg2000_debug.py"
     ]
   },
   "heif_context_read_from_memory_without_copy": {
@@ -620,7 +629,10 @@
       "tools/test_mini.py",
       "tools/test_mini_properties.py",
       "tools/test_mini_file.py",
-      "tools/test_mini_reader.py"
+      "tools/test_mini_reader.py",
+      "tools/test_jpeg2000_properties.py",
+      "tools/test_jpeg2000_property_limits.py",
+      "tools/test_jpeg2000_debug.py"
     ]
   },
   "heif_context_read_from_reader": {
@@ -799,7 +811,9 @@
       "tools/test_jpeg_limits.py",
       "tools/test_jpeg2000.py",
       "tools/test_jpeg2000_errors.py",
-      "tools/test_jpeg2000_limits.py"
+      "tools/test_jpeg2000_limits.py",
+      "tools/test_jpeg2000_tiles.py",
+      "tools/test_jpeg2000_sampling.py"
     ]
   },
   "heif_decoder_descriptor_get_id_name": {

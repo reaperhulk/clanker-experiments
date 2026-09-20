@@ -139,6 +139,24 @@ impl Default for DecodeSettings {
     }
 }
 
+/// A raw codestream without JP2 color-space or component-count assumptions.
+pub struct RawCodestream<'a> {
+    parsed: j2c::ParsedCodestream<'a>,
+}
+
+impl<'a> RawCodestream<'a> {
+    /// Parse the codestream independently of container color interpretation.
+    pub fn new(data: &'a [u8], settings: &DecodeSettings) -> Result<Self> {
+        Ok(Self { parsed: j2c::parse_raw(data, settings)? })
+    }
+
+    /// Restore component samples while leaving the unsigned level shift to the caller.
+    pub fn decode_raw_components<'b>(&'a self, context: &'b mut DecoderContext<'a>) -> Result<&'b [ComponentData]> {
+        j2c::decode(self.parsed.data, &self.parsed.header, context, false)?;
+        Ok(&context.channel_data)
+    }
+}
+
 /// A JPEG2000 image or codestream.
 pub struct Image<'a> {
     /// The codestream containing the data to decode.

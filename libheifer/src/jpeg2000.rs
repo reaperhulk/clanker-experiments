@@ -72,8 +72,8 @@ pub fn decode(
         return Err(error("opj_read_header()"));
     }
     let settings = hayro_jpeg2000::DecodeSettings::default();
-    let coded =
-        hayro_jpeg2000::Image::new(&data, &settings).map_err(|_| error("opj_read_header()"))?;
+    let coded = hayro_jpeg2000::RawCodestream::new(&data, &settings)
+        .map_err(|_| error("opj_read_header()"))?;
     let limits = document.current_limits();
     let (iw, ih) = document.images[&id].ispe;
     let mut max_pixels = limits.max_image_size_pixels;

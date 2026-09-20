@@ -20,15 +20,15 @@ pub(crate) fn parse<'a, 'b>(
     storage: &mut DecompositionStorage<'a>,
 ) -> Result<()> {
     for tile_part in &tile.tile_parts {
-        if parse_inner(
+        let mut oversized_segment = false;
+        let complete = parse_inner(
             tile_part.clone(),
             &mut progression_iterator,
             &tile.component_infos,
             storage,
-        )
-        .is_none()
-            && header.strict
-        {
+            &mut oversized_segment,
+        ).is_some();
+        if oversized_segment || (!complete && header.strict) {
             bail!(TileError::Invalid);
         }
     }
@@ -41,6 +41,7 @@ fn parse_inner<'a>(
     progression_iterator: &mut dyn Iterator<Item = ProgressionData>,
     component_infos: &[ComponentInfo],
     storage: &mut DecompositionStorage<'a>,
+    oversized_segment: &mut bool,
 ) -> Option<()> {
     while !tile_part.header().at_end() {
         let progression_data = progression_iterator.next()?;
@@ -105,7 +106,11 @@ fn parse_inner<'a>(
                         let segments = &mut storage.segments[segments.clone()];
 
                         for segment in segments {
-                            segment.data = body_reader.read_bytes(segment.data_length as usize)?;
+                            let Some(data) = body_reader.read_bytes(segment.data_length as usize) else {
+                                *oversized_segment = true;
+                                return None;
+                            };
+                            segment.data = data;
                         }
                     }
                 }

@@ -93,11 +93,10 @@ pub(crate) fn decode<'a>(
         )?;
     }
 
-    // Note that this assumes that either all tiles have MCT or none of them.
-    // In theory, only some could have it... But hopefully no such cursed
-    // images exist!
-    if tiles[0].mct {
-        mct::apply_inverse(&mut ctx.channel_data, &tiles[0].component_infos, header)?;
+    for tile in &tiles {
+        if tile.mct && !tile.tile_parts.is_empty() {
+            mct::apply_inverse(&mut ctx.channel_data, &tile.component_infos, header, &tile.rect)?;
+        }
     }
 
     if shift_unsigned { apply_sign_shift(&mut ctx.channel_data, &header.component_infos); }
@@ -159,7 +158,7 @@ fn decode_tile<'a, 'b>(
 
     // Unlike before, we interleave the apply_idwt and store stages
     // for each component tile so we can reuse allocations better.
-    for (idx, component_info) in header.component_infos.iter().enumerate() {
+    for (idx, component_info) in tile.component_infos.iter().enumerate() {
         // Next, we apply the inverse discrete wavelet transform.
         idwt::apply(
             storage,

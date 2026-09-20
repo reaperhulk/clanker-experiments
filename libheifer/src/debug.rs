@@ -346,7 +346,51 @@ fn dump_box(out: &mut Vec<u8>, data: &[u8], depth: usize, owned: Option<&Context
             }
             out.push(b'\n');
         }
-        b"meta" | b"iprp" | b"ipco" => {
+        b"cdef" => {
+            let count = r.n(2);
+            for _ in 0..count {
+                let _ = writeln!(
+                    out,
+                    "{indent}channel_index: {}, channel_type: {}, channel_association: {}",
+                    r.n(2),
+                    r.n(2),
+                    r.n(2)
+                );
+            }
+        }
+        b"cmap" => {
+            while r.at < r.data.len() {
+                let _ = writeln!(
+                    out,
+                    "{indent}component_index: {}, mapping_type: {}, palette_colour: {}",
+                    r.n(2),
+                    r.n(1),
+                    r.n(1)
+                );
+            }
+        }
+        b"j2kL" => {
+            let count = r.n(2);
+            for _ in 0..count {
+                let _ = writeln!(
+                    out,
+                    "{indent}layer_id: {}, discard_levels: {}, decode_layers: {}",
+                    r.n(2),
+                    r.n(1),
+                    r.n(2)
+                );
+            }
+        }
+        b"pclr" => {
+            let entries = r.n(2);
+            let columns = r.n(1);
+            let _ = write!(out, "{indent}NE: {entries}, NPC: {columns}, B: ");
+            for _ in 0..columns {
+                let _ = write!(out, "{}, ", r.n(1));
+            }
+            out.push(b'\n');
+        }
+        b"meta" | b"iprp" | b"ipco" | b"j2kH" => {
             children(out, &r.data[r.at..], depth + 1, h.kind == *b"ipco", owned)
         }
         b"iinf" => {

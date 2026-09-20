@@ -15,6 +15,16 @@ import sys
 import tempfile
 
 MUTATIONS = [
+    ('jpeg2000_packet_extent', 'vendor/hayro-jpeg2000/src/j2c/segment.rs', 'if oversized_segment || (!complete && header.strict)', 'if !complete && header.strict', 'jpeg2000_sampling'),
+    ('jpeg2000_tile_transform', 'vendor/hayro-jpeg2000/src/j2c/decode.rs', 'if tile.mct && !tile.tile_parts.is_empty()', 'if tiles[0].mct && !tile.tile_parts.is_empty()', 'jpeg2000_tiles'),
+    ('jpeg2000_tile_wavelet', 'vendor/hayro-jpeg2000/src/j2c/decode.rs', 'for (idx, component_info) in tile.component_infos.iter().enumerate()', 'for (idx, component_info) in header.component_infos.iter().enumerate()', 'jpeg2000_tiles'),
+    ('jpeg2000_transform_tail', 'vendor/hayro-jpeg2000/src/j2c/mct.rs', 'let tail = s0.len() / 8 * 8;', 'let tail = s0.len();', 'jpeg2000_tiles'),
+    ('jpeg2000_raw_component_header', 'src/jpeg2000.rs', 'hayro_jpeg2000::RawCodestream::new', 'hayro_jpeg2000::Image::new', 'jpeg2000_tiles'),
+    ('jpeg2000_property_components', 'src/jpeg2000_properties.rs', 'if kind == *b"cdef" && max_components != 0', 'if false && kind == *b"cdef" && max_components != 0', 'jpeg2000_properties'),
+    ('jpeg2000_palette_depth', 'src/jpeg2000_properties.rs', 'depth > 16', 'depth > 17', 'jpeg2000_properties'),
+    ('jpeg2000_palette_width', 'src/jpeg2000_properties.rs', 'depth <= 8', 'depth <= 7', 'jpeg2000_properties'),
+    ('jpeg2000_child_extent', 'src/context.rs', 'ContextError::invalid(101, "Invalid box size")', 'ContextError::invalid(100, "Unexpected end of file")', 'jpeg2000_properties'),
+    ('jpeg2000_palette_dump', 'src/debug.rs', 'NE: {entries}, NPC: {columns}', 'NE: {columns}, NPC: {columns}', 'jpeg2000_debug'),
     ('jpeg2000_absent_tile', 'src/jpeg2000.rs', 'if !component.is_present(x as u32 * dx, y as u32 * dy) {', 'if false && !component.is_present(x as u32 * dx, y as u32 * dy) {', 'jpeg2000_handles'),
 ('jpeg2000_tile_order', 'src/jpeg2000.rs', 'if *next != u16::from(record[6]) {', 'if false && *next != u16::from(record[6]) {', 'jpeg2000_errors'),
     ('jpeg2000_wavelet_normalization', 'vendor/hayro-jpeg2000/src/j2c/decode.rs', 'if irreversible { 0 } else { log_gain }', 'log_gain', 'jpeg2000_pixels'),
@@ -362,7 +372,7 @@ def main():
         return str(Path(args.plugin_reference_build).resolve()) if suite == "dynamic_plugins" else reference
     # Baselines must pass on this tree before a rejected mutant is meaningful.
     for suite in dict.fromkeys(m[4] for m in mutations if m[4] != "abi"):
-        run = execute([sys.executable, f"tools/test_{suite}.py", "--reference-build", oracle(suite), "--candidate", candidate, *(["--work", str(evidence / "decode")] if suite.startswith("decode_") or suite == "hevc_limits" else []), "--output", str(evidence / f"baseline-{suite}.json")], root, os.environ, evidence / f"baseline-{suite}.log")
+        run = execute([sys.executable, f"tools/test_{suite}.py", "--reference-build", oracle(suite), "--candidate", candidate, *(["--work", str(evidence / "decode")] if suite.startswith("decode_") or suite in ("hevc_limits", "jpeg2000_tiles", "jpeg2000_debug", "jpeg2000_pixels", "jpeg2000_errors", "jpeg2000_sampling") else []), "--output", str(evidence / f"baseline-{suite}.json")], root, os.environ, evidence / f"baseline-{suite}.log")
         if run.returncode:
             raise SystemExit(f"Baseline {suite} failed; see {evidence}")
     run = execute(["cargo", "test", "--locked", "-p", "libheifer-capi", "--test", "abi"], root, dict(os.environ, CARGO_TARGET_DIR=str(root / ".build/abi-baseline")), evidence / "baseline-abi.log")
@@ -396,7 +406,7 @@ def main():
                 else:
                     report_path = evidence / f"{name}.json"
                     report_path.unlink(missing_ok=True)
-                    run = execute([sys.executable, f"tools/test_{suite}.py", "--reference-build", oracle(suite), "--candidate", str(library), *(["--work", str(evidence / "decode")] if suite.startswith("decode_") or suite == "hevc_limits" else []), "--output", str(report_path)], root, os.environ, evidence / f"{name}.log")
+                    run = execute([sys.executable, f"tools/test_{suite}.py", "--reference-build", oracle(suite), "--candidate", str(library), *(["--work", str(evidence / "decode")] if suite.startswith("decode_") or suite in ("hevc_limits", "jpeg2000_tiles", "jpeg2000_debug", "jpeg2000_pixels", "jpeg2000_errors", "jpeg2000_sampling") else []), "--output", str(report_path)], root, os.environ, evidence / f"{name}.log")
                     report = json.loads(report_path.read_text()) if report_path.exists() else {}
                     record["mismatches"] = report.get("mismatches", 0)
                     record["process_failures"] = report.get("process_failures", [])

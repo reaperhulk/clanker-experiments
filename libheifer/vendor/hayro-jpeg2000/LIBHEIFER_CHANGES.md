@@ -13,6 +13,14 @@ Based on hayro-jpeg2000 0.4.0, hayro revision
 * Decoded components track present tile rectangles. Declared tiles with no tile
   parts are skipped so the adapter preserves zero-filled missing regions.
 
+* RawCodestream parses headers without JP2 color-space/component-count assumptions.
+* Inverse wavelets use each tile's component parameters. Multi-component
+  transforms operate only on the corresponding tile's stored sample rectangle,
+  mapping common subsampling and resolution shrink factors; scalar tails restore
+  samples after the last complete eight-lane group.
+* Declared packet body segments exceeding the available bytes are rejected
+  independently of optional strict packet-header padding checks.
+
 All other upstream licenses and profile notices are retained. Original-header
 native oracle comparisons, fixture provenance, deliberate mutations and sanitizer
 results are recorded by the enclosing libheifer project. These changes do not

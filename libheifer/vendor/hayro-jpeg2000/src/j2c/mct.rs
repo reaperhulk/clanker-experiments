@@ -11,6 +11,7 @@ pub(crate) fn apply_inverse(
     components: &mut [ComponentData],
     component_infos: &[super::codestream::ComponentInfo],
     header: &Header<'_>,
+    rect: &super::rect::IntRect,
 ) -> Result<()> {
     if components.len() < 3 {
         return if header.strict {
@@ -35,12 +36,19 @@ pub(crate) fn apply_inverse(
         bail!(ColorError::Mct);
     }
 
-    apply_inner(
-        transform,
-        &mut s0.container,
-        &mut s1.container,
-        &mut s2.container,
-    );
+    let size = &header.size_data;
+    let width = size.image_width() as usize;
+    let height = size.image_height() as usize;
+    let sx = u64::from(size.x_shrink_factor) * u64::from(size.x_resolution_shrink_factor);
+    let sy = u64::from(size.y_shrink_factor) * u64::from(size.y_resolution_shrink_factor);
+    let x0 = (u64::from(rect.x0.saturating_sub(size.image_area_x_offset)).div_ceil(sx) as usize).min(width);
+    let x1 = (u64::from(rect.x1.saturating_sub(size.image_area_x_offset)).div_ceil(sx) as usize).min(width);
+    let y0 = (u64::from(rect.y0.saturating_sub(size.image_area_y_offset)).div_ceil(sy) as usize).min(height);
+    let y1 = (u64::from(rect.y1.saturating_sub(size.image_area_y_offset)).div_ceil(sy) as usize).min(height);
+    for y in y0..y1 {
+        let range = y * width + x0..y * width + x1;
+        apply_inner(transform, &mut s0.container[range.clone()], &mut s1.container[range.clone()], &mut s2.container[range]);
+    }
 
     Ok(())
 }
@@ -57,6 +65,23 @@ fn apply_inner_impl<S: Simd>(
     s1: &mut [f32],
     s2: &mut [f32],
 ) {
+    let tail = s0.len() / 8 * 8;
+    for i in tail..s0.len() {
+        let (y0, y1, y2) = (s0[i], s1[i], s2[i]);
+        match transform {
+            WaveletTransform::Irreversible97 => {
+                s0[i] = y2 * 1.402 + y0;
+                s1[i] = y2 * -0.71414 + (y1 * -0.34413 + y0);
+                s2[i] = y1 * 1.772 + y0;
+            }
+            WaveletTransform::Reversible53 => {
+                let g = y0 - ((y2 + y1) * 0.25).floor();
+                s0[i] = y2 + g;
+                s1[i] = g;
+                s2[i] = y1 + g;
+            }
+        }
+    }
     match transform {
         // Irreversible MCT, specified in G.3.
         WaveletTransform::Irreversible97 => {

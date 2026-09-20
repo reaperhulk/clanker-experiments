@@ -287,6 +287,9 @@ fn validate_limit_boxes(
     let mut count = 0usize;
     while !data.is_empty() {
         let h = header(data)?;
+        if h.size > data.len() as u64 {
+            return Err(ContextError::invalid(101, "Invalid box size"));
+        }
         let p = body(data, h)?;
         match &h.kind {
             b"cmpC" => {
@@ -301,7 +304,10 @@ fn validate_limit_boxes(
             b"uncC" => {
                 crate::uncompressed::Configuration::parse(p, Some(limits))?;
             }
-            b"iprp" | b"ipco" | b"grpl" => validate_limit_boxes(p, h.kind, limits)?,
+            b"cdef" | b"cmap" | b"pclr" | b"j2kL" => {
+                crate::jpeg2000_properties::validate(h.kind, p, limits.max_components)?
+            }
+            b"iprp" | b"ipco" | b"grpl" | b"j2kH" => validate_limit_boxes(p, h.kind, limits)?,
             b"altr" | b"ster" | b"pymd" => {
                 crate::entity_groups::parse_group(h.kind, p, limits)?;
             }

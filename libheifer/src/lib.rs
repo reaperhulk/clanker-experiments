@@ -77,3 +77,4 @@ mod jpeg_header;
 #[cfg(feature = "jpeg2000")]
 pub mod jpeg2000;
 pub mod jpeg2000_config;
+mod jpeg2000_properties;

@@ -36,6 +36,8 @@ The C adapter enables the optional `jpeg2000` feature by default. Codec-free
 validation links a separately built candidate without defaults and compares it
 against a native oracle with OpenJPEG disabled. Local sanitizer client runs
 disable leak checking under ptrace; CI retains it. Finite test coverage does not
-establish complete codec conformance. Mixed tile transforms, tile-part progression
-changes, wider precision, additional header properties, HTJ2K, JPEG2000 encoding,
+establish complete codec conformance. Per-tile transforms, raw component-count
+ordering, common sample grids, packet extents and nested channel/palette/layer
+properties have independent follow-up evidence. Tile-part progression changes,
+wider precision, remaining header semantics, HTJ2K, JPEG2000 encoding,
 sequence integration and broader platform/downstream gates remain open.
