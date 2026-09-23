@@ -355,8 +355,16 @@ def main():
     parser.add_argument("--candidate", default="target/release/libheifer.so")
     parser.add_argument("--output", default=".build/mutations-report.json")
     parser.add_argument("--only", choices=[m[0] for m in MUTATIONS], action="append", help="Run selected defects; default runs the complete mutation set")
+    parser.add_argument("--shard", help="K/N: run the K-th (1-based) of N contiguous slices of the selected defects; the union of all N shards is the full set")
     args = parser.parse_args()
     mutations = [m for m in MUTATIONS if args.only is None or m[0] in args.only]
+    if args.shard:
+        index, count = map(int, args.shard.split("/"))
+        if not 1 <= index <= count:
+            raise SystemExit("--shard must be K/N with 1 <= K <= N")
+        # Contiguous slices keep defects that share a suite together, so each
+        # shard runs few baselines.
+        mutations = mutations[len(mutations) * (index - 1) // count:len(mutations) * index // count]
     root = Path.cwd()
     evidence = root / ".build/mutations"
     evidence.mkdir(parents=True, exist_ok=True)
@@ -415,7 +423,7 @@ def main():
                 print(json.dumps(record), flush=True)
             finally:
                 path.write_text(original)
-    report = {"scope": f"{len(mutations)} deliberate defects; not comprehensive mutation coverage", "mutations": results, "all_detected": all(r["detected"] for r in results)}
+    report = {"scope": f"{len(mutations)} deliberate defects; not comprehensive mutation coverage", "shard": args.shard, "mutations": results, "all_detected": all(r["detected"] for r in results)}
     Path(args.output).parent.mkdir(parents=True, exist_ok=True)
     Path(args.output).write_text(json.dumps(report, indent=2) + "\n")
     if not report["all_detected"]:
