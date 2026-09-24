@@ -725,5 +725,8 @@ plugin on 170 tracks (intra, P, B, pyramid, CAVLC, truncated, edit-list
 repeats, multiple chunks and sample descriptions, skip-run overrun), after porting OpenH264's CAVLC P/B slice end and its Bi 16x8/8x16
 prediction into the vendored decoder. See `docs/RESULTS.md`.
 
+Registered decoder plugins now drive AVC, HEVC and AV1 sequence tracks as in
+libheif (466 cases). See `docs/RESULTS.md`.
+
 Next: remaining plan gates. All 465 functions remain partial; strict completion
 remains false.

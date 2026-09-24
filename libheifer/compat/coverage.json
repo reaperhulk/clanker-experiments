@@ -4073,7 +4073,7 @@
     ]
   },
   "heif_track_decode_next_image": {
-    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open. AVC tracks with the built-in decoder follow libheif's stateful OpenH264 plugin loop and display reordering: 170 original-header x264 tracks (intra/P/B/CAVLC, truncated, edit-list repeats, chunk decoder sharing, skip-run overrun) in normal, sanitizer-client and codec-free builds with detected mutations; plugin-decoded sequences remain open.",
+    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open. AVC tracks with the built-in decoder follow libheif's stateful OpenH264 plugin loop and display reordering: 170 original-header x264 tracks (intra/P/B/CAVLC, truncated, edit-list repeats, chunk decoder sharing, skip-run overrun) in normal, sanitizer-client and codec-free builds with detected mutations Registered decoder plugins drive AVC/HEVC/AV1 tracks through libheif's push/poll/flush loop: 466 original-header callback cases with sanitizer, codec-free and mutation evidence.",
     "status": "partial",
     "tests": [
       "tests/sequences.c",
@@ -4081,7 +4081,9 @@
       "tools/test_sequences.py",
       "tools/test_sequence_reading.py",
       "crates/capi/tests/abi.rs",
-      "tools/test_avc_sequences.py"
+      "tools/test_avc_sequences.py",
+      "tools/test_plugin_sequences.py",
+      "tests/plugin_sequences.c"
     ]
   },
   "heif_track_encode_end_of_sequence": {

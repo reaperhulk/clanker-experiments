@@ -1460,5 +1460,35 @@ survived because no stream ran past the picture end. The static overrun
 tracks now detect it (2 mismatches). Both reports are retained
 (`results/avc-sequences-mutations-initial-report.json`,
 `results/avc-sequences-skip-run-mutation-report.json`); 327 mutations total.
-Only one slice per picture is covered, and registered AVC plugins decoding
-sequences are not yet compared.
+Only one slice per picture is covered. Registered plugins decoding sequences
+are covered below.
+
+### Registered decoder plugins in image sequences
+
+libheif decodes every sequence track through a decoder plugin. When a
+registered plugin wins selection for an `avc1`, `hvc1`, `hev1` or `av01`
+track, libheifer now runs the same loop over it:
+
+- The plugin is selected lazily, once per decoder, by its first push or poll.
+  A plugin older than version 5 fails only that call. libheif keeps the
+  selection, so later calls use the old API, and sample 0 counts as consumed.
+- The plugin instance is created by the first push. An instance written by a
+  failed allocation is kept, and later pushes go into it.
+- `push_data2` carries the global sample index as user data. Configuration
+  units go with sample 0 only. An empty sample fails after allocation.
+- `flush_data` receives a NULL instance when no push ever created one.
+- `decode_next_image2` user data selects the sample's auxiliary metadata.
+- Sequence frames are not compared with the track dimensions.
+
+`tests/plugin_sequences.c` registers a callback decoder that holds frames back
+until the flush, fails any stage at a chosen call, and can return wrong user
+data. `tools/test_plugin_sequences.py` drives it over AVC, HEVC and AV1
+tracks: plain, short, repeating edit list, two-sample chunks, alternating
+sample descriptions and an empty sample. It also covers plugin versions 1-6,
+missing callbacks, selection by id and an absent id, output sizes and depths,
+and AVC priorities around the built-in 70. The first run differed in 472 of
+474 cases. The HEVC and AV1 priority cases were then dropped: the AVC oracle
+build has no built-in HEVC or AV1 decoder, so they differed by build
+configuration, not behaviour. All 466 cases match in normal, sanitizer-client
+and codec-free builds. Five new mutations are detected; two plugin-decoding
+anchors were made unique. 332 mutations total.

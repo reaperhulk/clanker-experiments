@@ -1,0 +1,84 @@
+{
+  "scope": "7 deliberate defects; not comprehensive mutation coverage",
+  "shard": null,
+  "mutations": [
+    {
+      "mutation": "plugin_decode_threads",
+      "suite": "plugin_decoding",
+      "source": "crates/capi/src/plugin_decoding.rs",
+      "before": "\n                num_threads: options.num_codec_threads,",
+      "after": "\n                num_threads: options.num_codec_threads + 1,",
+      "candidate_sha256": "c46080b022c84010a37bbf08eaa9ed7a67830f105b751bc665435d713c59b370",
+      "mismatches": 507,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "plugin_decode_strict",
+      "suite": "plugin_decoding",
+      "source": "crates/capi/src/plugin_decoding.rs",
+      "before": "\n                strict_decoding: options.plugin_strict,",
+      "after": "\n                strict_decoding: i32::from(options.strict),",
+      "candidate_sha256": "dcdc7d88e3afe913e216d2f7c57238236e607ef2d728d8d16d3ea881c3f1fc04",
+      "mismatches": 16,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "plugin_sequence_push_count",
+      "suite": "plugin_sequences",
+      "source": "src/sequences.rs",
+      "before": "                state.next_decoded += 1;\n                select_group(slot, format, &options)?;",
+      "after": "                select_group(slot, format, &options)?;\n                state.next_decoded += 1;",
+      "candidate_sha256": "bdca81772518d4be7aa33fcbef78e4a0df7079fef0bfc7933c9ec6fe6305020b",
+      "mismatches": 12,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "plugin_sequence_failed_instance",
+      "suite": "plugin_sequences",
+      "source": "crates/capi/src/plugin_decoding.rs",
+      "before": "            if !instance.state.is_null() {",
+      "after": "            if err.code == 0 && !instance.state.is_null() {",
+      "candidate_sha256": "534666a2e3890e518b232616c1eafa60f00dc25b33a80b4df37104a1c1deb83e",
+      "mismatches": 18,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "plugin_sequence_flush_without_instance",
+      "suite": "plugin_sequences",
+      "source": "crates/capi/src/plugin_decoding.rs",
+      "before": "            let state = self.instance.as_ref().map_or(ptr::null_mut(), |i| i.state);\n            let err = unsafe { f(state) };",
+      "after": "            let Some(instance) = &self.instance else {\n                return Ok(());\n            };\n            let err = unsafe { f(instance.state) };",
+      "candidate_sha256": "a3cf298acebfab69ecc2a2caba9dd22f7e01804c5718b1aa47f8b3028963e03f",
+      "mismatches": 48,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "plugin_sequence_user_data",
+      "suite": "plugin_sequences",
+      "source": "src/sequences.rs",
+      "before": "stream.push(&data, sample_idx as u64, &options)?",
+      "after": "stream.push(&data, 0, &options)?",
+      "candidate_sha256": "c372ff7271c5870fa7291ded95d0de0627dc1252ecb06d2a3ff93522c1047f40",
+      "mismatches": 275,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "sequence_frame_size",
+      "suite": "plugin_sequences",
+      "source": "src/decoding.rs",
+      "before": "    if !sequence_frame\n        && expected.0 != 0",
+      "after": "    if expected.0 != 0",
+      "candidate_sha256": "f455967989558f59877d64d80224f30fff80ec39dcfb23d63f050676800b55d2",
+      "mismatches": 9,
+      "process_failures": [],
+      "detected": true
+    }
+  ],
+  "all_detected": true
+}
