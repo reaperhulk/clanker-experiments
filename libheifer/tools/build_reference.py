@@ -14,6 +14,8 @@ DAV1D = "42b2b24fb8819f1ed3643aa9cf2a62f03868e3aa"
 OPENH264 = "652bdb7719f30b52b08e506645a7322ff1b2cc6f"  # v2.6.0
 OPENJPH = "8c2826fdaaac3b0334ff5bc2ed2a8ec153c99a35"  # 0.32.0
 RAV1E = "1fe82de02510767539e89b2ee6fa846920ae2686"  # v0.8.1
+VVDEC = "649f0b2fafee977c998d7e4d674f8b88d952e3a3"  # v3.2.0
+VVENC = "9428ea8636ae7f443ecde89999d16b2dfc421524"  # v1.14.0
 
 
 def run(*args):
@@ -32,6 +34,7 @@ def main():
     p.add_argument("--avc-asm", action="store_true", help="with --avc: OpenH264 with its assembly kernels (performance baseline only)")
     p.add_argument("--rav1e", action="store_true", help="enable libheif's rav1e AV1 encoder (rav1e C API via cargo-c, no assembly)")
     p.add_argument("--htj2k", action="store_true", help="enable libheif's OpenJPH HTJ2K encoder (scalar)")
+    p.add_argument("--vvc", action="store_true", help="enable libheif's vvdec VVC decoder and vvenc VVC encoder (fixture generator)")
     p.add_argument("--plugins", action="store_true", help="enable native dynamic-plugin oracle with an empty default search path")
     p.add_argument("-j", default="4")
     a = p.parse_args()
@@ -152,6 +155,26 @@ def main():
             "--features", "capi,threading", f"--prefix={install}", "--libdir=lib", "--target-dir", build.parent / "rav1e-build")
         os.environ["PKG_CONFIG_PATH"] = f"{install / 'lib/pkgconfig'}:{os.environ.get('PKG_CONFIG_PATH', '')}"
         flags += ["-DWITH_RAV1E=ON", "-DWITH_RAV1E_PLUGIN=OFF"]
+    if a.vvc:
+        for name, pin, url in (("vvdec", VVDEC, "https://github.com/fraunhoferhhi/vvdec.git"),
+                               ("vvenc", VVENC, "https://github.com/fraunhoferhhi/vvenc.git")):
+            codec = build.parent / f"{name}-source"
+            install = build.parent / f"{name}-install"
+            cbuild = build.parent / f"{name}-build"
+            if not codec.exists():
+                run("git", "init", codec)
+                run("git", "-C", codec, "remote", "add", "origin", url)
+                run("git", "-C", codec, "fetch", "--depth=1", "origin", pin)
+                run("git", "-C", codec, "checkout", "--detach", "FETCH_HEAD")
+            revision = subprocess.check_output(["git", "-C", str(codec), "rev-parse", "HEAD"], text=True).strip()
+            if revision != pin:
+                raise SystemExit(f"Wrong {name} reference revision")
+            run(cmake, "-S", codec, "-B", cbuild, "-DCMAKE_BUILD_TYPE=Release", f"-DCMAKE_INSTALL_PREFIX={install}",
+                "-DCMAKE_INSTALL_LIBDIR=lib", "-DBUILD_SHARED_LIBS=ON", f"-D{name.upper()}_ENABLE_LINK_TIME_OPT=OFF",
+                f"-D{name.upper()}_LIBRARY_ONLY=ON")
+            run(cmake, "--build", cbuild, "-j", a.j)
+            run(cmake, "--install", cbuild)
+            flags += [f"-DWITH_{name.upper()}=ON", f"-DWITH_{name.upper()}_PLUGIN=OFF", f"-D{name}_DIR={install / 'lib/cmake' / name}"]
     if a.avc:
         suffix = "-asm" if a.avc_asm else ""
         decoder = build.parent / f"openh264{suffix}-source"

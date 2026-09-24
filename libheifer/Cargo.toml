@@ -32,6 +32,7 @@ jpeg2000 = ["dep:hayro-jpeg2000"]
 jpeg = ["dep:jpeg-decoder"]
 av1 = ["dep:rav1d"]
 hevc = ["dep:rusty_h265"]
+vvc = []
 hevc-profile = ["hevc", "rusty_h265/prof"]
 
 [[example]]
@@ -56,6 +57,10 @@ rusty_h264-common = { path = "vendor/rusty_h264-common" }
 rusty_h264-decoder = { path = "vendor/rusty_h264-decoder" }
 rusty_h265 = { path = "vendor/rusty_h265" }
 zlib-rs = { path = "vendor/zlib-rs" }
+
+[[example]]
+name = "vvc_decode"
+required-features = ["vvc"]
 
 [[example]]
 name = "inspect_hevc"

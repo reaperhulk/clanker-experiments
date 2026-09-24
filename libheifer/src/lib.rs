@@ -92,3 +92,5 @@ pub mod avc;
 
 #[cfg(feature = "avc")]
 mod avc_openh264;
+#[cfg(feature = "vvc")]
+pub mod vvc;
