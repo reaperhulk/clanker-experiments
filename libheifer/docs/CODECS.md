@@ -18,7 +18,8 @@ Initial source audit (2026-09-18):
 | Raw mask decode | In-tree Rust | 8/16-bit mask samples and generated malformed input/conversion cases compared independently; mask encoding is implemented and has independent exact-byte/roundtrip coverage. |
 | Registered encoder hooks | In-tree Rust | HEVC/AV1/AVC/VVC/JPEG/JPEG2000/HTJ2K packet configuration, callback lifetimes, alpha/thumbnail conversion, ordinary and compact writing have independent oracle and mutation evidence. These optional caller-provided hooks are separate from the still-open built-in codec encoders. |
 | JPEG encode | In-tree Rust (`src/jpeg_encoder.rs`) | Baseline 4:2:0 encoder byte-identical to libheif's libjpeg-turbo 3.1.1 plugin (scalar islow FDCT, reciprocal quantization, standard tables, JFIF density), registered as a static encoder-plugin record with the plugin's parameters; compared on encoded files, handles and pixels. |
-| Remaining codecs/encoders | Open | Built-in AVC encoding, HEVC encoding, JPEG2000/HTJ2K encoding, full VVC and uncompressed formats require further implementation/audit. |
+| JPEG2000 encode | In-tree Rust (`src/jpeg2000_encoder.rs`) | Scalar encoder byte-identical to libheif's OpenJPEG 2.5.4 plugin: 5/3 and 9/7 lifting, T1 MQ coding with OpenJPEG's context tables, PCRD rate allocation by slope bisection, tag-tree packet headers and the plugin's single-tile LRCP layout. Registered as a static encoder-plugin record with the plugin's parameters; compared on encoded files, handles and pixels. |
+| Remaining codecs/encoders | Open | Built-in AVC encoding, HEVC encoding, HTJ2K encoding, full VVC and uncompressed formats require further implementation/audit. |
 
 Repository descriptions and upstream conformance claims are leads, not our test
 results. A decoder successfully handling the example image is not complete codec

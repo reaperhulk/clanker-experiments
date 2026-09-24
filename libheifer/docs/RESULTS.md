@@ -1663,3 +1663,60 @@ Eleven mutations are detected (`results/htj2k-mutations-report.json`). The
 initial report keeps the first run, where `ht_stripe_causal` survived until
 sparse low-amplitude bases were added. Normal and no-codecs runs pass locally
 and in CI; the sanitized group runs in CI.
+
+### Built-in JPEG2000 encoding
+
+libheif's JPEG2000 encoder plugin hands each plane to OpenJPEG with OpenJPEG's
+default parameters. Unless `set_lossless(0)` is called the codestream is
+reversible (5/3, no rate); lossy encodes use the 9/7 wavelet and a single
+layer at rate `1 + (100 - quality) / 2`. The plugin writes one tile, six
+resolutions, 64x64 code-blocks, LRCP, no colour transform and a COM marker.
+`src/jpeg2000_encoder.rs` reproduces that encoder in Rust:
+
+- OpenJPEG's lifting (5/3 integer, 9/7 float constants) and `lrintf`
+  quantisation, with QCD in no-quantisation or scalar-expounded form;
+- T1 significance, refinement and cleanup passes with the MQ coder, including
+  OpenJPEG's zero-coding table quirk (the swapped table serves the HL band),
+  pass rates (+3 before the final flush), the monotonic rate fix-up and
+  trailing-0xFF trimming;
+- distortion from OpenJPEG's nmsedec tables and wavelet norms;
+- rate allocation: the byte budget from `opj_j2k_update_rates` (float
+  arithmetic, main header subtracted, 30-byte floor), slope bisection with
+  packet sizing, and the good-threshold fallback;
+- the tile buffer bound, so images whose packets outgrow it fail with
+  "Failed opj_encode()" as the plugin does, and the 32-pixel minimum from
+  `opj_start_compress`.
+
+A C harness making the plugin's OpenJPEG calls found the encoder byte-identical
+on 1,900 randomized lossless and 560 lossy images, plus low bit-depth cases.
+
+`crates/capi/src/builtin_jpeg2000_encoder.rs` registers it as a static
+encoder-plugin record (version 4, priority 80, id `libheifer-jpeg2000`) with the
+plugin's semantics:
+
+- quality 0-100, default 70;
+- the lossless flag selecting reversible coding (default on);
+- the `chroma` string parameter (420/422/444) chosen in the colorspace query;
+- the plugin's getter quirks and error messages.
+
+The native oracles are now built with OpenJPEG's encoder
+(`WITH_OpenJPEG_ENCODER`). `test_encoding` and `test_other_encoding` fall back
+to the highest-priority available encoder, so they now compare against
+`.build/reference-encoders`, built with both libjpeg-turbo and OpenJPEG (1,292
+and 2,382 cases, 0 mismatches in normal and sanitizer-client builds).
+
+`tools/test_jpeg2000_encoding.py` covers 175 cases:
+
+- seven sizes (including below the 32-pixel minimum) and six input
+  colorspaces/chroma formats, lossless and lossy;
+- eleven qualities;
+- the `chroma` parameter and bit depths 1-16;
+- metadata, orientations, thumbnails, overlays, alpha and repeated encodes.
+
+It compares exact files, handles and decoded read-back pixels in normal,
+sanitizer-client and codec-free builds; all match. Nine mutations are detected
+(`results/jpeg2000-encode-mutations-report.json`). The initial report keeps
+the first run, where the chroma mutant survived: it changed the version-1
+colorspace query, which libheif does not call for version-4 plugins. It was
+retargeted to `query_input_colorspace2`. 368 mutations total.
+

@@ -26,6 +26,15 @@ MUTATIONS = [
     ('ht_roi_shift', 'vendor/hayro-jpeg2000/src/j2c/ht.rs', 'if cb.roi_shift != 0 {', 'if false {', 'htj2k_errors'),
     ('ht_mixed_style', 'vendor/hayro-jpeg2000/src/j2c/codestream.rs', '        if value & 0x80 != 0 {', '        if value & 0x00 != 0 {', 'htj2k_errors'),
     ('ht_empty_refinement', 'vendor/hayro-jpeg2000/src/j2c/ht.rs', 'if num_passes > 1 && lengths2 == 0 {', 'if false {', 'htj2k_errors'),
+    ('jpeg2000_encode_zc_orient', 'src/jpeg2000_encoder.rs', 'if self.orient == 1 {\n            core::mem::swap', 'if self.orient == 2 {\n            core::mem::swap', 'jpeg2000_encoding'),
+    ('jpeg2000_encode_pass_rate', 'src/jpeg2000_encoder.rs', 't1.mqc.numbytes().wrapping_add(3)', 't1.mqc.numbytes().wrapping_add(2)', 'jpeg2000_encoding'),
+    ('jpeg2000_encode_trailing_ff', 'src/jpeg2000_encoder.rs', 'data.get(pass.rate as usize - 1) == Some(&0xff)', 'data.get(pass.rate as usize - 1) == Some(&0xfe)', 'jpeg2000_encoding'),
+    ('jpeg2000_encode_rate_floor', 'src/jpeg2000_encoder.rs', 'if rate < 30.0 {\n            rate = 30.0;', 'if rate < 20.0 {\n            rate = 20.0;', 'jpeg2000_encoding'),
+    ('jpeg2000_encode_tile_budget', 'src/jpeg2000_encoder.rs', '* 1.4 / 8.0) as u64 + 500;', '* 1.4 / 8.0) as u64 + 5000;', 'jpeg2000_encoding'),
+    ('jpeg2000_encode_min_size', 'src/jpeg2000_encoder.rs', 'if width < 1 << (NUM_RESOLUTIONS - 1) || height', 'if width < 1 << (NUM_RESOLUTIONS - 2) || height', 'jpeg2000_encoding'),
+    ('jpeg2000_encode_quality', 'crates/capi/src/builtin_jpeg2000_encoder.rs', 'quality: 70,', 'quality: 75,', 'jpeg2000_encoding'),
+    ('jpeg2000_encode_lossless_default', 'crates/capi/src/builtin_jpeg2000_encoder.rs', 'quality: 70,\n        irreversible: false,', 'quality: 70,\n        irreversible: true,', 'jpeg2000_encoding'),
+    ('jpeg2000_encode_chroma', 'crates/capi/src/builtin_jpeg2000_encoder.rs', 'chroma.write(if wanted != -1 { wanted } else { 3 });', 'chroma.write(if wanted != -1 { wanted } else { 1 });', 'jpeg2000_encoding'),
     ('jpeg2000_packet_extent', 'vendor/hayro-jpeg2000/src/j2c/segment.rs', 'if oversized_segment || (!complete && header.strict)', 'if !complete && header.strict', 'jpeg2000_sampling'),
     ('jpeg2000_tile_transform', 'vendor/hayro-jpeg2000/src/j2c/decode.rs', 'if tile.mct && !tile.tile_parts.is_empty()', 'if tiles[0].mct && !tile.tile_parts.is_empty()', 'jpeg2000_tiles'),
     ('jpeg2000_tile_wavelet', 'vendor/hayro-jpeg2000/src/j2c/decode.rs', 'for (idx, component_info) in tile.component_infos.iter().enumerate()', 'for (idx, component_info) in header.component_infos.iter().enumerate()', 'jpeg2000_tiles'),
@@ -414,6 +423,7 @@ def main():
     parser.add_argument("--jpeg2000-reference-build", default=".build/reference-jpeg2000")
     parser.add_argument("--jpeg-reference-build", default=".build/reference-jpeg")
     parser.add_argument("--avc-reference-build", default=".build/reference-avc")
+    parser.add_argument("--encoders-reference-build", default=".build/reference-encoders")
     parser.add_argument("--candidate", default="target/release/libheifer.so")
     parser.add_argument("--output", default=".build/mutations-report.json")
     parser.add_argument("--only", choices=[m[0] for m in MUTATIONS], action="append", help="Run selected defects; default runs the complete mutation set")
@@ -437,8 +447,10 @@ def main():
             return str(Path(args.jpeg2000_reference_build).resolve())
         if suite in ("avc", "avc_errors", "avc_plugins", "avc_limits", "avc_sequences", "plugin_sequences"):
             return str(Path(args.avc_reference_build).resolve())
-        # The JPEG oracle has libheif's JPEG encoder, like the candidate.
-        if suite.startswith("jpeg_") or suite in ("other_encoding", "encoding"):
+        # The encoder oracle has libheif's JPEG and OpenJPEG encoders, like the candidate.
+        if suite in ("other_encoding", "encoding"):
+            return str(Path(args.encoders_reference_build).resolve())
+        if suite.startswith("jpeg_"):
             return str(Path(args.jpeg_reference_build).resolve())
         if suite in ('av1', 'av1_limits', 'mini_reader'):
             return str(Path(args.av1_reference_build).resolve())

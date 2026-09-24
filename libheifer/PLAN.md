@@ -742,5 +742,9 @@ HTJ2K code-blocks decode as OpenJPEG does (10,950 decode and 11,701 malformed
 or constructed refinement-pass cases). The corpus also found two packet-header
 bit-stuffing differences, fixed for all JPEG2000.
 
+A built-in pure Rust JPEG2000 encoder produces files byte-identical to
+libheif's OpenJPEG plugin (175 encoding cases; the other encoding suites now
+compare against an oracle with both native encoders).
+
 Next: remaining plan gates. All 465 functions remain partial; strict completion
 remains false.

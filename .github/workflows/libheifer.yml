@@ -73,7 +73,7 @@ jobs:
         with:
           submodules: true
       - id: key
-        run: echo "key=libheifer-oracles-${{ runner.os }}-$(git rev-parse HEAD:libheifer/tests/upstream)-${{ hashFiles('libheifer/tools/build_reference.py') }}" >> "$GITHUB_OUTPUT"
+        run: echo "key=libheifer-oracles-encoders-${{ runner.os }}-$(git rev-parse HEAD:libheifer/tests/upstream)-${{ hashFiles('libheifer/tools/build_reference.py') }}" >> "$GITHUB_OUTPUT"
       - id: cache
         uses: actions/cache@v4
         with:
@@ -91,6 +91,7 @@ jobs:
           python tools/build_reference.py --jpeg2000 --build .build/reference-jpeg2000
           python tools/build_reference.py --plugins --build .build/reference-plugins
           python tools/build_reference.py --avc --build .build/reference-avc
+          python tools/build_reference.py --jpeg --jpeg2000 --build .build/reference-encoders
 
   differential:
     name: Independent C clients (${{ matrix.group }})
