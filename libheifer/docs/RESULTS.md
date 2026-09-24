@@ -1907,22 +1907,35 @@ of every intra JVET conformance stream that vvdec decodes matches it
 bit-exactly (41 of the 44 streams, 4:0:0 to 4:4:4, 8 and 10 bit). The three
 palette streams are rejected, as they are by vvdec.
 
-`tools/generate_vvc_fixtures.py` encodes 270 owned single-picture streams with
+`tools/generate_vvc_fixtures.py` encodes 277 owned single-picture streams with
 the pinned test-only vvenc 1.14.0 (`tests/vvc_fixture_encoder.c`). They cover
 presets, QPs 0-63, 8/10-bit 4:2:0 and 4:0:0, sizes from 1x1 to 256x160 with
-conformance windows, and 33 tool toggles. vvenc rejects 4:2:2, 4:4:4, 12-bit
+conformance windows, 33 tool toggles, and CC-ALF and LMCS on
+correlated luma/chroma content. vvenc rejects 4:2:2, 4:4:4, 12-bit
 and odd 4:2:0 sizes; those are recorded as generator failures.
 `tools/test_vvc.py` wraps them as `vvc1` items the way libheif's encoder
 writes them. It compares samples, handles, conversions and errors against
-libheif with vvdec in 25 modes: 6750 cases with no mismatches, and the same in
+libheif with vvdec in 25 modes: 6925 cases with no mismatches, and the same in
 the codec-free build against libheif without vvdec. The two 1x1 streams fail
 in both, because vvdec's conformance-window check treats 4:0:0 horizontally
 like 4:2:0.
+
+Nine deliberate VVC defects (deblocking filter length, SAO band position, ALF
+boundary rounding and transposition, CC-ALF, MRL index, LMCS chroma scaling,
+the `vvcC` NAL length prefix and the 4:0:0 conformance-window check) were run
+against the vvdec oracle. Seven were detected initially
+(`docs/results/vvc-decode-mutations-initial-report.json`). The two survivors
+exposed fixture gaps: the CC-ALF rounding change was never observable on the
+generated content, and no fixture scaled LMCS chroma residuals. The seven
+`ccalf-*` and `lmcs-*` fixtures were added. A CC-ALF tap defect replaces the
+rounding one, and both it (92 mismatches) and the LMCS chroma rounding defect
+(23 mismatches) are now detected
+(`docs/results/vvc-decode-mutations-replacement-report.json`).
 
 Known differences:
 
 - inter pictures are reported as unsupported; vvdec decodes them;
 - malformed-stream behavior (vvdec's exception and recovery paths) has not
   been compared systematically;
-- decoding is scalar: the first 720p picture of ALF_A takes about 0.13 s
+- decoding is scalar: the first 720p picture of ALF_A takes about 0.09 s
   against 0.033 s for single-threaded vvdec with SIMD.
