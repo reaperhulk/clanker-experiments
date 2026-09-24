@@ -359,14 +359,21 @@ fn decode_native_mode(
         _ => 0,
     };
     let provider = options.decoder_provider.filter(|_| format != 0);
+    let builtin_options;
+    let mut options = options;
     let external = if let Some(provider) = provider {
         let cached = info
             .item_decoder
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .clone();
-        if let Some(cached) = cached {
-            Some(cached)
+        if cached.is_some() {
+            cached
+        } else if info
+            .builtin_decoder
+            .load(std::sync::atomic::Ordering::Relaxed)
+        {
+            None
         } else {
             let decoder = provider.select(format, options.decoder_id)?;
             if let Some(decoder) = &decoder {
@@ -375,12 +382,24 @@ fn decode_native_mode(
                     .lock()
                     .unwrap_or_else(std::sync::PoisonError::into_inner) = Some(decoder.clone());
                 decoder.validate()?;
+            } else {
+                info.builtin_decoder
+                    .store(true, std::sync::atomic::Ordering::Relaxed);
             }
             decoder
         }
     } else {
         None
     };
+    if provider.is_some() && external.is_none() {
+        // The registry selected the built-in decoder (now or on an earlier
+        // decode of this item); the requested id was resolved there.
+        builtin_options = DecodeOptions {
+            decoder_id: None,
+            ..*options
+        };
+        options = &builtin_options;
+    }
     let mut image = if let Some(decoder) = external {
         decoder.decode(document, id, options)?
     } else {
@@ -908,6 +927,16 @@ pub fn codec_configuration(
                         result.extend_from_slice(nal);
                     }
                 }
+            }
+        }
+        // libheif's Decoder_AVC pushes the avcC SPS, SPS extension and PPS units.
+        2 => {
+            if let Some(config) = container
+                .property(id, *b"avcC")
+                .ok()
+                .and_then(crate::avc_config::parse_configuration)
+            {
+                result = config.header_nals();
             }
         }
         4 => {

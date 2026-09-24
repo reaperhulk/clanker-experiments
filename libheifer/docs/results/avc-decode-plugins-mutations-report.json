@@ -1,0 +1,40 @@
+{
+  "scope": "3 deliberate defects; not comprehensive mutation coverage",
+  "shard": null,
+  "mutations": [
+    {
+      "mutation": "decoder_tie_order",
+      "suite": "avc_plugins",
+      "source": "crates/capi/src/plugin_registry.rs",
+      "before": "        DecoderSource::Builtin(format) => builtin_decoder(format) as usize,",
+      "after": "        DecoderSource::Builtin(format) => format as usize,",
+      "candidate_sha256": "28666cd4f37f5a5fc6595f62831ff545fe974bd661869c3ba879e7cb42f4949f",
+      "mismatches": 48,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "builtin_decoder_cache",
+      "suite": "avc_plugins",
+      "source": "src/decoding.rs",
+      "before": "                    .store(true, std::sync::atomic::Ordering::Relaxed);",
+      "after": "                    .store(false, std::sync::atomic::Ordering::Relaxed);",
+      "candidate_sha256": "bf54fd30b0f58cb274f3709317668d4b71ea7de95df934bc31e6c5265d993c72",
+      "mismatches": 48,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "avc_plugin_headers",
+      "suite": "avc_plugins",
+      "source": "src/decoding.rs",
+      "before": "                result = config.header_nals();",
+      "after": "                let _ = config;",
+      "candidate_sha256": "01023ac7de8543efaa8dc9835788a9cafd74d270a2d1bcc99f1806dd03b17176",
+      "mismatches": 96,
+      "process_failures": [],
+      "detected": true
+    }
+  ],
+  "all_detected": true
+}

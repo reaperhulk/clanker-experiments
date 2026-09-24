@@ -116,7 +116,7 @@ MUTATIONS = [
     ('plugin_decode_poll_limit', 'crates/capi/src/plugin_decoding.rs', 'for _ in 0..50 {', 'for _ in 0..49 {', 'plugin_decoding'),
     ('plugin_decode_release', 'crates/capi/src/plugin_decoding.rs', 'unsafe { f(self.state) }', 'let _ = f;', 'plugin_decoding'),
     ('plugin_decode_error_unpack', 'crates/capi/src/plugin_decoding.rs', 'if unpack && let Some(rest) = detail.strip_prefix(code) {', 'if !unpack && let Some(rest) = detail.strip_prefix(code) {', 'plugin_decoding'),
-    ('plugin_decode_cached_selection', 'src/decoding.rs', 'if let Some(cached) = cached {', 'if let Some(cached) = cached.filter(|_| false) {', 'plugin_decoding'),
+    ('plugin_decode_cached_selection', 'src/decoding.rs', 'if cached.is_some() {', 'if cached.is_some() && false {', 'plugin_decoding'),
     ('plugin_decode_empty_nal', 'src/decoding.rs', 'if !nal.is_empty() {', 'if true {', 'plugin_decoding'),
     ('av1_handle_depth', 'src/context.rs', '} else if flags & 32 != 0 {', '} else if flags & 32 == 0 {', 'plugin_decoding'),
 
@@ -352,6 +352,9 @@ MUTATIONS = [
     ("avc_early_construction", "src/avc_openh264.rs", "            6 | 9 if pending_slices => {", "            6 if pending_slices => {", "avc_errors"),
     ("avc_macroblock_count", "vendor/rusty_h264-decoder/src/lib.rs", "        if pic.mb_count != pic.total_mb {\n            return Ok(None); // picture not yet complete", "        if pic.next_mb < pic.total_mb {\n            return Ok(None); // picture not yet complete", "avc_errors"),
     ("avc_cr_qp_offset", "vendor/rusty_h264-decoder/src/lib.rs", "fd.set_chroma_qp_offset_cr(pps.second_chroma_qp_index_offset);", "fd.set_chroma_qp_offset_cr(pps.chroma_qp_index_offset);", "avc_errors"),
+    ("decoder_tie_order", "crates/capi/src/plugin_registry.rs", "        DecoderSource::Builtin(format) => builtin_decoder(format) as usize,", "        DecoderSource::Builtin(format) => format as usize,", "avc_plugins"),
+    ("builtin_decoder_cache", "src/decoding.rs", "                    .store(true, std::sync::atomic::Ordering::Relaxed);", "                    .store(false, std::sync::atomic::Ordering::Relaxed);", "avc_plugins"),
+    ("avc_plugin_headers", "src/decoding.rs", "                result = config.header_nals();", "                let _ = config;", "avc_plugins"),
     ("error_field_order", "crates/capi/src/lib.rs", "pub code: c_int,\n    pub subcode: c_int,", "pub subcode: c_int,\n    pub code: c_int,", "abi"),
 ]
 
@@ -391,7 +394,7 @@ def main():
     def oracle(suite):
         if suite.startswith("jpeg2000_"):
             return str(Path(args.jpeg2000_reference_build).resolve())
-        if suite in ("avc", "avc_errors"):
+        if suite in ("avc", "avc_errors", "avc_plugins"):
             return str(Path(args.avc_reference_build).resolve())
         if suite.startswith("jpeg_"):
             return str(Path(args.jpeg_reference_build).resolve())

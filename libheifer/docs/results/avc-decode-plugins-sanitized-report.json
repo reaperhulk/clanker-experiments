@@ -1,12 +1,12 @@
 {
-  "scope": "Original-header registered decoder callback dispatch, ownership, errors, polling, historical records and complete output pixels.",
-  "cases": 616,
+  "scope": "Registered AVC decoder plugins competing with the built-in AVC decoder (OpenH264 in the oracle).",
+  "cases": 480,
   "mismatches": 0,
   "differences": [],
-  "client_sanitizers": false,
+  "client_sanitizers": true,
   "leak_check": false,
   "client_sha256": "4d9b8ca8fad71768676a4e16f5b707f4f860f810a7862291d701a46b1216e1a8",
-  "corpus_sha256": "712bd3ea125df77af595b070be24485a38993023519bfeb4d346146e9a850460",
+  "corpus_sha256": "a87b7a71dc90e8ccb36dd0bff9b3be213543b4ccdd31aaa34312b821edefb256",
   "reference_sha256": "1678e871daafebd624c78b12494a87b7f17709e1be2ee2dd7d622720b814e764",
   "candidate_sha256": "c8858b168568cf6143100cb87c3b6fb8aae75d9b31b71409aec8cd556b1c69b1"
 }

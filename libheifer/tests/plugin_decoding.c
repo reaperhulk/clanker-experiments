@@ -12,7 +12,8 @@ static heif_error ok(void){return (heif_error){0,0,"callback-success"};}
 static heif_error failure(unsigned stage){return v[2]==stage?(heif_error){7,(int)v[3],v[4]?"Decoder plugin generated an error: Unspecified: detail":"detail"}:ok();}
 static void err(heif_error e){printf(" e%d,%d,%s",e.code,e.subcode,e.message?e.message:"NULL");}
 static const char* name(void){return "callback decoder";}
-static int support(heif_compression_format f){return f==(int)v[1]?777:0;}
+/* v[1]: compression format in the low byte; a nonzero upper part overrides the default priority 777. */
+static int support(heif_compression_format f){return f==(int)(v[1]&255)?(v[1]>>8?(int)(v[1]>>8):777):0;}
 static void init(void){printf(" init");}
 static void cleanup(void){printf(" cleanup");}
 static heif_error allocate(void** out){printf(" old-new");*out=malloc(1);polls=0;return failure(1);}

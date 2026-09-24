@@ -1299,6 +1299,9 @@ Fixtures: 427 x264 (b35605ac, no assembly) streams in `tests/fixtures/avc-genera
 | test_avc_errors (codec-free) | 37,047 | 0 | results/avc-decode-errors-no-codecs-report.json |
 | test_plugin_decoding vs AVC oracle | 616 | 0 | results/avc-decode-regression-plugin-decoding-report.json |
 | test_plugins vs AVC oracle | 224 | 0 | results/avc-decode-regression-plugins-report.json |
+| test_avc_plugins (registered vs built-in AVC decoder) | 480 | 0 | results/avc-decode-plugins-normal-report.json |
+| test_avc_plugins (ASan/UBSan client) | 480 | 0 | results/avc-decode-plugins-sanitized-report.json |
+| test_avc_plugins (codec-free vs HEVC-only oracle) | 480 | 0 | results/avc-decode-plugins-no-codecs-report.json |
 
 Mutations: avc_mono_chroma (23), avc_level_prefix_limit (48), avc_profile_gate (24),
 avc_decoder_error_text (192) and the replacement avc_mono_intra_cbp (70) are
@@ -1349,3 +1352,29 @@ are single-machine, single-image decode timings, not whole-library performance
 claims. CABAC I_PCM, multi-access-unit input, AVC sequences, encoding and the
 remaining plan gates stay open. All 465 functions remain partial; strict
 completion remains false.
+
+### Registered AVC decoders against the built-in decoder
+
+`tools/test_avc_plugins.py` registers a callback decoder for AVC at priorities
+1, 69, 70, 71 and 777, around the built-in priority 70 that the OpenH264 plugin
+and libheifer share. It covers plugin versions 3 and 5, selection by id, an
+absent id, a missing `new_decoder` and failing pushes, on real, truncated and
+garbage streams, with two decodes per handle. Its first run found 180
+differences, in three behaviors:
+
+- Ties at equal priority: libheif keeps plugins in a pointer-ordered set and
+  takes the first, so a heap-allocated registered plugin beats a static
+  built-in. The registry now orders decoders by record address, including its
+  own static built-in records.
+- Decoder reuse: libheif keeps the decoder an item first selected, including a
+  built-in one and including after a failed decode. Later decodes ignore
+  `decoder_id`.
+- Pushed data: libheif prepends the avcC SPS/PPS units, and applies the
+  avcC coded-size check, before handing data to an AVC plugin.
+
+All 480 cases now match in normal, sanitizer-client and codec-free builds. Three
+new mutations (`decoder_tie_order`, 48 mismatches; `builtin_decoder_cache`, 48;
+`avc_plugin_headers`, 96) are detected, 318 in total. The normal CI group (88
+suites) and the AVC-oracle plugin regressions still pass. Built-in AVC and
+JPEG 2000 descriptors now have their own records; both previously fell through
+to the HEVC record's name and id.

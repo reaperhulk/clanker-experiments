@@ -708,6 +708,11 @@ assembly build (0.41-0.83x of its scalar build); before this it took up to
 1.48x. See `docs/AVC_DEPENDENCIES.md`. `test_decode`-based suites now run cases
 in parallel. CI runs the vendored crates' tests on Linux, macOS and Windows.
 
-Next: CABAC I_PCM, registered-plugin priority cases, limits and AVC sequences,
-then remaining plan gates. All 465 functions remain partial; strict completion
+Registered AVC plugins competing with the built-in decoder now match libheif
+(480 cases): address-ordered priority ties, per-item decoder reuse including
+built-in selections, and avcC units plus the coded-size check on pushed data.
+See `docs/RESULTS.md`.
+
+Next: CABAC I_PCM, AVC resource-limit corpora and AVC sequences, then remaining
+plan gates. All 465 functions remain partial; strict completion
 remains false.

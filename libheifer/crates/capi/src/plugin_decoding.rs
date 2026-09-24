@@ -132,6 +132,17 @@ impl ItemDecoder for Decoder {
             core_limits.max_image_size_pixels = limits.max_image_size_pixels;
             core_limits.check_image_size(w, h)?;
         }
+        if self.format == 2
+            && let Some(config) = container
+                .property(id, *b"avcC")
+                .ok()
+                .and_then(libheifer::avc_config::parse_configuration)
+            && let Some((w, h)) = libheifer::avc_config::coded_size(&config)?
+        {
+            let mut core_limits = document.current_limits();
+            core_limits.max_image_size_pixels = limits.max_image_size_pixels;
+            core_limits.check_image_size(w, h)?;
+        }
         let p = self.plugin;
         let version = field!(p, plugin_api_version);
         let Some(old_new) = field!(p, new_decoder) else {

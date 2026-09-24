@@ -578,6 +578,9 @@ pub(crate) struct DecoderInput {
 }
 pub struct ImageInfo {
     pub(crate) item_decoder: std::sync::Mutex<Option<Arc<dyn crate::decoding::ItemDecoder>>>,
+    /// libheif keeps the plugin its `Decoder` first selected for this item,
+    /// including a built-in one; later decodes ignore `decoder_id`.
+    pub(crate) builtin_decoder: std::sync::atomic::AtomicBool,
     pub gimi_content_id: std::sync::Mutex<Vec<u8>>,
     pub(crate) projection: std::sync::atomic::AtomicI32,
     pub retained_properties: std::sync::Mutex<Vec<Arc<crate::properties::Property>>>,
@@ -627,6 +630,7 @@ impl ImageInfo {
     ) -> Self {
         Self {
             item_decoder: std::sync::Mutex::new(None),
+            builtin_decoder: std::sync::atomic::AtomicBool::new(false),
             gimi_content_id: std::sync::Mutex::new(Vec::new()),
             projection: std::sync::atomic::AtomicI32::new(crate::omaf::FLAT),
             retained_properties: std::sync::Mutex::new(retained_properties),

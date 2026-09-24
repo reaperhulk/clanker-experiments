@@ -76,6 +76,7 @@ impl Registry {
         self.decoders.push(Arc::new(DecoderRecord {
             source: DecoderSource::Builtin(1),
         }));
+        self.decoders.sort_by_key(|d| registry_order(&d.source));
         self.encoders
             .sort_by_key(|d| std::cmp::Reverse(d.source.priority()));
         self.defaults = true;
@@ -202,10 +203,7 @@ pub unsafe extern "C" fn heif_register_decoder_plugin(p: *const DecoderPlugin) -
         r.decoders.push(Arc::new(DecoderRecord {
             source: DecoderSource::External(p),
         }));
-        r.decoders.sort_by_key(|d| match d.source {
-            DecoderSource::External(q) => q as usize,
-            DecoderSource::Builtin(v) => v as usize,
-        });
+        r.decoders.sort_by_key(|d| registry_order(&d.source));
     }
     SUCCESS
 }
@@ -455,67 +453,59 @@ fn decoder_source(d: *const DecoderDescriptor) -> DecoderSource {
 struct StaticDecoder(DecoderPlugin);
 // SAFETY: these immutable records contain static strings and function pointers.
 unsafe impl Sync for StaticDecoder {}
-unsafe extern "C" fn uncompressed_name() -> *const c_char {
-    c"builtin".as_ptr()
+unsafe extern "C" fn builtin_name_8() -> *const c_char {
+    DecoderSource::Builtin(8).name()
 }
-unsafe extern "C" fn hevc_name() -> *const c_char {
-    c"rusty_h265".as_ptr()
+unsafe extern "C" fn builtin_name_7() -> *const c_char {
+    DecoderSource::Builtin(7).name()
 }
-unsafe extern "C" fn uncompressed_priority(format: c_int) -> c_int {
-    if format == 8 { 100 } else { 0 }
+unsafe extern "C" fn builtin_name_3() -> *const c_char {
+    DecoderSource::Builtin(3).name()
 }
-unsafe extern "C" fn hevc_priority(format: c_int) -> c_int {
-    if format == 1 { 100 } else { 0 }
+unsafe extern "C" fn builtin_name_2() -> *const c_char {
+    DecoderSource::Builtin(2).name()
 }
-unsafe extern "C" fn av1_name() -> *const c_char {
-    c"rav1d".as_ptr()
+unsafe extern "C" fn builtin_name_4() -> *const c_char {
+    DecoderSource::Builtin(4).name()
 }
-unsafe extern "C" fn av1_priority(format: c_int) -> c_int {
-    if format == 4 { 100 } else { 0 }
+unsafe extern "C" fn builtin_name_1() -> *const c_char {
+    DecoderSource::Builtin(1).name()
 }
-unsafe extern "C" fn jpeg_name() -> *const c_char {
-    c"jpeg-decoder".as_ptr()
+unsafe extern "C" fn builtin_priority_8(format: c_int) -> c_int {
+    DecoderSource::Builtin(8).priority(format)
 }
-unsafe extern "C" fn jpeg_priority(format: c_int) -> c_int {
-    if format == 3 { 100 } else { 0 }
+unsafe extern "C" fn builtin_priority_7(format: c_int) -> c_int {
+    DecoderSource::Builtin(7).priority(format)
 }
-const fn builtin_record(format: c_int) -> DecoderPlugin {
+unsafe extern "C" fn builtin_priority_3(format: c_int) -> c_int {
+    DecoderSource::Builtin(3).priority(format)
+}
+unsafe extern "C" fn builtin_priority_2(format: c_int) -> c_int {
+    DecoderSource::Builtin(2).priority(format)
+}
+unsafe extern "C" fn builtin_priority_4(format: c_int) -> c_int {
+    DecoderSource::Builtin(4).priority(format)
+}
+unsafe extern "C" fn builtin_priority_1(format: c_int) -> c_int {
+    DecoderSource::Builtin(1).priority(format)
+}
+type NameFn = unsafe extern "C" fn() -> *const c_char;
+type PriorityFn = unsafe extern "C" fn(c_int) -> c_int;
+/// Descriptor record of a built-in decoder. Each built-in has its own static
+/// record: descriptors, names and the registry order all derive from it.
+const fn builtin_record(name: NameFn, priority: PriorityFn, id: &'static CStr) -> DecoderPlugin {
     DecoderPlugin {
         plugin_api_version: 5,
-        get_plugin_name: if format == 8 {
-            Some(uncompressed_name)
-        } else if format == 3 {
-            Some(jpeg_name)
-        } else if format == 4 {
-            Some(av1_name)
-        } else {
-            Some(hevc_name)
-        },
+        get_plugin_name: Some(name),
         init_plugin: None,
         deinit_plugin: None,
-        does_support_format: if format == 8 {
-            Some(uncompressed_priority)
-        } else if format == 3 {
-            Some(jpeg_priority)
-        } else if format == 4 {
-            Some(av1_priority)
-        } else {
-            Some(hevc_priority)
-        },
+        does_support_format: Some(priority),
         new_decoder: None,
         free_decoder: None,
         push_data: None,
         decode_image: None,
         set_strict_decoding: None,
-        id_name: if format == 8 {
-            c"uncompressed".as_ptr()
-        } else if format == 3 {
-            c"jpeg-decoder".as_ptr()
-        } else if format == 4 {
-            c"rav1d".as_ptr()
-        } else {
-            c"rusty_h265".as_ptr()
-        },
+        id_name: id.as_ptr(),
         decode_next_image: None,
         minimum_required_libheif_version: 0,
         does_support_format2: None,
@@ -525,19 +515,50 @@ const fn builtin_record(format: c_int) -> DecoderPlugin {
         decode_next_image2: None,
     }
 }
-static UNCOMPRESSED_DECODER: StaticDecoder = StaticDecoder(builtin_record(8));
-static JPEG_DECODER: StaticDecoder = StaticDecoder(builtin_record(3));
-static AV1_DECODER: StaticDecoder = StaticDecoder(builtin_record(4));
-static HEVC_DECODER: StaticDecoder = StaticDecoder(builtin_record(1));
+static UNCOMPRESSED_DECODER: StaticDecoder = StaticDecoder(builtin_record(
+    builtin_name_8,
+    builtin_priority_8,
+    c"uncompressed",
+));
+static JPEG2000_DECODER: StaticDecoder = StaticDecoder(builtin_record(
+    builtin_name_7,
+    builtin_priority_7,
+    c"hayro-jpeg2000",
+));
+static JPEG_DECODER: StaticDecoder = StaticDecoder(builtin_record(
+    builtin_name_3,
+    builtin_priority_3,
+    c"jpeg-decoder",
+));
+static AVC_DECODER: StaticDecoder = StaticDecoder(builtin_record(
+    builtin_name_2,
+    builtin_priority_2,
+    c"rusty_h264",
+));
+static AV1_DECODER: StaticDecoder =
+    StaticDecoder(builtin_record(builtin_name_4, builtin_priority_4, c"rav1d"));
+static HEVC_DECODER: StaticDecoder = StaticDecoder(builtin_record(
+    builtin_name_1,
+    builtin_priority_1,
+    c"rusty_h265",
+));
 fn builtin_decoder(format: c_int) -> *const DecoderPlugin {
-    if format == 8 {
-        &UNCOMPRESSED_DECODER.0
-    } else if format == 3 {
-        &JPEG_DECODER.0
-    } else if format == 4 {
-        &AV1_DECODER.0
-    } else {
-        &HEVC_DECODER.0
+    match format {
+        8 => &UNCOMPRESSED_DECODER.0,
+        7 => &JPEG2000_DECODER.0,
+        3 => &JPEG_DECODER.0,
+        2 => &AVC_DECODER.0,
+        4 => &AV1_DECODER.0,
+        _ => &HEVC_DECODER.0,
+    }
+}
+/// libheif keeps decoder plugins in a `std::set` ordered by record address and
+/// selects the first of equal priority, so a tie goes to the lower address (in
+/// practice a heap-allocated registered plugin before a static built-in).
+fn registry_order(source: &DecoderSource) -> usize {
+    match *source {
+        DecoderSource::External(p) => p as usize,
+        DecoderSource::Builtin(format) => builtin_decoder(format) as usize,
     }
 }
 
