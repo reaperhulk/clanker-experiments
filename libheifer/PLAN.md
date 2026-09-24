@@ -738,5 +738,9 @@ A built-in pure Rust JPEG encoder produces files byte-identical to libheif's
 libjpeg-turbo plugin (200 encoding cases; 3,674 other encoding cases now
 compared against the JPEG oracle).
 
+HTJ2K code-blocks decode as OpenJPEG does (10,950 decode and 11,701 malformed
+or constructed refinement-pass cases). The corpus also found two packet-header
+bit-stuffing differences, fixed for all JPEG2000.
+
 Next: remaining plan gates. All 465 functions remain partial; strict completion
 remains false.

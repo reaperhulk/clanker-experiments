@@ -38,6 +38,8 @@ against a native oracle with OpenJPEG disabled. Local sanitizer client runs
 disable leak checking under ptrace; CI retains it. Finite test coverage does not
 establish complete codec conformance. Per-tile transforms, raw component-count
 ordering, common sample grids, packet extents and nested channel/palette/layer
-properties have independent follow-up evidence. Tile-part progression changes,
-wider precision, remaining header semantics, HTJ2K, JPEG2000 encoding,
+properties have independent follow-up evidence. HTJ2K code-blocks use an in-tree
+port of OpenJPEG's BSD-2-Clause `ht_dec.c` and its VLC tables (no native code);
+OpenJPH is only a pinned fixture generator. Tile-part progression changes,
+wider precision, remaining header semantics, HT mixed mode, JPEG2000 encoding,
 sequence integration and broader platform/downstream gates remain open.

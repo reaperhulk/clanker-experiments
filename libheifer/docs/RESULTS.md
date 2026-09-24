@@ -1617,3 +1617,49 @@ mutations are detected. The first reciprocal-rounding and thumbnail-density
 mutants were equivalent and were replaced. Divisors are multiples of 8, so the
 remainder never equals half the divisor, and libheif's thumbnail image carries
 no aspect ratio. Both reports are retained. 348 mutations total.
+
+### HTJ2K decoding
+
+libheif decodes HTJ2K (ITU-T T.814) `j2k1` items with OpenJPEG, which decodes
+HT code-blocks with `ht_dec.c`. `vendor/hayro-jpeg2000/src/j2c/ht.rs` ports that
+decoder: MEL, VLC and MagSgn cleanup decoding, SigProp and MagRef refinement,
+and OpenJPEG's checks on malformed blocks. Around it, the vendored decoder
+follows OpenJPEG's handling:
+
+- segment assignment: the first segment takes one pass per packet, so
+  refinement passes in later layers fail as they do in OpenJPEG;
+- the zero bit-plane count is the tag-tree value plus one;
+- T1 output is halved for 5/3 and scaled by half the step size for 9/7;
+- the initial MEL reads depend on the data address modulo 4, which is modelled
+  from the offset in OpenJPEG's concatenated tile-part buffer;
+- CAP and CPF are skipped, mixed HT style (0x80) is rejected, and an RGN shift
+  fails HT decoding.
+
+The HTJ2K corpus found two packet-header differences, also affecting
+ordinary JPEG2000. Both now match `opj_bio`:
+
+- the byte after 0xFF carries seven bits, and its top bit is ignored rather
+  than rejected;
+- a header whose last byte read is 0xFF is followed by one skipped byte, even
+  when the header ends inside that byte.
+
+Test inputs:
+
+- `tools/generate_htj2k_fixtures.py` uses a pinned, test-only OpenJPH
+  (8c2826f) to produce 438 codestreams. They vary size, depth, signedness,
+  5/3 and 9/7, block size, decomposition levels, progression, tiles and tile
+  parts, precincts, subsampling, colour transform, offsets and TLM.
+- `tools/test_htj2k.py` compares them in 25 decode modes: 10,950 cases, all
+  matching.
+- `tools/test_htj2k_errors.py` has 11,701 cases, all matching. It takes
+  complete prefixes and corrupted cleanup bytes. It also builds single-block
+  packets: OpenJPH cleanup data plus seeded SigProp/MagRef data, 2-4 passes,
+  multiple layers, changed zero bit-planes, extra guard bits (so refinement
+  is decoded) and code-block styles. It also changes COD styles and inserts
+  RGN, CAP and CPF markers.
+- The larger first corpus (52,347 cases) also matched after the fixes.
+
+Eleven mutations are detected (`results/htj2k-mutations-report.json`). The
+initial report keeps the first run, where `ht_stripe_causal` survived until
+sparse low-amplitude bases were added. Normal and no-codecs runs pass locally
+and in CI; the sanitized group runs in CI.
