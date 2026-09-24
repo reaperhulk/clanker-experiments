@@ -36,6 +36,29 @@ static heif_error output(heif_context* ctx,const void* data,size_t size,void* u)
   if(e.code==0) { heif_image_handle* handle=NULL; error(heif_context_get_primary_image_handle(read,&handle)); if(handle) { inspect(handle,1); heif_image_handle_release(handle); } }
   heif_context_free(read); return (heif_error){0,0,"Success"};
 }
+/* Encoder parameter sets selected by v[0] bits 24-31 (1-based): name=value pairs separated by ';'. */
+static const char* const parameter_sets[]={
+  "progression_order=LRCP","progression_order=RLCP","progression_order=RPCL","progression_order=PCRL","progression_order=CPRL",
+  "num_decompositions=0","num_decompositions=1","num_decompositions=3","num_decompositions=6","num_decompositions=32",
+  "tile_size=32,24","tile_size=16,16;tilepart_division=resolution","tile_size=16,16;tilepart_division=component",
+  "tile_size=16,16;tilepart_division=both;tlm_marker=true","tlm_marker=true","tilepart_division=both",
+  "block_dimensions=4,4","block_dimensions=8,128","block_dimensions=1024,4","block_dimensions=16,32",
+  "codestream_comment=libheifer","codestream_comment=","tile_size=24,40;progression_order=PCRL;block_dimensions=8,8",
+  "tile_size=7,5;num_decompositions=2","num_decompositions=33","block_dimensions=2048,2","block_dimensions=64",
+  "progression_order=XXXX","tilepart_division=bad","tile_size=0,5","chroma=422","lossless=true",
+  "tile_size=32,24;tilepart_division=both;progression_order=CPRL;num_decompositions=2",
+  "tile_size=16,16;progression_order=RLCP;tilepart_division=resolution;tlm_marker=true",
+  "tile_size=20,12;progression_order=RPCL;tilepart_division=component","num_decompositions=5;block_dimensions=32,32;tile_size=48,48",
+  "tile_size=64,64;tilepart_division=both;progression_order=LRCP","tile_size=5,64;num_decompositions=4;block_dimensions=4,64",
+  "codestream_comment=a much longer comment string for the COM marker;tlm_marker=true",
+};
+static void set_parameters(heif_encoder* enc,unsigned index) {
+  if(!enc||!index||index>sizeof(parameter_sets)/sizeof(*parameter_sets)) return;
+  char buffer[256]; strncpy(buffer,parameter_sets[index-1],sizeof(buffer)-1); buffer[sizeof(buffer)-1]=0;
+  for(char* item=strtok(buffer,";");item;item=strtok(NULL,";")) {
+    char* eq=strchr(item,'='); if(!eq) continue; *eq=0; printf(" param%s",item); error(heif_encoder_set_parameter(enc,item,eq+1));
+  }
+}
 int main(void) {
   setvbuf(stdout,NULL,_IONBF,0); uint32_t v[8];
   while(fread(v,sizeof(v),1,stdin)==1) {
@@ -46,6 +69,7 @@ int main(void) {
     if(enc&&(v[0]&16384)) error(heif_encoder_set_lossless(enc,1));
     if(enc&&(v[0]&32768)) error(heif_encoder_set_lossless(enc,0));
     if(enc&&(v[0]&2048)) error(heif_encoder_set_parameter_string(enc,"chroma","420"));
+    set_parameters(enc,v[0]>>24);
     heif_image* img=NULL; error(heif_image_create(v[1],v[2],(heif_colorspace)v[3],(heif_chroma)v[4],&img));
     if(img&&v[5]) {
       int channels[4]={0,1,2,6}; int count=v[3]==2?1:3;

@@ -77,6 +77,10 @@ pub mod jpeg_encoder;
 mod jpeg_header;
 
 #[cfg(feature = "jpeg2000")]
+pub mod htj2k_encoder;
+#[cfg(feature = "jpeg2000")]
+mod htj2k_encoder_tables;
+#[cfg(feature = "jpeg2000")]
 pub mod jpeg2000;
 pub mod jpeg2000_config;
 #[cfg(feature = "jpeg2000")]

@@ -45,7 +45,7 @@ unsafe impl Sync for Parameter {}
 static CHROMA: Parameter = Parameter(EncoderParameter {
     version: 2,
     name: c"chroma".as_ptr(),
-    kind: 2,
+    kind: 3,
     value: ParameterValue {
         string: StringParameter {
             default_value: ptr::null(),

@@ -13,6 +13,8 @@ use std::ptr;
 
 mod auxiliary;
 #[cfg(feature = "jpeg2000")]
+mod builtin_htj2k_encoder;
+#[cfg(feature = "jpeg2000")]
 mod builtin_jpeg2000_encoder;
 #[cfg(feature = "jpeg")]
 mod builtin_jpeg_encoder;

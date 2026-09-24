@@ -88,10 +88,10 @@ jobs:
           python tools/build_reference.py --hevc
           python tools/build_reference.py --av1 --build .build/reference-av1
           python tools/build_reference.py --jpeg --build .build/reference-jpeg
-          python tools/build_reference.py --jpeg2000 --build .build/reference-jpeg2000
+          python tools/build_reference.py --jpeg2000 --htj2k --build .build/reference-jpeg2000
           python tools/build_reference.py --plugins --build .build/reference-plugins
           python tools/build_reference.py --avc --build .build/reference-avc
-          python tools/build_reference.py --jpeg --jpeg2000 --build .build/reference-encoders
+          python tools/build_reference.py --jpeg --jpeg2000 --htj2k --build .build/reference-encoders
 
   differential:
     name: Independent C clients (${{ matrix.group }})

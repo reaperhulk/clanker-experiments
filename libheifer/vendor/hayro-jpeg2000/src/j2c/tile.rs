@@ -575,46 +575,50 @@ impl<'a> ResolutionTile<'a> {
             .num_decomposition_levels()
             - self.resolution;
 
-        let x_stride =
-            1_u32.checked_shl(self.precinct_exponent_x().checked_add(nl_minus_r)? as u32)?;
-        let y_stride =
-            1_u32.checked_shl(self.precinct_exponent_y().checked_add(nl_minus_r)? as u32)?;
+        // OpenJPEG's packet iterator (pi.c) works in 64-bit arithmetic here,
+        // so precinct steps beyond 2^32 (many decomposition levels) are valid.
+        let x_stride = 1_u64
+            .checked_shl(self.precinct_exponent_x().checked_add(nl_minus_r)? as u32)?;
+        let y_stride = 1_u64
+            .checked_shl(self.precinct_exponent_y().checked_add(nl_minus_r)? as u32)?;
 
-        let precinct_x_step = (self
-            .component_tile
-            .component_info
-            .size_info
-            .horizontal_resolution as u32)
-            .checked_mul(x_stride)?;
+        let precinct_x_step = u64::from(
+            self.component_tile
+                .component_info
+                .size_info
+                .horizontal_resolution,
+        )
+        .checked_mul(x_stride)?;
 
-        let precinct_y_step = (self
-            .component_tile
-            .component_info
-            .size_info
-            .vertical_resolution as u32)
-            .checked_mul(y_stride)?;
+        let precinct_y_step = u64::from(
+            self.component_tile
+                .component_info
+                .size_info
+                .vertical_resolution,
+        )
+        .checked_mul(y_stride)?;
 
         // These variables are used to map the start coordinates of each
         // precinct _on the reference grid_. Remember that the first
         // precinct in each row/column is at the start position of the tile
         // which might not be a multiple of precinct exponent, but all subsequent
         // precincts are at a multiple of the exponent.
-        let mut r_x = self.component_tile.tile.rect.x0;
-        let mut r_y = self.component_tile.tile.rect.y0;
+        let mut r_x = u64::from(self.component_tile.tile.rect.x0);
+        let mut r_y = u64::from(self.component_tile.tile.rect.y0);
 
         // The second part of the condition in the formula in B.12.1.3. If it
         // is divisible, then we can't take the x/y position of the tile
         // as the start of the precinct, but instead have to advance to the
         // next multiple.
         if !r_x.is_multiple_of(precinct_x_step)
-            && (self.rect.x0 * (1 << nl_minus_r)).is_multiple_of(precinct_x_step)
+            && (u64::from(self.rect.x0) << nl_minus_r).is_multiple_of(precinct_x_step)
         {
             r_x = r_x.checked_next_multiple_of(precinct_x_step)?;
         }
 
         // Same as above.
         if !r_y.is_multiple_of(precinct_y_step)
-            && (self.rect.y0 * (1 << nl_minus_r)).is_multiple_of(precinct_y_step)
+            && (u64::from(self.rect.y0) << nl_minus_r).is_multiple_of(precinct_y_step)
         {
             r_y = r_y.checked_next_multiple_of(precinct_y_step)?;
         }

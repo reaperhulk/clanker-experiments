@@ -360,7 +360,9 @@ fn filter_horizontal(coefficients: &mut [f32], rect: IntRect, transform: Wavelet
 /// The `1D_SR` procedure from F.3.6.
 fn filter_row(scanline: &mut [f32], width: usize, x0: usize, transform: WaveletTransform) {
     if width == 1 {
-        if !x0.is_multiple_of(2) {
+        // OpenJPEG halves a lone odd sample for 5/3 only; its 9/7 synthesis
+        // (opj_v8dwt_decode) returns without scaling.
+        if !x0.is_multiple_of(2) && transform == WaveletTransform::Reversible53 {
             scanline[0] *= 0.5;
         }
 
@@ -577,7 +579,8 @@ fn filter_vertical_impl<S: Simd>(
     let y0 = rect.y0 as usize;
 
     if height == 1 {
-        if !y0.is_multiple_of(2) {
+        // As for rows: 9/7 leaves a lone odd sample unscaled.
+        if !y0.is_multiple_of(2) && transform == WaveletTransform::Reversible53 {
             let simd_width = width / SIMD_WIDTH * SIMD_WIDTH;
             for base_column in (0..simd_width).step_by(SIMD_WIDTH) {
                 let mut loaded = f32x8::from_slice(simd, &scanline[base_column..][..SIMD_WIDTH]);

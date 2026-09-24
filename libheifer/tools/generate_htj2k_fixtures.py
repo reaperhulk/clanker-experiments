@@ -136,6 +136,16 @@ def main():
         add(f'single-lowamp-{w}x{h}-{int(reversible)}', w, h, components=1, depth=12, pattern=3, extra=extra)
     add('single-128x32-1-8', 128, 32, components=1, extra=['-reversible', 'true', '-num_decomps', '0', '-block_size', '{128,32}'])
 
+    # Irreversible tiles whose lower resolutions have single-sample rows or
+    # columns at odd origins, and decomposition counts whose precinct steps
+    # on the reference grid exceed 32 bits.
+    for tile, reversible in itertools.product(['{32,24}', '{5,64}', '{20,12}', '{24,40}', '{7,5}'], [False, True]):
+        add(f'tile-edge-{tile.strip("{}").replace(",", "x")}-{int(reversible)}', 70, 50, components=1,
+            extra=['-reversible', 'true' if reversible else 'false', '-tile_size', tile])
+    for n, order, reversible in itertools.product([16, 17, 20, 32], ['LRCP', 'RPCL', 'PCRL', 'CPRL'], [False, True]):
+        add(f'deep-{n}-{order}-{int(reversible)}', 70, 50, components=1,
+            extra=['-reversible', 'true' if reversible else 'false', '-num_decomps', str(n), '-prog_order', order])
+
     result = dict(generator_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(), openjph_revision=revision,
                   encoder_sha256=hashlib.sha256(encoder.read_bytes()).hexdigest(), fixtures=fixtures, encoder_failures=failures)
     target = Path('tests/fixtures/htj2k-generated.json')

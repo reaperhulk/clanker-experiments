@@ -61,6 +61,10 @@ impl Registry {
         self.encoders.push(Arc::new(EncoderDescriptor {
             source: EncoderSource::External(&crate::builtin_jpeg2000_encoder::JPEG2000_ENCODER.0),
         }));
+        #[cfg(feature = "jpeg2000")]
+        self.encoders.push(Arc::new(EncoderDescriptor {
+            source: EncoderSource::External(&crate::builtin_htj2k_encoder::HTJ2K_ENCODER.0),
+        }));
         self.decoders.push(Arc::new(DecoderRecord {
             source: DecoderSource::Builtin(8),
         }));

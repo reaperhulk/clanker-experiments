@@ -248,8 +248,8 @@ pub(crate) fn resolution_layer_component_position_progression<'a>(
 // Note that the order of fields here is important!
 struct PrecinctStore {
     resolution: u8,
-    precinct_y: u32,
-    precinct_x: u32,
+    precinct_y: u64,
+    precinct_x: u64,
     component_idx: u8,
     precinct_idx: u64,
 }

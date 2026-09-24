@@ -37,3 +37,11 @@ claim full JPEG2000 or HTJ2K conformance.
   plus one, and T1 output is halved (5/3) or scaled by half the step (9/7).
 - CAP and CPF main-header markers are skipped; mixed HT code-block style
   (0x80) is rejected; a main-header RGN shift fails HT decoding.
+
+## Single-sample 9/7 synthesis and deep decompositions
+
+- A lone odd sample in a row or column is halved only for the 5/3 wavelet;
+  OpenJPEG's 9/7 synthesis (`opj_v8dwt_decode`) returns without scaling it.
+- Precinct steps on the reference grid are computed in 64-bit arithmetic, as
+  in OpenJPEG's packet iterator (`pi.c`), so position-driven progressions
+  with more than 16 decomposition levels are no longer rejected.

@@ -41,10 +41,16 @@ ordering, common sample grids, packet extents and nested channel/palette/layer
 properties have independent follow-up evidence. HTJ2K code-blocks use an in-tree
 port of OpenJPEG's BSD-2-Clause `ht_dec.c` and its VLC tables (no native code);
 OpenJPH is only a pinned fixture generator. Tile-part progression changes,
-wider precision, remaining header semantics, HT mixed mode, HTJ2K encoding,
+wider precision, remaining header semantics, HT mixed mode,
 sequence integration and broader platform/downstream gates remain open.
 
 JPEG2000 encoding is in-tree Rust (`src/jpeg2000_encoder.rs`), written against
 OpenJPEG 2.5.4's encoder (revision 6c4a29b) with no native code. OpenJPEG's
 encoder is built into the `.build/reference-jpeg2000` and
 `.build/reference-encoders` oracles only.
+
+HTJ2K encoding is in-tree Rust (`src/htj2k_encoder.rs`), written against
+OpenJPH 0.32.0 (revision 8c2826f, BSD-2-Clause) with its VLC source tables in
+`src/htj2k_encoder_tables.rs`; no native code. OpenJPH's scalar library is
+built only into the `.build/reference-jpeg2000` and `.build/reference-encoders`
+oracles, as libheif's OpenJPH encoder plugin.

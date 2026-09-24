@@ -11,6 +11,7 @@ OPENJPEG = "6c4a29b00211eb0430fa0e5e890f1ce5c80f409f"
 JPEG = "7723f50f3f66b9da74376e6d8badb6162464212c"
 DAV1D = "42b2b24fb8819f1ed3643aa9cf2a62f03868e3aa"
 OPENH264 = "652bdb7719f30b52b08e506645a7322ff1b2cc6f"  # v2.6.0
+OPENJPH = "8c2826fdaaac3b0334ff5bc2ed2a8ec153c99a35"  # 0.32.0
 
 
 def run(*args):
@@ -27,6 +28,7 @@ def main():
     p.add_argument("--jpeg2000", action="store_true")
     p.add_argument("--avc", action="store_true", help="enable the native OpenH264 decoder oracle (scalar, no assembly)")
     p.add_argument("--avc-asm", action="store_true", help="with --avc: OpenH264 with its assembly kernels (performance baseline only)")
+    p.add_argument("--htj2k", action="store_true", help="enable libheif's OpenJPH HTJ2K encoder (scalar)")
     p.add_argument("--plugins", action="store_true", help="enable native dynamic-plugin oracle with an empty default search path")
     p.add_argument("-j", default="4")
     a = p.parse_args()
@@ -96,6 +98,24 @@ def main():
         run(cmake, "--build", dbuild, "-j", a.j)
         run(cmake, "--install", dbuild)
         flags += [f"-DOpenJPEG_DIR={install / 'lib/cmake/openjpeg-2.5'}"]
+    if a.htj2k:
+        encoder = build.parent / "openjph-source"
+        install = build.parent / "openjph-install"
+        ebuild = build.parent / "openjph-lib-build"
+        if not encoder.exists():
+            run("git", "init", encoder)
+            run("git", "-C", encoder, "remote", "add", "origin", "https://github.com/aous72/OpenJPH.git")
+            run("git", "-C", encoder, "fetch", "--depth=1", "origin", OPENJPH)
+            run("git", "-C", encoder, "checkout", "--detach", "FETCH_HEAD")
+        revision = subprocess.check_output(["git", "-C", str(encoder), "rev-parse", "HEAD"], text=True).strip()
+        if revision != OPENJPH:
+            raise SystemExit("Wrong OpenJPH reference revision")
+        run(cmake, "-S", encoder, "-B", ebuild, "-DCMAKE_BUILD_TYPE=Release", f"-DCMAKE_INSTALL_PREFIX={install}",
+            "-DCMAKE_INSTALL_LIBDIR=lib", "-DBUILD_SHARED_LIBS=ON", "-DOJPH_DISABLE_SIMD=ON",
+            "-DOJPH_BUILD_EXECUTABLES=OFF", "-DOJPH_ENABLE_TIFF_SUPPORT=OFF")
+        run(cmake, "--build", ebuild, "-j", a.j)
+        run(cmake, "--install", ebuild)
+        flags += ["-DWITH_OPENJPH_ENCODER=ON", "-DWITH_OPENJPH_ENCODER_PLUGIN=OFF", f"-DOPENJPH_DIR={install / 'lib/cmake/openjph'}"]
     if a.avc:
         suffix = "-asm" if a.avc_asm else ""
         decoder = build.parent / f"openh264{suffix}-source"

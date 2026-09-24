@@ -1720,3 +1720,92 @@ the first run, where the chroma mutant survived: it changed the version-1
 colorspace query, which libheif does not call for version-4 plugins. It was
 retargeted to `query_input_colorspace2`. 368 mutations total.
 
+### Built-in HTJ2K encoding
+
+libheif encodes HTJ2K with its OpenJPH plugin. Its behaviour:
+
+- **Parameters:** quality is stored but ignored. The lossless flag defaults to
+  off, so the default is 9/7 with OpenJPH's step of 2^-min(depth, 16). The
+  defaults are 5 decompositions, RPCL, 64x64 code-blocks, 4:4:4 input, planar
+  components and no colour transform.
+- **Missing features:** the plugin tests `OPENJPH_MAJOR_VERSION` and
+  `OPENJPH_MINOR_VERSION`, but OpenJPH defines `OPENJPH_VERSION_MAJOR` and
+  `_MINOR`. So `tlm_marker` and `tilepart_division` are not compiled in, and a
+  `codestream_comment` is stored but never written. The oracle confirmed this
+  when it rejected `tilepart_division`.
+
+`src/htj2k_encoder.rs` ports OpenJPH 0.32.0's encoder. OpenJPH works line by
+line; the port applies the same arithmetic to whole tile-components:
+
+- the 5/3 and 9/7 lifting, including OpenJPH's handling of single rows and
+  columns;
+- float-to-integer conversion and truncating quantisation;
+- the step-size derivation, including two unsigned wraps:
+  - an exponent beyond 31 wraps in the 5-bit field;
+  - `get_largest_Kmax` takes its maximum before adding the guard bits.
+- the 32-bit sign-magnitude layout: with no decompositions, a lossless
+  sample's magnitude can reach the sign bit, and the HT coder then codes it as
+  zero;
+- the HT cleanup-pass coder (MEL, VLC with the OpenJPH-built tables, UVLC,
+  MagSgn);
+- packet headers whose tag trees read past the end of a row into the next one
+  when a subband has an odd number of code-blocks;
+- progression orders, tiles, tile parts, TLM and the tile-part adjustment
+  messages OpenJPH prints to stdout.
+
+A C++ harness making the plugin's OpenJPH calls compared randomized images
+across sizes, depths, subsampling, lossless and lossy coding, 0-32
+decompositions, all progressions, code-block shapes, tiles, tile-part
+divisions, TLM and comments. The final code is byte-identical on 2,000 cases.
+The cases OpenJPH rejects (too many tiles or tile parts) also fail in Rust.
+
+`crates/capi/src/builtin_htj2k_encoder.rs` registers the encoder as a static
+encoder-plugin record: format HTJ2K, priority 80, id `libheifer-htj2k`. It has
+the seven parameters the plugin compiles, with their defaults. It copies the
+plugin's quirks:
+
+- `stoul` parsing of `tile_size` and `block_dimensions`;
+- decompositions in 0-32;
+- no `query_encoded_size`;
+- one codestream per encode.
+
+`tests/encoding.c` can now apply encoder parameter sets, selected by record
+word 0, bits 24-31, through `heif_encoder_set_parameter`.
+`tools/test_htj2k_encoding.py` covers 311 cases:
+
+- sizes and input colorspaces, lossless and lossy;
+- qualities, chroma and bit depths;
+- all 39 parameter sets, including 32 decompositions, tiles, code-block shapes,
+  comments and invalid values;
+- metadata, orientation, overlays, alpha and thumbnail bounding boxes.
+
+It compares exact files, handles and decoded read-back pixels in normal,
+sanitizer-client and codec-free builds. A second encode with one OpenJPH
+encoder aborts the native process ("Quantization step sizes already
+initialized"), because the plugin never restarts its codestream. Those cases
+are left out. libheifer encodes again.
+
+The read-back found two decoder differences, affecting all JPEG2000. Both now
+follow OpenJPEG:
+
+- a lone odd sample in 9/7 synthesis is left unscaled; OpenJPEG halves it only
+  for 5/3;
+- precinct steps are computed in 64 bits, so RPCL/PCRL/CPRL with more than 16
+  decompositions decode.
+
+42 new OpenJPH fixtures cover these (480 HTJ2K fixtures, 12,000 decode cases,
+all matching).
+
+The corpus also found that the JPEG2000 encoder record from the previous step
+declared `chroma` as a boolean. libheif's type numbering is integer 1,
+boolean 2, string 3. Generic `heif_encoder_set_parameter` calls now reach it,
+and `test_jpeg2000_encoding` gains generic-parameter cases (183).
+
+`test_encoding` and `test_other_encoding` compare against an oracle built with
+libheif's JPEG, OpenJPEG and OpenJPH encoders.
+
+13 mutations are detected (`results/htj2k-encode-mutations-report.json`). The
+initial report keeps the first run: an equivalent K constant survived there,
+because 1.2301741 is the same `f32`. It was replaced by a value one ULP away.
+381 mutations total.
+

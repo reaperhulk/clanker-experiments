@@ -23,6 +23,11 @@ def corpus():
     for mode in [16384, 16384 | lossy, 2048, 2048 | lossy]:
         add([7 | mode, 64, 48, 0, 3, 8, 1, 8])
         add([7 | mode, 64, 48, 1, 3, 8, 1, 8])
+    # Generic heif_encoder_set_parameter (tests/encoding.c parameter sets):
+    # chroma=422, lossless=true, and names the plugin does not have.
+    for index in [31, 32, 1, 21]:
+        add([7 | index << 24, 64, 48, 0, 1, 8, 1, 8])
+        add([7 | lossy | index << 24, 64, 48, 0, 1, 8, 1, 8])
     for depth in [1, 7, 9, 10, 12, 16]:
         for space, chroma in [(0, 1), (2, 0), (1, 3)]:
             add([7, 40, 36, space, chroma, depth, 1, 8])

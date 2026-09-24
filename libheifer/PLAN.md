@@ -746,5 +746,10 @@ A built-in pure Rust JPEG2000 encoder produces files byte-identical to
 libheif's OpenJPEG plugin (175 encoding cases; the other encoding suites now
 compare against an oracle with both native encoders).
 
+A built-in pure Rust HTJ2K encoder produces files byte-identical to libheif's
+OpenJPH plugin (311 encoding cases; 2,000 fuzzed codestreams). Its read-back
+fixed 9/7 single-sample synthesis and deep-decomposition precincts in the
+decoder.
+
 Next: remaining plan gates. All 465 functions remain partial; strict completion
 remains false.
