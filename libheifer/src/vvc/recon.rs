@@ -101,7 +101,111 @@ pub struct ScalingMatrices {
     pub coef: Vec<Vec<i32>>,
 }
 
+/// vvdec's `g_scalingListId[size][list]`.
+const SCALING_LIST_ID: [[usize; 6]; 7] = [
+    [0, 0, 0, 0, 0, 0],
+    [0, 0, 0, 0, 0, 1],
+    [2, 3, 4, 5, 6, 7],
+    [8, 9, 10, 11, 12, 13],
+    [14, 15, 16, 17, 18, 19],
+    [20, 21, 22, 23, 24, 25],
+    [26, 21, 22, 27, 24, 25],
+];
+
+/// vvdec's `processScalingListDec` (after its buffer is cleared).
+fn process_scaling_list(coeff: &[i32], out: &mut [i32], height: usize, width: usize, ratio: usize, size_num: usize, dc: i32) {
+    let l2 = |v: usize| v.trailing_zeros() as i32;
+    let loop_h = height.min(32);
+    let loop_w = width.min(32);
+    if height != width {
+        let (hl2, wl2, sl2) = (l2(height), l2(width), l2(size_num));
+        let ratio_wh = if height > width { hl2 - wl2 } else { wl2 - hl2 };
+        let ratio_h = if height / size_num != 0 { hl2 - sl2 } else { sl2 - hl2 };
+        let ratio_w = if width / size_num != 0 { wl2 - sl2 } else { sl2 - wl2 };
+        if height > width {
+            let mut j = 0;
+            while j < loop_h {
+                for i in 0..loop_w {
+                    out[j * width + i] = coeff[size_num * (j >> ratio_h) + ((i << ratio_wh) >> ratio_h)];
+                }
+                for jj in 1..(1usize << ratio_h) {
+                    for i in 0..loop_w {
+                        out[(j + jj) * width + i] = out[j * width + i];
+                    }
+                }
+                j += 1 << ratio_h;
+            }
+        } else {
+            for j in 0..loop_h {
+                let mut i = 0;
+                while i < loop_w {
+                    let c = coeff[size_num * ((j << ratio_wh) >> ratio_w) + (i >> ratio_w)];
+                    for ii in 0..(1usize << ratio_w) {
+                        out[j * width + i + ii] = c;
+                    }
+                    i += 1 << ratio_w;
+                }
+            }
+        }
+        if width.max(height) > 8 {
+            out[0] = dc;
+        }
+        return;
+    }
+    let rl2 = l2(ratio);
+    let mut j = 0;
+    while j < loop_h {
+        let mut i = 0;
+        while i < loop_w {
+            let c = coeff[size_num * (j >> rl2) + (i >> rl2)];
+            for ii in 0..(1usize << rl2) {
+                out[j * width + i + ii] = c;
+            }
+            i += 1 << rl2;
+        }
+        for jj in 1..(1usize << rl2) {
+            for i in 0..loop_w {
+                out[(j + jj) * width + i] = out[j * width + i];
+            }
+        }
+        j += 1 << rl2;
+    }
+    if ratio > 1 {
+        out[0] = dc;
+    }
+}
+
 impl ScalingMatrices {
+    /// vvdec's `Quant::setScalingListDec`.
+    pub fn new(list: &crate::vvc::ps::ScalingList) -> Self {
+        let mut coef: Vec<Vec<i32>> = (0..6 * 49).map(|i| vec![0; 1 << ((i / 7) % 7 + i % 7)]).collect();
+        let idx = |l: usize, w: usize, h: usize| (l * 7 + w) * 7 + h;
+        for size in 1..7usize {
+            for l in 0..6 {
+                if size == 1 && l < 4 {
+                    continue;
+                }
+                let id = SCALING_LIST_ID[size][l];
+                let n = 1usize << size;
+                let size_num = n.min(8);
+                process_scaling_list(&list.coef[id], &mut coef[idx(l, size, size)], n, n, n / size_num, size_num, list.dc[id]);
+            }
+        }
+        for sw in 0..7usize {
+            for sh in 0..7usize {
+                if sw == sh || (sw == 0 && sh < 2) || (sh == 0 && sw < 2) {
+                    continue;
+                }
+                for l in 0..6 {
+                    let large = sw.max(sh);
+                    let id = SCALING_LIST_ID[large][l];
+                    process_scaling_list(&list.coef[id], &mut coef[idx(l, sw, sh)], 1 << sh, 1 << sw, if large > 3 { 2 } else { 1 }, if large >= 3 { 8 } else { 4 }, list.dc[id]);
+                }
+            }
+        }
+        Self { coef }
+    }
+
     pub fn get(&self, list: usize, lw: usize, lh: usize) -> &[i32] {
         &self.coef[(list * 7 + lw) * 7 + lh]
     }

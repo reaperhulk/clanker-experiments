@@ -24,6 +24,7 @@ mod ctu;
 mod ctx;
 mod deblock;
 mod filter;
+pub mod heif;
 mod pic;
 pub mod ps;
 mod sao;
@@ -84,6 +85,7 @@ struct Decoder {
     pic_pps: Option<Pps>,
     pic_ph: Option<PicHeader>,
     lmcs: Option<recon::Lmcs>,
+    scaling: Option<recon::ScalingMatrices>,
     alf_for_pic: Option<[Option<AlfParam>; 8]>,
     slices: Vec<SliceHeader>,
     done: bool,
@@ -185,8 +187,12 @@ impl Decoder {
                     _ => return Err(Error::Invalid("LMCS APS activation failed!")),
                 }
             }
+            self.scaling = None;
             if ph.explicit_scaling_list {
-                return Err(Error::Unsupported("explicit scaling lists"));
+                match &self.aps[2][ph.scaling_list_aps_id as usize] {
+                    Some(Aps { data: ApsData::Scaling(l), .. }) => self.scaling = Some(recon::ScalingMatrices::new(l)),
+                    _ => return Err(Error::Invalid("scaling list APS not found")),
+                }
             }
             self.pic = Some(Picture::new(&sps, &pps));
             self.pic_sps = Some(sps.clone());
@@ -210,7 +216,7 @@ impl Decoder {
             slice_idx,
             alf_aps: &alf,
             lmcs: self.lmcs.as_ref(),
-            scaling: None,
+            scaling: self.scaling.as_ref(),
         };
         let pic = self.pic.as_mut().ok_or(Error::NoPicture)?;
         decode_slice_data(pic, &si, &rbsp[sh.data_offset.min(rbsp.len())..])?;
