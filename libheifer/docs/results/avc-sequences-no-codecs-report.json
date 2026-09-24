@@ -1,13 +1,13 @@
 {
   "scope": "Original-header AVC image-sequence tracks (intra, P and B frames) against the OpenH264 oracle.",
-  "cases": 86,
+  "cases": 170,
   "mismatches": 0,
   "process_failures": [],
   "differences": [],
   "client_sanitizers": false,
   "leak_check": false,
   "client_sha256": "0273201eb949dbe30510641922be1d222d6035623a01b329f398acc1fb41acc6",
-  "corpus_sha256": "d19a865f08b2f33926574cc60091c143145f65bdd280704a501616aae205dbde",
+  "corpus_sha256": "2d47343d095dd3fc95df73db4114c4d49ab2e60d71626230e80820643728cf04",
   "reference_sha256": "44e009fcef37fe6609c0c4ba59715b3285cfef62c79742f20c679cc5f856f000",
-  "candidate_sha256": "952016a740453732c0d00bf61ab4117dee506dea579e464807737a0d829f8896"
+  "candidate_sha256": "a2a9c8850f516332f028b061dd90677acfb4feb9a17a7ddc6d08dc6e608c66a0"
 }

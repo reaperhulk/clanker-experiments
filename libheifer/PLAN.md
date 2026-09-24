@@ -721,8 +721,8 @@ monochrome chroma behaviour: I_PCM chroma bytes are kept, and DC prediction
 assumes both neighbours.
 
 AVC image sequences now match libheif's track decoding over the OpenH264
-plugin on 86 tracks (intra, P, B, pyramid, CAVLC, truncated and skip-run
-overrun), after porting OpenH264's CAVLC P/B slice end and its Bi 16x8/8x16
+plugin on 170 tracks (intra, P, B, pyramid, CAVLC, truncated, edit-list
+repeats, multiple chunks and sample descriptions, skip-run overrun), after porting OpenH264's CAVLC P/B slice end and its Bi 16x8/8x16
 prediction into the vendored decoder. See `docs/RESULTS.md`.
 
 Next: remaining plan gates. All 465 functions remain partial; strict completion

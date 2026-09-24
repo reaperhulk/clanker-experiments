@@ -58,12 +58,18 @@ def frames(w, h, n, pattern, step=4):
     return out
 
 
-def sequence(w, h, units, frame_units, delta=40):
-    """A HEIF image sequence with one avc1 track; SPS/PPS in avcC, slices in samples."""
+def sequence(w, h, units, frame_units, delta=40, repeat=None, per_chunk=None, alternate=False):
+    """A HEIF image sequence with one avc1 track; SPS/PPS in avcC, slices in samples.
+
+    `repeat` (movie duration in media durations, as a fraction) adds a repeating
+    single-entry edit list; `per_chunk` splits the samples into chunks, which
+    `alternate` assigns to two identical sample descriptions in turn.
+    """
     samples = [b''.join(struct.pack('>I', len(u)) + u for u in au) for au in frame_units]
     duration = delta * len(samples)
+    movie = duration if repeat is None else int(duration * repeat)
     ftyp = box(b'ftyp', b'msf1' + b'\0\0\0\0' + b'msf1isom')
-    mvhd = full(b'mvhd', 0, 0, struct.pack('>IIII', 0, 0, 1000, duration) + bytes.fromhex(
+    mvhd = full(b'mvhd', 0, 0, struct.pack('>IIII', 0, 0, 1000, movie) + bytes.fromhex(
         '000100000100000000000000000000000001000000000000000000000000000000010000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000000002'))
     # tkhd tail: layer/alt group/volume/reserved, matrix, then width/height (16.16).
     tkhd = full(b'tkhd', 0, 7, struct.pack('>IIIII', 0, 0, 1, 0, duration) + bytes(8) + struct.pack('>HHHH', 0, 0, 0, 0)
@@ -76,17 +82,29 @@ def sequence(w, h, units, frame_units, delta=40):
     entry = box(b'avc1', bytes(6) + struct.pack('>H', 1) + bytes(16) + struct.pack('>HH', w, h)
                 + bytes.fromhex('0048000000480000') + bytes(4) + struct.pack('>H', 1) + bytes(32)
                 + bytes.fromhex('0018ffff') + avcc(units))
-    stsd = full(b'stsd', 0, 0, struct.pack('>I', 1) + entry)
+    stsd = full(b'stsd', 0, 0, struct.pack('>I', 2 if alternate else 1) + entry * (2 if alternate else 1))
     stts = full(b'stts', 0, 0, struct.pack('>III', 1, len(samples), delta))
-    stsc = full(b'stsc', 0, 0, struct.pack('>IIII', 1, 1, len(samples), 1))
+    per = per_chunk or len(samples)
+    chunks = [samples[i:i + per] for i in range(0, len(samples), per)]
+    if alternate:
+        runs = [(i + 1, len(c), i % 2 + 1) for i, c in enumerate(chunks)]
+    else:
+        runs = [(1, per, 1)] + ([(len(chunks), len(chunks[-1]), 1)] if len(chunks[-1]) != per else [])
+    stsc = full(b'stsc', 0, 0, struct.pack('>I', len(runs)) + b''.join(struct.pack('>III', *r) for r in runs))
     stsz = full(b'stsz', 0, 0, struct.pack('>II', 0, len(samples)) + b''.join(struct.pack('>I', len(s)) for s in samples))
 
+    edts = b'' if repeat is None else box(b'edts', full(b'elst', 0, 1, struct.pack('>IIIHH', 1, duration, 0, 1, 0)))
+
     def build(offset):
-        stco = full(b'stco', 0, 0, struct.pack('>II', 1, offset))
+        offsets = []
+        for chunk in chunks:
+            offsets.append(offset)
+            offset += sum(map(len, chunk))
+        stco = full(b'stco', 0, 0, struct.pack('>I', len(offsets)) + b''.join(struct.pack('>I', o) for o in offsets))
         stbl = box(b'stbl', stsd + stts + stsc + stsz + stco)
         minf = box(b'minf', dinf + stbl + vmhd)
         mdia = box(b'mdia', mdhd + hdlr + minf)
-        trak = box(b'trak', tkhd + mdia)
+        trak = box(b'trak', tkhd + edts + mdia)
         return ftyp + box(b'moov', mvhd + trak)
 
     head = build(0)
@@ -167,6 +185,12 @@ def corpus():
         cases.append((f'{name}-short', sequence(w, h, units, aus[:3])))
         broken = aus[:-1] + [[aus[-1][0][:-1]]]
         cases.append((f'{name}-cut', sequence(w, h, units, broken)))
+        # A repeating edit list (2.5 track durations) and two samples per chunk
+        # (libheif keeps one decoder per chunk and sends parameter sets with
+        # sample 0 only).
+        cases.append((f'{name}-repeat', sequence(w, h, units, aus, repeat=2.5)))
+        cases.append((f'{name}-chunks', sequence(w, h, units, aus, per_chunk=2)))
+        cases.append((f'{name}-descriptions', sequence(w, h, units, aus, per_chunk=2, alternate=True)))
         if name.startswith('static'):
             # A P skip run past the picture end fills the picture (OpenH264 clamps it).
             total = ((w + 15) // 16) * ((h + 15) // 16)

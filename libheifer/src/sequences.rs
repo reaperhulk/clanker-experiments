@@ -136,7 +136,8 @@ pub struct Track {
     pub first_clock: Option<Box<ClockInfo>>,
     pub auxiliary_urn: Vec<u8>,
     pub alpha: bool,
-    /// Chunk index of every sample (libheif keeps one decoder per chunk).
+    /// Decoder of every sample: libheif gives a chunk a new decoder unless its
+    /// sample description index repeats the previous chunk's.
     pub sample_chunks: Vec<u32>,
     /// libheif's stateful per-chunk AVC decoding (built-in decoder only).
     #[cfg(feature = "avc")]
@@ -834,6 +835,7 @@ impl Context {
             let offsets = entries(stco, 1, 8)?;
             let mapping = entries(stsc, 3, 8)?;
             let mut chunks = Vec::new();
+            let (mut decoder, mut previous) = (0u32, None);
             for (idx, off) in offsets.iter().enumerate() {
                 let row = mapping
                     .iter()
@@ -852,10 +854,14 @@ impl Context {
                 }
                 let start = t.ranges.len();
                 let mut pos = off[0];
+                if previous.is_some_and(|p| p != row[2]) {
+                    decoder += 1;
+                }
+                previous = Some(row[2]);
                 for _ in 0..row[1] {
                     let size = t.sizes[t.ranges.len()];
                     t.ranges.push((pos, size));
-                    t.sample_chunks.push(chunks.len() as u32);
+                    t.sample_chunks.push(decoder);
                     pos = pos
                         .checked_add(u64::from(size))
                         .ok_or_else(|| invalid("Chunk file offset overflows 64-bit range."))?;

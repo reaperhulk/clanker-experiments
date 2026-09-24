@@ -4073,7 +4073,7 @@
     ]
   },
   "heif_track_decode_next_image": {
-    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open. AVC tracks with the built-in decoder follow libheif's stateful OpenH264 plugin loop and display reordering: 86 original-header x264 tracks (intra/P/B/CAVLC, truncated, skip-run overrun) in normal, sanitizer-client and codec-free builds with detected mutations; edit lists, multi-chunk tracks and plugin-decoded sequences remain open.",
+    "notes": "Rust sequence tracks, metadata/uncompressed samples, ordered references, timing/repetition, retained handles, TAI/GIMI and BMFF serialization. Original-header defined-byte and malformed-table comparisons on Linux x86_64. The native uninitialized urim data_reference_index is excluded explicitly. External codec integration, broader sample entries/edit lists/resource behavior and cross-platform C ABI remain open. AVC tracks with the built-in decoder follow libheif's stateful OpenH264 plugin loop and display reordering: 170 original-header x264 tracks (intra/P/B/CAVLC, truncated, edit-list repeats, chunk decoder sharing, skip-run overrun) in normal, sanitizer-client and codec-free builds with detected mutations; plugin-decoded sequences remain open.",
     "status": "partial",
     "tests": [
       "tests/sequences.c",

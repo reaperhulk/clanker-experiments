@@ -362,6 +362,7 @@ MUTATIONS = [
     ("avc_sequence_ready", "src/avc.rs", "self.last_written_poc.is_some_and(|w| poc - w <= 1)", "self.last_written_poc.is_some_and(|w| poc - w <= 2)", "avc_sequences"),
     ("avc_sequence_baseline", "src/avc.rs", "if matches!(slice.profile, 66 | 83) {", "if matches!(slice.profile, 83) {", "avc_sequences"),
     ("avc_sequence_headers", "src/sequences.rs", "let mut data = if sample_idx == 0 {", "let mut data = if sample_idx == 1 {", "avc_sequences"),
+    ("sequence_decoder_per_description", "src/sequences.rs", "if previous.is_some_and(|p| p != row[2]) {", "if previous.is_some() {", "avc_sequences"),
     ("avc_cavlc_p_skip_run", "vendor/rusty_h264-decoder/src/mb16.rs", "if self.is_b && skip_run > total - addr {", "if skip_run > total - addr {", "avc_sequences"),
     ("error_field_order", "crates/capi/src/lib.rs", "pub code: c_int,\n    pub subcode: c_int,", "pub subcode: c_int,\n    pub code: c_int,", "abi"),
 ]

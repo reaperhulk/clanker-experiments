@@ -1418,8 +1418,10 @@ on the border value, it is detected (1,702 mismatches). The new
 
 ### AVC image sequences
 
-libheif decodes an `avc1` track by pushing samples into one stateful OpenH264
-plugin decoder per chunk: the avcC parameter sets go with sample 0, frames are
+libheif decodes an `avc1` track by pushing samples into a stateful OpenH264
+plugin decoder. Consecutive chunks share a decoder unless their sample
+description index changes. The avcC parameter sets go only with global sample
+0, so a later decoder never receives them. Frames are
 polled before each push, and the decoder is flushed after the last sample.
 Pictures leave OpenH264 through `ReorderPicturesInDisplay`. Baseline pictures
 come out immediately. Streams without B slices come out one picture late, in
@@ -1429,13 +1431,16 @@ built-in decoder, including the "Did not decode all frames" error and
 per-sample durations. Tracks whose AVC decoder is not built in fail decoder
 selection as libheif's do.
 
-`tools/test_avc_sequences.py` builds 86 sequence tracks from committed x264
+`tools/test_avc_sequences.py` builds 170 sequence tracks from committed x264
 streams (`tests/fixtures/avc-sequences.json`, 5 frames each at 64x48 and
 50x36). They cover intra-only, IPPP (baseline, main, high, CAVLC, 3 refs,
 weighted P), IBBP (main, pyramid, no weighted B, temporal direct, CAVLC) and
 IDR every 2 frames. Each stream also appears truncated to 3 samples and with
-its last slice byte cut. A static baseline stream has its P skip runs extended
-past the picture end. The first full comparison differed on every B-frame
+its last slice byte cut, repeated by a 2.5-duration edit list, split into
+two-sample chunks, and with those chunks alternating between two sample
+descriptions. A static baseline stream has its P skip runs extended past the
+picture end. The chunked tracks first differed on all 28 streams because
+libheifer kept one decoder per chunk; it now follows libheif's sharing rule. The first full comparison differed on every B-frame
 64x48 CABAC track. Two OpenH264 behaviours needed porting into the vendored
 decoder:
 
@@ -1448,13 +1453,12 @@ decoder:
   the next macroblock's area, which that macroblock rewrites. The upstream
   crate had removed this replication.
 
-All 86 cases match in normal, sanitizer-client and codec-free builds.
-Six new mutations cover the reorder rules, parameter sets with sample 0, the
-Bi partitions and the P skip run. The first run of `avc_cavlc_p_skip_run`
+All 170 cases match in normal, sanitizer-client and codec-free builds.
+Seven new mutations cover the reorder rules, parameter sets with sample 0,
+decoder sharing across chunks, the Bi partitions and the P skip run. The first run of `avc_cavlc_p_skip_run`
 survived because no stream ran past the picture end. The static overrun
 tracks now detect it (2 mismatches). Both reports are retained
 (`results/avc-sequences-mutations-initial-report.json`,
-`results/avc-sequences-skip-run-mutation-report.json`); 326 mutations total.
-Only one slice per picture and one sample entry are covered. Edit lists,
-multi-chunk tracks and registered AVC plugins decoding sequences are not yet
-compared.
+`results/avc-sequences-skip-run-mutation-report.json`); 327 mutations total.
+Only one slice per picture is covered, and registered AVC plugins decoding
+sequences are not yet compared.
