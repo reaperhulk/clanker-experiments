@@ -1,10 +1,28 @@
 {
+  "anyhow@1.0.104": {
+    "build.rs": "89d1baedcff59822ed692d3a33f131c211a213bdec33c83f68b54110d9c64223"
+  },
+  "av-scenechange@0.14.1": {
+    "build.rs": "8b5d950e0ad713fa0cbc86b4673c721c673415ea8da37e512e17bdfc9e301157"
+  },
+  "crossbeam-deque@0.8.8": {
+    "build.rs": "c8c35fc536a2e6481549bc13979293cb51244cd9c72d4ed9e35c22a1d70fa9ae"
+  },
+  "crossbeam-epoch@0.9.21": {
+    "build.rs": "c8c35fc536a2e6481549bc13979293cb51244cd9c72d4ed9e35c22a1d70fa9ae"
+  },
+  "crossbeam-utils@0.8.23": {
+    "build.rs": "79cc5363313f77ab76e2de4779e384c672a747fbcd4b96647a79286568714807"
+  },
   "libc@0.2.189": {
     "build.rs": "e47f4a6762799b6e69cefc7acdb3291df828010e4de20609f7378f9c94ea29e6"
   },
   "libm@0.2.16": {
     "build.rs": "85dfa93693f40e282ecf2d9a3115280d8f508f056063862add9e529b8143b71b",
     "configure.rs": "884fa9c05c600d03450b15651665848e88b09cf602f86c843e55e5e1ee0a4772"
+  },
+  "num-traits@0.2.19": {
+    "build.rs": "d3969209fc1c9d201c66ed11820d0b328600d75b3971f8ceebeab04900bc0587"
   },
   "parking_lot_core@0.9.12": {
     "build.rs": "3698c936b75f8332d9b6b30a8a6838ea116c1ff0a819a025c9ea9696e4d8ce72"
@@ -25,11 +43,26 @@
   "quote@1.0.47": {
     "build.rs": "cd6808c02e476b09a520105e2c6f6d325cccb1ecd542cbbcc836a0ae6f6fb0f1"
   },
+  "rav1e@0.8.1": {
+    "build.rs": "22f1c04d8584aec52b59848a8c894cc895db494e3e8a55a1516f4e57a819167b"
+  },
+  "rayon-core@1.13.0": {
+    "build.rs": "fa31cb198b772600d100a7c403ddedccef637d2e6b2da431fa7f02ca41307fc6"
+  },
   "rustversion@1.0.23": {
     "build/build.rs": "4438b108d5b198ca43ef0a78509da89861020674abd05166addd1c3058afbfa6",
     "build/rustc.rs": "faf67033ec831d968406f5a66c475df337f7221e9d1ab3477fed3a629e1ec5bc"
   },
   "rusty_h264-common@0.16.0": {
     "build.rs": "f105ccb828180d10fbb4ccad374d5c06e13416d1cef5d92ee95849402a4e74da"
+  },
+  "thiserror@2.0.21": {
+    "build.rs": "ccc38283604f99237ad2333bbe395259e29fdf2ff4e04a60a95de9e4499c09a3"
+  },
+  "wasm-bindgen-shared@0.2.128": {
+    "build.rs": "2ad2b0d08ef35c6a9013b5488bdf568630f0fc517d10b47f3851ad5c6ef10da4"
+  },
+  "wasm-bindgen@0.2.128": {
+    "build.rs": "33c90a6eb1745c53f9047e0ecde135b249b0ea3d9e1a2a40c9610a33f225e6c9"
   }
 }

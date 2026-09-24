@@ -12,6 +12,9 @@ crate-type = ["cdylib", "staticlib", "rlib"]
 
 [dependencies]
 libheifer = { path = "../.." }
+# Pure Rust AV1 encoder; no assembly (the `asm` default feature is off).
+num-traits = { version = "0.2", optional = true }
+rav1e = { version = "=0.8.1", optional = true, default-features = false, features = ["capi", "threading"] }
 
 [lints.rust]
 unsafe_op_in_unsafe_fn = "deny"
@@ -22,4 +25,4 @@ avc = ["libheifer/avc"]
 jpeg2000 = ["libheifer/jpeg2000"]
 jpeg = ["libheifer/jpeg"]
 hevc = ["libheifer/hevc"]
-av1 = ["libheifer/av1"]
+av1 = ["libheifer/av1", "dep:rav1e", "dep:num-traits"]

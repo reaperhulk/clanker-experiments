@@ -1,6 +1,6 @@
 [workspace]
 members = ["crates/capi"]
-exclude = ["vendor/rusty_h264-decoder", "vendor/rusty_h264-common", "vendor/rusty_h265", "vendor/zlib-rs", "vendor/rav1d", "vendor/jpeg-decoder", "vendor/hayro-jpeg2000"]
+exclude = ["vendor/rusty_h264-decoder", "vendor/rusty_h264-common", "vendor/rusty_h265", "vendor/zlib-rs", "vendor/rav1d", "vendor/rav1e", "vendor/av-scenechange", "vendor/jpeg-decoder", "vendor/hayro-jpeg2000"]
 resolver = "3"
 
 [package]
@@ -50,6 +50,8 @@ required-features = ["hevc-profile"]
 hayro-jpeg2000 = { path = "vendor/hayro-jpeg2000" }
 jpeg-decoder = { path = "vendor/jpeg-decoder" }
 rav1d = { path = "vendor/rav1d" }
+rav1e = { path = "vendor/rav1e" }
+av-scenechange = { path = "vendor/av-scenechange" }
 rusty_h264-common = { path = "vendor/rusty_h264-common" }
 rusty_h264-decoder = { path = "vendor/rusty_h264-decoder" }
 rusty_h265 = { path = "vendor/rusty_h265" }

@@ -51,12 +51,17 @@ static const char* const parameter_sets[]={
   "tile_size=20,12;progression_order=RPCL;tilepart_division=component","num_decompositions=5;block_dimensions=32,32;tile_size=48,48",
   "tile_size=64,64;tilepart_division=both;progression_order=LRCP","tile_size=5,64;num_decompositions=4;block_dimensions=4,64",
   "codestream_comment=a much longer comment string for the COM marker;tlm_marker=true",
+  "speed=10","speed=4","speed=0","threads=1","threads=16","tile-rows=1;tile-cols=1","tile-rows=2;tile-cols=8",
+  "tile-rows=64;tile-cols=64","min-q=100","min-q=255","chroma=444","tile-rows=3","speed=11","threads=0",
+  "min-q=40;lossless=true","chroma=422;speed=6;threads=2","min-q=40;@lossless=1","min-q=40;@lossless=0",
 };
 static void set_parameters(heif_encoder* enc,unsigned index) {
   if(!enc||!index||index>sizeof(parameter_sets)/sizeof(*parameter_sets)) return;
   char buffer[256]; strncpy(buffer,parameter_sets[index-1],sizeof(buffer)-1); buffer[sizeof(buffer)-1]=0;
   for(char* item=strtok(buffer,";");item;item=strtok(NULL,";")) {
-    char* eq=strchr(item,'='); if(!eq) continue; *eq=0; printf(" param%s",item); error(heif_encoder_set_parameter(enc,item,eq+1));
+    char* eq=strchr(item,'='); if(!eq) continue; *eq=0; printf(" param%s",item);
+    /* "@lossless" calls heif_encoder_set_lossless after the preceding parameters. */
+    if(!strcmp(item,"@lossless")) error(heif_encoder_set_lossless(enc,atoi(eq+1))); else error(heif_encoder_set_parameter(enc,item,eq+1));
   }
 }
 int main(void) {

@@ -29,6 +29,13 @@ REVIEWED |= {
     ('fearless_simd', '1.0.0'), ('spin', '0.12.3'),
 }
 
+# rav1e (AV1 encoder; vendored Rust-only with av-scenechange) and its Rust graph.
+# wasm-bindgen* are wasm32-only target dependencies that never build natively.
+REVIEWED |= {
+    ('aligned', '0.4.3'), ('aligned-vec', '0.6.4'), ('anyhow', '1.0.104'), ('arg_enum_proc_macro', '0.3.4'), ('arrayvec', '0.7.8'), ('as-slice', '0.2.1'), ('autocfg', '1.5.1'), ('av-scenechange', '0.14.1'), ('av1-grain', '0.2.5'), ('bitstream-io', '4.10.0'), ('built', '0.8.1'), ('bumpalo', '3.20.3'), ('crossbeam-deque', '0.8.8'), ('crossbeam-epoch', '0.9.21'), ('crossbeam-utils', '0.8.23'), ('either', '1.18.0'), ('equator', '0.4.2'), ('equator-macro', '0.4.2'), ('itertools', '0.14.0'), ('log', '0.4.34'), ('maybe-rayon', '0.1.1'), ('memchr', '2.8.3'), ('new_debug_unreachable', '1.0.6'), ('no_std_io2', '0.9.4'), ('nom', '8.0.0'), ('noop_proc_macro', '0.3.0'), ('num-bigint', '0.4.8'), ('num-derive', '0.4.2'), ('num-integer', '0.1.47'), ('num-rational', '0.4.2'), ('num-traits', '0.2.19'), ('pastey', '0.1.1'), ('profiling', '1.0.18'), ('profiling-procmacros', '1.0.18'), ('rav1e', '0.8.1'), ('rayon', '1.12.0'), ('rayon-core', '1.13.0'), ('scan_fmt', '0.2.6'), ('simd_helpers', '0.1.0'), ('stable_deref_trait', '1.2.1'), ('syn', '3.0.6'), ('thiserror', '2.0.21'), ('thiserror-impl', '2.0.21'), ('v_frame', '0.3.9'), ('wasm-bindgen', '0.2.128'), ('wasm-bindgen-macro', '0.2.128'), ('wasm-bindgen-macro-support', '0.2.128'), ('wasm-bindgen-shared', '0.2.128'), ('y4m', '0.8.0'),
+}
+# `links` keys that only guard against duplicate crate versions (no native library).
+MARKER_LINKS = {('rayon-core', '1.13.0'), ('wasm-bindgen-shared', '0.2.128')}
 
 def main():
     metadata = json.loads(subprocess.check_output(["cargo", "metadata", "--locked", "--format-version=1", "--all-features"], text=True))
@@ -43,7 +50,7 @@ def main():
         name = (package["name"], package["version"])
         if name not in REVIEWED:
             problems.append(f"Unreviewed implementation dependency: {name}")
-        if package.get("links"):
+        if package.get("links") and name not in MARKER_LINKS:
             problems.append(f"Native links declaration: {name}")
         if name[0] == "zlib-rs" and ("c-allocator" in features[package["id"]] or "rust-allocator" not in features[package["id"]]):
             problems.append("zlib-rs must use its Rust allocator without the C allocator feature")
@@ -60,6 +67,13 @@ def main():
                 problems.append('rav1d must enable only Rust 8/16-bit implementations')
             if any(p.suffix.lower() in ('.c', '.cc', '.cpp', '.s', '.asm') for p in root.rglob('*')):
                 problems.append('Native implementation source in rav1d vendor tree')
+        if name[0] in ('rav1e', 'av-scenechange'):
+            # Vendored Rust-only trees: no assembly sources or native build path.
+            expected = {'capi', 'scan_fmt', 'threading'} if name[0] == 'rav1e' else set()
+            if set(features[package['id']]) != expected:
+                problems.append(f'{name[0]} must use only the reviewed Rust configuration')
+            if any(p.suffix.lower() in ('.c', '.cc', '.cpp', '.s', '.asm', '.h') for p in root.rglob('*')):
+                problems.append(f'Native implementation source in {name[0]} vendor tree')
         if name[0] == 'hayro-jpeg2000':
             if set(features[package['id']]) != {'std'}:
                 problems.append('hayro-jpeg2000 must use only the reviewed scalar Rust implementation')

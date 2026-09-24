@@ -73,7 +73,7 @@ jobs:
         with:
           submodules: true
       - id: key
-        run: echo "key=libheifer-oracles-encoders-${{ runner.os }}-$(git rev-parse HEAD:libheifer/tests/upstream)-${{ hashFiles('libheifer/tools/build_reference.py') }}" >> "$GITHUB_OUTPUT"
+        run: echo "key=libheifer-oracles-encoders-${{ runner.os }}-$(git rev-parse HEAD:libheifer/tests/upstream)-${{ hashFiles('libheifer/tools/build_reference.py', 'libheifer/Cargo.lock') }}" >> "$GITHUB_OUTPUT"
       - id: cache
         uses: actions/cache@v4
         with:
@@ -83,15 +83,21 @@ jobs:
           key: ${{ steps.key.outputs.key }}
       - if: steps.cache.outputs.cache-hit != 'true'
         run: python -m pip install meson==1.12.0 ninja==1.13.2
+      # The native rav1e oracle library is built with cargo-c, which needs a
+      # newer toolchain than the project's; it is not a candidate dependency.
+      - if: steps.cache.outputs.cache-hit != 'true'
+        uses: dtolnay/rust-toolchain@1.94.1
+      - if: steps.cache.outputs.cache-hit != 'true'
+        run: cargo install cargo-c --version 0.10.23 --locked
       - if: steps.cache.outputs.cache-hit != 'true'
         run: |
           python tools/build_reference.py --hevc
-          python tools/build_reference.py --av1 --build .build/reference-av1
+          python tools/build_reference.py --av1 --rav1e --build .build/reference-av1
           python tools/build_reference.py --jpeg --build .build/reference-jpeg
           python tools/build_reference.py --jpeg2000 --htj2k --build .build/reference-jpeg2000
           python tools/build_reference.py --plugins --build .build/reference-plugins
           python tools/build_reference.py --avc --build .build/reference-avc
-          python tools/build_reference.py --jpeg --jpeg2000 --htj2k --build .build/reference-encoders
+          python tools/build_reference.py --jpeg --jpeg2000 --htj2k --av1 --rav1e --build .build/reference-encoders
 
   differential:
     name: Independent C clients (${{ matrix.group }})

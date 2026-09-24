@@ -48,6 +48,14 @@ MUTATIONS = [
     ('jpeg2000_encode_chroma_kind', 'crates/capi/src/builtin_jpeg2000_encoder.rs', '    name: c"chroma".as_ptr(),\n    kind: 3,', '    name: c"chroma".as_ptr(),\n    kind: 2,', 'jpeg2000_encoding'),
     ('jpeg2000_lone_97_sample', 'vendor/hayro-jpeg2000/src/j2c/idwt.rs', 'if !x0.is_multiple_of(2) && transform == WaveletTransform::Reversible53 {', 'if !x0.is_multiple_of(2) {', 'htj2k'),
     ('jpeg2000_deep_precinct_step', 'vendor/hayro-jpeg2000/src/j2c/tile.rs', '        let x_stride = 1_u64\n', '        if nl_minus_r > 16 {\n            return None;\n        }\n        let x_stride = 1_u64\n', 'htj2k'),
+    ('av1_encode_default_speed', 'crates/capi/src/builtin_av1_encoder.rs', 'set_integer(p, c"speed".as_ptr(), 8);', 'set_integer(p, c"speed".as_ptr(), 9);', 'av1_encoding'),
+    ('av1_encode_default_tiles', 'crates/capi/src/builtin_av1_encoder.rs', 'set_integer(p, c"tile-rows".as_ptr(), 4);', 'set_integer(p, c"tile-rows".as_ptr(), 1);', 'av1_encoding'),
+    ('av1_encode_default_tile_cols', 'crates/capi/src/builtin_av1_encoder.rs', 'set_integer(p, c"tile-cols".as_ptr(), 4);', 'set_integer(p, c"tile-cols".as_ptr(), 1);', 'av1_encoding'),
+    ('av1_encode_default_chroma', 'crates/capi/src/builtin_av1_encoder.rs', 'set_string(p, c"chroma".as_ptr(), c"420".as_ptr());', 'set_string(p, c"chroma".as_ptr(), c"444".as_ptr());', 'av1_encoding'),
+    ('av1_encode_quantizer', 'crates/capi/src/builtin_av1_encoder.rs', 'let base_quantizer = ((100 - encoder.quality) * 255 + 50) / 100;', 'let base_quantizer = ((100 - encoder.quality) * 255 + 99) / 100;', 'av1_encoding'),
+    ('av1_encode_still_picture', 'crates/capi/src/builtin_av1_encoder.rs', 'if !image_sequence && !parse(cfg.0, c"still_picture", c"true") {', 'if !image_sequence && !parse(cfg.0, c"still_picture", c"false") {', 'av1_encoding'),
+    ('av1_encode_alpha_sampling', 'crates/capi/src/builtin_av1_encoder.rs', 'let (sampling, position) = if input_class == 2 {', 'let (sampling, position) = if input_class == 3 {', 'av1_encoding'),
+    ('av1_encode_bit_depths', 'crates/capi/src/builtin_av1_encoder.rs', 'if matches!(bpp, 8 | 10 | 12) {', 'if matches!(bpp, 8 | 10) {', 'av1_encoding'),
     ('jpeg2000_packet_extent', 'vendor/hayro-jpeg2000/src/j2c/segment.rs', 'if oversized_segment || (!complete && header.strict)', 'if !complete && header.strict', 'jpeg2000_sampling'),
     ('jpeg2000_tile_transform', 'vendor/hayro-jpeg2000/src/j2c/decode.rs', 'if tile.mct && !tile.tile_parts.is_empty()', 'if tiles[0].mct && !tile.tile_parts.is_empty()', 'jpeg2000_tiles'),
     ('jpeg2000_tile_wavelet', 'vendor/hayro-jpeg2000/src/j2c/decode.rs', 'for (idx, component_info) in tile.component_infos.iter().enumerate()', 'for (idx, component_info) in header.component_infos.iter().enumerate()', 'jpeg2000_tiles'),
@@ -465,7 +473,8 @@ def main():
             return str(Path(args.encoders_reference_build).resolve())
         if suite.startswith("jpeg_"):
             return str(Path(args.jpeg_reference_build).resolve())
-        if suite in ('av1', 'av1_limits', 'mini_reader'):
+        # These fall back to the default AV1 encoder (rav1e) when a test plugin is refused.
+        if suite in ('av1', 'av1_limits', 'mini_reader', 'av1_encoding', 'plugin_encoding', 'mini_encoding'):
             return str(Path(args.av1_reference_build).resolve())
         return str(Path(args.plugin_reference_build).resolve()) if suite == "dynamic_plugins" else reference
     # Baselines must pass on this tree before a rejected mutant is meaningful.

@@ -12,6 +12,8 @@ use std::ffi::{c_char, c_int};
 use std::ptr;
 
 mod auxiliary;
+#[cfg(feature = "av1")]
+mod builtin_av1_encoder;
 #[cfg(feature = "jpeg2000")]
 mod builtin_htj2k_encoder;
 #[cfg(feature = "jpeg2000")]

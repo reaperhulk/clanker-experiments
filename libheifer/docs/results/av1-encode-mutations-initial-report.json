@@ -1,0 +1,260 @@
+{
+  "scope": "23 deliberate defects; not comprehensive mutation coverage",
+  "shard": null,
+  "mutations": [
+    {
+      "mutation": "av1_encode_default_speed",
+      "suite": "av1_encoding",
+      "source": "crates/capi/src/builtin_av1_encoder.rs",
+      "before": "set_integer(p, c\"speed\".as_ptr(), 8);",
+      "after": "set_integer(p, c\"speed\".as_ptr(), 9);",
+      "candidate_sha256": "039e6f945e6ef8f04b665fbf38541c36e30f5f46f21cf175a0e8a4af03179efe",
+      "mismatches": 85,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "av1_encode_default_tiles",
+      "suite": "av1_encoding",
+      "source": "crates/capi/src/builtin_av1_encoder.rs",
+      "before": "set_integer(p, c\"tile-rows\".as_ptr(), 4);",
+      "after": "set_integer(p, c\"tile-rows\".as_ptr(), 1);",
+      "candidate_sha256": "3b770b6aa420f37d7225c2124c387e6ff107a3ea9b959cda3ff76bcbdec2685d",
+      "mismatches": 6,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "av1_encode_default_chroma",
+      "suite": "av1_encoding",
+      "source": "crates/capi/src/builtin_av1_encoder.rs",
+      "before": "set_string(p, c\"chroma\".as_ptr(), c\"420\".as_ptr());",
+      "after": "set_string(p, c\"chroma\".as_ptr(), c\"444\".as_ptr());",
+      "candidate_sha256": "76f7e41b8b01da7e04b3fce81b8a16f77a9d6fbff32000f2e6f95b5aeb1d78ca",
+      "mismatches": 117,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "av1_encode_quantizer",
+      "suite": "av1_encoding",
+      "source": "crates/capi/src/builtin_av1_encoder.rs",
+      "before": "let base_quantizer = ((100 - encoder.quality) * 255 + 50) / 100;",
+      "after": "let base_quantizer = ((100 - encoder.quality) * 255 + 99) / 100;",
+      "candidate_sha256": "f973c7027453fcce301d2bdc6e97ec40806a1695866e947f70fa1dbf4aae631a",
+      "mismatches": 4,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "av1_encode_still_picture",
+      "suite": "av1_encoding",
+      "source": "crates/capi/src/builtin_av1_encoder.rs",
+      "before": "if !image_sequence && !parse(cfg.0, c\"still_picture\", c\"true\") {",
+      "after": "if !image_sequence && !parse(cfg.0, c\"still_picture\", c\"false\") {",
+      "candidate_sha256": "f3d5c3610ff4224ce9d81abb21b9569ec9f4dfac0f250f58ee375a92cdf5b8f0",
+      "mismatches": 124,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "av1_encode_alpha_sampling",
+      "suite": "av1_encoding",
+      "source": "crates/capi/src/builtin_av1_encoder.rs",
+      "before": "let (sampling, position) = if input_class == 2 {",
+      "after": "let (sampling, position) = if input_class == 3 {",
+      "candidate_sha256": "4175b016bac168a0a134d70128415ce73359780349e155cb7b2be886bd3a06b9",
+      "mismatches": 0,
+      "process_failures": [],
+      "detected": false
+    },
+    {
+      "mutation": "av1_encode_alpha_color",
+      "suite": "av1_encoding",
+      "source": "crates/capi/src/builtin_av1_encoder.rs",
+      "before": "&& (input_class == 1 || input_class == 4)",
+      "after": "&& (input_class == 1 || input_class == 2)",
+      "candidate_sha256": "71b37040fa238917589fcc0d7f66d72b3056c638c2280be9e4d379ad6f51931f",
+      "mismatches": 0,
+      "process_failures": [],
+      "detected": false
+    },
+    {
+      "mutation": "av1_encode_bit_depths",
+      "suite": "av1_encoding",
+      "source": "crates/capi/src/builtin_av1_encoder.rs",
+      "before": "if matches!(bpp, 8 | 10 | 12) {",
+      "after": "if matches!(bpp, 8 | 10) {",
+      "candidate_sha256": "aa4af2c6930706d04e1a3e64e3211ac8b53de7ae0a3864cc6b486895357ca77d",
+      "mismatches": 3,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "av1_encode_lossless_min_q",
+      "suite": "av1_encoding",
+      "source": "crates/capi/src/builtin_av1_encoder.rs",
+      "before": "    if enable != 0 {\n        unsafe { state(p) }.min_q = 0;",
+      "after": "    if enable == 0 {\n        unsafe { state(p) }.min_q = 0;",
+      "candidate_sha256": "de1d4573b459423953dc20128580cfce38d6818ace56b089d86bd411769d3a75",
+      "mismatches": 0,
+      "process_failures": [],
+      "detected": false
+    },
+    {
+      "mutation": "encoder_empty_pixi",
+      "suite": "plugin_encoding",
+      "source": "src/encoding.rs",
+      "before": "image.plane(ch).map_or(0, |p| p.bit_depth)",
+      "after": "image.plane(ch).map_or(1, |p| p.bit_depth)",
+      "candidate_sha256": "c721eb2d9338ffeecec1d229103f7bbd578e90031ddb67e5b46ba496f322e2f1",
+      "mismatches": 4,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "encoder_versioned_query",
+      "suite": "plugin_encoding",
+      "source": "crates/capi/src/plugin_encoding.rs",
+      "before": "if version >= 2 {",
+      "after": "if version >= 3 {",
+      "candidate_sha256": "202a989e9e0d991c121f7195daf9aef125619123a174b292dc9fc789ffd6d129",
+      "mismatches": 30,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "encoder_input_class",
+      "suite": "plugin_encoding",
+      "source": "crates/capi/src/plugin_encoding.rs",
+      "before": "encode(encoder.state, &image, input_class)",
+      "after": "encode(encoder.state, &image, input_class + 1)",
+      "candidate_sha256": "22b4155d98ceba445e53dd7d1d268762182a67acf69975fe4466504d43f0a479",
+      "mismatches": 420,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "encoder_packet_configuration",
+      "suite": "plugin_encoding",
+      "source": "crates/capi/src/plugin_encoding.rs",
+      "before": "config.update(packet);",
+      "after": "// omit sequence configuration",
+      "candidate_sha256": "6490b5857565eb633f5271bd566979dcbbfba7f935c8fc0c4cb185d9364b7740",
+      "mismatches": 61,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "encoder_alpha_class",
+      "suite": "plugin_encoding",
+      "source": "crates/capi/src/plugin_encoding.rs",
+      "before": "encode_coded(&alpha, &alpha_encoder, copied, options, 2)?",
+      "after": "encode_coded(&alpha, &alpha_encoder, copied, options, 1)?",
+      "candidate_sha256": "d9889d59d27054c12276380972a7c18e733e2148e5e92b0efc0472733f35438f",
+      "mismatches": 49,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "encoder_parameter_copy",
+      "suite": "plugin_encoding",
+      "source": "crates/capi/src/plugin_encoding.rs",
+      "before": "set(out.state, value);",
+      "after": "set(out.state, value + 1);",
+      "candidate_sha256": "9daf852db8d29ab9da450bbf91351e6ea987084fd22f37917739892039085248",
+      "mismatches": 49,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "encoder_packet_bytes",
+      "suite": "plugin_encoding",
+      "source": "crates/capi/src/plugin_encoding.rs",
+      "before": "data.extend_from_slice(packet);",
+      "after": "data.extend_from_slice(packet); data.push(0);",
+      "candidate_sha256": "c47d250b8170a51f0d8dfec0e407feec9b70f42e582332ec6aa1aab589973a74",
+      "mismatches": 405,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "encoder_clap_range",
+      "suite": "plugin_encoding",
+      "source": "src/encoding.rs",
+      "before": "encoded_size.0 - image.width > (1u32 << 31)",
+      "after": "encoded_size.0 - image.width >= (1u32 << 31)",
+      "candidate_sha256": "9b8433b0fc72cc072737b4900915da1e68770b1600ec3c11d472d5e92c5e33e0",
+      "mismatches": 1,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "mini_writer_orientation",
+      "suite": "mini_encoding",
+      "source": "src/mini_write.rs",
+      "before": "orientation = crate::geometry::orientation_concat(orientation, transform);",
+      "after": "orientation = 1; let _ = transform;",
+      "candidate_sha256": "e020364e1fb8e25eff573684675f5e0b5890e3fea8d37ad768aeb7e1e6826295",
+      "mismatches": 21,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "mini_writer_alpha_inheritance",
+      "suite": "mini_encoding",
+      "source": "src/mini_write.rs",
+      "before": "alpha_data.is_empty() || alpha_config == config",
+      "after": "alpha_data.is_empty()",
+      "candidate_sha256": "6f0d870f420cc2152a2e7fead6b65bc0bb24ef47add68153f63856cc1e225bb5",
+      "mismatches": 10,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "mini_writer_metadata_width",
+      "suite": "mini_encoding",
+      "source": "src/mini_write.rs",
+      "before": "> 1024",
+      "after": ">= 1024",
+      "candidate_sha256": "68b7005bdd9b585a4873586e954d3a1c18ab8d8eaa122c8100a990f275b48472",
+      "mismatches": 2,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "mini_writer_item_width",
+      "suite": "mini_encoding",
+      "source": "src/mini_write.rs",
+      "before": "main_data.len() > 32768",
+      "after": "main_data.len() >= 32768",
+      "candidate_sha256": "c48017664f38ddc018626b4865b23634df2f055913f6e40d4339aaac572c87b0",
+      "mismatches": 3,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "mini_writer_brand",
+      "suite": "mini_encoding",
+      "source": "src/mini_write.rs",
+      "before": "b\"mif3\".as_slice()",
+      "after": "b\"mif1\".as_slice()",
+      "candidate_sha256": "aadd7ed36b69deacf327eda8c3fc7d9fd09bee4d0ad5ce1e8023ba7e0c787331",
+      "mismatches": 372,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "mini_writer_diffuse_white",
+      "suite": "mini_encoding",
+      "source": "src/mini_write.rs",
+      "before": "4 => bits.bytes(p.get(4..).unwrap_or_default()),",
+      "after": "4 => bits.bytes(p.get(..4).unwrap_or_default()),",
+      "candidate_sha256": "cdffdf19f1e99ef137fb464445337c00f2b0bc0ae244bf8c35695a54616bf702",
+      "mismatches": 20,
+      "process_failures": [],
+      "detected": true
+    }
+  ],
+  "all_detected": false
+}

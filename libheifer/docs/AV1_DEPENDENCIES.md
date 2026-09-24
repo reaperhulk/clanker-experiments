@@ -34,3 +34,29 @@ points. Native dav1d 1.5.1 is built separately for differential tests. Native
 libaom/FFmpeg generated the committed synthetic fixtures, and is not required
 to consume those fixtures. Platform compatibility and complete codec behavior
 still require the broader project gates.
+
+## AV1 encoding (rav1e)
+
+The AV1 encoder is rav1e 0.8.1, vendored in `vendor/rav1e` with its
+av-scenechange 0.14.1 dependency in `vendor/av-scenechange`. Both trees drop
+the assembly and C sources and keep only the build-information/environment
+steps of their build scripts; the `asm`, `cc` and `nasm-rs` features and build
+dependencies, the binaries and the native decoder test features are removed
+(`LIBHEIFER_CHANGES.md` in each). The C API crate enables rav1e's `capi` and
+`threading` features. `tools/audit_dependencies.py` pins both feature sets and
+rejects native sources in either tree; the new pure Rust crates are allowlisted
+by exact version and their build scripts by hash:
+
+| Package | Build behavior |
+|---|---|
+| rav1e, av-scenechange | Build information (`built`) and environment variables only |
+| anyhow, thiserror | Compile Rust probes with rustc to select cfgs |
+| crossbeam-*, num-traits | Rust version/cfg probes |
+| rayon-core | Empty; its `links` key only guards against duplicate versions |
+| wasm-bindgen, wasm-bindgen-shared | wasm32 target dependencies (version and schema hash); never built natively |
+
+The native oracle builds librav1e from git tag v0.8.1 (whose `src/` is
+identical to the vendored crate) with cargo-c, `--no-default-features
+--features capi,threading`, after aligning its lockfile to libheifer's
+dependency versions; only proc-macro crates differ.
+

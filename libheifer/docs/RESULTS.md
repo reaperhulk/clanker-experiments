@@ -1809,3 +1809,66 @@ initial report keeps the first run: an equivalent K constant survived there,
 because 1.2301741 is the same `f32`. It was replaced by a value one ULP away.
 381 mutations total.
 
+### Built-in AV1 encoding (rav1e)
+
+libheif's rav1e plugin configures rav1e through its C API. It sets:
+
+- the pixel format from the image chroma; alpha is always 4:2:0;
+- still-picture mode, dimensions and threads;
+- the nclx colour description;
+- `min_quantizer`, and `quantizer = ((100 - quality) * 255 + 50) / 100`;
+- tile rows and columns when not 1, and speed.
+
+It then sends one frame and collects the packets. The plugin defaults are:
+
+- speed 8, 4 threads, 4x4 tiles, chroma 4:2:0, min-q 0;
+- quality 0, because quality is missing from the parameter list and `new T()`
+  zero-initialises it;
+- priority 20;
+- lossy only.
+
+`crates/capi/src/builtin_av1_encoder.rs` transliterates the plugin. It calls
+libheifer's own `heif_image_*` C API and the same `rav1e::capi` functions the
+native plugin calls, so configuration parsing, frame filling, padding and
+packet delivery run identical code. It also carries the plugin's input checks
+(no monochrome; 8, 10 or 12 bits) and its sequence-encoding path.
+
+rav1e 0.8.1 is vendored as a Rust-only tree (assembly removed; see
+`AV1_DEPENDENCIES.md`). The oracle builds librav1e with cargo-c from git tag
+v0.8.1, whose `src/` is identical, without assembly and with a lockfile
+aligned to libheifer's. It is built into `.build/reference-av1` and
+`.build/reference-encoders` (with dav1d for read-back).
+
+`tools/test_av1_encoding.py` covers 143 cases:
+
+- sizes and input colorspaces;
+- qualities and bit depths 7-16;
+- speed, thread, tile, min-q and chroma parameter sets, including invalid
+  values;
+- `heif_encoder_set_lossless` after `min-q` (the new `@lossless` entry in
+  `tests/encoding.c`);
+- nclx and HDR metadata, orientations, overlays, thumbnails, and alpha under
+  4:2:0 and 4:4:4 chroma.
+
+It compares exact files, handles and decoded read-back pixels in normal,
+sanitizer-client and codec-free builds. It matched on the first run.
+
+`test_plugin_encoding` and `test_mini_encoding` fall back to the default AV1
+encoder when a test plugin is refused, so they now use the rav1e oracle.
+`test_encoding` and `test_other_encoding` use the encoder oracle, which now
+includes rav1e and dav1d.
+
+Eight mutations are detected (`results/av1-encode-mutations-report.json`).
+The initial report keeps the first run, in which three mutants survived:
+
+- the alpha-sampling mutant needed alpha cases with 4:4:4 chroma, which were
+  added;
+- the colour-description class mutant is equivalent, because the plugin's
+  second, unconditional call covers every class;
+- the lossless/min-q mutant is equivalent, because rav1e uses
+  `min_quantizer` only under bitrate control and the plugin always sets a
+  quantizer. A `min_quantizer` mutant confirmed this and was dropped.
+
+The last two were replaced by a tile-column default mutant. 389 mutations
+total.
+
