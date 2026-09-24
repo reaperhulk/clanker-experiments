@@ -1415,3 +1415,46 @@ from the 128 border overwrites every predicted macroblock, so that mutant is
 equivalent (`results/avc-decode-mutations-pcm-initial-report.json`). Anchored
 on the border value, it is detected (1,702 mismatches). The new
 `avc_mono_chroma_dc` mutation is detected (23); 320 mutations total.
+
+### AVC image sequences
+
+libheif decodes an `avc1` track by pushing samples into one stateful OpenH264
+plugin decoder per chunk: the avcC parameter sets go with sample 0, frames are
+polled before each push, and the decoder is flushed after the last sample.
+Pictures leave OpenH264 through `ReorderPicturesInDisplay`. Baseline pictures
+come out immediately. Streams without B slices come out one picture late, in
+decode order. Other streams are released by POC once ready. `FlushFrame`
+releases one picture per call. libheifer now emulates that loop with the
+built-in decoder, including the "Did not decode all frames" error and
+per-sample durations. Tracks whose AVC decoder is not built in fail decoder
+selection as libheif's do.
+
+`tools/test_avc_sequences.py` builds 86 sequence tracks from committed x264
+streams (`tests/fixtures/avc-sequences.json`, 5 frames each at 64x48 and
+50x36). They cover intra-only, IPPP (baseline, main, high, CAVLC, 3 refs,
+weighted P), IBBP (main, pyramid, no weighted B, temporal direct, CAVLC) and
+IDR every 2 frames. Each stream also appears truncated to 3 samples and with
+its last slice byte cut. A static baseline stream has its P skip runs extended
+past the picture end. The first full comparison differed on every B-frame
+64x48 CABAC track. Two OpenH264 behaviours needed porting into the vendored
+decoder:
+
+- The CAVLC P and B slice end rule: the slice ends exactly at the stop bit,
+  checked after skip runs too. A P skip run past the picture end fills it; a
+  B run past the end is an error.
+- `GetInterBPred` advances its frame destination pointer once per used list
+  in 16x8 and 8x16 macroblocks. A Bi partition 0 therefore comes out list 1
+  only, and a Bi partition 1 list 0 only. The displaced list-1 write lands in
+  the next macroblock's area, which that macroblock rewrites. The upstream
+  crate had removed this replication.
+
+All 86 cases match in normal, sanitizer-client and codec-free builds.
+Six new mutations cover the reorder rules, parameter sets with sample 0, the
+Bi partitions and the P skip run. The first run of `avc_cavlc_p_skip_run`
+survived because no stream ran past the picture end. The static overrun
+tracks now detect it (2 mismatches). Both reports are retained
+(`results/avc-sequences-mutations-initial-report.json`,
+`results/avc-sequences-skip-run-mutation-report.json`); 326 mutations total.
+Only one slice per picture and one sample entry are covered. Edit lists,
+multi-chunk tracks and registered AVC plugins decoding sequences are not yet
+compared.

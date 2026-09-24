@@ -98,5 +98,6 @@ SIMD does not help.
   SVC extension units are rejected as OpenH264's header checks decide, never
   decoded; multi-access-unit input, FMO slice groups and constrained-intra P
   prediction are not yet compared.
-- AVC sequences/tracks (P/B slices), registered-plugin priority interaction with
-  the built-in decoder and resource-limit corpora remain open.
+- AVC sequences cover single-slice pictures in one chunk and sample entry; edit
+  lists, multi-chunk tracks and registered AVC plugins decoding sequences are
+  not yet compared.

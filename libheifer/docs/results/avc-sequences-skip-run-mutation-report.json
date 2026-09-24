@@ -1,0 +1,18 @@
+{
+  "scope": "1 deliberate defects; not comprehensive mutation coverage",
+  "shard": null,
+  "mutations": [
+    {
+      "mutation": "avc_cavlc_p_skip_run",
+      "suite": "avc_sequences",
+      "source": "vendor/rusty_h264-decoder/src/mb16.rs",
+      "before": "if self.is_b && skip_run > total - addr {",
+      "after": "if skip_run > total - addr {",
+      "candidate_sha256": "81fb47d1d537e721c294f02937a78ceb8d6326bd36c5016a2b993e635b7623d1",
+      "mismatches": 2,
+      "process_failures": [],
+      "detected": true
+    }
+  ],
+  "all_detected": true
+}

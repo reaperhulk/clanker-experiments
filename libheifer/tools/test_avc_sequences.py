@@ -26,6 +26,8 @@ STREAMS = {
     'ibbp-noweightb': ['--profile', 'main', '--keyint', '30', '--bframes', '2', '--b-pyramid', 'none', '--no-weightb'],
     'ibbp-temporal': ['--profile', 'main', '--keyint', '30', '--bframes', '2', '--b-pyramid', 'none', '--no-weightb', '--direct', 'temporal'],
     'ibbp-cavlc': ['--profile', 'high', '--no-cabac', '--keyint', '30', '--bframes', '2', '--b-pyramid', 'none', '--no-weightb'],
+    # Unchanging frames: every P slice is one skip run over the whole picture.
+    'static-baseline': ['--profile', 'baseline', '--keyint', '30'],
 }
 
 
@@ -37,7 +39,7 @@ def full(kind, version, flags, body):
     return box(kind, bytes([version]) + flags.to_bytes(3, 'big') + body)
 
 
-def frames(w, h, n, pattern):
+def frames(w, h, n, pattern, step=4):
     """n frames of a moving deterministic pattern (horizontal shift per frame)."""
     base = picture(w + 4 * n, h, 'i420', 8, pattern)
     planes = [(w + 4 * n, h, 0)]
@@ -47,7 +49,7 @@ def frames(w, h, n, pattern):
     for i in range(n):
         frame = bytearray()
         for c, (pw, ph, offset) in enumerate(planes):
-            shift = 4 * i if c == 0 else 2 * i
+            shift = step * i if c == 0 else step // 2 * i
             width = w if c == 0 else (w + 1) // 2
             for y in range(ph):
                 row = base[offset + y * pw:offset + (y + 1) * pw]
@@ -116,12 +118,42 @@ def generate():
     for (name, options), (w, h), pattern in [((n, o), size, p) for n, o in STREAMS.items() for size, p in [((64, 48), 4), ((50, 36), 3)]]:
         raw = work / f'{name}-{w}x{h}.yuv'
         out = work / f'{name}-{w}x{h}.264'
-        raw.write_bytes(b''.join(frames(w, h, FRAMES, pattern)))
+        raw.write_bytes(b''.join(frames(w, h, FRAMES, pattern, 0 if name.startswith('static') else 4)))
         subprocess.run([str(x264), '--quiet', '--no-progress', '--threads', '1', '--frames', str(FRAMES), '--input-res', f'{w}x{h}',
                         '--input-csp', 'i420', '--qp', '26', *options, '-o', str(out), str(raw)], check=True)
         streams.append({'name': f'{name}-{w}x{h}', 'width': w, 'height': h, 'options': options, 'hex': out.read_bytes().hex()})
     generator = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
     FIXTURES.write_text(json.dumps({'x264_revision': REVISION, 'generator_sha256': generator, 'streams': streams}, indent=1) + '\n')
+
+
+def ue(v):
+    return format(v + 1, 'b').zfill(2 * (v + 1).bit_length() - 1)
+
+
+def overrun(unit, total, extra):
+    """A P slice that is one skip run over `total` macroblocks, with the run lengthened."""
+    rbsp = bytearray()
+    zeros = 0
+    for b in unit[1:]:
+        if zeros >= 2 and b == 3:
+            zeros = 0
+            continue
+        rbsp.append(b)
+        zeros = zeros + 1 if b == 0 else 0
+    bits = ''.join(format(b, '08b') for b in rbsp).rstrip('0')[:-1]
+    if not bits.endswith(ue(total)):
+        raise SystemExit('static P slice is not a single skip run')
+    bits = bits[:-len(ue(total))] + ue(total + extra) + '1'
+    bits += '0' * (-len(bits) % 8)
+    out = bytearray(unit[:1])
+    zeros = 0
+    for b in int(bits, 2).to_bytes(len(bits) // 8, 'big'):
+        if zeros >= 2 and b <= 3:
+            out.append(3)
+            zeros = 0
+        out.append(b)
+        zeros = zeros + 1 if b == 0 else 0
+    return bytes(out)
 
 
 def corpus():
@@ -135,6 +167,11 @@ def corpus():
         cases.append((f'{name}-short', sequence(w, h, units, aus[:3])))
         broken = aus[:-1] + [[aus[-1][0][:-1]]]
         cases.append((f'{name}-cut', sequence(w, h, units, broken)))
+        if name.startswith('static'):
+            # A P skip run past the picture end fills the picture (OpenH264 clamps it).
+            total = ((w + 15) // 16) * ((h + 15) // 16)
+            long = [aus[0]] + [[overrun(au[0], total, 5)] for au in aus[1:]]
+            cases.append((f'{name}-overrun', sequence(w, h, units, long)))
     return cases
 
 

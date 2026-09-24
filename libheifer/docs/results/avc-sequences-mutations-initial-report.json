@@ -1,0 +1,84 @@
+{
+  "scope": "7 deliberate defects; not comprehensive mutation coverage",
+  "shard": null,
+  "mutations": [
+    {
+      "mutation": "avc_cavlc_end_of_slice",
+      "suite": "avc_errors",
+      "source": "vendor/rusty_h264-decoder/src/mb16.rs",
+      "before": "            if used > r.stop_pos() {",
+      "after": "            if used > r.stop_pos() + 8 {",
+      "candidate_sha256": "04fda304efb727498d73b27a3cf15a03b5c071047733d7bd5f0a85a68e5e214f",
+      "mismatches": 15,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "avc_bi_partition",
+      "suite": "avc_sequences",
+      "source": "vendor/rusty_h264-decoder/src/mb16.rs",
+      "before": "        (0, true) => (-1, refi1),",
+      "after": "        (0, true) => (refi0, refi1),",
+      "candidate_sha256": "fc8a590a465e60b6f1d08c4470bd7e36bd1290f6ee799f38e9a546a97182f3d8",
+      "mismatches": 12,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "avc_sequence_no_reorder",
+      "suite": "avc_sequences",
+      "source": "src/avc.rs",
+      "before": "if !self.has_b && self.list.len() > 1 {",
+      "after": "if !self.has_b {",
+      "candidate_sha256": "4936fb062f6b8e1eaab3b2f746c0d3d89c6e6ab25820b43da0dff82cc8a7f112",
+      "mismatches": 34,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "avc_sequence_ready",
+      "suite": "avc_sequences",
+      "source": "src/avc.rs",
+      "before": "self.last_written_poc.is_some_and(|w| poc - w <= 1)",
+      "after": "self.last_written_poc.is_some_and(|w| poc - w <= 2)",
+      "candidate_sha256": "a78e84f55f453fcaf5c4edc946f454a83d821cac47b8d503482256ab99edad1b",
+      "mismatches": 5,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "avc_sequence_baseline",
+      "suite": "avc_sequences",
+      "source": "src/avc.rs",
+      "before": "if matches!(slice.profile, 66 | 83) {",
+      "after": "if matches!(slice.profile, 83) {",
+      "candidate_sha256": "7bfd394889bc30cc26d1f3bd325e0f078d62f7462ea5ea17fb4e73d6e05ee91b",
+      "mismatches": 2,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "avc_sequence_headers",
+      "suite": "avc_sequences",
+      "source": "src/sequences.rs",
+      "before": "let mut data = if sample_idx == 0 {",
+      "after": "let mut data = if sample_idx == 1 {",
+      "candidate_sha256": "98ce58fcacaf8d99c57e88c62bb6e43a93d6c5fbd2e668157cd3f9711fcbd0ed",
+      "mismatches": 78,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "avc_cavlc_p_skip_run",
+      "suite": "avc_sequences",
+      "source": "vendor/rusty_h264-decoder/src/mb16.rs",
+      "before": "if self.is_b && skip_run > total - addr {",
+      "after": "if skip_run > total - addr {",
+      "candidate_sha256": "81fb47d1d537e721c294f02937a78ceb8d6326bd36c5016a2b993e635b7623d1",
+      "mismatches": 0,
+      "process_failures": [],
+      "detected": false
+    }
+  ],
+  "all_detected": false
+}

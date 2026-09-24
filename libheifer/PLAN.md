@@ -720,5 +720,10 @@ I_PCM streams in both entropy modes match, after reproducing OpenH264's
 monochrome chroma behaviour: I_PCM chroma bytes are kept, and DC prediction
 assumes both neighbours.
 
-Next: AVC sequences, then remaining plan gates. All 465 functions remain partial; strict completion
+AVC image sequences now match libheif's track decoding over the OpenH264
+plugin on 86 tracks (intra, P, B, pyramid, CAVLC, truncated and skip-run
+overrun), after porting OpenH264's CAVLC P/B slice end and its Bi 16x8/8x16
+prediction into the vendored decoder. See `docs/RESULTS.md`.
+
+Next: remaining plan gates. All 465 functions remain partial; strict completion
 remains false.

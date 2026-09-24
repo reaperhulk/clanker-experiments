@@ -17,7 +17,7 @@ Initial source audit (2026-09-18):
 | VVC | [gamut-vvc](https://github.com/justin13888/gamut/tree/main/crates/gamut-vvc) | Pure Rust intra-image codec candidate; workspace also contains an unrelated native JXL crate which must not enter our graph. Requires newer Rust and independent coverage validation. |
 | Raw mask decode | In-tree Rust | 8/16-bit mask samples and generated malformed input/conversion cases compared independently; mask encoding is implemented and has independent exact-byte/roundtrip coverage. |
 | Registered encoder hooks | In-tree Rust | HEVC/AV1/AVC/VVC/JPEG/JPEG2000/HTJ2K packet configuration, callback lifetimes, alpha/thumbnail conversion, ordinary and compact writing have independent oracle and mutation evidence. These optional caller-provided hooks are separate from the still-open built-in codec encoders. |
-| Remaining codecs/encoders | Open | JPEG arithmetic decoding/encoding, AVC sequences and encoding, HEVC encoding, JPEG2000 encoding/HTJ2K, full VVC and uncompressed formats require further implementation/audit. |
+| Remaining codecs/encoders | Open | JPEG arithmetic decoding/encoding, built-in AVC encoding, HEVC encoding, JPEG2000 encoding/HTJ2K, full VVC and uncompressed formats require further implementation/audit. |
 
 Repository descriptions and upstream conformance claims are leads, not our test
 results. A decoder successfully handling the example image is not complete codec
