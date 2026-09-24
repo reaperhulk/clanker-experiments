@@ -14,7 +14,11 @@ struct State {
 }
 
 const fn error(code: c_int, subcode: c_int, message: &'static CStr) -> HeifError {
-    HeifError { code, subcode, message: message.as_ptr() }
+    HeifError {
+        code,
+        subcode,
+        message: message.as_ptr(),
+    }
 }
 const OK: HeifError = error(0, 0, c"Success");
 const INVALID_VALUE: HeifError = error(5, 2006, c"Invalid parameter value");
@@ -55,7 +59,11 @@ unsafe extern "C" fn name() -> *const c_char {
     c"libheifer JPEG encoder".as_ptr()
 }
 unsafe extern "C" fn new_encoder(out: *mut *mut c_void) -> HeifError {
-    let state = Box::new(State { quality: 50, compressed: Vec::new(), read: false });
+    let state = Box::new(State {
+        quality: 50,
+        compressed: Vec::new(),
+        read: false,
+    });
     unsafe { out.write(Box::into_raw(state).cast()) };
     OK
 }
@@ -105,7 +113,11 @@ unsafe extern "C" fn set_integer(p: *mut c_void, name: *const c_char, value: c_i
         UNSUPPORTED
     }
 }
-unsafe extern "C" fn get_integer(p: *mut c_void, name: *const c_char, out: *mut c_int) -> HeifError {
+unsafe extern "C" fn get_integer(
+    p: *mut c_void,
+    name: *const c_char,
+    out: *mut c_int,
+) -> HeifError {
     if named(name, c"quality") {
         unsafe { get_quality(p, out) }
     } else if named(name, c"lossless") {
@@ -121,7 +133,11 @@ unsafe extern "C" fn set_boolean(p: *mut c_void, name: *const c_char, value: c_i
         UNSUPPORTED
     }
 }
-unsafe extern "C" fn get_boolean(p: *mut c_void, name: *const c_char, out: *mut c_int) -> HeifError {
+unsafe extern "C" fn get_boolean(
+    p: *mut c_void,
+    name: *const c_char,
+    out: *mut c_int,
+) -> HeifError {
     if named(name, c"lossless") {
         unsafe { get_lossless(p, out) }
     } else {
@@ -131,7 +147,12 @@ unsafe extern "C" fn get_boolean(p: *mut c_void, name: *const c_char, out: *mut 
 unsafe extern "C" fn set_string(_: *mut c_void, _: *const c_char, _: *const c_char) -> HeifError {
     UNSUPPORTED
 }
-unsafe extern "C" fn get_string(_: *mut c_void, _: *const c_char, _: *mut c_char, _: c_int) -> HeifError {
+unsafe extern "C" fn get_string(
+    _: *mut c_void,
+    _: *const c_char,
+    _: *mut c_char,
+    _: c_int,
+) -> HeifError {
     UNSUPPORTED
 }
 unsafe extern "C" fn query_input(colorspace: *mut c_int, chroma: *mut c_int) {
@@ -156,18 +177,34 @@ fn check_input(image: &Image) -> Result<(), HeifError> {
         return Err(error(8, 3001, c"Encoder cannot encode monochrome images"));
     }
     if image.colorspace != 0 {
-        return Err(error(8, 3001, c"Encoder can only encode YCbCr and monochrome images"));
+        return Err(error(
+            8,
+            3001,
+            c"Encoder can only encode YCbCr and monochrome images",
+        ));
     }
     let planes: Vec<_> = (0..3).map(|c| image.plane(c)).collect();
     if planes.iter().any(Option::is_none) {
-        return Err(error(8, 3001, c"Input image is missing one of its color channels"));
+        return Err(error(
+            8,
+            3001,
+            c"Input image is missing one of its color channels",
+        ));
     }
     let depth = planes[0].unwrap().bit_depth;
     if planes.iter().any(|p| p.unwrap().bit_depth != depth) {
-        return Err(error(8, 4000, c"Encoder cannot encode images in which the color channels have different bit depths"));
+        return Err(error(
+            8,
+            4000,
+            c"Encoder cannot encode images in which the color channels have different bit depths",
+        ));
     }
     if depth != 8 {
-        return Err(error(8, 4000, c"Encoder cannot encode images at this bit depth"));
+        return Err(error(
+            8,
+            4000,
+            c"Encoder cannot encode images at this bit depth",
+        ));
     }
     if planes[0].unwrap().storage_bits() != 8 {
         return Err(error(9, 5002, c"Cannot write JPEG image with >8 bpp."));
@@ -175,7 +212,11 @@ fn check_input(image: &Image) -> Result<(), HeifError> {
     Ok(())
 }
 
-unsafe extern "C" fn encode_image(p: *mut c_void, image: *const Image, input_class: c_int) -> HeifError {
+unsafe extern "C" fn encode_image(
+    p: *mut c_void,
+    image: *const Image,
+    input_class: c_int,
+) -> HeifError {
     let image = unsafe { &*image };
     if let Err(e) = check_input(image) {
         return e;
@@ -192,16 +233,26 @@ unsafe extern "C" fn encode_image(p: *mut c_void, image: *const Image, input_cla
     };
     let (h, v) = image.pixel_aspect_ratio;
     // The pixel aspect ratio goes to the JFIF density of normal and thumbnail images.
-    let density = if matches!(input_class, 1 | 4) && h != v && (1..=0xFFFF).contains(&h) && (1..=0xFFFF).contains(&v) {
+    let density = if matches!(input_class, 1 | 4)
+        && h != v
+        && (1..=0xFFFF).contains(&h)
+        && (1..=0xFFFF).contains(&v)
+    {
         (h as u16, v as u16)
     } else {
         (1, 1)
     };
-    state.compressed = libheifer::jpeg_encoder::encode(&plane(0), &plane(1), &plane(2), state.quality, density);
+    state.compressed =
+        libheifer::jpeg_encoder::encode(&plane(0), &plane(1), &plane(2), state.quality, density);
     state.read = false;
     OK
 }
-unsafe extern "C" fn compressed_data(p: *mut c_void, data: *mut *mut u8, size: *mut c_int, _: *mut c_int) -> HeifError {
+unsafe extern "C" fn compressed_data(
+    p: *mut c_void,
+    data: *mut *mut u8,
+    size: *mut c_int,
+    _: *mut c_int,
+) -> HeifError {
     let state = unsafe { state(p) };
     unsafe {
         if state.read {

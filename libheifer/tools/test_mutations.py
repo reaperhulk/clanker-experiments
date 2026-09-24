@@ -378,7 +378,7 @@ MUTATIONS = [
     ("jpeg_arith_code_error", "vendor/jpeg-decoder/src/arithmetic.rs", "    fn fail(&mut self) {\n        // JWRN_ARITH_BAD_CODE\n        self.ct = -1;", "    fn fail(&mut self) {\n        // JWRN_ARITH_BAD_CODE\n        self.ct = 0;", "jpeg_errors"),
     ("jpeg_dac_index", "src/jpeg_header.rs", "        } else if marker == 204 {", "        } else if marker == 204 && marker == 0 {", "jpeg_errors"),
     ("jpeg_reserved_marker", "vendor/jpeg-decoder/src/decoder.rs", 'Marker::RES(n) => {\n                    return Err(Error::Format(format!("Unsupported marker type 0x{n:02x}")));', 'Marker::RES(n) => {\n                    return Err(Error::Format(format!("Unsupported marker type 0x{:02x}", n + 1)));', "jpeg_errors"),
-    ("jpeg_encode_quality_scale", "src/jpeg_encoder.rs", "if quality < 50 { 5000 / quality } else { 200 - quality * 2 }", "if quality < 50 { 5000 / quality } else { 201 - quality * 2 }", "jpeg_encoding"),
+    ("jpeg_encode_quality_scale", "src/jpeg_encoder.rs", "        200 - quality * 2\n", "        201 - quality * 2\n", "jpeg_encoding"),
     ("jpeg_encode_reciprocal_rounding", "src/jpeg_encoder.rs", "} else if fr <= u64::from(divisor / 2) {", "} else if fr < u64::from(divisor / 2) {", "jpeg_encoding"),
     ("jpeg_encode_dummy_dc", "src/jpeg_encoder.rs", "            block[0] = *prev;", "            block[0] = 0;", "jpeg_encoding"),
     ("jpeg_encode_flush_padding", "src/jpeg_encoder.rs", "let byte = ((self.buffer << (8 - self.bits)) as u8) | (0xFF >> self.bits);", "let byte = (self.buffer << (8 - self.bits)) as u8;", "jpeg_encoding"),

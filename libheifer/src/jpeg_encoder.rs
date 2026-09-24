@@ -9,20 +9,20 @@
 
 /// Zigzag position to natural (row-major) position.
 const NATURAL_ORDER: [usize; 64] = [
-    0, 1, 8, 16, 9, 2, 3, 10, 17, 24, 32, 25, 18, 11, 4, 5, 12, 19, 26, 33, 40, 48, 41, 34, 27,
-    20, 13, 6, 7, 14, 21, 28, 35, 42, 49, 56, 57, 50, 43, 36, 29, 22, 15, 23, 30, 37, 44, 51, 58,
-    59, 52, 45, 38, 31, 39, 46, 53, 60, 61, 54, 47, 55, 62, 63,
+    0, 1, 8, 16, 9, 2, 3, 10, 17, 24, 32, 25, 18, 11, 4, 5, 12, 19, 26, 33, 40, 48, 41, 34, 27, 20,
+    13, 6, 7, 14, 21, 28, 35, 42, 49, 56, 57, 50, 43, 36, 29, 22, 15, 23, 30, 37, 44, 51, 58, 59,
+    52, 45, 38, 31, 39, 46, 53, 60, 61, 54, 47, 55, 62, 63,
 ];
 
 const STD_LUMINANCE_QUANT: [u32; 64] = [
-    16, 11, 10, 16, 24, 40, 51, 61, 12, 12, 14, 19, 26, 58, 60, 55, 14, 13, 16, 24, 40, 57, 69,
-    56, 14, 17, 22, 29, 51, 87, 80, 62, 18, 22, 37, 56, 68, 109, 103, 77, 24, 35, 55, 64, 81,
-    104, 113, 92, 49, 64, 78, 87, 103, 121, 120, 101, 72, 92, 95, 98, 112, 100, 103, 99,
+    16, 11, 10, 16, 24, 40, 51, 61, 12, 12, 14, 19, 26, 58, 60, 55, 14, 13, 16, 24, 40, 57, 69, 56,
+    14, 17, 22, 29, 51, 87, 80, 62, 18, 22, 37, 56, 68, 109, 103, 77, 24, 35, 55, 64, 81, 104, 113,
+    92, 49, 64, 78, 87, 103, 121, 120, 101, 72, 92, 95, 98, 112, 100, 103, 99,
 ];
 const STD_CHROMINANCE_QUANT: [u32; 64] = [
-    17, 18, 24, 47, 99, 99, 99, 99, 18, 21, 26, 66, 99, 99, 99, 99, 24, 26, 56, 99, 99, 99, 99,
-    99, 47, 66, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99,
-    99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99,
+    17, 18, 24, 47, 99, 99, 99, 99, 18, 21, 26, 66, 99, 99, 99, 99, 24, 26, 56, 99, 99, 99, 99, 99,
+    47, 66, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99,
+    99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99, 99,
 ];
 
 const BITS_DC_LUMINANCE: [u8; 16] = [0, 1, 5, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0];
@@ -30,14 +30,36 @@ const VAL_DC_LUMINANCE: [u8; 12] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
 const BITS_DC_CHROMINANCE: [u8; 16] = [0, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0];
 const VAL_DC_CHROMINANCE: [u8; 12] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
 const BITS_AC_LUMINANCE: [u8; 16] = [0, 2, 1, 3, 3, 2, 4, 3, 5, 5, 4, 4, 0, 0, 1, 125];
-const VAL_AC_LUMINANCE: [u8; 162] = [1, 2, 3, 0, 4, 17, 5, 18, 33, 49, 65, 6, 19, 81, 97, 7, 34, 113, 20, 50, 129, 145, 161, 8, 35, 66, 177, 193, 21, 82, 209, 240, 36, 51, 98, 114, 130, 9, 10, 22, 23, 24, 25, 26, 37, 38, 39, 40, 41, 42, 52, 53, 54, 55, 56, 57, 58, 67, 68, 69, 70, 71, 72, 73, 74, 83, 84, 85, 86, 87, 88, 89, 90, 99, 100, 101, 102, 103, 104, 105, 106, 115, 116, 117, 118, 119, 120, 121, 122, 131, 132, 133, 134, 135, 136, 137, 138, 146, 147, 148, 149, 150, 151, 152, 153, 154, 162, 163, 164, 165, 166, 167, 168, 169, 170, 178, 179, 180, 181, 182, 183, 184, 185, 186, 194, 195, 196, 197, 198, 199, 200, 201, 202, 210, 211, 212, 213, 214, 215, 216, 217, 218, 225, 226, 227, 228, 229, 230, 231, 232, 233, 234, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250];
+const VAL_AC_LUMINANCE: [u8; 162] = [
+    1, 2, 3, 0, 4, 17, 5, 18, 33, 49, 65, 6, 19, 81, 97, 7, 34, 113, 20, 50, 129, 145, 161, 8, 35,
+    66, 177, 193, 21, 82, 209, 240, 36, 51, 98, 114, 130, 9, 10, 22, 23, 24, 25, 26, 37, 38, 39,
+    40, 41, 42, 52, 53, 54, 55, 56, 57, 58, 67, 68, 69, 70, 71, 72, 73, 74, 83, 84, 85, 86, 87, 88,
+    89, 90, 99, 100, 101, 102, 103, 104, 105, 106, 115, 116, 117, 118, 119, 120, 121, 122, 131,
+    132, 133, 134, 135, 136, 137, 138, 146, 147, 148, 149, 150, 151, 152, 153, 154, 162, 163, 164,
+    165, 166, 167, 168, 169, 170, 178, 179, 180, 181, 182, 183, 184, 185, 186, 194, 195, 196, 197,
+    198, 199, 200, 201, 202, 210, 211, 212, 213, 214, 215, 216, 217, 218, 225, 226, 227, 228, 229,
+    230, 231, 232, 233, 234, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250,
+];
 const BITS_AC_CHROMINANCE: [u8; 16] = [0, 2, 1, 2, 4, 4, 3, 4, 7, 5, 4, 4, 0, 1, 2, 119];
-const VAL_AC_CHROMINANCE: [u8; 162] = [0, 1, 2, 3, 17, 4, 5, 33, 49, 6, 18, 65, 81, 7, 97, 113, 19, 34, 50, 129, 8, 20, 66, 145, 161, 177, 193, 9, 35, 51, 82, 240, 21, 98, 114, 209, 10, 22, 36, 52, 225, 37, 241, 23, 24, 25, 26, 38, 39, 40, 41, 42, 53, 54, 55, 56, 57, 58, 67, 68, 69, 70, 71, 72, 73, 74, 83, 84, 85, 86, 87, 88, 89, 90, 99, 100, 101, 102, 103, 104, 105, 106, 115, 116, 117, 118, 119, 120, 121, 122, 130, 131, 132, 133, 134, 135, 136, 137, 138, 146, 147, 148, 149, 150, 151, 152, 153, 154, 162, 163, 164, 165, 166, 167, 168, 169, 170, 178, 179, 180, 181, 182, 183, 184, 185, 186, 194, 195, 196, 197, 198, 199, 200, 201, 202, 210, 211, 212, 213, 214, 215, 216, 217, 218, 226, 227, 228, 229, 230, 231, 232, 233, 234, 242, 243, 244, 245, 246, 247, 248, 249, 250];
+const VAL_AC_CHROMINANCE: [u8; 162] = [
+    0, 1, 2, 3, 17, 4, 5, 33, 49, 6, 18, 65, 81, 7, 97, 113, 19, 34, 50, 129, 8, 20, 66, 145, 161,
+    177, 193, 9, 35, 51, 82, 240, 21, 98, 114, 209, 10, 22, 36, 52, 225, 37, 241, 23, 24, 25, 26,
+    38, 39, 40, 41, 42, 53, 54, 55, 56, 57, 58, 67, 68, 69, 70, 71, 72, 73, 74, 83, 84, 85, 86, 87,
+    88, 89, 90, 99, 100, 101, 102, 103, 104, 105, 106, 115, 116, 117, 118, 119, 120, 121, 122, 130,
+    131, 132, 133, 134, 135, 136, 137, 138, 146, 147, 148, 149, 150, 151, 152, 153, 154, 162, 163,
+    164, 165, 166, 167, 168, 169, 170, 178, 179, 180, 181, 182, 183, 184, 185, 186, 194, 195, 196,
+    197, 198, 199, 200, 201, 202, 210, 211, 212, 213, 214, 215, 216, 217, 218, 226, 227, 228, 229,
+    230, 231, 232, 233, 234, 242, 243, 244, 245, 246, 247, 248, 249, 250,
+];
 
 /// `jpeg_quality_scaling` and `jpeg_add_quant_table` with forced baseline.
 fn quant_table(basic: &[u32; 64], quality: i32) -> [u16; 64] {
     let quality = quality.clamp(1, 100);
-    let scale = if quality < 50 { 5000 / quality } else { 200 - quality * 2 } as i64;
+    let scale = if quality < 50 {
+        5000 / quality
+    } else {
+        200 - quality * 2
+    } as i64;
     let mut table = [0u16; 64];
     for (out, &value) in table.iter_mut().zip(basic) {
         *out = ((i64::from(value) * scale + 50) / 100).clamp(1, 255) as u16;
@@ -244,7 +266,14 @@ struct Samples {
 }
 
 impl Samples {
-    fn new(plane: &[u8], stride: usize, width: usize, height: usize, padded_w: usize, padded_h: usize) -> Self {
+    fn new(
+        plane: &[u8],
+        stride: usize,
+        width: usize,
+        height: usize,
+        padded_w: usize,
+        padded_h: usize,
+    ) -> Self {
         let mut data = vec![0u8; padded_w * padded_h];
         for y in 0..padded_h {
             let row = &plane[y.min(height - 1) * stride..];
@@ -252,11 +281,16 @@ impl Samples {
                 data[y * padded_w + x] = row[x.min(width - 1)];
             }
         }
-        Samples { data, width: padded_w }
+        Samples {
+            data,
+            width: padded_w,
+        }
     }
 
     fn block(&self, bx: usize, by: usize) -> [i32; 64] {
-        std::array::from_fn(|i| i32::from(self.data[(by * 8 + i / 8) * self.width + bx * 8 + i % 8]) - 128)
+        std::array::from_fn(|i| {
+            i32::from(self.data[(by * 8 + i / 8) * self.width + bx * 8 + i % 8]) - 128
+        })
     }
 }
 
@@ -270,9 +304,18 @@ pub struct PlaneRef<'a> {
 
 /// Encodes a 4:2:0 YCbCr image. `density` is the JFIF pixel aspect ratio,
 /// written with density unit 0 (libjpeg's default is 1:1).
-pub fn encode(y: &PlaneRef, cb: &PlaneRef, cr: &PlaneRef, quality: i32, density: (u16, u16)) -> Vec<u8> {
+pub fn encode(
+    y: &PlaneRef,
+    cb: &PlaneRef,
+    cr: &PlaneRef,
+    quality: i32,
+    density: (u16, u16),
+) -> Vec<u8> {
     let (width, height) = (y.width, y.height);
-    let tables = [quant_table(&STD_LUMINANCE_QUANT, quality), quant_table(&STD_CHROMINANCE_QUANT, quality)];
+    let tables = [
+        quant_table(&STD_LUMINANCE_QUANT, quality),
+        quant_table(&STD_CHROMINANCE_QUANT, quality),
+    ];
     let mut out = vec![0xFF, 0xD8];
     // JFIF APP0 1.01
     out.extend_from_slice(&[0xFF, 0xE0, 0, 16, b'J', b'F', b'I', b'F', 0, 1, 1, 0]);
@@ -303,8 +346,14 @@ pub fn encode(y: &PlaneRef, cb: &PlaneRef, cr: &PlaneRef, quality: i32, density:
     }
     out.extend_from_slice(&[0xFF, 0xDA, 0, 12, 3, 1, 0x00, 2, 0x11, 3, 0x11, 0, 63, 0]);
 
-    let dc = [derive(&BITS_DC_LUMINANCE, &VAL_DC_LUMINANCE), derive(&BITS_DC_CHROMINANCE, &VAL_DC_CHROMINANCE)];
-    let ac = [derive(&BITS_AC_LUMINANCE, &VAL_AC_LUMINANCE), derive(&BITS_AC_CHROMINANCE, &VAL_AC_CHROMINANCE)];
+    let dc = [
+        derive(&BITS_DC_LUMINANCE, &VAL_DC_LUMINANCE),
+        derive(&BITS_DC_CHROMINANCE, &VAL_DC_CHROMINANCE),
+    ];
+    let ac = [
+        derive(&BITS_AC_LUMINANCE, &VAL_AC_LUMINANCE),
+        derive(&BITS_AC_CHROMINANCE, &VAL_AC_CHROMINANCE),
+    ];
     let divisors = [Divisors::new(&tables[0]), Divisors::new(&tables[1])];
     let mcus_x = width.div_ceil(16);
     let mcus_y = height.div_ceil(16);
@@ -313,15 +362,32 @@ pub fn encode(y: &PlaneRef, cb: &PlaneRef, cr: &PlaneRef, quality: i32, density:
     let (cw, ch) = (width.div_ceil(2), height.div_ceil(2));
     let luma_blocks = (width.div_ceil(8), height.div_ceil(8));
     let chroma_blocks = (cw.div_ceil(8), ch.div_ceil(8));
-    let luma = Samples::new(y.data, y.stride, width, height, luma_blocks.0 * 8, mcus_y * 16);
+    let luma = Samples::new(
+        y.data,
+        y.stride,
+        width,
+        height,
+        luma_blocks.0 * 8,
+        mcus_y * 16,
+    );
     let chroma = [
         Samples::new(cb.data, cb.stride, cw, ch, chroma_blocks.0 * 8, mcus_y * 8),
         Samples::new(cr.data, cr.stride, cw, ch, chroma_blocks.0 * 8, mcus_y * 8),
     ];
-    let mut writer = BitWriter { out, buffer: 0, bits: 0 };
+    let mut writer = BitWriter {
+        out,
+        buffer: 0,
+        bits: 0,
+    };
     let mut last_dc = [0i32; 3];
     let mut previous = [0i16; 3];
-    let code = |samples: &Samples, bx: usize, by: usize, real: bool, d: &Divisors, prev: &mut i16| -> [i16; 64] {
+    let code = |samples: &Samples,
+                bx: usize,
+                by: usize,
+                real: bool,
+                d: &Divisors,
+                prev: &mut i16|
+     -> [i16; 64] {
         let mut block = [0i16; 64];
         if real {
             let mut workspace = samples.block(bx, by);
