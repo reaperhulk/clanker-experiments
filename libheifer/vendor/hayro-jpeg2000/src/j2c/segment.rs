@@ -89,6 +89,13 @@ fn parse_inner<'a>(
         }
 
         header_reader.align();
+        // opj_bio_inalign: a header whose last byte read is 0xFF is followed
+        // by a stuffed byte.
+        if header_reader.offset() > 0
+            && header_reader.byte_at(header_reader.offset() - 1) == Some(0xFF)
+        {
+            header_reader.skip_bytes(1)?;
+        }
 
         if component_info.coding_style.flags.uses_eph_marker()
             && header_reader.read_marker().ok()? != EPH

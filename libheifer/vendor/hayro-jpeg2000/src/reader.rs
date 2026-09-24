@@ -40,6 +40,11 @@ impl<'a> BitReader<'a> {
     }
 
     #[inline]
+    pub(crate) fn byte_at(&self, offset: usize) -> Option<u8> {
+        self.data.get(offset).copied()
+    }
+
+    #[inline]
     pub(crate) fn len(&self) -> usize {
         self.data.len()
     }

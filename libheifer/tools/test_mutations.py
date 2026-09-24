@@ -16,6 +16,7 @@ import tempfile
 
 MUTATIONS = [
     ('jpeg2000_stuff_bit', 'vendor/hayro-jpeg2000/src/reader.rs', 'its most significant bit is ignored.\n        self.read_bit()?;', 'its most significant bit is ignored.\n        if self.read_bit()? != 0 {\n            return None;\n        }', 'htj2k_errors'),
+    ('jpeg2000_header_trailing_ff', 'vendor/hayro-jpeg2000/src/j2c/segment.rs', 'header_reader.skip_bytes(1)?;', 'header_reader.skip_bytes(0)?;', 'htj2k_errors'),
     ('ht_zero_bitplanes', 'vendor/hayro-jpeg2000/src/j2c/decode.rs', 'code_block.zero_bitplanes.wrapping_add(1)', 'code_block.zero_bitplanes', 'htj2k'),
     ('ht_reversible_halving', 'vendor/hayro-jpeg2000/src/j2c/decode.rs', '(value / 2) as f32', '(value >> 1) as f32', 'htj2k'),
     ('ht_mel_initial_unstuff', 'vendor/hayro-jpeg2000/src/j2c/ht.rs', 'if mel.unstuff && byte(data, mel.pos) > 0x8F {', 'if false && byte(data, mel.pos) > 0x8F {', 'htj2k_errors'),
