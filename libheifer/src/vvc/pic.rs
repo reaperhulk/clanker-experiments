@@ -52,7 +52,11 @@ impl Format {
         if self.chroma == 0 { 1 } else { 3 }
     }
     pub fn scale(&self, comp: usize) -> (u32, u32) {
-        if comp == 0 { (0, 0) } else { (self.sx, self.sy) }
+        if comp == 0 {
+            (0, 0)
+        } else {
+            (self.sx, self.sy)
+        }
     }
     pub fn unit(&self, x: i32, y: i32, w: i32, h: i32) -> UnitArea {
         let mut u = UnitArea::default();
@@ -201,7 +205,12 @@ pub struct Plane {
 
 impl Plane {
     pub fn new(width: usize, height: usize) -> Self {
-        Self { data: vec![0; width * height], stride: width, width, height }
+        Self {
+            data: vec![0; width * height],
+            stride: width,
+            width,
+            height,
+        }
     }
     #[inline]
     pub fn at(&self, x: i32, y: i32) -> i16 {
@@ -293,7 +302,14 @@ impl Picture {
             map_w,
             map_h,
             ctus: vec![
-                CtuData { slice: None, tile: 0, sao: [SaoParam::default(); 3], alf: AlfCtu::default(), num_cus: 0, num_tus: 0 };
+                CtuData {
+                    slice: None,
+                    tile: 0,
+                    sao: [SaoParam::default(); 3],
+                    alf: AlfCtu::default(),
+                    num_cus: 0,
+                    num_tus: 0
+                };
                 n
             ],
             ibc_hist: Vec::new(),
@@ -314,13 +330,21 @@ impl Picture {
         if !self.chan_area(ch).contains(x, y) {
             return None;
         }
-        let (lx, ly) = if ch == 0 { (x, y) } else { (x << self.fmt.sx, y << self.fmt.sy) };
+        let (lx, ly) = if ch == 0 {
+            (x, y)
+        } else {
+            (x << self.fmt.sx, y << self.fmt.sy)
+        };
         let idx = self.cu_map[ch][(ly >> 2) as usize * self.map_w + (lx >> 2) as usize];
         if idx == NONE { None } else { Some(idx) }
     }
 
     pub fn ctu_addr_of(&self, x: i32, y: i32, ch: usize) -> u32 {
-        let (lx, ly) = if ch == 0 { (x, y) } else { (x << self.fmt.sx, y << self.fmt.sy) };
+        let (lx, ly) = if ch == 0 {
+            (x, y)
+        } else {
+            (x << self.fmt.sx, y << self.fmt.sy)
+        };
         (ly >> self.ctu_log2) as u32 * self.width_ctus + (lx >> self.ctu_log2) as u32
     }
 
@@ -349,11 +373,23 @@ impl Picture {
         }
         let cu = self.get_cu(x, y, ch)?;
         let c = &self.cus[cu as usize];
-        if c.slice == slice && c.tile == tile { Some(cu) } else { None }
+        if c.slice == slice && c.tile == tile {
+            Some(cu)
+        } else {
+            None
+        }
     }
 
     /// CU-based `getCURestricted` with vvdec's `guess` shortcut.
-    pub fn get_cu_restricted(&self, x: i32, y: i32, cur: u32, ch: usize, guess: Option<u32>, wpp: bool) -> Option<u32> {
+    pub fn get_cu_restricted(
+        &self,
+        x: i32,
+        y: i32,
+        cur: u32,
+        ch: usize,
+        guess: Option<u32>,
+        wpp: bool,
+    ) -> Option<u32> {
         if let Some(g) = guess
             && self.cus[g as usize].blk[ch].contains(x, y)
         {
@@ -383,7 +419,11 @@ impl Picture {
             }
             return Some(f);
         }
-        if fc.slice == c.slice && fc.tile == c.tile { Some(f) } else { None }
+        if fc.slice == c.slice && fc.tile == c.tile {
+            Some(f)
+        } else {
+            None
+        }
     }
 
     /// The TU of `cu` covering a position (vvdec's `getTU`).

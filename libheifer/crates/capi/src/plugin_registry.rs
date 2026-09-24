@@ -92,6 +92,10 @@ impl Registry {
         self.decoders.push(Arc::new(DecoderRecord {
             source: DecoderSource::Builtin(1),
         }));
+        #[cfg(feature = "vvc")]
+        self.decoders.push(Arc::new(DecoderRecord {
+            source: DecoderSource::Builtin(5),
+        }));
         self.decoders.sort_by_key(|d| registry_order(&d.source));
         self.encoders
             .sort_by_key(|d| std::cmp::Reverse(d.source.priority()));
@@ -380,6 +384,7 @@ impl DecoderSource {
             Self::Builtin(2) => c"rusty_h264".as_ptr(),
             Self::Builtin(3) => c"jpeg-decoder".as_ptr(),
             Self::Builtin(4) => c"rav1d".as_ptr(),
+            Self::Builtin(5) => c"libheifer VVC decoder".as_ptr(),
             Self::Builtin(_) => c"rusty_h265".as_ptr(),
             Self::External(p) => field!(p, get_plugin_name).map_or(ptr::null(), |f| unsafe { f() }),
         }
@@ -391,6 +396,7 @@ impl DecoderSource {
             Self::Builtin(2) => c"rusty_h264".as_ptr(),
             Self::Builtin(3) => c"jpeg-decoder".as_ptr(),
             Self::Builtin(4) => c"rav1d".as_ptr(),
+            Self::Builtin(5) => c"libheifer-vvc".as_ptr(),
             Self::Builtin(_) => c"rusty_h265".as_ptr(),
             Self::External(p) => {
                 if field!(p, plugin_api_version) < 3 {
@@ -484,6 +490,12 @@ unsafe extern "C" fn builtin_name_2() -> *const c_char {
 unsafe extern "C" fn builtin_name_4() -> *const c_char {
     DecoderSource::Builtin(4).name()
 }
+unsafe extern "C" fn builtin_name_5() -> *const c_char {
+    DecoderSource::Builtin(5).name()
+}
+unsafe extern "C" fn builtin_priority_5(format: c_int) -> c_int {
+    DecoderSource::Builtin(5).priority(format)
+}
 unsafe extern "C" fn builtin_name_1() -> *const c_char {
     DecoderSource::Builtin(1).name()
 }
@@ -558,8 +570,14 @@ static HEVC_DECODER: StaticDecoder = StaticDecoder(builtin_record(
     builtin_priority_1,
     c"rusty_h265",
 ));
+static VVC_DECODER: StaticDecoder = StaticDecoder(builtin_record(
+    builtin_name_5,
+    builtin_priority_5,
+    c"libheifer-vvc",
+));
 fn builtin_decoder(format: c_int) -> *const DecoderPlugin {
     match format {
+        5 => &VVC_DECODER.0,
         8 => &UNCOMPRESSED_DECODER.0,
         7 => &JPEG2000_DECODER.0,
         3 => &JPEG_DECODER.0,

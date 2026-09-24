@@ -4,7 +4,7 @@
 //! LMCS chroma residual scaling, following vvdec's `DecCu`,
 //! `IntraPrediction`, `TrQuant` and `Quant`.
 use super::Error;
-use super::ctu::{SliceInfo, grouped_scan_cached, isp_split_dim, mip_size_id};
+use super::ctu::{SliceInfo, grouped_scan_cached, mip_size_id};
 use super::pic::*;
 use super::tables::*;
 
@@ -17,13 +17,10 @@ pub struct Lmcs {
     pub inv_scale: [i32; 16],
     pub chroma_adj: [i32; 16],
     pub inv_lut: Vec<i16>,
-    pub init_cw: i32,
-    pub bit_depth: u32,
-    pub chroma_scale_enabled: bool,
 }
 
 impl Lmcs {
-    pub fn new(p: &super::ps::LmcsParam, bit_depth: u32, chroma_scale: bool) -> Result<Self, Error> {
+    pub fn new(p: &super::ps::LmcsParam, bit_depth: u32) -> Result<Self, Error> {
         let lut_size = 1i32 << bit_depth;
         let init_cw = lut_size / 16;
         let mut bin_cw = [0i32; 16];
@@ -31,9 +28,15 @@ impl Lmcs {
             bin_cw[i] = (p.bin_cw_delta[i] + init_cw) as u16 as i32;
         }
         let mut sum = 0u32;
-        for &cw in bin_cw.iter().take(p.max_bin as usize + 1).skip(p.min_bin as usize) {
+        for &cw in bin_cw
+            .iter()
+            .take(p.max_bin as usize + 1)
+            .skip(p.min_bin as usize)
+        {
             if cw < init_cw >> 3 || cw > (init_cw << 3) - 1 {
-                return Err(Error::Invalid("The value of lmcsCW[ i ] shall be in the range of OrgCW >> 3 to ( OrgCW << 3 ) - 1, inclusive."));
+                return Err(Error::Invalid(
+                    "The value of lmcsCW[ i ] shall be in the range of OrgCW >> 3 to ( OrgCW << 3 ) - 1, inclusive.",
+                ));
             }
             let c = cw + p.chroma_offset;
             if c < init_cw >> 3 || c > (init_cw << 3) - 1 {
@@ -42,7 +45,9 @@ impl Lmcs {
             sum += cw as u32;
         }
         if sum > (1u32 << bit_depth) - 1 {
-            return Err(Error::Invalid("sum( lmcsCW ) exceeds ( 1 << BitDepth ) - 1"));
+            return Err(Error::Invalid(
+                "sum( lmcsCW ) exceeds ( 1 << BitDepth ) - 1",
+            ));
         }
         let mut l = Self {
             min_bin: p.min_bin as usize,
@@ -53,9 +58,6 @@ impl Lmcs {
             inv_scale: [1 << 11; 16],
             chroma_adj: [1 << 11; 16],
             inv_lut: vec![0; lut_size as usize + 1],
-            init_cw,
-            bit_depth,
-            chroma_scale_enabled: chroma_scale,
         };
         let bin_len_log2 = 31 - ((lut_size / 16) as u32).leading_zeros();
         for i in 0..16 {
@@ -71,13 +73,16 @@ impl Lmcs {
             }
         }
         for i in l.min_bin..=l.max_bin {
-            if l.pivot[i] % (1 << (bit_depth - 5)) != 0 && (l.pivot[i] >> (bit_depth - 5)) == (l.pivot[i + 1] >> (bit_depth - 5)) {
+            if l.pivot[i] % (1 << (bit_depth - 5)) != 0
+                && (l.pivot[i] >> (bit_depth - 5)) == (l.pivot[i + 1] >> (bit_depth - 5))
+            {
                 return Err(Error::Invalid("LmcsPivot constraint"));
             }
         }
         for s in 0..lut_size {
             let idx = l.pwl_idx_inv(s);
-            let inv = l.input_pivot[idx] + ((l.inv_scale[idx] * (s - l.pivot[idx]) + (1 << 10)) >> 11);
+            let inv =
+                l.input_pivot[idx] + ((l.inv_scale[idx] * (s - l.pivot[idx]) + (1 << 10)) >> 11);
             l.inv_lut[s as usize] = inv.clamp(0, lut_size - 1) as i16;
         }
         Ok(l)
@@ -113,20 +118,37 @@ const SCALING_LIST_ID: [[usize; 6]; 7] = [
 ];
 
 /// vvdec's `processScalingListDec` (after its buffer is cleared).
-fn process_scaling_list(coeff: &[i32], out: &mut [i32], height: usize, width: usize, ratio: usize, size_num: usize, dc: i32) {
+fn process_scaling_list(
+    coeff: &[i32],
+    out: &mut [i32],
+    height: usize,
+    width: usize,
+    ratio: usize,
+    size_num: usize,
+    dc: i32,
+) {
     let l2 = |v: usize| v.trailing_zeros() as i32;
     let loop_h = height.min(32);
     let loop_w = width.min(32);
     if height != width {
         let (hl2, wl2, sl2) = (l2(height), l2(width), l2(size_num));
         let ratio_wh = if height > width { hl2 - wl2 } else { wl2 - hl2 };
-        let ratio_h = if height / size_num != 0 { hl2 - sl2 } else { sl2 - hl2 };
-        let ratio_w = if width / size_num != 0 { wl2 - sl2 } else { sl2 - wl2 };
+        let ratio_h = if height / size_num != 0 {
+            hl2 - sl2
+        } else {
+            sl2 - hl2
+        };
+        let ratio_w = if width / size_num != 0 {
+            wl2 - sl2
+        } else {
+            sl2 - wl2
+        };
         if height > width {
             let mut j = 0;
             while j < loop_h {
                 for i in 0..loop_w {
-                    out[j * width + i] = coeff[size_num * (j >> ratio_h) + ((i << ratio_wh) >> ratio_h)];
+                    out[j * width + i] =
+                        coeff[size_num * (j >> ratio_h) + ((i << ratio_wh) >> ratio_h)];
                 }
                 for jj in 1..(1usize << ratio_h) {
                     for i in 0..loop_w {
@@ -178,7 +200,9 @@ fn process_scaling_list(coeff: &[i32], out: &mut [i32], height: usize, width: us
 impl ScalingMatrices {
     /// vvdec's `Quant::setScalingListDec`.
     pub fn new(list: &crate::vvc::ps::ScalingList) -> Self {
-        let mut coef: Vec<Vec<i32>> = (0..6 * 49).map(|i| vec![0; 1 << ((i / 7) % 7 + i % 7)]).collect();
+        let mut coef: Vec<Vec<i32>> = (0..6 * 49)
+            .map(|i| vec![0; 1 << ((i / 7) % 7 + i % 7)])
+            .collect();
         let idx = |l: usize, w: usize, h: usize| (l * 7 + w) * 7 + h;
         for size in 1..7usize {
             for l in 0..6 {
@@ -188,7 +212,15 @@ impl ScalingMatrices {
                 let id = SCALING_LIST_ID[size][l];
                 let n = 1usize << size;
                 let size_num = n.min(8);
-                process_scaling_list(&list.coef[id], &mut coef[idx(l, size, size)], n, n, n / size_num, size_num, list.dc[id]);
+                process_scaling_list(
+                    &list.coef[id],
+                    &mut coef[idx(l, size, size)],
+                    n,
+                    n,
+                    n / size_num,
+                    size_num,
+                    list.dc[id],
+                );
             }
         }
         for sw in 0..7usize {
@@ -199,7 +231,15 @@ impl ScalingMatrices {
                 for l in 0..6 {
                     let large = sw.max(sh);
                     let id = SCALING_LIST_ID[large][l];
-                    process_scaling_list(&list.coef[id], &mut coef[idx(l, sw, sh)], 1 << sh, 1 << sw, if large > 3 { 2 } else { 1 }, if large >= 3 { 8 } else { 4 }, list.dc[id]);
+                    process_scaling_list(
+                        &list.coef[id],
+                        &mut coef[idx(l, sw, sh)],
+                        1 << sh,
+                        1 << sw,
+                        if large > 3 { 2 } else { 1 },
+                        if large >= 3 { 8 } else { 4 },
+                        list.dc[id],
+                    );
                 }
             }
         }
@@ -226,7 +266,11 @@ struct RefBuf {
 
 impl RefBuf {
     fn new(stride: usize, rows: usize) -> Self {
-        Self { data: vec![0; stride * rows + 1], stride, off: 0 }
+        Self {
+            data: vec![0; stride * rows + 1],
+            stride,
+            off: 0,
+        }
     }
     #[inline]
     fn at(&self, x: usize, y: usize) -> i32 {
@@ -252,8 +296,6 @@ struct Ctx<'p, 's> {
     filtered: RefBuf,
     isp_base: [RefBuf; 2],
     luma_pred: Vec<i32>,
-    chroma_pred: Vec<i32>,
-    lm_temp: Vec<i32>,
     lm_stride: usize,
 }
 
@@ -275,7 +317,8 @@ fn co_located_luma_cu(pic: &Picture, si: &SliceInfo, cu_id: u32) -> u32 {
     let b = c.blk[ch];
     let (lx, ly) = (b.x << sx, b.y << sy);
     let (lw, lh) = (b.w << sx, b.h << sy);
-    pic.get_cu(lx + (lw >> 1), ly + (lh >> 1), 0).unwrap_or(cu_id)
+    pic.get_cu(lx + (lw >> 1), ly + (lh >> 1), 0)
+        .unwrap_or(cu_id)
 }
 
 pub fn co_located_intra_luma_mode(pic: &Picture, si: &SliceInfo, cu_id: u32) -> u8 {
@@ -308,7 +351,14 @@ fn get_wide_angle(w: i32, h: i32, mode: i32) -> i32 {
     mode
 }
 
-fn use_filtered_ref(pic: &Picture, si: &SliceInfo, cu: &Cu, cu_id: u32, comp: usize, area: Area) -> bool {
+fn use_filtered_ref(
+    pic: &Picture,
+    si: &SliceInfo,
+    cu: &Cu,
+    cu_id: u32,
+    comp: usize,
+    area: Area,
+) -> bool {
     let ch = if comp == 0 { 0 } else { 1 };
     if cu.mrl != 0 || cu.bdpcm[0] != 0 {
         return false;
@@ -323,7 +373,11 @@ fn use_filtered_ref(pic: &Picture, si: &SliceInfo, cu: &Cu, cu_id: u32, comp: us
     let pred = get_wide_angle(area.w, area.h, dir);
     let diff = (pred - HOR as i32).abs().min((pred - VER as i32).abs());
     let log2_size = ((log2(area.w) + log2(area.h)) >> 1) as usize;
-    let ang_mode = if pred >= DIA as i32 { pred - VER as i32 } else { -(pred - HOR as i32) };
+    let ang_mode = if pred >= DIA as i32 {
+        pred - VER as i32
+    } else {
+        -(pred - HOR as i32)
+    };
     let abs_ang = ANG_TABLE[ang_mode.unsigned_abs() as usize];
     diff > INTRA_FILTER[ch][log2_size] && (abs_ang & 0x1f) == 0
 }
@@ -342,10 +396,17 @@ impl<'p, 's> Ctx<'p, 's> {
         let mut dx = 0;
         while dx < max_dx {
             let guess = if first { self.cu.above } else { None };
-            let Some(a) = self.pic.get_cu_restricted(rx, ry, self.cu_id, ch, guess, self.wpp) else { break };
+            let Some(a) = self
+                .pic
+                .get_cu_restricted(rx, ry, self.cu_id, ch, guess, self.wpp)
+            else {
+                break;
+            };
             first = false;
             let t = self.pic.get_tu(a, rx, ry, ch);
-            if self.pic.cus[a as usize].ctu == self.cu.ctu && self.pic.tus[t as usize].idx >= cur_idx {
+            if self.pic.cus[a as usize].ctu == self.cu.ctu
+                && self.pic.tus[t as usize].idx >= cur_idx
+            {
                 break;
             }
             let b = self.pic.tus[t as usize].blk[ch];
@@ -364,10 +425,17 @@ impl<'p, 's> Ctx<'p, 's> {
         let mut dy = 0;
         while dy < max_dy {
             let guess = if first { self.cu.left } else { None };
-            let Some(l) = self.pic.get_cu_restricted(rx, ry, self.cu_id, ch, guess, self.wpp) else { break };
+            let Some(l) = self
+                .pic
+                .get_cu_restricted(rx, ry, self.cu_id, ch, guess, self.wpp)
+            else {
+                break;
+            };
             first = false;
             let t = self.pic.get_tu(l, rx, ry, ch);
-            if self.pic.cus[l as usize].ctu == self.cu.ctu && self.pic.tus[t as usize].idx >= cur_idx {
+            if self.pic.cus[l as usize].ctu == self.cu.ctu
+                && self.pic.tus[t as usize].idx >= cur_idx
+            {
                 break;
             }
             let b = self.pic.tus[t as usize].blk[ch];
@@ -400,8 +468,16 @@ impl<'p, 's> Ctx<'p, 's> {
         let n0 = if same_ctu {
             1
         } else {
-            let guess = if self.cu.left.is_some() { self.cu.left } else { self.cu.above };
-            i32::from(self.pic.get_cu_restricted(area.x - 1, area.y - 1, self.cu_id, ch, guess, self.wpp).is_some())
+            let guess = if self.cu.left.is_some() {
+                self.cu.left
+            } else {
+                self.cu.above
+            };
+            i32::from(
+                self.pic
+                    .get_cu_restricted(area.x - 1, area.y - 1, self.cu_id, ch, guess, self.wpp)
+                    .is_some(),
+            )
         };
         let cb = self.cu.blk[ch];
         let n1 = if self.cu.above.is_some() || area.y > cb.y {
@@ -532,11 +608,33 @@ impl<'p, 's> Ctx<'p, 's> {
         let cb = cu.blk[0];
         let left_avail = self
             .pic
-            .get_cu_restricted(area.x - 1, area.y, self.cu_id, 0, if area.x == cb.x { cu.left } else { Some(self.cu_id) }, self.wpp)
+            .get_cu_restricted(
+                area.x - 1,
+                area.y,
+                self.cu_id,
+                0,
+                if area.x == cb.x {
+                    cu.left
+                } else {
+                    Some(self.cu_id)
+                },
+                self.wpp,
+            )
             .is_some();
         let above_avail = self
             .pic
-            .get_cu_restricted(area.x, area.y - 1, self.cu_id, 0, if area.y == cb.y { cu.left } else { Some(self.cu_id) }, self.wpp)
+            .get_cu_restricted(
+                area.x,
+                area.y - 1,
+                self.cu_id,
+                0,
+                if area.y == cb.y {
+                    cu.left
+                } else {
+                    Some(self.cu_id)
+                },
+                self.wpp,
+            )
             .is_some();
         if cb.x == area.x && cb.y == area.y {
             if cu.isp == HOR_ISP {
@@ -617,11 +715,19 @@ impl<'p, 's> Ctx<'p, 's> {
         let use_isp = cu.isp != NOT_ISP && comp == 0;
         let max = (1i32 << self.pic.bit_depth) - 1;
         let mut do_pdpc = w >= 4 && h >= 4 && mrl == 0;
-        let src = if use_filtered { &self.filtered } else { &self.unfiltered };
+        let src = if use_filtered {
+            &self.filtered
+        } else {
+            &self.unfiltered
+        };
         if bd != 0 {
             for y in 0..h {
                 for x in 0..w {
-                    dst[(y * w + x) as usize] = if bd == 1 { src.at(0, (y + 1) as usize) } else { src.at((x + 1) as usize, 0) };
+                    dst[(y * w + x) as usize] = if bd == 1 {
+                        src.at(0, (y + 1) as usize)
+                    } else {
+                        src.at((x + 1) as usize, 0)
+                    };
                 }
             }
             return;
@@ -632,7 +738,19 @@ impl<'p, 's> Ctx<'p, 's> {
                 let v = pred_dc(src, w, h, mrl);
                 dst[..(w * h) as usize].fill(v);
             }
-            _ => self.pred_angular(src, dst, w, h, ch, dir as i32, max, mrl, &mut do_pdpc, use_isp, cu_size),
+            _ => self.pred_angular(
+                src,
+                dst,
+                w,
+                h,
+                ch,
+                dir as i32,
+                max,
+                mrl,
+                &mut do_pdpc,
+                use_isp,
+                cu_size,
+            ),
         }
         if do_pdpc && (dir == PLANAR || dir == DC) {
             let scale = (log2(w) - 2 + log2(h) - 2 + 2) >> 2;
@@ -645,7 +763,8 @@ impl<'p, 's> Ctx<'p, 's> {
                     let i = (y * w + x) as usize;
                     let val = dst[i];
                     // Pel arithmetic in vvdec (int16 storage)
-                    dst[i] = (val + ((wl * (left - val) + wt * (top - val) + 32) >> 6)) as i16 as i32;
+                    dst[i] =
+                        (val + ((wl * (left - val) + wt * (top - val) + 32) >> 6)) as i16 as i32;
                 }
             }
         }
@@ -667,9 +786,17 @@ impl<'p, 's> Ctx<'p, 's> {
         cu_size: (i32, i32),
     ) {
         let (mut width, mut height) = (w0, h0);
-        let pred_mode = if use_isp { get_wide_angle(cu_size.0, cu_size.1, dir) } else { get_wide_angle(width, height, dir) };
+        let pred_mode = if use_isp {
+            get_wide_angle(cu_size.0, cu_size.1, dir)
+        } else {
+            get_wide_angle(width, height, dir)
+        };
         let is_ver = pred_mode >= DIA as i32;
-        let ang_mode = if is_ver { pred_mode - VER as i32 } else { -(pred_mode - HOR as i32) };
+        let ang_mode = if is_ver {
+            pred_mode - VER as i32
+        } else {
+            -(pred_mode - HOR as i32)
+        };
         let abs_ang_mode = ang_mode.unsigned_abs() as usize;
         let sign = if ang_mode < 0 { -1 } else { 1 };
         let inv_angle = INV_ANG_TABLE[abs_ang_mode];
@@ -700,7 +827,11 @@ impl<'p, 's> Ctx<'p, 's> {
             let size_side = if is_ver { height } else { width };
             for k in -size_side..=-1 {
                 let si = ((-k * inv_angle + 256) >> 9).min(size_side);
-                let v = if main_is_above { ref_left[side_off + si as usize] } else { ref_above[side_off + si as usize] };
+                let v = if main_is_above {
+                    ref_left[side_off + si as usize]
+                } else {
+                    ref_above[side_off + si as usize]
+                };
                 let idx = (main_off as i32 + k) as usize;
                 if main_is_above {
                     ref_above[idx] = v;
@@ -721,14 +852,27 @@ impl<'p, 's> Ctx<'p, 's> {
             let s = 0.max(if is_ver { log2_ratio } else { -log2_ratio });
             let max_index = (mrl << s) + 2;
             let ref_len = if is_ver { top_len } else { left_len };
-            let main = if is_ver { &mut ref_above } else { &mut ref_left };
+            let main = if is_ver {
+                &mut ref_above
+            } else {
+                &mut ref_left
+            };
             let val = main[(ref_len + mrl) as usize];
             for z in 1..=max_index {
                 main[(ref_len + mrl + z) as usize] = val;
             }
         }
-        let (ref_main, ref_side): (&[i32], &[i32]) =
-            if is_ver { (&ref_above[main_off + mrl as usize..], &ref_left[side_off + mrl as usize..]) } else { (&ref_left[main_off + mrl as usize..], &ref_above[side_off + mrl as usize..]) };
+        let (ref_main, ref_side): (&[i32], &[i32]) = if is_ver {
+            (
+                &ref_above[main_off + mrl as usize..],
+                &ref_left[side_off + mrl as usize..],
+            )
+        } else {
+            (
+                &ref_left[main_off + mrl as usize..],
+                &ref_above[side_off + mrl as usize..],
+            )
+        };
         // For negative angles refMain is accessed at negative indices;
         // index through a helper with the original base.
         let main_base = main_off + mrl as usize;
@@ -749,7 +893,8 @@ impl<'p, 's> Ctx<'p, 's> {
                     let left = ref_side[(y + 1) as usize];
                     for x in 0..lev[scale as usize] {
                         let wl = 32 >> 31.min((x << 1) >> scale);
-                        tmp[(y * width + x) as usize] = clip((wl * (left - top_left) + rm(x + 1) * 64 + 32) >> 6);
+                        tmp[(y * width + x) as usize] =
+                            clip((wl * (left - top_left) + rm(x + 1) * 64 + 32) >> 6);
                     }
                     for x in lev[scale as usize]..width {
                         tmp[(y * width + x) as usize] = rm(x + 1);
@@ -766,7 +911,9 @@ impl<'p, 's> Ctx<'p, 's> {
             if (abs_ang & 0x1f) != 0 {
                 let mut delta_pos = angle * (1 + mrl);
                 if ch == 0 {
-                    let diff = (pred_mode - HOR as i32).abs().min((pred_mode - VER as i32).abs());
+                    let diff = (pred_mode - HOR as i32)
+                        .abs()
+                        .min((pred_mode - VER as i32).abs());
                     let log2_size = ((log2(width) + log2(height)) >> 1) as usize;
                     let filter_flag = diff > INTRA_FILTER[ch][log2_size];
                     let mut interp = false;
@@ -778,10 +925,19 @@ impl<'p, 's> Ctx<'p, 's> {
                     for y in 0..height {
                         let d_int = delta_pos >> 5;
                         let d_frac = (delta_pos & 31) as usize;
-                        let f = if cubic { &CUBIC_FILTER[d_frac] } else { &GAUSS_FILTER[d_frac] };
+                        let f = if cubic {
+                            &CUBIC_FILTER[d_frac]
+                        } else {
+                            &GAUSS_FILTER[d_frac]
+                        };
                         let mut idx = d_int + 1;
                         for x in 0..width {
-                            let v = (f[0] * rm(idx - 1) + f[1] * rm(idx) + f[2] * rm(idx + 1) + f[3] * rm(idx + 2) + 32) >> 6;
+                            let v = (f[0] * rm(idx - 1)
+                                + f[1] * rm(idx)
+                                + f[2] * rm(idx + 1)
+                                + f[3] * rm(idx + 2)
+                                + 32)
+                                >> 6;
                             tmp[(y * width + x) as usize] = if cubic { clip(v) } else { v };
                             idx += 1;
                         }
@@ -794,7 +950,8 @@ impl<'p, 's> Ctx<'p, 's> {
                         let mut last = rm(d_int + 1);
                         for x in 0..width {
                             let this = rm(d_int + 2 + x);
-                            tmp[(y * width + x) as usize] = ((32 - d_frac) * last + d_frac * this + 16) >> 5;
+                            tmp[(y * width + x) as usize] =
+                                ((32 - d_frac) * last + d_frac * this + 16) >> 5;
                             last = this;
                         }
                         delta_pos += angle;
@@ -911,7 +1068,10 @@ pub fn reconstruct_cu(pic: &mut Picture, si: &SliceInfo, cu_id: u32) -> Result<(
                 let mut out = Vec::with_capacity((b.w * b.h) as usize);
                 for y in 0..b.h {
                     for x in 0..b.w {
-                        let (px, py) = ((rx + x).clamp(0, p.width as i32 - 1), (ry + y).clamp(0, p.height as i32 - 1));
+                        let (px, py) = (
+                            (rx + x).clamp(0, p.width as i32 - 1),
+                            (ry + y).clamp(0, p.height as i32 - 1),
+                        );
                         out.push(i32::from(p.at(px, py)));
                     }
                 }
@@ -935,8 +1095,6 @@ pub fn reconstruct_cu(pic: &mut Picture, si: &SliceInfo, cu_id: u32) -> Result<(
         filtered: RefBuf::new(1, 1),
         isp_base: [RefBuf::new(1, 1), RefBuf::new(1, 1)],
         luma_pred: vec![0; lw * lh],
-        chroma_pred: vec![0; 64 * 64 * 4],
-        lm_temp: vec![0; 4 * 129 * 129],
         lm_stride: 0,
     };
     let num_comp = ctx.pic.fmt.num_comp();
@@ -977,19 +1135,31 @@ pub fn reconstruct_cu(pic: &mut Picture, si: &SliceInfo, cu_id: u32) -> Result<(
                 let src = &ibc_pred[comp];
                 for y in 0..h {
                     for x in 0..w {
-                        pred[(y * w + x) as usize] = src[((area.y - b.y + y) * b.w + area.x - b.x + x) as usize];
+                        pred[(y * w + x) as usize] =
+                            src[((area.y - b.y + y) * b.w + area.x - b.x + x) as usize];
                     }
                 }
-            } else if if ch == 0 { cu.mip } else { is_dm_chroma_mip(ctx.pic, si, cu_id) && cu.intra_dir[1] == DM_CHROMA } {
+            } else if if ch == 0 {
+                cu.mip
+            } else {
+                is_dm_chroma_mip(ctx.pic, si, cu_id) && cu.intra_dir[1] == DM_CHROMA
+            } {
                 ctx.init_pattern(t, comp, area, false);
                 pred_mip(&ctx, comp, &mut pred, w, h, bd)?;
-            } else if comp != 0 && (LM_CHROMA..=MDLM_T).contains(&final_intra_mode(ctx.pic, si, &cu, cu_id, ch)) {
+            } else if comp != 0
+                && (LM_CHROMA..=MDLM_T).contains(&final_intra_mode(ctx.pic, si, &cu, cu_id, ch))
+            {
                 ctx.init_pattern(t, comp, area, false);
                 pred_lm(&mut ctx, comp, t, area, cu.intra_dir[1], &mut pred)?;
             } else {
-                let pred_reg_diff = comp == 0 && cu.isp == VER_ISP && ((cu.blk[0].w == 8 && cu.blk[0].h > 4) || cu.blk[0].w == 4);
-                let first_in_reg = comp == 0 && cu.isp != NOT_ISP && (area.x - cu.blk[0].x) % 4 == 0;
-                let use_filtered = comp == 0 && cu.isp == NOT_ISP && use_filtered_ref(ctx.pic, si, &cu, cu_id, comp, area);
+                let pred_reg_diff = comp == 0
+                    && cu.isp == VER_ISP
+                    && ((cu.blk[0].w == 8 && cu.blk[0].h > 4) || cu.blk[0].w == 4);
+                let first_in_reg =
+                    comp == 0 && cu.isp != NOT_ISP && (area.x - cu.blk[0].x) % 4 == 0;
+                let use_filtered = comp == 0
+                    && cu.isp == NOT_ISP
+                    && use_filtered_ref(ctx.pic, si, &cu, cu_id, comp, area);
                 let mut reg = area;
                 if cu.isp != NOT_ISP && comp == 0 {
                     if pred_reg_diff {
@@ -1008,7 +1178,10 @@ pub fn reconstruct_cu(pic: &mut Picture, si: &SliceInfo, cu_id: u32) -> Result<(
                         let mut p = vec![0i32; (reg.w * reg.h) as usize];
                         ctx.pred_intra_ang(comp, &mut p, reg.w, reg.h, use_filtered);
                         // store into the CU luma prediction buffer
-                        let (ox, oy) = ((reg.x - cu.blk[0].x) as usize, (reg.y - cu.blk[0].y) as usize);
+                        let (ox, oy) = (
+                            (reg.x - cu.blk[0].x) as usize,
+                            (reg.y - cu.blk[0].y) as usize,
+                        );
                         for y in 0..reg.h as usize {
                             for x in 0..reg.w as usize {
                                 ctx.luma_pred[(oy + y) * lw + ox + x] = p[y * reg.w as usize + x];
@@ -1021,7 +1194,10 @@ pub fn reconstruct_cu(pic: &mut Picture, si: &SliceInfo, cu_id: u32) -> Result<(
                 }
             }
             if use_region_pred {
-                let (ox, oy) = ((area.x - cu.blk[0].x) as usize, (area.y - cu.blk[0].y) as usize);
+                let (ox, oy) = (
+                    (area.x - cu.blk[0].x) as usize,
+                    (area.y - cu.blk[0].y) as usize,
+                );
                 for y in 0..h as usize {
                     for x in 0..w as usize {
                         pred[y * w as usize + x] = ctx.luma_pred[(oy + y) * lw + ox + x];
@@ -1057,11 +1233,17 @@ pub fn reconstruct_cu(pic: &mut Picture, si: &SliceInfo, cu_id: u32) -> Result<(
             }
             let plane = &mut ctx.pic.planes[comp];
             if has_resi {
-                let r = resi[comp].as_ref().ok_or(Error::Invalid("missing residual"))?;
+                let r = resi[comp]
+                    .as_ref()
+                    .ok_or(Error::Invalid("missing residual"))?;
                 for y in 0..h {
                     for x in 0..w {
                         let i = (y * w + x) as usize;
-                        plane.set(area.x + x, area.y + y, (pred[i] + r[i]).clamp(0, max) as i16);
+                        plane.set(
+                            area.x + x,
+                            area.y + y,
+                            (pred[i] + r[i]).clamp(0, max) as i16,
+                        );
                     }
                 }
             } else {
@@ -1091,7 +1273,11 @@ fn act_convert(resi: &mut [Option<Vec<i32>>; 3], tu: &Tu, bd: u32) {
     }
     let m = (1i32 << (bd + 1)) - 1;
     let [r0, r1, r2] = resi;
-    let (r0, r1, r2) = (r0.as_mut().unwrap(), r1.as_mut().unwrap(), r2.as_mut().unwrap());
+    let (r0, r1, r2) = (
+        r0.as_mut().unwrap(),
+        r1.as_mut().unwrap(),
+        r2.as_mut().unwrap(),
+    );
     for i in 0..n {
         let y0 = r0[i].clamp(-m - 1, m);
         let cg = r1[i].clamp(-m - 1, m);
@@ -1117,24 +1303,48 @@ fn chroma_scale(ctx: &Ctx, lmcs: &Lmcs, x: i32, y: i32) -> i32 {
         xp &= !(ctu_size - 1);
         yp &= !(ctu_size - 1);
     }
-    let Some(tl) = pic.get_cu(xp, yp, 0) else { return 1 << 11 };
+    let Some(tl) = pic.get_cu(xp, yp, 0) else {
+        return 1 << 11;
+    };
     let tlc = &pic.cus[tl as usize];
-    let above = pic.get_cu_restricted(tlc.lx(), tlc.ly() - 1, tl, 0, if tlc.ly() == yp { Some(tl) } else { tlc.above }, ctx.wpp);
-    let left = pic.get_cu_restricted(tlc.lx() - 1, tlc.ly(), tl, 0, if tlc.lx() == xp { Some(tl) } else { tlc.left }, ctx.wpp);
+    let above = pic.get_cu_restricted(
+        tlc.lx(),
+        tlc.ly() - 1,
+        tl,
+        0,
+        if tlc.ly() == yp { Some(tl) } else { tlc.above },
+        ctx.wpp,
+    );
+    let left = pic.get_cu_restricted(
+        tlc.lx() - 1,
+        tlc.ly(),
+        tl,
+        0,
+        if tlc.lx() == xp { Some(tl) } else { tlc.left },
+        ctx.wpp,
+    );
     let (xp, yp) = (tlc.lx(), tlc.ly());
     let plane = &pic.planes[0];
     let mut sum = 0i32;
     let mut cnt = 0;
     if left.is_some() {
         for i in 0..num {
-            let k = if yp + i >= pic.height { pic.height - yp - 1 } else { i };
+            let k = if yp + i >= pic.height {
+                pic.height - yp - 1
+            } else {
+                i
+            };
             sum += i32::from(plane.at(xp - 1, yp + k));
             cnt += 1;
         }
     }
     if above.is_some() {
         for i in 0..num {
-            let k = if xp + i >= pic.width { pic.width - xp - 1 } else { i };
+            let k = if xp + i >= pic.width {
+                pic.width - xp - 1
+            } else {
+                i
+            };
             sum += i32::from(plane.at(xp + k, yp - 1));
             cnt += 1;
         }
@@ -1172,7 +1382,15 @@ fn pred_mip(ctx: &Ctx, comp: usize, dst: &mut [i32], w: i32, h: i32, bd: u32) ->
             let f = src_len / dst_len;
             let l2 = log2(f);
             let r = 1 << (l2 - 1);
-            (0..dst_len).map(|i| (full[(i * f) as usize..((i + 1) * f) as usize].iter().sum::<i32>() + r) >> l2).collect()
+            (0..dst_len)
+                .map(|i| {
+                    (full[(i * f) as usize..((i + 1) * f) as usize]
+                        .iter()
+                        .sum::<i32>()
+                        + r)
+                        >> l2
+                })
+                .collect()
         } else {
             full[..dst_len as usize].to_vec()
         }
@@ -1186,7 +1404,11 @@ fn pred_mip(ctx: &Ctx, comp: usize, dst: &mut [i32], w: i32, h: i32, bd: u32) ->
     let off_t = bdry_t[0];
     let has_first = size_id < 2;
     bdry[0] = if has_first { (1 << (bd - 1)) - off } else { 0 };
-    bdry_t[0] = if has_first { (1 << (bd - 1)) - off_t } else { 0 };
+    bdry_t[0] = if has_first {
+        (1 << (bd - 1)) - off_t
+    } else {
+        0
+    };
     for i in 1..in_size {
         bdry[i] -= off;
         bdry_t[i] -= off_t;
@@ -1277,7 +1499,21 @@ fn pred_mip(ctx: &Ctx, comp: usize, dst: &mut [i32], w: i32, h: i32, bd: u32) ->
         let hor_base = ((up_ver - 1) * w) as usize;
         ver_src_step *= up_ver as usize;
         let mut tmp = vec![0i32; (w * h) as usize];
-        up1d(&mut tmp, hor_base, &reduced, 0, &left, red_pred, red_pred, 1, red_pred as usize, 1, ver_src_step, up_ver as usize, up_hor);
+        up1d(
+            &mut tmp,
+            hor_base,
+            &reduced,
+            0,
+            &left,
+            red_pred,
+            red_pred,
+            1,
+            red_pred as usize,
+            1,
+            ver_src_step,
+            up_ver as usize,
+            up_hor,
+        );
         out.copy_from_slice(&tmp);
         ver_src = tmp;
         ver_src_base = hor_base;
@@ -1287,13 +1523,34 @@ fn pred_mip(ctx: &Ctx, comp: usize, dst: &mut [i32], w: i32, h: i32, bd: u32) ->
     }
     if up_ver > 1 {
         let src_copy = ver_src;
-        up1d(&mut out, 0, &src_copy, ver_src_base, &top, red_pred, w, ver_src_step, 1, w as usize, 1, 1, up_ver);
+        up1d(
+            &mut out,
+            0,
+            &src_copy,
+            ver_src_base,
+            &top,
+            red_pred,
+            w,
+            ver_src_step,
+            1,
+            w as usize,
+            1,
+            1,
+            up_ver,
+        );
     }
     dst[..(w * h) as usize].copy_from_slice(&out);
     Ok(())
 }
 
-fn pred_lm(ctx: &mut Ctx, comp: usize, tu_id: u32, area: Area, mode: u8, dst: &mut [i32]) -> Result<(), Error> {
+fn pred_lm(
+    ctx: &mut Ctx,
+    comp: usize,
+    tu_id: u32,
+    area: Area,
+    mode: u8,
+    dst: &mut [i32],
+) -> Result<(), Error> {
     let pic_fmt = ctx.pic.fmt;
     let (sx, sy) = (pic_fmt.sx as i32, pic_fmt.sy as i32);
     let cu = ctx.cu.clone();
@@ -1313,34 +1570,98 @@ fn pred_lm(ctx: &mut Ctx, comp: usize, tu_id: u32, area: Area, mode: u8, dst: &m
     let (pw, ph) = (ctx.pic.width, ctx.pic.height);
     let rec = |x: i32, y: i32| {
         let (x, y) = (lx + x, ly + y);
-        if x < 0 || y < 0 || x >= pw || y >= ph { 0 } else { i32::from(plane.at(x, y)) }
+        if x < 0 || y < 0 || x >= pw || y >= ph {
+            0
+        } else {
+            i32::from(plane.at(x, y))
+        }
     };
     let base_unit = 4;
     let unit_w = base_unit >> sx;
     let unit_h = base_unit >> sy;
     let cu_ch = cu.ch_type;
-    let (tu_w, tu_h) = if cu_ch == 1 { (cw, ch) } else { (cw << sx, ch << sy) };
+    let (tu_w, tu_h) = if cu_ch == 1 {
+        (cw, ch)
+    } else {
+        (cw << sx, ch << sy)
+    };
     let tu_w_units = tu_w / (base_unit >> if cu_ch == 1 { sx } else { 0 });
     let tu_h_units = tu_h / (base_unit >> if cu_ch == 1 { sy } else { 0 });
     let chroma_unit_w = base_unit >> sx;
     let chroma_unit_h = base_unit >> sy;
     let top_n = 2 * cw;
     let left_n = 2 * ch;
-    let total_above = if mode == MDLM_T { (top_n + chroma_unit_w - 1) / chroma_unit_w } else { tu_w_units };
-    let total_left = if mode == MDLM_L { (left_n + chroma_unit_h - 1) / chroma_unit_h } else { tu_h_units };
+    let total_above = if mode == MDLM_T {
+        (top_n + chroma_unit_w - 1) / chroma_unit_w
+    } else {
+        tu_w_units
+    };
+    let total_left = if mode == MDLM_L {
+        (left_n + chroma_unit_h - 1) / chroma_unit_h
+    } else {
+        tu_h_units
+    };
     let cb = cu.blk[1];
-    let avail_left_unit = if cu.left.is_some() || area.x > cb.x { total_left } else { 0 };
+    let avail_left_unit = if cu.left.is_some() || area.x > cb.x {
+        total_left
+    } else {
+        0
+    };
     let left_ok = avail_left_unit >= tu_h_units;
-    let avail_above_unit = if cu.above.is_some() || area.y > cb.y { total_above } else { 0 };
+    let avail_above_unit = if cu.above.is_some() || area.y > cb.y {
+        total_above
+    } else {
+        0
+    };
     let above_ok = avail_above_unit >= tu_w_units;
     let _ = (unit_w, unit_h);
     let first_row = (ly & ((1 << ctx.pic.ctu_log2) - 1)) == 0;
     let str_off = if pic_fmt.chroma == 3 { 0 } else { 1 };
     let mult = 1 << sx;
-    let (c3, c5, c6, o3, s3, o5, s5, o6, s6): ([i32; 3], [i32; 5], [i32; 6], i32, i32, i32, i32, i32, i32) = match pic_fmt.chroma {
-        2 => ([2, 1, 1], [0, 2, 1, 1, 0], [2, 1, 1, 0, 0, 0], 2, 2, 2, 2, 2, 2),
-        3 => ([1, 0, 0], [0, 1, 0, 0, 0], [1, 0, 0, 0, 0, 0], 0, 0, 0, 0, 0, 0),
-        _ => ([2, 1, 1], [1, 4, 1, 1, 1], [2, 1, 1, 2, 1, 1], 2, 2, 4, 3, 4, 3),
+    let (c3, c5, c6, o3, s3, o5, s5, o6, s6): (
+        [i32; 3],
+        [i32; 5],
+        [i32; 6],
+        i32,
+        i32,
+        i32,
+        i32,
+        i32,
+        i32,
+    ) = match pic_fmt.chroma {
+        2 => (
+            [2, 1, 1],
+            [0, 2, 1, 1, 0],
+            [2, 1, 1, 0, 0, 0],
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+        ),
+        3 => (
+            [1, 0, 0],
+            [0, 1, 0, 0, 0],
+            [1, 0, 0, 0, 0, 0],
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+        ),
+        _ => (
+            [2, 1, 1],
+            [1, 4, 1, 1, 1],
+            [2, 1, 1, 2, 1, 1],
+            2,
+            2,
+            4,
+            3,
+            4,
+            3,
+        ),
     };
     let colloc = ctx.si.sps.chroma_ver_collocated;
     let log_sub_w = sx;
@@ -1350,27 +1671,55 @@ fn pred_lm(ctx: &mut Ctx, comp: usize, tu_id: u32, area: Area, mode: u8, dst: &m
             let v = if first_row {
                 let y = -1;
                 if (i == 0 && !left_ok) || i == cw + n - 1 + log_sub_w {
-                    (rec(mult * i, y) * c3[0] + rec(mult * i, y) * c3[1] + rec(mult * i + 1, y) * c3[2] + o3) >> s3
+                    (rec(mult * i, y) * c3[0]
+                        + rec(mult * i, y) * c3[1]
+                        + rec(mult * i + 1, y) * c3[2]
+                        + o3)
+                        >> s3
                 } else {
-                    (rec(mult * i, y) * c3[0] + rec(mult * i - 1, y) * c3[1] + rec(mult * i + 1, y) * c3[2] + o3) >> s3
+                    (rec(mult * i, y) * c3[0]
+                        + rec(mult * i - 1, y) * c3[1]
+                        + rec(mult * i + 1, y) * c3[2]
+                        + o3)
+                        >> s3
                 }
             } else if colloc {
                 let y = -(1 << sy);
                 if (i == 0 && !left_ok) || i == cw + n - 1 + log_sub_w {
-                    (rec(mult * i, y - str_off) * c5[0] + rec(mult * i, y) * c5[1] + rec(mult * i, y) * c5[2] + rec(mult * i + 1, y) * c5[3] + rec(mult * i, y + str_off) * c5[4] + o5) >> s5
+                    (rec(mult * i, y - str_off) * c5[0]
+                        + rec(mult * i, y) * c5[1]
+                        + rec(mult * i, y) * c5[2]
+                        + rec(mult * i + 1, y) * c5[3]
+                        + rec(mult * i, y + str_off) * c5[4]
+                        + o5)
+                        >> s5
                 } else {
-                    (rec(mult * i, y - str_off) * c5[0] + rec(mult * i, y) * c5[1] + rec(mult * i - 1, y) * c5[2] + rec(mult * i + 1, y) * c5[3] + rec(mult * i, y + str_off) * c5[4] + o5) >> s5
+                    (rec(mult * i, y - str_off) * c5[0]
+                        + rec(mult * i, y) * c5[1]
+                        + rec(mult * i - 1, y) * c5[2]
+                        + rec(mult * i + 1, y) * c5[3]
+                        + rec(mult * i, y + str_off) * c5[4]
+                        + o5)
+                        >> s5
                 }
             } else {
                 let y = -(1 << sy);
                 if (i == 0 && !left_ok) || i == cw + n - 1 + log_sub_w {
-                    ((rec(mult * i, y) * c6[0] + rec(mult * i, y) * c6[1] + rec(mult * i + 1, y) * c6[2])
-                        + (rec(mult * i, y + str_off) * c6[3] + rec(mult * i, y + str_off) * c6[4] + rec(mult * i + 1, y + str_off) * c6[5])
+                    ((rec(mult * i, y) * c6[0]
+                        + rec(mult * i, y) * c6[1]
+                        + rec(mult * i + 1, y) * c6[2])
+                        + (rec(mult * i, y + str_off) * c6[3]
+                            + rec(mult * i, y + str_off) * c6[4]
+                            + rec(mult * i + 1, y + str_off) * c6[5])
                         + o6)
                         >> s6
                 } else {
-                    ((rec(mult * i, y) * c6[0] + rec(mult * i - 1, y) * c6[1] + rec(mult * i + 1, y) * c6[2])
-                        + (rec(mult * i, y + str_off) * c6[3] + rec(mult * i - 1, y + str_off) * c6[4] + rec(mult * i + 1, y + str_off) * c6[5])
+                    ((rec(mult * i, y) * c6[0]
+                        + rec(mult * i - 1, y) * c6[1]
+                        + rec(mult * i + 1, y) * c6[2])
+                        + (rec(mult * i, y + str_off) * c6[3]
+                            + rec(mult * i - 1, y + str_off) * c6[4]
+                            + rec(mult * i + 1, y + str_off) * c6[5])
                         + o6)
                         >> s6
                 }
@@ -1386,12 +1735,27 @@ fn pred_lm(ctx: &mut Ctx, comp: usize, tu_id: u32, area: Area, mode: u8, dst: &m
             let s = |dx: i32, dy: i32| rec(bx + dx, yy + dy);
             let v = if colloc {
                 if (j == 0 && !above_ok) || j == ch + n - 1 + log_sub_w {
-                    (s(1, 0) * c5[0] + s(1, 0) * c5[1] + s(0, 0) * c5[2] + s(2, 0) * c5[3] + s(1, str_off) * c5[4] + o5) >> s5
+                    (s(1, 0) * c5[0]
+                        + s(1, 0) * c5[1]
+                        + s(0, 0) * c5[2]
+                        + s(2, 0) * c5[3]
+                        + s(1, str_off) * c5[4]
+                        + o5)
+                        >> s5
                 } else {
-                    (s(1, -str_off) * c5[0] + s(1, 0) * c5[1] + s(0, 0) * c5[2] + s(2, 0) * c5[3] + s(1, str_off) * c5[4] + o5) >> s5
+                    (s(1, -str_off) * c5[0]
+                        + s(1, 0) * c5[1]
+                        + s(0, 0) * c5[2]
+                        + s(2, 0) * c5[3]
+                        + s(1, str_off) * c5[4]
+                        + o5)
+                        >> s5
                 }
             } else {
-                ((s(1, 0) * c6[0] + s(0, 0) * c6[1] + s(2, 0) * c6[2]) + (s(1, str_off) * c6[3] + s(0, str_off) * c6[4] + s(2, str_off) * c6[5]) + o6) >> s6
+                ((s(1, 0) * c6[0] + s(0, 0) * c6[1] + s(2, 0) * c6[2])
+                    + (s(1, str_off) * c6[3] + s(0, str_off) * c6[4] + s(2, str_off) * c6[5])
+                    + o6)
+                    >> s6
             };
             temp[t_at(-1, j)] = v;
         }
@@ -1403,14 +1767,38 @@ fn pred_lm(ctx: &mut Ctx, comp: usize, tu_id: u32, area: Area, mode: u8, dst: &m
                 let r = |dx: i32, dy: i32| rec(mult * i + dx, yy + dy);
                 let v = if i == 0 && !left_ok {
                     if j == 0 && !above_ok {
-                        (r(0, 0) * c5[0] + r(0, 0) * c5[1] + r(0, 0) * c5[2] + r(1, 0) * c5[3] + r(0, str_off) * c5[4] + o5) >> s5
+                        (r(0, 0) * c5[0]
+                            + r(0, 0) * c5[1]
+                            + r(0, 0) * c5[2]
+                            + r(1, 0) * c5[3]
+                            + r(0, str_off) * c5[4]
+                            + o5)
+                            >> s5
                     } else {
-                        (r(0, -str_off) * c5[0] + r(0, 0) * c5[1] + r(0, 0) * c5[2] + r(1, 0) * c5[3] + r(0, str_off) * c5[4] + o5) >> s5
+                        (r(0, -str_off) * c5[0]
+                            + r(0, 0) * c5[1]
+                            + r(0, 0) * c5[2]
+                            + r(1, 0) * c5[3]
+                            + r(0, str_off) * c5[4]
+                            + o5)
+                            >> s5
                     }
                 } else if j == 0 && !above_ok {
-                    (r(0, 0) * c5[0] + r(0, 0) * c5[1] + r(-1, 0) * c5[2] + r(1, 0) * c5[3] + r(0, str_off) * c5[4] + o5) >> s5
+                    (r(0, 0) * c5[0]
+                        + r(0, 0) * c5[1]
+                        + r(-1, 0) * c5[2]
+                        + r(1, 0) * c5[3]
+                        + r(0, str_off) * c5[4]
+                        + o5)
+                        >> s5
                 } else {
-                    (r(0, -str_off) * c5[0] + r(0, 0) * c5[1] + r(-1, 0) * c5[2] + r(1, 0) * c5[3] + r(0, str_off) * c5[4] + o5) >> s5
+                    (r(0, -str_off) * c5[0]
+                        + r(0, 0) * c5[1]
+                        + r(-1, 0) * c5[2]
+                        + r(1, 0) * c5[3]
+                        + r(0, str_off) * c5[4]
+                        + o5)
+                        >> s5
                 };
                 temp[t_at(i, j)] = v;
             }
@@ -1422,9 +1810,23 @@ fn pred_lm(ctx: &mut Ctx, comp: usize, tu_id: u32, area: Area, mode: u8, dst: &m
                 let x0 = i << log_sub_w;
                 let r = |dx: i32, dy: i32| rec(x0 + dx, yy + dy);
                 let v = if !left_ok && i == 0 {
-                    (r(0, 0) * c6[0] + r(1, 0) * c6[1] + r(0, 0) * c6[2] + r(0, 1) * c6[3] + r(1, 1) * c6[4] + r(0, 1) * c6[5] + o6) >> s6
+                    (r(0, 0) * c6[0]
+                        + r(1, 0) * c6[1]
+                        + r(0, 0) * c6[2]
+                        + r(0, 1) * c6[3]
+                        + r(1, 1) * c6[4]
+                        + r(0, 1) * c6[5]
+                        + o6)
+                        >> s6
                 } else {
-                    (r(0, 0) * c6[0] + r(1, 0) * c6[1] + r(-1, 0) * c6[2] + r(0, 1) * c6[3] + r(1, 1) * c6[4] + r(-1, 1) * c6[5] + o6) >> s6
+                    (r(0, 0) * c6[0]
+                        + r(1, 0) * c6[1]
+                        + r(-1, 0) * c6[2]
+                        + r(0, 1) * c6[3]
+                        + r(1, 1) * c6[4]
+                        + r(-1, 1) * c6[5]
+                        + o6)
+                        >> s6
                 };
                 temp[t_at(i, j)] = v;
             }
@@ -1447,7 +1849,11 @@ fn pred_lm(ctx: &mut Ctx, comp: usize, tu_id: u32, area: Area, mode: u8, dst: &m
         let mut units = 0;
         if cu.above.is_some() || area.y > cb.y {
             units = tu_wu;
-            above_right = if above_right > ch / unit_wc { ch / unit_wc } else { above_right };
+            above_right = if above_right > ch / unit_wc {
+                ch / unit_wc
+            } else {
+                above_right
+            };
             units += ctx.above_available(tu, 1, area.x + cw, area.y, above_right, unit_wc);
         }
         above_av = units >= tu_wu;
@@ -1456,7 +1862,11 @@ fn pred_lm(ctx: &mut Ctx, comp: usize, tu_id: u32, area: Area, mode: u8, dst: &m
         let mut units = 0;
         if cu.left.is_some() || area.x > cb.x {
             units = tu_hu;
-            left_below = if left_below > cw / unit_hc { cw / unit_hc } else { left_below };
+            left_below = if left_below > cw / unit_hc {
+                cw / unit_hc
+            } else {
+                left_below
+            };
             units += ctx.left_available(tu, 1, area.x, area.y + ch, left_below, unit_hc);
         }
         left_av = units >= tu_hu;
@@ -1470,7 +1880,10 @@ fn pred_lm(ctx: &mut Ctx, comp: usize, tu_id: u32, area: Area, mode: u8, dst: &m
     let above_is4 = if left_av { 0 } else { 1 };
     let left_is4 = if above_av { 0 } else { 1 };
     let start = [top_num >> (2 + above_is4), left_num >> (2 + left_is4)];
-    let step = [1.max(top_num >> (1 + above_is4)), 1.max(left_num >> (1 + left_is4))];
+    let step = [
+        1.max(top_num >> (1 + above_is4)),
+        1.max(left_num >> (1 + left_is4)),
+    ];
     let mut sel_l = [0i32; 4];
     let mut sel_c = [0i32; 4];
     let mut cnt_t = 0;
@@ -1518,8 +1931,14 @@ fn pred_lm(ctx: &mut Ctx, comp: usize, tu_id: u32, area: Area, mode: u8, dst: &m
     if sel_l[min_g[1]] > sel_l[max_g[0]] {
         std::mem::swap(&mut min_g[1], &mut max_g[0]);
     }
-    let min_luma = [(sel_l[min_g[0]] + sel_l[min_g[1]] + 1) >> 1, (sel_c[min_g[0]] + sel_c[min_g[1]] + 1) >> 1];
-    let max_luma = [(sel_l[max_g[0]] + sel_l[max_g[1]] + 1) >> 1, (sel_c[max_g[0]] + sel_c[max_g[1]] + 1) >> 1];
+    let min_luma = [
+        (sel_l[min_g[0]] + sel_l[min_g[1]] + 1) >> 1,
+        (sel_c[min_g[0]] + sel_c[min_g[1]] + 1) >> 1,
+    ];
+    let max_luma = [
+        (sel_l[max_g[0]] + sel_l[max_g[1]] + 1) >> 1,
+        (sel_c[max_g[0]] + sel_c[max_g[1]] + 1) >> 1,
+    ];
     let (a, b, shift);
     if left_av || above_av {
         let diff = max_luma[0] - min_luma[0];
@@ -1530,13 +1949,23 @@ fn pred_lm(ctx: &mut Ctx, comp: usize, tu_id: u32, area: Area, mode: u8, dst: &m
             let norm = ((diff << 4) >> x) & 15;
             let v = DIV_SIG[norm as usize] | 8;
             x += i32::from(norm != 0);
-            let y = if diff_c == 0 { 0 } else { log2(diff_c.abs()) + 1 };
+            let y = if diff_c == 0 {
+                0
+            } else {
+                log2(diff_c.abs()) + 1
+            };
             let add = (1 << y) >> 1;
             let mut aa = (diff_c * v + add) >> y;
             let mut sh = 3 + x - y;
             if sh < 1 {
                 sh = 1;
-                aa = if aa == 0 { 0 } else if aa < 0 { -15 } else { 15 };
+                aa = if aa == 0 {
+                    0
+                } else if aa < 0 {
+                    -15
+                } else {
+                    15
+                };
             }
             a = aa;
             shift = sh;
@@ -1582,14 +2011,23 @@ fn qp_param(ctx: &Ctx, tu: &Tu, comp: usize, act: bool) -> (i32, i32) {
             _ => pps.joint_cbcr_qp_offset,
         };
         let mut o = pps_off + ctx.si.sh.chroma_qp_delta[jc];
-        o += pps.chroma_qp_offset_list.get(cu.chroma_qp_adj as usize).map_or(0, |e| e[jc]);
+        o += pps
+            .chroma_qp_offset_list
+            .get(cu.chroma_qp_adj as usize)
+            .map_or(0, |e| e[jc]);
         let qpi = qpy.clamp(-off, 63);
         let mapped = sps.chroma_qp_table[jc][(qpi + off) as usize];
         (mapped + o + off).clamp(0, 63 + off)
     };
     if act && cu.act {
         const DELTA: [i32; 4] = [-5, 1, 3, 1];
-        let idx = if comp == 0 { 0 } else if jcc { 3 } else { comp };
+        let idx = if comp == 0 {
+            0
+        } else if jcc {
+            3
+        } else {
+            comp
+        };
         base += DELTA[idx];
         base = base.clamp(0, 63 + off);
     }
@@ -1602,7 +2040,12 @@ fn ictt_mode(tu: &Tu, sign: bool) -> i32 {
     MODES[usize::from(sign)][tu.joint as usize]
 }
 
-fn compute_residuals(ctx: &Ctx, tu: &Tu, resi: &mut [Option<Vec<i32>>; 3], act: bool) -> Result<(), Error> {
+fn compute_residuals(
+    ctx: &Ctx,
+    tu: &Tu,
+    resi: &mut [Option<Vec<i32>>; 3],
+    act: bool,
+) -> Result<(), Error> {
     for comp in 0..ctx.pic.fmt.num_comp() {
         let area = tu.blk[comp];
         if !area.valid() {
@@ -1665,7 +2108,10 @@ fn tr_types(ctx: &Ctx, tu: &Tu, comp: usize) -> (u8, u8) {
     if explicit && tu.mts[comp] > MTS_SKIP {
         let ind_h = (tu.mts[comp] - MTS_DST7_DST7) & 1;
         let ind_v = (tu.mts[comp] - MTS_DST7_DST7) >> 1;
-        return (if ind_h != 0 { 1 } else { 2 }, if ind_v != 0 { 1 } else { 2 });
+        return (
+            if ind_h != 0 { 1 } else { 2 },
+            if ind_v != 0 { 1 } else { 2 },
+        );
     }
     (0, 0)
 }
@@ -1787,7 +2233,11 @@ fn inv_lfnst(ctx: &Ctx, tu: &Tu, comp: usize, coeff: &mut [i32], max_scan: &mut 
         grouped_scan_cached(w, h)
     };
     let ch = if comp == 0 { 0 } else { 1 };
-    let is_mip = if ch == 0 { cu.mip } else { is_dm_chroma_mip(ctx.pic, ctx.si, ctx.cu_id) && cu.intra_dir[1] == DM_CHROMA };
+    let is_mip = if ch == 0 {
+        cu.mip
+    } else {
+        is_dm_chroma_mip(ctx.pic, ctx.si, ctx.cu_id) && cu.intra_dir[1] == DM_CHROMA
+    };
     let mut mode = if is_mip {
         PLANAR as i32
     } else if (LM_CHROMA..=MDLM_T).contains(&cu.intra_dir[ch]) {
@@ -1796,10 +2246,14 @@ fn inv_lfnst(ctx: &Ctx, tu: &Tu, comp: usize, coeff: &mut [i32], max_scan: &mut 
         final_intra_mode(ctx.pic, ctx.si, cu, ctx.cu_id, ch) as i32
     };
     // PU::getWideAngIntraMode (uses the CU size for ISP luma)
-    let (aw, ah) = if cu.isp != NOT_ISP && comp == 0 { (cu.blk[0].w, cu.blk[0].h) } else { (w, h) };
+    let (aw, ah) = if cu.isp != NOT_ISP && comp == 0 {
+        (cu.blk[0].w, cu.blk[0].h)
+    } else {
+        (w, h)
+    };
     if mode >= 2 {
         const SHIFT: [i32; 6] = [0, 6, 10, 12, 14, 15];
-        let delta = (log2(aw) - log2(ah)).abs() as usize;
+        let delta = (log2(aw) - log2(ah)).unsigned_abs() as usize;
         if aw > ah && mode < 2 + SHIFT[delta] {
             mode += VDIA as i32 - 1;
         } else if ah > aw && mode > VDIA as i32 - SHIFT[delta] {
@@ -1813,7 +2267,7 @@ fn inv_lfnst(ctx: &Ctx, tu: &Tu, comp: usize, coeff: &mut [i32], max_scan: &mut 
     } else {
         mode as usize
     };
-    let transpose = (intra_mode >= 67 && intra_mode >= 67 + 14) || (intra_mode < 67 && intra_mode > DIA as usize);
+    let transpose = intra_mode >= 67 + 14 || (intra_mode < 67 && intra_mode > DIA as usize);
     let sb = if whge3 { 8 } else { 4 };
     let small = (w == 4 && h == 4) || (w == 8 && h == 8);
     let zero_out = if small { 8 } else { 16 };
@@ -1825,7 +2279,11 @@ fn inv_lfnst(ctx: &Ctx, tu: &Tu, comp: usize, coeff: &mut [i32], max_scan: &mut 
     for (j, o) in out.iter_mut().enumerate() {
         let mut acc = 0i32;
         for (i, &v) in input.iter().enumerate().take(zero_out) {
-            let m = if sb > 4 { LFNST_8X8[((set * 2 + idx) * 48 + j) * 16 + i] } else { LFNST_4X4[((set * 2 + idx) * 16 + j) * 16 + i] };
+            let m = if sb > 4 {
+                LFNST_8X8[((set * 2 + idx) * 48 + j) * 16 + i]
+            } else {
+                LFNST_4X4[((set * 2 + idx) * 16 + j) * 16 + i]
+            };
             acc += v * i32::from(m);
         }
         *o = ((acc + 64) >> 7).clamp(-(1 << 15), (1 << 15) - 1);
@@ -1879,11 +2337,25 @@ fn dequant(ctx: &Ctx, tu: &Tu, comp: usize, act: bool) -> Result<Vec<i32>, Error
     let cu = &ctx.cu;
     let is_ts = tu.mts[comp] == MTS_SKIP;
     let scaling_used = ctx.si.sh.explicit_scaling_list_used;
-    let disable_lfnst = if scaling_used { sps.scaling_matrix_for_lfnst_disabled } else { false };
-    let lfnst_applied = cu.lfnst > 0 && (if cu.is_sep_tree(ctx.si.dual_tree()) { true } else { comp == 0 });
-    let disable_act = sps.scaling_matrix_for_alt_colour_space_disabled && sps.scaling_matrix_designated_colour_space == cu.act;
+    let disable_lfnst = if scaling_used {
+        sps.scaling_matrix_for_lfnst_disabled
+    } else {
+        false
+    };
+    let lfnst_applied = cu.lfnst > 0
+        && (if cu.is_sep_tree(ctx.si.dual_tree()) {
+            true
+        } else {
+            comp == 0
+        });
+    let disable_act = sps.scaling_matrix_for_alt_colour_space_disabled
+        && sps.scaling_matrix_designated_colour_space == cu.act;
     let enable_sl = scaling_used && !is_ts && (!lfnst_applied || !disable_lfnst) && !disable_act;
-    let list_type = if cu.pred == Pred::Intra { comp } else { 3 + comp };
+    let list_type = if cu.pred == Pred::Intra {
+        comp
+    } else {
+        3 + comp
+    };
     let bd = ctx.pic.bit_depth as i32;
     let bdpcm = (cu.bdpcm[0] != 0 && comp == 0) || (cu.bdpcm[1] != 0 && comp != 0);
     let (max_x, max_y);
@@ -1903,7 +2375,8 @@ fn dequant(ctx: &Ctx, tu: &Tu, comp: usize, act: bool) -> Result<Vec<i32>, Error
             levels[..w].copy_from_slice(&src[..w]);
             for y in 0..h - 1 {
                 for x in 0..w {
-                    levels[(y + 1) * w + x] = (levels[y * w + x] + src[(y + 1) * w + x]).clamp(mn, mx);
+                    levels[(y + 1) * w + x] =
+                        (levels[y * w + x] + src[(y + 1) * w + x]).clamp(mn, mx);
                 }
             }
         }
@@ -1922,8 +2395,13 @@ fn dequant(ctx: &Ctx, tu: &Tu, comp: usize, act: bool) -> Result<Vec<i32>, Error
     let dep = ctx.si.sh.dep_quant && !is_ts;
     let (qp, qp_ts) = qp_param(ctx, tu, comp, act);
     let q = if is_ts { qp_ts } else { qp };
-    let (per, rem) = if dep { ((q + 1) / 6, q + 1 - 6 * ((q + 1) / 6)) } else { (q / 6, q % 6) };
-    let right_shift = 6 + i32::from(dep) - ((if is_ts { 0 } else { tshift }) + per) + if enable_sl { 4 } else { 0 };
+    let (per, rem) = if dep {
+        ((q + 1) / 6, q + 1 - 6 * ((q + 1) / 6))
+    } else {
+        (q / 6, q % 6)
+    };
+    let right_shift = 6 + i32::from(dep) - ((if is_ts { 0 } else { tshift }) + per)
+        + if enable_sl { 4 } else { 0 };
     let scale_qp = INV_QUANT_SCALES[usize::from(sqrt_adj)][rem as usize];
     let scale_bits = 7;
     let target = 16u32.min((32 + right_shift - scale_bits) as u32);
@@ -1935,7 +2413,12 @@ fn dequant(ctx: &Ctx, tu: &Tu, comp: usize, act: bool) -> Result<Vec<i32>, Error
     let tmax = (1i64 << 15) - 1;
     let tmin = -(tmax + 1);
     let sl = if enable_sl {
-        Some(ctx.si.scaling.ok_or(Error::Invalid("scaling list missing"))?.get(list_type, log2w as usize, log2h as usize))
+        Some(
+            ctx.si
+                .scaling
+                .ok_or(Error::Invalid("scaling list missing"))?
+                .get(list_type, log2w as usize, log2h as usize),
+        )
     } else {
         None
     };
@@ -1963,8 +2446,4 @@ fn dequant(ctx: &Ctx, tu: &Tu, comp: usize, act: bool) -> Result<Vec<i32>, Error
         }
     }
     Ok(out)
-}
-
-pub fn isp_dim(w: i32, h: i32, hor: bool) -> i32 {
-    isp_split_dim(w, h, hor)
 }

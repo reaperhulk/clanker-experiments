@@ -16,7 +16,10 @@ fn main() {
                     }
                 }
             }
-            eprintln!("frame {}x{} cf={} depth={}", frame.width, frame.height, frame.chroma_format, frame.bit_depth);
+            eprintln!(
+                "frame {}x{} cf={} depth={}",
+                frame.width, frame.height, frame.chroma_format, frame.bit_depth
+            );
             if let Some(path) = args.get(2) {
                 std::fs::write(path, out).expect("write output");
             }

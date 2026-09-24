@@ -5,7 +5,7 @@ use super::Error;
 use super::cabac::Cabac;
 use super::ctx;
 use super::pic::*;
-use super::ps::{AlfParam, I_SLICE, Pps, PicHeader, SliceHeader, Sps};
+use super::ps::{AlfParam, I_SLICE, PicHeader, Pps, SliceHeader, Sps};
 use super::recon;
 use super::tables::*;
 
@@ -36,7 +36,10 @@ impl Split {
         }
     }
     fn is_cu(self) -> bool {
-        matches!(self, Split::Quad | Split::Horz | Split::Vert | Split::TriH | Split::TriV)
+        matches!(
+            self,
+            Split::Quad | Split::Horz | Split::Vert | Split::TriH | Split::TriV
+        )
     }
 }
 
@@ -101,12 +104,26 @@ impl Partitioner {
     pub fn new(pic: &Picture, si: &SliceInfo, ctu: UnitArea, ch_type: usize, tile: u32) -> Self {
         let sps = si.sps;
         let dual = si.dual_tree();
-        let val_idx = if si.is_intra() { if !dual { 0 } else { ch_type << 1 } } else { 1 };
+        let val_idx = if si.is_intra() {
+            if !dual { 0 } else { ch_type << 1 }
+        } else {
+            1
+        };
         let min_cb = 1u32 << sps.log2_min_cb_size;
         let (max_btd, max_bt, max_tt, min_qt) = if si.ph.split_cons_override {
-            (si.ph.max_mtt_depth[val_idx], si.ph.max_bt[val_idx], si.ph.max_tt[val_idx], si.ph.min_qt[val_idx])
+            (
+                si.ph.max_mtt_depth[val_idx],
+                si.ph.max_bt[val_idx],
+                si.ph.max_tt[val_idx],
+                si.ph.min_qt[val_idx],
+            )
         } else {
-            (sps.max_mtt_depth[val_idx], sps.max_bt[val_idx], sps.max_tt[val_idx], sps.min_qt[val_idx])
+            (
+                sps.max_mtt_depth[val_idx],
+                sps.max_bt[val_idx],
+                sps.max_tt[val_idx],
+                sps.min_qt[val_idx],
+            )
         };
         let intra = si.is_intra();
         let mut p = Self {
@@ -173,10 +190,16 @@ impl Partitioner {
     }
 
     fn set_neighbors(&mut self, pic: &Picture, wpp: bool) {
-        let ch = if self.tree == Tree::C { 1 } else { self.ch_type };
+        let ch = if self.tree == Tree::C {
+            1
+        } else {
+            self.ch_type
+        };
         let b = self.area().blk[ch];
-        let above = pic.get_cu_restricted_pos(b.x, b.y - 1, b.x, b.y, self.slice, self.tile, ch, wpp);
-        let left = pic.get_cu_restricted_pos(b.x - 1, b.y, b.x, b.y, self.slice, self.tile, ch, wpp);
+        let above =
+            pic.get_cu_restricted_pos(b.x, b.y - 1, b.x, b.y, self.slice, self.tile, ch, wpp);
+        let left =
+            pic.get_cu_restricted_pos(b.x - 1, b.y, b.x, b.y, self.slice, self.tile, ch, wpp);
         let l = self.stack.last_mut().unwrap();
         l.cu_above = above;
         l.cu_left = left;
@@ -306,7 +329,11 @@ impl Partitioner {
     fn isp_partitions(area: &UnitArea, split: Split, dual: bool, chroma: bool) -> Vec<UnitArea> {
         let (w, h) = (area.blk[0].w, area.blk[0].h);
         let dim = isp_split_dim(w, h, split == Split::IspHorz);
-        let n = if split == Split::IspHorz { h / dim } else { w / dim };
+        let n = if split == Split::IspHorz {
+            h / dim
+        } else {
+            w / dim
+        };
         let mut out = Vec::with_capacity(n as usize);
         for i in 0..n {
             let mut s = *area;
@@ -319,7 +346,13 @@ impl Partitioner {
             }
             out.push(s);
         }
-        let without = if !chroma { 0 } else if dual { n } else { n - 1 };
+        let without = if !chroma {
+            0
+        } else if dual {
+            n
+        } else {
+            n - 1
+        };
         for s in out.iter_mut().take(without as usize) {
             s.blk[1] = Area::default();
             s.blk[2] = Area::default();
@@ -330,13 +363,18 @@ impl Partitioner {
     pub fn split(&mut self, split: Split, pic: &Picture) {
         let area = *self.area();
         let pic_area = Area::new(0, 0, pic.width, pic.height);
-        let br = (area.blk[0].x + area.blk[0].w - 1, area.blk[0].y + area.blk[0].h - 1);
+        let br = (
+            area.blk[0].x + area.blk[0].w - 1,
+            area.blk[0].y + area.blk[0].h - 1,
+        );
         let implicit = !pic_area.contains(br.0, br.1);
         let mut qg = self.qg_enable();
         let mut qgc = self.qg_chroma_enable();
         let parts = match split {
             Split::MaxTr => Self::max_tu_tiling(&area, self.max_tr as i32),
-            Split::IspHorz | Split::IspVert => Self::isp_partitions(&area, split, self.dual, pic.fmt.chroma != 0),
+            Split::IspHorz | Split::IspVert => {
+                Self::isp_partitions(&area, split, self.dual, pic.fmt.chroma != 0)
+            }
             _ => Self::cu_sub_partitions(&area, split),
         };
         let (last_above, last_left) = (self.level().cu_above, self.level().cu_left);
@@ -402,7 +440,10 @@ impl Partitioner {
         let l = self.stack.pop().unwrap();
         let pic_area = Area::new(0, 0, pic.width, pic.height);
         let area = *self.area();
-        let br = (area.blk[0].x + area.blk[0].w - 1, area.blk[0].y + area.blk[0].h - 1);
+        let br = (
+            area.blk[0].x + area.blk[0].w - 1,
+            area.blk[0].y + area.blk[0].h - 1,
+        );
         let implicit = !pic_area.contains(br.0, br.1);
         self.depth -= 1;
         self.subdiv -= 1;
@@ -430,7 +471,11 @@ impl Partitioner {
         let mut can = [true; 6];
         let mut can_btt = self.mt_depth < self.max_btd + self.implicit_bt_depth;
         let area = self.area().blk[0];
-        let area_c = if self.ch_type == 1 { Some(self.area().blk[1]) } else { None };
+        let area_c = if self.ch_type == 1 {
+            Some(self.area().blk[1])
+        } else {
+            None
+        };
         let level = self.level();
         if self.dual && (area.w > 64 || area.h > 64) {
             return [false, true, false, false, false, false];
@@ -454,7 +499,11 @@ impl Partitioner {
             can[1] = false;
         }
         if implicit {
-            let bt_allowed = area.w as u32 <= self.max_bt && area.h as u32 <= self.max_bt && area.w <= 64 && area.h <= 64 && can_btt;
+            let bt_allowed = area.w as u32 <= self.max_bt
+                && area.h as u32 <= self.max_bt
+                && area.w <= 64
+                && area.h <= 64
+                && can_btt;
             can[0] = false;
             can[4] = false;
             can[5] = false;
@@ -482,7 +531,11 @@ impl Partitioner {
             can[3] = false;
         } else {
             if (last == Split::TriH || last == Split::TriV) && level.idx == 1 {
-                let parallel = if last == Split::TriH { Split::Horz } else { Split::Vert };
+                let parallel = if last == Split::TriH {
+                    Split::Horz
+                } else {
+                    Split::Vert
+                };
                 can[2] = parallel != Split::Horz;
                 can[3] = parallel != Split::Vert;
             }
@@ -515,8 +568,16 @@ impl Partitioner {
 pub fn isp_split_dim(w: i32, h: i32, hor: bool) -> i32 {
     let (split, non_split) = if hor { (h, w) } else { (w, h) };
     let min_samples = 16;
-    let factor = if non_split < min_samples { min_samples >> (31 - (non_split as u32).leading_zeros()) } else { 1 };
-    if (split >> 2) < factor { factor } else { split >> 2 }
+    let factor = if non_split < min_samples {
+        min_samples >> (31 - (non_split as u32).leading_zeros())
+    } else {
+        1
+    };
+    if (split >> 2) < factor {
+        factor
+    } else {
+        split >> 2
+    }
 }
 
 /// `CU::canUseISPSplit`: 0 = none, 1 = horizontal only, 2 = vertical only, 4 = both.
@@ -563,13 +624,23 @@ impl<'a, 's, 'b> CtuDecoder<'a, 's, 'b> {
         self.cabac.decode_bypass()
     }
 
-    pub fn coding_tree_unit(&mut self, ctu_area: UnitArea, qps: &mut [i32; 2]) -> Result<(), Error> {
-        let mut cu_ctx = CuCtx { qp: qps[0], ..Default::default() };
+    pub fn coding_tree_unit(
+        &mut self,
+        ctu_area: UnitArea,
+        qps: &mut [i32; 2],
+    ) -> Result<(), Error> {
+        let mut cu_ctx = CuCtx {
+            qp: qps[0],
+            ..Default::default()
+        };
         let mut part = Partitioner::new(self.pic, self.si, ctu_area, 0, self.tile);
         self.sao()?;
         self.read_alf(&part)?;
         if part.dual && self.pic.fmt.chroma != 0 {
-            let mut cu_ctx_c = CuCtx { qp: qps[1], ..Default::default() };
+            let mut cu_ctx_c = CuCtx {
+                qp: qps[1],
+                ..Default::default()
+            };
             let mut part_c = Partitioner::new(self.pic, self.si, ctu_area, 1, self.tile);
             self.dt_implicit_qt_split(&mut part, &mut cu_ctx, &mut part_c, &mut cu_ctx_c)?;
             qps[0] = cu_ctx.qp;
@@ -581,7 +652,13 @@ impl<'a, 's, 'b> CtuDecoder<'a, 's, 'b> {
         Ok(())
     }
 
-    fn dt_implicit_qt_split(&mut self, pl: &mut Partitioner, cl: &mut CuCtx, pc: &mut Partitioner, cc: &mut CuCtx) -> Result<(), Error> {
+    fn dt_implicit_qt_split(
+        &mut self,
+        pl: &mut Partitioner,
+        cl: &mut CuCtx,
+        pc: &mut Partitioner,
+        cc: &mut CuCtx,
+    ) -> Result<(), Error> {
         if pl.area().blk[0].w > 64 {
             if self.si.pps.cu_qp_delta && pl.qg_enable() {
                 cl.qg_start = true;
@@ -628,10 +705,37 @@ impl<'a, 's, 'b> CtuDecoder<'a, 's, 'b> {
         let size = 1i32 << self.pic.ctu_log2;
         let (px, py) = (rx as i32 * size, ry as i32 * size);
         let mut merge: i32 = -1;
-        if self.pic.get_cu_restricted_pos(px - size, py, px, py, self.si.slice_idx, self.tile, 0, self.wpp).is_some() {
+        if self
+            .pic
+            .get_cu_restricted_pos(
+                px - size,
+                py,
+                px,
+                py,
+                self.si.slice_idx,
+                self.tile,
+                0,
+                self.wpp,
+            )
+            .is_some()
+        {
             merge += self.bin(ctx::SAO_MERGE_FLAG) as i32;
         }
-        if merge < 0 && self.pic.get_cu_restricted_pos(px, py - size, px, py, self.si.slice_idx, self.tile, 0, self.wpp).is_some() {
+        if merge < 0
+            && self
+                .pic
+                .get_cu_restricted_pos(
+                    px,
+                    py - size,
+                    px,
+                    py,
+                    self.si.slice_idx,
+                    self.tile,
+                    0,
+                    self.wpp,
+                )
+                .is_some()
+        {
             merge += (self.bin(ctx::SAO_MERGE_FLAG) as i32) << 1;
         }
         let mut p = [SaoParam::default(); 3];
@@ -756,10 +860,24 @@ impl<'a, 's, 'b> CtuDecoder<'a, 's, 'b> {
         let rx = self.ctu_addr - ry * w;
         let size = 1i32 << self.pic.ctu_log2;
         let (px, py) = (rx as i32 * size, ry as i32 * size);
-        let left = self.pic.get_cu_restricted_pos(px - 1, py, px, py, part.slice, part.tile, 0, self.wpp).is_some();
-        let above = self.pic.get_cu_restricted_pos(px, py - 1, px, py, part.slice, part.tile, 0, self.wpp).is_some();
-        let left_d = if left { self.pic.ctus[addr - 1].alf } else { AlfCtu::default() };
-        let above_d = if above { self.pic.ctus[addr - w as usize].alf } else { AlfCtu::default() };
+        let left = self
+            .pic
+            .get_cu_restricted_pos(px - 1, py, px, py, part.slice, part.tile, 0, self.wpp)
+            .is_some();
+        let above = self
+            .pic
+            .get_cu_restricted_pos(px, py - 1, px, py, part.slice, part.tile, 0, self.wpp)
+            .is_some();
+        let left_d = if left {
+            self.pic.ctus[addr - 1].alf
+        } else {
+            AlfCtu::default()
+        };
+        let above_d = if above {
+            self.pic.ctus[addr - w as usize].alf
+        } else {
+            AlfCtu::default()
+        };
         let mut cur = AlfCtu::default();
         let sh = self.si.sh;
         if sh.alf_enabled[0] {
@@ -784,12 +902,16 @@ impl<'a, 's, 'b> CtuDecoder<'a, 's, 'b> {
                     cur.filter_idx = idx as u16;
                 }
                 if c > 0 {
-                    let aps = self.si.alf_aps[sh.alf_aps_id_chroma as usize].as_ref().ok_or(Error::Invalid("APS not initialized"))?;
+                    let aps = self.si.alf_aps[sh.alf_aps_id_chroma as usize]
+                        .as_ref()
+                        .ok_or(Error::Invalid("APS not initialized"))?;
                     let num_alts = aps.num_alt_chroma;
                     cur.alt[c - 1] = 0;
                     if cur.enable[c] {
                         let mut decoded = 0u8;
-                        while u32::from(decoded) + 1 < num_alts && self.bin(ctx::CTB_ALF_ALTERNATIVE + c - 1) != 0 {
+                        while u32::from(decoded) + 1 < num_alts
+                            && self.bin(ctx::CTB_ALF_ALTERNATIVE + c - 1) != 0
+                        {
                             decoded += 1;
                         }
                         cur.alt[c - 1] = decoded;
@@ -799,14 +921,18 @@ impl<'a, 's, 'b> CtuDecoder<'a, 's, 'b> {
         }
         for c in 1..self.pic.fmt.num_comp() {
             if sh.ccalf_enabled[c - 1] {
-                let mut ctx_inc = usize::from(left_d.cc[c - 1] != 0) + usize::from(above_d.cc[c - 1] != 0);
+                let mut ctx_inc =
+                    usize::from(left_d.cc[c - 1] != 0) + usize::from(above_d.cc[c - 1] != 0);
                 if c == 2 {
                     ctx_inc += 3;
                 }
                 let mut idc = self.bin(ctx::CC_ALF_FILTER_CONTROL_FLAG + ctx_inc);
                 if idc != 0 {
                     let aps_id = sh.ccalf_aps_id[c - 1] as usize;
-                    let count = self.si.alf_aps[aps_id].as_ref().ok_or(Error::Invalid("APS not initialized"))?.cc_count[c - 1];
+                    let count = self.si.alf_aps[aps_id]
+                        .as_ref()
+                        .ok_or(Error::Invalid("APS not initialized"))?
+                        .cc_count[c - 1];
                     while idc != count && self.ep() != 0 {
                         idc += 1;
                     }
@@ -832,7 +958,8 @@ impl<'a, 's, 'b> CtuDecoder<'a, 's, 'b> {
         let split = self.split_cu_mode(part)?;
         if split != Split::None {
             part.mode_type = self.mode_constraint(part, split, mode_parent);
-            let chroma_not_split = mode_parent == ModeType::All && part.mode_type == ModeType::Intra;
+            let chroma_not_split =
+                mode_parent == ModeType::All && part.mode_type == ModeType::Intra;
             if chroma_not_split && part.ch_type != 0 {
                 return Err(Error::Invalid("chType must be luma"));
             }
@@ -859,7 +986,9 @@ impl<'a, 's, 'b> CtuDecoder<'a, 's, 'b> {
                 if self.pic.chan_area(1).contains(b.x, b.y) {
                     self.coding_tree(part, cu_ctx)?;
                 } else {
-                    return Err(Error::Invalid("Unexpected behavior, not parsing chroma even though luma data is available!"));
+                    return Err(Error::Invalid(
+                        "Unexpected behavior, not parsing chroma even though luma data is available!",
+                    ));
                 }
                 part.ch_type = 0;
                 part.tree = Tree::D;
@@ -913,7 +1042,10 @@ impl<'a, 's, 'b> CtuDecoder<'a, 's, 'b> {
             let c = self.pic.cus[cu_id as usize].blk[1];
             let (cx, cy) = (c.x + (c.w >> 1), c.y + (c.h >> 1));
             let (lx, ly) = (cx << self.pic.fmt.sx, cy << self.pic.fmt.sy);
-            let col = self.pic.get_cu(lx, ly, 0).ok_or(Error::Invalid("colLumaCU shall exist"))?;
+            let col = self
+                .pic
+                .get_cu(lx, ly, 0)
+                .ok_or(Error::Invalid("colLumaCU shall exist"))?;
             luma_qp_local = Some(cu_ctx.qp);
             cu_ctx.qp = self.pic.cus[col as usize].qp;
         }
@@ -940,16 +1072,26 @@ impl<'a, 's, 'b> CtuDecoder<'a, 's, 'b> {
         let pps = self.si.pps;
         let tile_col = pps.ctu_to_tile_col[ctu_x as usize];
         let tile_x = pps.tile_col_bd[tile_col as usize];
-        if ctu_x == tile_x && b.x & mask_w == 0 && b.y & mask_h == 0 {
-            if let Some(a) = above {
-                let ac = &self.pic.cus[a as usize];
-                if ac.slice == cu.slice && ac.tile == cu.tile {
-                    return ac.qp;
-                }
+        if ctu_x == tile_x
+            && b.x & mask_w == 0
+            && b.y & mask_h == 0
+            && let Some(a) = above
+        {
+            let ac = &self.pic.cus[a as usize];
+            if ac.slice == cu.slice && ac.tile == cu.tile {
+                return ac.qp;
             }
         }
-        let a = if b.y & mask_h != 0 { above.map_or(prev, |a| self.pic.cus[a as usize].qp) } else { prev };
-        let l = if b.x & mask_w != 0 { left.map_or(prev, |l| self.pic.cus[l as usize].qp) } else { prev };
+        let a = if b.y & mask_h != 0 {
+            above.map_or(prev, |a| self.pic.cus[a as usize].qp)
+        } else {
+            prev
+        };
+        let l = if b.x & mask_w != 0 {
+            left.map_or(prev, |l| self.pic.cus[l as usize].qp)
+        } else {
+            prev
+        };
         (a + l + 1) >> 1
     }
 
@@ -978,10 +1120,20 @@ impl<'a, 's, 'b> CtuDecoder<'a, 's, 'b> {
         };
         match val {
             2 => {
-                let l = part.cu_left().map(|c| self.pic.cus[c as usize].pred == Pred::Intra).unwrap_or(false);
-                let a = part.cu_above().map(|c| self.pic.cus[c as usize].pred == Pred::Intra).unwrap_or(false);
+                let l = part
+                    .cu_left()
+                    .map(|c| self.pic.cus[c as usize].pred == Pred::Intra)
+                    .unwrap_or(false);
+                let a = part
+                    .cu_above()
+                    .map(|c| self.pic.cus[c as usize].pred == Pred::Intra)
+                    .unwrap_or(false);
                 let ctx_id = usize::from(l || a);
-                if self.bin(ctx::MODE_CONS_FLAG + ctx_id) != 0 { ModeType::Intra } else { ModeType::Inter }
+                if self.bin(ctx::MODE_CONS_FLAG + ctx_id) != 0 {
+                    ModeType::Intra
+                } else {
+                    ModeType::Inter
+                }
             }
             1 => ModeType::Intra,
             _ => part.mode_type,
@@ -1018,7 +1170,8 @@ impl<'a, 's, 'b> CtuDecoder<'a, 's, 'b> {
         let can_btt = num_hor != 0 || num_ver != 0;
         let mut is_qt = can[1];
         if is_qt && can_btt {
-            let mut c = usize::from(has_l && l_qt > part.qt_depth) + usize::from(has_a && a_qt > part.qt_depth);
+            let mut c = usize::from(has_l && l_qt > part.qt_depth)
+                + usize::from(has_a && a_qt > part.qt_depth);
             c += if part.qt_depth < 2 { 0 } else { 3 };
             is_qt = self.bin(ctx::SPLIT_QT_FLAG + c) != 0;
         }
@@ -1072,7 +1225,12 @@ impl<'a, 's, 'b> CtuDecoder<'a, 's, 'b> {
         &mut self.pic.cus[id as usize]
     }
 
-    fn coding_unit(&mut self, cu_id: u32, part: &mut Partitioner, cu_ctx: &mut CuCtx) -> Result<(), Error> {
+    fn coding_unit(
+        &mut self,
+        cu_id: u32,
+        part: &mut Partitioner,
+        cu_ctx: &mut CuCtx,
+    ) -> Result<(), Error> {
         let sps = self.si.sps;
         if !self.si.is_intra() || sps.ibc {
             if self.cu(cu_id).blk[0].valid() {
@@ -1105,13 +1263,15 @@ impl<'a, 's, 'b> CtuDecoder<'a, 's, 'b> {
 
     fn ctx_ibc(&self, cu_id: u32) -> usize {
         let c = self.cu(cu_id);
-        usize::from(c.left.is_some_and(|l| self.cu(l).pred == Pred::Ibc)) + usize::from(c.above.is_some_and(|a| self.cu(a).pred == Pred::Ibc))
+        usize::from(c.left.is_some_and(|l| self.cu(l).pred == Pred::Ibc))
+            + usize::from(c.above.is_some_and(|a| self.cu(a).pred == Pred::Ibc))
     }
 
     fn cu_skip_flag(&mut self, cu_id: u32) -> Result<(), Error> {
         let c = self.cu(cu_id);
         let ibc_flag = self.si.sps.ibc && c.lw() <= 64 && c.lh() <= 64;
-        let ctx_skip = usize::from(c.left.is_some_and(|l| self.cu(l).skip)) + usize::from(c.above.is_some_and(|a| self.cu(a).skip));
+        let ctx_skip = usize::from(c.left.is_some_and(|l| self.cu(l).skip))
+            + usize::from(c.above.is_some_and(|a| self.cu(a).skip));
         if (self.si.is_intra() || self.is_cons_intra(cu_id)) && ibc_flag {
             if self.bin(ctx::SKIP_FLAG + ctx_skip) != 0 {
                 let c = self.cu_mut(cu_id);
@@ -1159,7 +1319,11 @@ impl<'a, 's, 'b> CtuDecoder<'a, 's, 'b> {
         if self.cu(cu_id).pred != Pred::Ibc {
             return Err(Error::Unsupported("inter prediction"));
         }
-        let merge = if self.cu(cu_id).skip { true } else { self.bin(ctx::MERGE_FLAG) != 0 };
+        let merge = if self.cu(cu_id).skip {
+            true
+        } else {
+            self.bin(ctx::MERGE_FLAG) != 0
+        };
         self.cu_mut(cu_id).merge = merge;
         let max_cand = self.si.sps.max_num_ibc_merge_cand;
         let mut mvd = (0i32, 0i32);
@@ -1174,7 +1338,11 @@ impl<'a, 's, 'b> CtuDecoder<'a, 's, 'b> {
             self.cu_mut(cu_id).merge_idx = idx as u8;
         } else {
             mvd = self.mvd_coding();
-            let mvp = if max_cand == 1 { 0 } else { self.bin(ctx::MVP_IDX) as u8 };
+            let mvp = if max_cand == 1 {
+                0
+            } else {
+                self.bin(ctx::MVP_IDX) as u8
+            };
             self.cu_mut(cu_id).mvp_idx = mvp;
             // amvr_mode: IBC always uses integer or four-sample precision
             let mut imv = 0u8;
@@ -1215,15 +1383,22 @@ impl<'a, 's, 'b> CtuDecoder<'a, 's, 'b> {
         let (x, y, w, h) = (c.lx(), c.ly(), c.lw(), c.lh());
         let gt4x4 = w * h > 16;
         let mut list: Vec<(i32, i32)> = Vec::new();
-        let left = self.pic.get_cu_restricted(x - 1, y + h - 1, cu_id, 0, c.left, self.wpp).filter(|&l| self.cu(l).pred == Pred::Ibc);
+        let left = self
+            .pic
+            .get_cu_restricted(x - 1, y + h - 1, cu_id, 0, c.left, self.wpp)
+            .filter(|&l| self.cu(l).pred == Pred::Ibc);
         if gt4x4 && let Some(l) = left {
             list.push(self.cu(l).bv);
         }
         if list.len() < max {
-            let above = self.pic.get_cu_restricted(x + w - 1, y - 1, cu_id, 0, c.above, self.wpp).filter(|&a| self.cu(a).pred == Pred::Ibc);
+            let above = self
+                .pic
+                .get_cu_restricted(x + w - 1, y - 1, cu_id, 0, c.above, self.wpp)
+                .filter(|&a| self.cu(a).pred == Pred::Ibc);
             if gt4x4 && let Some(a) = above {
                 let ab = self.cu(a).bv;
-                let same = left.is_some_and(|l| self.cu(l).slice == self.cu(a).slice && self.cu(l).bv == ab);
+                let same = left
+                    .is_some_and(|l| self.cu(l).slice == self.cu(a).slice && self.cu(l).bv == ab);
                 if !same {
                     list.push(ab);
                 }
@@ -1234,7 +1409,7 @@ impl<'a, 's, 'b> CtuDecoder<'a, 's, 'b> {
             let n = self.pic.ibc_hist.len();
             for k in 1..=n {
                 let cand = self.pic.ibc_hist[n - k];
-                let pruned = !(k > 1 || !gt4x4) && list[..spatial].contains(&cand);
+                let pruned = k == 1 && gt4x4 && list[..spatial].contains(&cand);
                 if !pruned {
                     list.push(cand);
                     if list.len() == max {
@@ -1267,11 +1442,23 @@ impl<'a, 's, 'b> CtuDecoder<'a, 's, 'b> {
                 let v = (v + (1 << 18)) & ((1 << 18) - 1);
                 if v >= 1 << 17 { v - (1 << 18) } else { v }
             };
-            (wrap(round(p.0) + (mvd.0 << shift)), wrap(round(p.1) + (mvd.1 << shift)))
+            (
+                wrap(round(p.0) + (mvd.0 << shift)),
+                wrap(round(p.1) + (mvd.1 << shift)),
+            )
         };
         self.cu_mut(cu_id).bv = bv;
         let c = self.cu(cu_id);
-        vtrace!("ibc pos=({},{}) size={}x{} merge={} bv=({},{})", c.lx(), c.ly(), c.lw(), c.lh(), i32::from(merge), bv.0, bv.1);
+        vtrace!(
+            "ibc pos=({},{}) size={}x{} merge={} bv=({},{})",
+            c.lx(),
+            c.ly(),
+            c.lw(),
+            c.lh(),
+            i32::from(merge),
+            bv.0,
+            bv.1
+        );
         if c.lw() * c.lh() > 16 {
             let h = &mut self.pic.ibc_hist;
             if let Some(i) = h.iter().position(|&v| v == bv) {
@@ -1316,7 +1503,13 @@ impl<'a, 's, 'b> CtuDecoder<'a, 's, 'b> {
         self.pic.ctus[ctu].num_tus += 1;
         let idx = self.pic.ctus[ctu].num_tus;
         let id = self.pic.tus.len() as u32;
-        self.pic.tus.push(Tu { blk, ch_type, idx, cu: cu_id, ..Default::default() });
+        self.pic.tus.push(Tu {
+            blk,
+            ch_type,
+            idx,
+            cu: cu_id,
+            ..Default::default()
+        });
         self.cu_mut(cu_id).num_tu += 1;
         id
     }
@@ -1370,7 +1563,8 @@ impl<'a, 's, 'b> CtuDecoder<'a, 's, 'b> {
         let sps = self.si.sps;
         if sps.mip {
             let c = self.cu(cu_id);
-            let mut ctx_id = usize::from(c.left.is_some_and(|l| self.cu(l).mip)) + usize::from(c.above.is_some_and(|a| self.cu(a).mip));
+            let mut ctx_id = usize::from(c.left.is_some_and(|l| self.cu(l).mip))
+                + usize::from(c.above.is_some_and(|a| self.cu(a).mip));
             if c.lw() > 2 * c.lh() || c.lh() > 2 * c.lw() {
                 ctx_id = 3;
             }
@@ -1396,9 +1590,17 @@ impl<'a, 's, 'b> CtuDecoder<'a, 's, 'b> {
         if c.bdpcm[0] == 0 && sps.mrl {
             let mask = (1i32 << self.pic.ctu_log2) - 1;
             if c.ly() & mask != 0 {
-                let mut mrl = if self.bin(ctx::MULTI_REF_LINE_IDX) == 1 { 1 } else { 0 };
+                let mut mrl = if self.bin(ctx::MULTI_REF_LINE_IDX) == 1 {
+                    1
+                } else {
+                    0
+                };
                 if mrl != 0 {
-                    mrl = if self.bin(ctx::MULTI_REF_LINE_IDX + 1) == 1 { 2 } else { 1 };
+                    mrl = if self.bin(ctx::MULTI_REF_LINE_IDX + 1) == 1 {
+                        2
+                    } else {
+                        1
+                    };
                 }
                 self.cu_mut(cu_id).mrl = mrl;
             }
@@ -1417,12 +1619,20 @@ impl<'a, 's, 'b> CtuDecoder<'a, 's, 'b> {
             }
         }
         let c = self.cu(cu_id);
-        let mpm_flag = if c.mrl != 0 { true } else { self.bin(ctx::I_PRED_MODE0) != 0 };
+        let mpm_flag = if c.mrl != 0 {
+            true
+        } else {
+            self.bin(ctx::I_PRED_MODE0) != 0
+        };
         let mut mpm = self.intra_mpms(cu_id);
         if mpm_flag {
             let c = self.cu(cu_id);
             let ctx_id = if c.isp == NOT_ISP { 1 } else { 0 };
-            let mut idx = if c.mrl == 0 { self.bin(ctx::INTRA_LUMA_PLANAR_FLAG + ctx_id) } else { 1 };
+            let mut idx = if c.mrl == 0 {
+                self.bin(ctx::INTRA_LUMA_PLANAR_FLAG + ctx_id)
+            } else {
+                1
+            };
             if idx != 0 {
                 while idx < 5 && self.ep() != 0 {
                     idx += 1;
@@ -1440,7 +1650,12 @@ impl<'a, 's, 'b> CtuDecoder<'a, 's, 'b> {
             self.cu_mut(cu_id).intra_dir[0] = mode as u8;
         }
         let c = self.cu(cu_id);
-        vtrace!("intra_luma_pred_modes() idx=0 pos=({},{}) mode={}", c.lx(), c.ly(), c.intra_dir[0]);
+        vtrace!(
+            "intra_luma_pred_modes() idx=0 pos=({},{}) mode={}",
+            c.lx(),
+            c.ly(),
+            c.intra_dir[0]
+        );
         Ok(())
     }
 
@@ -1456,23 +1671,35 @@ impl<'a, 's, 'b> CtuDecoder<'a, 's, 'b> {
         let (lb_x, lb_y) = (b.x, b.y + b.h - 1);
         let mut left_dir = PLANAR as i32;
         let mut above_dir = PLANAR as i32;
-        if let Some(l) = self.pic.get_cu_restricted(lb_x - 1, lb_y, cu_id, 0, c.left, self.wpp)
+        if let Some(l) = self
+            .pic
+            .get_cu_restricted(lb_x - 1, lb_y, cu_id, 0, c.left, self.wpp)
             && self.cu(l).pred == Pred::Intra
         {
             left_dir = self.intra_dir_luma(l) as i32;
         }
-        if let Some(a) = self.pic.get_cu_restricted(rt_x, rt_y - 1, cu_id, 0, c.above, self.wpp)
+        if let Some(a) = self
+            .pic
+            .get_cu_restricted(rt_x, rt_y - 1, cu_id, 0, c.above, self.wpp)
             && self.cu(a).pred == Pred::Intra
         {
             let ac = self.cu(a);
-            let same_ctu = (ac.lx() >> self.pic.ctu_log2) == (c.lx() >> self.pic.ctu_log2) && (ac.ly() >> self.pic.ctu_log2) == (c.ly() >> self.pic.ctu_log2);
+            let same_ctu = (ac.lx() >> self.pic.ctu_log2) == (c.lx() >> self.pic.ctu_log2)
+                && (ac.ly() >> self.pic.ctu_log2) == (c.ly() >> self.pic.ctu_log2);
             if same_ctu {
                 above_dir = self.intra_dir_luma(a) as i32;
             }
         }
         let offset = 67 - 6;
         let m = offset + 3;
-        let mut mpm = [PLANAR as i32, DC as i32, VER as i32, HOR as i32, VER as i32 - 4, VER as i32 + 4];
+        let mut mpm = [
+            PLANAR as i32,
+            DC as i32,
+            VER as i32,
+            HOR as i32,
+            VER as i32 - 4,
+            VER as i32 + 4,
+        ];
         if left_dir == above_dir {
             if left_dir > DC as i32 {
                 mpm = [
@@ -1509,7 +1736,14 @@ impl<'a, 's, 'b> CtuDecoder<'a, 's, 'b> {
             }
         } else if left_dir + above_dir >= 2 {
             let mx = left_dir.max(above_dir);
-            mpm = [PLANAR as i32, mx, ((mx + offset) % m) + 2, ((mx - 1) % m) + 2, ((mx + offset - 1) % m) + 2, (mx % m) + 2];
+            mpm = [
+                PLANAR as i32,
+                mx,
+                ((mx + offset) % m) + 2,
+                ((mx - 1) % m) + 2,
+                ((mx + offset - 1) % m) + 2,
+                (mx % m) + 2,
+            ];
         }
         mpm.map(|v| v as u8)
     }
@@ -1540,15 +1774,18 @@ impl<'a, 's, 'b> CtuDecoder<'a, 's, 'b> {
         };
         let s1 = split_at(depth64);
         let s2 = split_at(depth64 + 1);
-        let mut allow = s1 == Split::Quad || (s1 == Split::Horz && s2 == Split::Vert) || s1 == Split::None || (s1 == Split::Horz && s2 == Split::None);
+        let mut allow = s1 == Split::Quad
+            || (s1 == Split::Horz && s2 == Split::Vert)
+            || s1 == Split::None
+            || (s1 == Split::Horz && s2 == Split::None);
         if allow {
             let cb = c.blk[1];
             let (lx, ly) = (cb.x << self.pic.fmt.sx, cb.y << self.pic.fmt.sy);
             if let Some(col) = self.pic.get_cu(lx, ly, 0) {
                 let cc = self.cu(col);
-                if cc.depth > depth64 && cc.qt_depth == depth64 {
-                    allow = false;
-                } else if cc.depth == depth64 && cc.isp != 0 {
+                if (cc.depth > depth64 && cc.qt_depth == depth64)
+                    || (cc.depth == depth64 && cc.isp != 0)
+                {
                     allow = false;
                 }
             }
@@ -1567,7 +1804,8 @@ impl<'a, 's, 'b> CtuDecoder<'a, 's, 'b> {
             self.cu_mut(cu_id).intra_dir[1] = DM_CHROMA;
             return Ok(());
         }
-        if self.si.sps.cclm && self.check_cclm_allowed(cu_id) && self.bin(ctx::CCLM_MODE_FLAG) != 0 {
+        if self.si.sps.cclm && self.check_cclm_allowed(cu_id) && self.bin(ctx::CCLM_MODE_FLAG) != 0
+        {
             let mut symbol = self.bin(ctx::CCLM_MODE_IDX);
             if symbol != 0 {
                 symbol += self.ep();
@@ -1598,9 +1836,18 @@ impl<'a, 's, 'b> CtuDecoder<'a, 's, 'b> {
         recon::is_dm_chroma_mip(self.pic, self.si, cu_id)
     }
 
-    fn cu_residual(&mut self, cu_id: u32, part: &mut Partitioner, cu_ctx: &mut CuCtx) -> Result<(), Error> {
+    fn cu_residual(
+        &mut self,
+        cu_id: u32,
+        part: &mut Partitioner,
+        cu_ctx: &mut CuCtx,
+    ) -> Result<(), Error> {
         if self.cu(cu_id).pred != Pred::Intra {
-            let root = if self.cu(cu_id).merge { true } else { self.bin(ctx::QT_ROOT_CBF) != 0 };
+            let root = if self.cu(cu_id).merge {
+                true
+            } else {
+                self.bin(ctx::QT_ROOT_CBF) != 0
+            };
             self.cu_mut(cu_id).root_cbf = root;
             if !root {
                 self.add_empty_tus(cu_id, part);
@@ -1627,12 +1874,21 @@ impl<'a, 's, 'b> CtuDecoder<'a, 's, 'b> {
         Ok(())
     }
 
-    fn transform_tree(&mut self, cu_id: u32, part: &mut Partitioner, cu_ctx: &mut CuCtx) -> Result<(), Error> {
+    fn transform_tree(
+        &mut self,
+        cu_id: u32,
+        part: &mut Partitioner,
+        cu_ctx: &mut CuCtx,
+    ) -> Result<(), Error> {
         let area = *part.area();
         let mut split = area.blk[0].w > part.max_tr as i32 || area.blk[0].h > part.max_tr as i32;
         let c = self.cu(cu_id);
         let isp_type = if c.isp != NOT_ISP && part.ch_type == 0 {
-            if c.isp == HOR_ISP { Split::IspHorz } else { Split::IspVert }
+            if c.isp == HOR_ISP {
+                Split::IspHorz
+            } else {
+                Split::IspVert
+            }
         } else {
             Split::None
         };
@@ -1674,7 +1930,13 @@ impl<'a, 's, 'b> CtuDecoder<'a, 's, 'b> {
         self.bin(base + inc) != 0
     }
 
-    fn transform_unit(&mut self, tu_id: u32, cu_id: u32, part: &mut Partitioner, cu_ctx: &mut CuCtx) -> Result<(), Error> {
+    fn transform_unit(
+        &mut self,
+        tu_id: u32,
+        cu_id: u32,
+        part: &mut Partitioner,
+        cu_ctx: &mut CuCtx,
+    ) -> Result<(), Error> {
         let area = *part.area();
         let tr_depth = part.tr_depth;
         let fmt = self.pic.fmt;
@@ -1683,7 +1945,11 @@ impl<'a, 's, 'b> CtuDecoder<'a, 's, 'b> {
         let chroma_cbf_isp = fmt.chroma != 0 && area.blk[1].valid() && c.isp != NOT_ISP;
         let mut cbf_cb = false;
         let mut cbf_cr = false;
-        if fmt.chroma != 0 && area.blk[1].valid() && (!c.is_sep_tree(dual) || part.ch_type == 1) && (c.isp == NOT_ISP || chroma_cbf_isp) {
+        if fmt.chroma != 0
+            && area.blk[1].valid()
+            && (!c.is_sep_tree(dual) || part.ch_type == 1)
+            && (c.isp == NOT_ISP || chroma_cbf_isp)
+        {
             cbf_cb = self.cbf_comp(cu_id, 1, false, false);
             cbf_cr = self.cbf_comp(cu_id, 2, cbf_cb, false);
         }
@@ -1693,7 +1959,11 @@ impl<'a, 's, 'b> CtuDecoder<'a, 's, 'b> {
                 let luma_inferred_act = c.act && tr_depth == 0 && !sig_chroma;
                 let mut last_inferred = luma_inferred_act;
                 let tu_blk = self.pic.tus[tu_id as usize].blk[0];
-                let n_tus = if c.isp == HOR_ISP { c.lh() >> log2(tu_blk.h) } else { c.lw() >> log2(tu_blk.w) };
+                let n_tus = if c.isp == HOR_ISP {
+                    c.lh() >> log2(tu_blk.h)
+                } else {
+                    c.lw() >> log2(tu_blk.w)
+                };
                 if part.part_idx() as i32 == n_tus - 1 {
                     let mut root_so_far = false;
                     for t in c.first_tu..tu_id {
@@ -1733,15 +2003,25 @@ impl<'a, 's, 'b> CtuDecoder<'a, 's, 'b> {
         let cbf_luma = self.pic.tus[tu_id as usize].cbf(0);
         let cbf_chroma = !luma_only && (cbf_cb || cbf_cr);
         if c.lw() > 64 || c.lh() > 64 || cbf_luma || cbf_chroma {
-            if self.si.pps.cu_qp_delta && !cu_ctx.dqp_coded && (!c.is_sep_tree(dual) || self.pic.tus[tu_id as usize].ch_type == 0) {
+            if self.si.pps.cu_qp_delta
+                && !cu_ctx.dqp_coded
+                && (!c.is_sep_tree(dual) || self.pic.tus[tu_id as usize].ch_type == 0)
+            {
                 let qp = self.cu_qp_delta(cu_ctx.qp)?;
                 self.cu_mut(cu_id).qp = qp;
                 cu_ctx.qp = qp;
                 cu_ctx.dqp_coded = true;
             }
             if !c.is_sep_tree(dual) || self.pic.tus[tu_id as usize].ch_type == 1 {
-                let (cw, ch) = if !c.is_sep_tree(dual) { (c.lw(), c.lh()) } else { (c.blk[1].w, c.blk[1].h) };
-                if self.si.sh.cu_chroma_qp_offset_enabled && (cw > 64 || ch > 64 || cbf_chroma) && !cu_ctx.cqp_adj_coded {
+                let (cw, ch) = if !c.is_sep_tree(dual) {
+                    (c.lw(), c.lh())
+                } else {
+                    (c.blk[1].w, c.blk[1].h)
+                };
+                if self.si.sh.cu_chroma_qp_offset_enabled
+                    && (cw > 64 || ch > 64 || cbf_chroma)
+                    && !cu_ctx.cqp_adj_coded
+                {
                     self.cu_chroma_qp_offset(cu_id);
                     cu_ctx.cqp_adj_coded = true;
                 }
@@ -1749,7 +2029,11 @@ impl<'a, 's, 'b> CtuDecoder<'a, 's, 'b> {
             if !luma_only {
                 let mask = (if cbf_cb { 2 } else { 0 }) + (if cbf_cr { 1 } else { 0 });
                 if self.si.sps.joint_cbcr && ((c.pred == Pred::Intra && mask != 0) || mask == 3) {
-                    let j = if self.bin(ctx::JOINT_CB_CR_FLAG + mask - 1) != 0 { mask as u8 } else { 0 };
+                    let j = if self.bin(ctx::JOINT_CB_CR_FLAG + mask - 1) != 0 {
+                        mask as u8
+                    } else {
+                        0
+                    };
                     self.pic.tus[tu_id as usize].joint = j;
                     if j != 0 {
                         let cm = self.cu_mut(cu_id);
@@ -1827,16 +2111,29 @@ impl<'a, 's, 'b> CtuDecoder<'a, 's, 'b> {
         ok
     }
 
-    fn residual_coding(&mut self, tu_id: u32, comp: usize, cu_ctx: &mut CuCtx) -> Result<(), Error> {
+    fn residual_coding(
+        &mut self,
+        tu_id: u32,
+        comp: usize,
+        cu_ctx: &mut CuCtx,
+    ) -> Result<(), Error> {
         let t = self.pic.tus[tu_id as usize].clone();
         let c = self.cu(t.cu).clone();
         let b = t.blk[comp];
-        vtrace!("residual_coding() etype={} pos=({},{}) size={}x{}", comp, b.x, b.y, b.w, b.h);
+        vtrace!(
+            "residual_coding() etype={} pos=({},{}) size={}x{}",
+            comp,
+            b.x,
+            b.y,
+            b.w,
+            b.h
+        );
         if comp == 2 && t.joint == 3 {
             return Ok(());
         }
         // ts_flag
-        let mut ts = ((c.bdpcm[0] != 0 && comp == 0) || (c.bdpcm[1] != 0 && comp != 0)) || t.mts[comp] == MTS_SKIP;
+        let mut ts = ((c.bdpcm[0] != 0 && comp == 0) || (c.bdpcm[1] != 0 && comp != 0))
+            || t.mts[comp] == MTS_SKIP;
         if self.is_ts_allowed(tu_id, comp) {
             ts = self.bin(ctx::MTS_INDEX + if comp == 0 { 4 } else { 5 }) != 0;
         }
@@ -1846,13 +2143,26 @@ impl<'a, 's, 'b> CtuDecoder<'a, 's, 'b> {
             return self.residual_coding_ts(tu_id, comp, &c);
         }
         let ch = if comp == 0 { 0 } else { 1 };
-        let mut cc = CoeffCtx::new(b.w, b.h, ch, self.si.sh.sign_data_hiding, comp == 0, &c, t.mts[comp], false);
+        let mut cc = CoeffCtx::new(
+            b.w,
+            b.h,
+            ch,
+            self.si.sh.sign_data_hiding,
+            comp == 0,
+            &c,
+            t.mts[comp],
+            false,
+        );
         // last_sig_coeff
         let last = self.last_sig_coeff(&cc, comp, &c);
         cc.scan_pos_last = last;
         let mts = self.pic.tus[tu_id as usize].mts[comp];
         if mts != MTS_SKIP && b.h >= 4 && b.w >= 4 {
-            let max_lfnst = if (b.h == 4 && b.w == 4) || (b.h == 8 && b.w == 8) { 7 } else { 15 };
+            let max_lfnst = if (b.h == 4 && b.w == 4) || (b.h == 8 && b.w == 8) {
+                7
+            } else {
+                15
+            };
             cu_ctx.violates_lfnst[ch] |= last > max_lfnst;
             cu_ctx.lfnst_last_scan_pos |= last >= 1;
         }
@@ -1872,7 +2182,13 @@ impl<'a, 's, 'b> CtuDecoder<'a, 's, 'b> {
         while sub_set >= 0 {
             cc.init_subblock(sub_set as usize);
             let start = sig_pos.len();
-            let (num, sign, sub1) = self.residual_coding_subblock(&mut cc, &mut coeff, trans_tab, &mut state, &mut sig_pos);
+            let (num, sign, sub1) = self.residual_coding_subblock(
+                &mut cc,
+                &mut coeff,
+                trans_tab,
+                &mut state,
+                &mut sig_pos,
+            );
             if num > 0 {
                 sig_list.push((num, sign, sub1, start as u32));
                 max_x = max_x.max(cc.cg_x);
@@ -1898,7 +2214,11 @@ impl<'a, 's, 'b> CtuDecoder<'a, 's, 'b> {
             // Signs were read in reverse sigPos order within each subblock.
             for k in 0..num {
                 let pos = sig_pos[start as usize + num - 1 - k] as usize;
-                let abs = if dq { coeff[pos] * 2 - (sub1 & 1) as i32 } else { coeff[pos] };
+                let abs = if dq {
+                    coeff[pos] * 2 - (sub1 & 1) as i32
+                } else {
+                    coeff[pos]
+                };
                 out[pos] = if sign & 1 != 0 { -abs } else { abs };
                 sign >>= 1;
                 sub1 >>= 1;
@@ -1918,7 +2238,11 @@ impl<'a, 's, 'b> CtuDecoder<'a, 's, 'b> {
         let mut max_x = cc.max_last_x;
         let mut max_y = cc.max_last_y;
         let _ = (comp, c);
-        let (lx_ctx, ly_ctx) = if cc.ch == 0 { (ctx::LASTX0, ctx::LASTY0) } else { (ctx::LASTX1, ctx::LASTY1) };
+        let (lx_ctx, ly_ctx) = if cc.ch == 0 {
+            (ctx::LASTX0, ctx::LASTY0)
+        } else {
+            (ctx::LASTX1, ctx::LASTY1)
+        };
         let mut px = 0u32;
         while px < max_x {
             if self.bin(lx_ctx + (cc.last_off_x + (px >> cc.last_shift_x)) as usize) == 0 {
@@ -1962,10 +2286,21 @@ impl<'a, 's, 'b> CtuDecoder<'a, 's, 'b> {
         n - 1
     }
 
-    fn residual_coding_subblock(&mut self, cc: &mut CoeffCtx, coeff: &mut [i32], trans_tab: u32, state: &mut u32, sig_pos: &mut Vec<i32>) -> (usize, u32, u32) {
+    fn residual_coding_subblock(
+        &mut self,
+        cc: &mut CoeffCtx,
+        coeff: &mut [i32],
+        trans_tab: u32,
+        state: &mut u32,
+        sig_pos: &mut Vec<i32>,
+    ) -> (usize, u32, u32) {
         let min_sub = cc.min_sub_pos as i32;
         let is_last = cc.is_last();
-        let first_sig = if is_last { cc.scan_pos_last as i32 } else { cc.max_sub_pos as i32 };
+        let first_sig = if is_last {
+            cc.scan_pos_last as i32
+        } else {
+            cc.max_sub_pos as i32
+        };
         let mut next = first_sig;
         let mut sig_group = is_last || min_sub == 0;
         if !sig_group {
@@ -1978,7 +2313,11 @@ impl<'a, 's, 'b> CtuDecoder<'a, 's, 'b> {
         }
         let mut gt1_pos: [usize; 16] = [0; 16];
         let mut num_gt1 = 0usize;
-        let infer_sig = if next != cc.scan_pos_last as i32 { if cc.sub_set != 0 { min_sub } else { -1 } } else { next };
+        let infer_sig = if next != cc.scan_pos_last as i32 {
+            if cc.sub_set != 0 { min_sub } else { -1 }
+        } else {
+            next
+        };
         let mut first_nz = next;
         let mut last_nz: i32 = -1;
         let mut num_nz = 0usize;
@@ -2040,7 +2379,13 @@ impl<'a, 's, 'b> CtuDecoder<'a, 's, 'b> {
             let rice = GO_RICE_PARS[sum as usize];
             let pos0 = (if *state < 2 { 1 } else { 2 }) << rice;
             let rem = self.cabac.decode_rem_abs(rice, 5, cc.max_log2_range);
-            let tc = if rem == pos0 { 0 } else if rem < pos0 { rem + 1 } else { rem };
+            let tc = if rem == pos0 {
+                0
+            } else if rem < pos0 {
+                rem + 1
+            } else {
+                rem
+            };
             *state = (trans_tab >> ((*state << 2) + ((tc & 1) << 1))) & 3;
             if tc != 0 {
                 coeff[blk] = tc as i32;
@@ -2088,7 +2433,14 @@ impl<'a, 's, 'b> CtuDecoder<'a, 's, 'b> {
         Ok(())
     }
 
-    fn residual_coding_subblock_ts(&mut self, cc: &mut CoeffCtx, coeff: &mut [i32], out: &mut [i32], max_x: &mut i32, max_y: &mut i32) {
+    fn residual_coding_subblock_ts(
+        &mut self,
+        cc: &mut CoeffCtx,
+        coeff: &mut [i32],
+        out: &mut [i32],
+        max_x: &mut i32,
+        max_y: &mut i32,
+    ) {
         let min_sub = cc.max_sub_pos as i32; // vvdec swaps the names here
         let first_sig = cc.min_sub_pos as i32;
         let mut next = first_sig;
@@ -2142,7 +2494,12 @@ impl<'a, 's, 'b> CtuDecoder<'a, 's, 'b> {
                 sign_pattern += s << num_nz;
                 sig_blk[num_nz] = blk;
                 num_nz += 1;
-                let num_pos = if cc.bdpcm { 3 } else { usize::from(px > 0 && coeff[blk - 1] != 0) + usize::from(py > 0 && coeff[blk - w] != 0) };
+                let num_pos = if cc.bdpcm {
+                    3
+                } else {
+                    usize::from(px > 0 && coeff[blk - 1] != 0)
+                        + usize::from(py > 0 && coeff[blk - w] != 0)
+                };
                 let gt1 = self.bin(ctx::TS_LRG1_FLAG + num_pos);
                 cc.num_ctx_bins -= 1;
                 let mut par = 0;
@@ -2175,13 +2532,23 @@ impl<'a, 's, 'b> CtuDecoder<'a, 's, 'b> {
         }
         for scan in first_sig..=min_sub {
             let blk = cc.scan[scan as usize] as usize;
-            let cutoff = if scan <= last_pass2 { 10 } else if scan <= last_pass1 { 2 } else { 0 };
+            let cutoff = if scan <= last_pass2 {
+                10
+            } else if scan <= last_pass1 {
+                2
+            } else {
+                0
+            };
             if coeff[blk] < 0 {
                 coeff[blk] = -coeff[blk];
             }
             if coeff[blk] >= cutoff {
                 let rem = self.cabac.decode_rem_abs(1, 5, cc.max_log2_range);
-                coeff[blk] += if scan <= last_pass1 { (rem << 1) as i32 } else { rem as i32 };
+                coeff[blk] += if scan <= last_pass1 {
+                    (rem << 1) as i32
+                } else {
+                    rem as i32
+                };
                 if coeff[blk] != 0 && scan > last_pass1 {
                     let s = self.ep();
                     sign_pattern += s << num_nz;
@@ -2195,7 +2562,11 @@ impl<'a, 's, 'b> CtuDecoder<'a, 's, 'b> {
                 let below = if py > 0 { coeff[blk - w] } else { 0 };
                 let pred1 = right.abs().max(below.abs());
                 let abs = coeff[blk];
-                coeff[blk] = if abs == 1 && pred1 > 0 { pred1 } else { abs - i32::from(abs <= pred1) };
+                coeff[blk] = if abs == 1 && pred1 > 0 {
+                    pred1
+                } else {
+                    abs - i32::from(abs <= pred1)
+                };
             }
         }
         for &blk in sig_blk.iter().take(num_nz) {
@@ -2227,7 +2598,10 @@ impl<'a, 's, 'b> CtuDecoder<'a, 's, 'b> {
             };
             tw >= 4 && th >= 4
         };
-        if (c.isp != NOT_ISP && !isp_ok) || (c.mip && !(c.blk[0].w >= 16 && c.blk[0].h >= 16)) || (c.ch_type == 1 && c.blk[1].w.min(c.blk[1].h) < 4) {
+        if (c.isp != NOT_ISP && !isp_ok)
+            || (c.mip && !(c.blk[0].w >= 16 && c.blk[0].h >= 16))
+            || (c.ch_type == 1 && c.blk[1].w.min(c.blk[1].h) < 4)
+        {
             return;
         }
         let (sx, sy) = self.pic.fmt.scale(ch_idx);
@@ -2239,7 +2613,8 @@ impl<'a, 's, 'b> CtuDecoder<'a, 's, 'b> {
         }
         let luma_flag = if sep { c.ch_type == 0 } else { true };
         let chroma_flag = if sep { c.ch_type == 1 } else { true };
-        let non_zero = (luma_flag && cu_ctx.violates_lfnst[0]) || (chroma_flag && cu_ctx.violates_lfnst[1]);
+        let non_zero =
+            (luma_flag && cu_ctx.violates_lfnst[0]) || (chroma_flag && cu_ctx.violates_lfnst[1]);
         let mut is_ts = false;
         for t in c.first_tu..c.first_tu + c.num_tu {
             let tu = &self.pic.tus[t as usize];
@@ -2258,7 +2633,12 @@ impl<'a, 's, 'b> CtuDecoder<'a, 's, 'b> {
             idx += self.bin(ctx::LFNST_IDX + 2);
         }
         self.cu_mut(cu_id).lfnst = idx as u8;
-        vtrace!("residual_lfnst_mode() etype=0 pos=({},{}) mode={}", c.lx(), c.ly(), idx);
+        vtrace!(
+            "residual_lfnst_mode() etype=0 pos=({},{}) mode={}",
+            c.lx(),
+            c.ly(),
+            idx
+        );
     }
 
     fn mts_idx(&mut self, cu_id: u32, cu_ctx: &CuCtx) {
@@ -2272,20 +2652,29 @@ impl<'a, 's, 'b> CtuDecoder<'a, 's, 'b> {
         allowed &= c.lw() <= 32 && c.lh() <= 32;
         allowed &= c.isp == NOT_ISP;
         allowed &= !(c.bdpcm[0] != 0 && c.lw() <= ts_max && c.lh() <= ts_max);
-        if allowed && !cu_ctx.violates_mts && cu_ctx.mts_last_scan_pos && c.lfnst == 0 && mts != MTS_SKIP {
-            if self.bin(ctx::MTS_INDEX) != 0 {
-                mts = MTS_DST7_DST7;
-                for i in 0..3 {
-                    let s = self.bin(ctx::MTS_INDEX + 1 + i);
-                    mts += s as u8;
-                    if s == 0 {
-                        break;
-                    }
+        if allowed
+            && !cu_ctx.violates_mts
+            && cu_ctx.mts_last_scan_pos
+            && c.lfnst == 0
+            && mts != MTS_SKIP
+            && self.bin(ctx::MTS_INDEX) != 0
+        {
+            mts = MTS_DST7_DST7;
+            for i in 0..3 {
+                let s = self.bin(ctx::MTS_INDEX + 1 + i);
+                mts += s as u8;
+                if s == 0 {
+                    break;
                 }
             }
         }
         self.pic.tus[tu0].mts[0] = mts;
-        vtrace!("mts_idx() etype=0 pos=({},{}) mtsIdx={}", c.lx(), c.ly(), mts);
+        vtrace!(
+            "mts_idx() etype=0 pos=({},{}) mtsIdx={}",
+            c.lx(),
+            c.ly(),
+            mts
+        );
     }
 }
 
@@ -2367,7 +2756,16 @@ pub fn grouped_scan_cached(w: i32, h: i32) -> Vec<u16> {
 
 impl CoeffCtx {
     #[allow(clippy::too_many_arguments)]
-    pub fn new(w: i32, h: i32, ch: usize, sign_hide: bool, is_luma: bool, cu: &Cu, mts: u8, ts: bool) -> Self {
+    pub fn new(
+        w: i32,
+        h: i32,
+        ch: usize,
+        sign_hide: bool,
+        is_luma: bool,
+        cu: &Cu,
+        mts: u8,
+        ts: bool,
+    ) -> Self {
         let (lcw, lch) = LOG2_SBB_SIZE[log2(w) as usize][log2(h) as usize];
         let (lcw, lch) = (lcw as i32, lch as i32);
         let wig = 32.min(w) >> lcw;
@@ -2375,7 +2773,11 @@ impl CoeffCtx {
         let log2_w = log2(w);
         let log2_h = log2(h);
         const PREFIX: [u32; 8] = [0, 0, 0, 3, 6, 10, 15, 21];
-        let bdpcm = if is_luma { cu.bdpcm[0] != 0 } else { cu.bdpcm[1] != 0 };
+        let bdpcm = if is_luma {
+            cu.bdpcm[0] != 0
+        } else {
+            cu.bdpcm[1] != 0
+        };
         // getTbAreaAfterCoefZeroOut
         let (mut zw, mut zh) = (w, h);
         if is_luma && mts > MTS_SKIP {
@@ -2388,10 +2790,22 @@ impl CoeffCtx {
         }
         zw = zw.min(32);
         zh = zh.min(32);
-        let reg = (zw * zh * if is_luma { 28 } else { 28 }) >> 4;
-        let sig_base = [ctx::SIG_FLAG0, ctx::SIG_FLAG1, ctx::SIG_FLAG2, ctx::SIG_FLAG3, ctx::SIG_FLAG4, ctx::SIG_FLAG5];
+        let reg = (zw * zh * 28) >> 4;
+        let sig_base = [
+            ctx::SIG_FLAG0,
+            ctx::SIG_FLAG1,
+            ctx::SIG_FLAG2,
+            ctx::SIG_FLAG3,
+            ctx::SIG_FLAG4,
+            ctx::SIG_FLAG5,
+        ];
         let par_base = [ctx::PAR_FLAG0, ctx::PAR_FLAG1];
-        let gtx_base = [ctx::GTX_FLAG0, ctx::GTX_FLAG1, ctx::GTX_FLAG2, ctx::GTX_FLAG3];
+        let gtx_base = [
+            ctx::GTX_FLAG0,
+            ctx::GTX_FLAG1,
+            ctx::GTX_FLAG2,
+            ctx::GTX_FLAG3,
+        ];
         let _ = ts;
         Self {
             ch,
@@ -2409,8 +2823,16 @@ impl CoeffCtx {
             max_last_y: GROUP_IDX[(32.min(h) - 1) as usize],
             last_off_x: if ch == 0 { PREFIX[log2_w as usize] } else { 0 },
             last_off_y: if ch == 0 { PREFIX[log2_h as usize] } else { 0 },
-            last_shift_x: if ch == 1 { (w >> 3).clamp(0, 2) as u32 } else { ((log2_w + 1) >> 2) as u32 },
-            last_shift_y: if ch == 1 { (h >> 3).clamp(0, 2) as u32 } else { ((log2_h + 1) >> 2) as u32 },
+            last_shift_x: if ch == 1 {
+                (w >> 3).clamp(0, 2) as u32
+            } else {
+                ((log2_w + 1) >> 2) as u32
+            },
+            last_shift_y: if ch == 1 {
+                (h >> 3).clamp(0, 2) as u32
+            } else {
+                ((log2_h + 1) >> 2) as u32
+            },
             scan_pos_last: 0,
             sub_set: 0,
             sub_set_pos: 0,
@@ -2463,7 +2885,11 @@ impl CoeffCtx {
         let last_ver = self.cg_y == self.height_in_groups - 1;
         let right = !last_hor && self.sig_cg[self.sub_set_pos + 1];
         let lower = !last_ver && self.sig_cg[self.sub_set_pos + self.width_in_groups as usize];
-        let base = if self.ch == 0 { ctx::SIG_COEFF_GROUP0 } else { ctx::SIG_COEFF_GROUP1 };
+        let base = if self.ch == 0 {
+            ctx::SIG_COEFF_GROUP0
+        } else {
+            ctx::SIG_COEFF_GROUP1
+        };
         self.sig_group_ctx = base + usize::from(right || lower);
         let left = self.cg_x > 0 && self.sig_cg[self.sub_set_pos - 1];
         let above = self.cg_y > 0 && self.sig_cg[self.sub_set_pos - self.width_in_groups as usize];

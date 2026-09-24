@@ -7,7 +7,11 @@ use super::bits::{BitReader, ceil_log2};
 pub const MAX_QP: i32 = 63;
 
 fn check(condition: bool, what: &'static str) -> Result<(), Error> {
-    if condition { Err(Error::Invalid(what)) } else { Ok(()) }
+    if condition {
+        Err(Error::Invalid(what))
+    } else {
+        Ok(())
+    }
 }
 
 #[derive(Clone, Debug, Default)]
@@ -155,9 +159,21 @@ pub struct Sps {
 
 impl Sps {
     pub fn sub_width_c(&self) -> u32 {
-        if self.chroma_format_idc == 1 || self.chroma_format_idc == 2 { 2 } else { 1 }
+        if self.chroma_format_idc == 1 || self.chroma_format_idc == 2 {
+            2
+        } else {
+            1
+        }
     }
     pub fn sub_height_c(&self) -> u32 {
+        if self.chroma_format_idc == 1 { 2 } else { 1 }
+    }
+    /// vvdec's syntax checks derive SubWidthC/SubHeightC from its chroma
+    /// channel scale, which treats 4:0:0 horizontally like 4:2:0.
+    pub fn check_sub_width_c(&self) -> u32 {
+        if self.chroma_format_idc == 3 { 1 } else { 2 }
+    }
+    pub fn check_sub_height_c(&self) -> u32 {
         if self.chroma_format_idc == 1 { 2 } else { 1 }
     }
 }
@@ -168,7 +184,10 @@ fn parse_constraint_info(r: &mut BitReader, ptl: &mut Ptl) -> Result<(), Error> 
         r.flag()?; // all layers independent
         ptl.one_au_only = r.flag()?;
         let sixteen_minus = r.read(4)?;
-        check(sixteen_minus > 8, "gci_sixteen_minus_max_bitdepth_constraint_idc shall be in the range 0 to 8, inclusive")?;
+        check(
+            sixteen_minus > 8,
+            "gci_sixteen_minus_max_bitdepth_constraint_idc shall be in the range 0 to 8, inclusive",
+        )?;
         r.read(2)?;
         // 10 NAL type flags, 6 partitioning flags
         r.read(10)?;
@@ -190,7 +209,11 @@ fn parse_constraint_info(r: &mut BitReader, ptl: &mut Ptl) -> Result<(), Error> 
     Ok(())
 }
 
-pub fn parse_ptl(r: &mut BitReader, present: bool, max_sublayers_minus1: u32) -> Result<Ptl, Error> {
+pub fn parse_ptl(
+    r: &mut BitReader,
+    present: bool,
+    max_sublayers_minus1: u32,
+) -> Result<Ptl, Error> {
     let mut ptl = Ptl::default();
     if present {
         ptl.profile_idc = r.read(7)?;
@@ -200,7 +223,10 @@ pub fn parse_ptl(r: &mut BitReader, present: bool, max_sublayers_minus1: u32) ->
     r.flag()?; // frame only
     let multilayer = r.flag()?;
     // Main 10 (1), Main 10 4:4:4 (33), their still-picture variants (65, 97).
-    check(matches!(ptl.profile_idc, 1 | 33 | 65 | 97) && multilayer, "ptl_multilayer_enabled_flag shall be equal to 0 for non-multilayer profiles")?;
+    check(
+        matches!(ptl.profile_idc, 1 | 33 | 65 | 97) && multilayer,
+        "ptl_multilayer_enabled_flag shall be equal to 0 for non-multilayer profiles",
+    )?;
     // Multilayer profiles (17, 49, 81, 113).
     if matches!(ptl.profile_idc, 17 | 49 | 81 | 113) {
         return Err(Error::Unsupported("Multilayer profiles not yet supported"));
@@ -229,7 +255,11 @@ pub fn parse_ptl(r: &mut BitReader, present: bool, max_sublayers_minus1: u32) ->
     Ok(ptl)
 }
 
-fn parse_ref_pic_list(r: &mut BitReader, sps: &Sps, rpls_idx_is_header: bool) -> Result<RefPicList, Error> {
+fn parse_ref_pic_list(
+    r: &mut BitReader,
+    sps: &Sps,
+    rpls_idx_is_header: bool,
+) -> Result<RefPicList, Error> {
     let mut rpl = RefPicList::default();
     let num = r.uvlc_range(0, 29, "num_ref_entries")?;
     rpl.num_entries = num;
@@ -245,7 +275,11 @@ fn parse_ref_pic_list(r: &mut BitReader, sps: &Sps, rpls_idx_is_header: bool) ->
             rpl.entries.push((0, false));
             continue;
         }
-        let long_term = if sps.long_term_refs { !r.flag()? } else { false };
+        let long_term = if sps.long_term_refs {
+            !r.flag()?
+        } else {
+            false
+        };
         if !long_term {
             let abs = r.uvlc_range(0, (1 << 15) - 1, "abs_delta_poc_st")? as i32;
             let mut delta = abs;
@@ -259,7 +293,11 @@ fn parse_ref_pic_list(r: &mut BitReader, sps: &Sps, rpls_idx_is_header: bool) ->
             prev = delta;
             rpl.entries.push((delta, false));
         } else {
-            let lsb = if !rpl.ltrp_in_header { r.read(sps.bits_for_poc)? as i32 } else { 0 };
+            let lsb = if !rpl.ltrp_in_header {
+                r.read(sps.bits_for_poc)? as i32
+            } else {
+                0
+            };
             rpl.entries.push((lsb, true));
         }
     }
@@ -282,8 +320,14 @@ fn derive_chroma_qp_table(
         qp_out[j + 1] = qp_out[j] + delta_out[j];
     }
     for j in 0..=n {
-        check(qp_in[j] < -qp_bd_offset || qp_in[j] > MAX_QP, "qpInVal out of range")?;
-        check(qp_out[j] < -qp_bd_offset || qp_out[j] > MAX_QP, "qpOutVal out of range")?;
+        check(
+            qp_in[j] < -qp_bd_offset || qp_in[j] > MAX_QP,
+            "qpInVal out of range",
+        )?;
+        check(
+            qp_out[j] < -qp_bd_offset || qp_out[j] > MAX_QP,
+            "qpOutVal out of range",
+        )?;
     }
     let size = (MAX_QP + qp_bd_offset + 1) as usize;
     let mut table = vec![0i32; size];
@@ -298,10 +342,13 @@ fn derive_chroma_qp_table(
         let sh = (delta_in[j] + 1) >> 1;
         let mut m = 1;
         for k in qp_in[j] + 1..=qp_in[j + 1] {
-            let v = table[idx(qp_in[j])] + ((qp_out[j + 1] - qp_out[j]) * m + sh) / (delta_in[j] + 1);
+            let v =
+                table[idx(qp_in[j])] + ((qp_out[j + 1] - qp_out[j]) * m + sh) / (delta_in[j] + 1);
             // vvdec writes through a std::vector; indices beyond MAX_QP are
             // out of bounds there and rejected here.
-            let slot = table.get_mut(idx(k)).ok_or(Error::Invalid("chroma QP table index"))?;
+            let slot = table
+                .get_mut(idx(k))
+                .ok_or(Error::Invalid("chroma QP table index"))?;
             *slot = v;
             m += 1;
         }
@@ -316,7 +363,10 @@ fn skip_general_hrd(r: &mut BitReader) -> Result<(bool, bool, bool, u32), Error>
     let units = r.read(32)?;
     check(units == 0, "num_units_in_tick shall be greater than 0")?;
     let scale = r.read(32)?;
-    check(scale == 0, "The value of time_scale shall be greater than 0.")?;
+    check(
+        scale == 0,
+        "The value of time_scale shall be greater than 0.",
+    )?;
     let nal = r.flag()?;
     let vcl = r.flag()?;
     let mut du = false;
@@ -366,9 +416,15 @@ fn skip_ols_hrd(
                 check(j > 0 && size > prev_size, "cpb_size_value_minus1 order")?;
                 if du {
                     let du_size = r.uvlc_range(0, u32::MAX - 1, "cpb_size_du_value_minus1")?;
-                    check(j > 0 && du_size > prev_du_size, "cpb_size_du_value_minus1 order")?;
+                    check(
+                        j > 0 && du_size > prev_du_size,
+                        "cpb_size_du_value_minus1 order",
+                    )?;
                     let du_rate = r.uvlc_range(0, u32::MAX - 1, "bit_rate_du_value_minus1")?;
-                    check(j > 0 && du_rate <= prev_du_rate, "bit_rate_du_value_minus1 order")?;
+                    check(
+                        j > 0 && du_rate <= prev_du_rate,
+                        "bit_rate_du_value_minus1 order",
+                    )?;
                     prev_du_size = du_size;
                     prev_du_rate = du_rate;
                 }
@@ -382,7 +438,11 @@ fn skip_ols_hrd(
 }
 
 pub fn parse_sps(r: &mut BitReader) -> Result<Sps, Error> {
-    let mut s = Sps { id: r.read(4)?, vps_id: r.read(4)?, ..Default::default() };
+    let mut s = Sps {
+        id: r.read(4)?,
+        vps_id: r.read(4)?,
+        ..Default::default()
+    };
     let max_sublayers_minus1 = r.code_range(3, 0, 6, "sps_max_sublayers_minus1")?;
     s.max_sublayers = max_sublayers_minus1 + 1;
     s.chroma_format_idc = r.read(2)?;
@@ -392,7 +452,10 @@ pub fn parse_sps(r: &mut BitReader) -> Result<Sps, Error> {
     let ctb_log2 = s.log2_ctu_size;
     let ctb = s.ctu_size;
     let ptl_present = r.flag()?;
-    check(s.vps_id == 0 && !ptl_present, "When sps_video_parameter_set_id is equal to 0, the value of sps_ptl_dpb_hrd_params_present_flag shall be equal to 1")?;
+    check(
+        s.vps_id == 0 && !ptl_present,
+        "When sps_video_parameter_set_id is equal to 0, the value of sps_ptl_dpb_hrd_params_present_flag shall be equal to 1",
+    )?;
     if ptl_present {
         s.ptl = parse_ptl(r, true, max_sublayers_minus1)?;
     }
@@ -403,24 +466,41 @@ pub fn parse_sps(r: &mut BitReader) -> Result<Sps, Error> {
     }
     s.max_width = r.uvlc()?;
     s.max_height = r.uvlc()?;
-    let sub_w = s.sub_width_c();
-    let sub_h = s.sub_height_c();
+    let sub_w = s.check_sub_width_c();
+    let sub_h = s.check_sub_height_c();
     if r.flag()? {
         let left = r.uvlc()?;
         let right = r.uvlc()?;
         let top = r.uvlc()?;
         let bottom = r.uvlc()?;
-        check(u64::from(sub_w) * (u64::from(left) + u64::from(right)) > u64::from(s.max_width), "conformance window width")?;
-        check(u64::from(sub_h) * (u64::from(top) + u64::from(bottom)) > u64::from(s.max_height), "conformance window height")?;
-        s.conf_win = Window { left, right, top, bottom };
+        check(
+            u64::from(sub_w) * (u64::from(left) + u64::from(right)) > u64::from(s.max_width),
+            "conformance window width",
+        )?;
+        check(
+            u64::from(sub_h) * (u64::from(top) + u64::from(bottom)) > u64::from(s.max_height),
+            "conformance window height",
+        )?;
+        s.conf_win = Window {
+            left,
+            right,
+            top,
+            bottom,
+        };
     }
     s.subpic_info_present = r.flag()?;
-    check(s.res_change_in_clvs && s.subpic_info_present, "When sps_res_change_in_clvs_allowed_flag is equal to 1, the value of sps_subpic_info_present_flag shall be equal to 0.")?;
+    check(
+        s.res_change_in_clvs && s.subpic_info_present,
+        "When sps_res_change_in_clvs_allowed_flag is equal to 1, the value of sps_subpic_info_present_flag shall be equal to 0.",
+    )?;
     let width_ctus = s.max_width.div_ceil(ctb);
     let height_ctus = s.max_height.div_ceil(ctb);
     if s.subpic_info_present {
         let num_minus1 = r.uvlc()?;
-        check(u64::from(num_minus1) + 1 > u64::from(width_ctus) * u64::from(height_ctus), "Invalid sps_num_subpics_minus1 value")?;
+        check(
+            u64::from(num_minus1) + 1 > u64::from(width_ctus) * u64::from(height_ctus),
+            "Invalid sps_num_subpics_minus1 value",
+        )?;
         s.num_subpics = num_minus1 + 1;
         let n = s.num_subpics as usize;
         s.subpic_x = vec![0; n];
@@ -441,8 +521,16 @@ pub fn parse_sps(r: &mut BitReader) -> Result<Sps, Error> {
             let bits_h = ceil_log2(height_ctus);
             for i in 0..n {
                 if !same_size || i == 0 {
-                    s.subpic_x[i] = if i > 0 && s.max_width > ctb { r.read(bits_w)? } else { 0 };
-                    s.subpic_y[i] = if i > 0 && s.max_height > ctb { r.read(bits_h)? } else { 0 };
+                    s.subpic_x[i] = if i > 0 && s.max_width > ctb {
+                        r.read(bits_w)?
+                    } else {
+                        0
+                    };
+                    s.subpic_y[i] = if i > 0 && s.max_height > ctb {
+                        r.read(bits_h)?
+                    } else {
+                        0
+                    };
                     s.subpic_w[i] = if i < num_minus1 as usize && s.max_width > ctb {
                         r.read(bits_w)? + 1
                     } else {
@@ -456,19 +544,46 @@ pub fn parse_sps(r: &mut BitReader) -> Result<Sps, Error> {
                 } else {
                     check(s.subpic_w[0] == 0 || s.subpic_h[0] == 0, "subpicture size")?;
                     let cols = width_ctus / s.subpic_w[0];
-                    check((cols * height_ctus / s.subpic_h[0]).wrapping_sub(1) != num_minus1, "numSubpicCols * tmpHeightVal / ( sps_subpic_height_minus1[ 0 ] + 1 ) - 1")?;
-                    check(width_ctus % s.subpic_w[0] != 0, "tmpWidthVal % ( sps_subpic_width_minus1[ 0 ] + 1 )")?;
-                    check(height_ctus % s.subpic_h[0] != 0, "tmpHeightVal % ( sps_subpic_height_minus1[ 0 ] + 1 )")?;
+                    check(
+                        (cols * height_ctus / s.subpic_h[0]).wrapping_sub(1) != num_minus1,
+                        "numSubpicCols * tmpHeightVal / ( sps_subpic_height_minus1[ 0 ] + 1 ) - 1",
+                    )?;
+                    check(
+                        !width_ctus.is_multiple_of(s.subpic_w[0]),
+                        "tmpWidthVal % ( sps_subpic_width_minus1[ 0 ] + 1 )",
+                    )?;
+                    check(
+                        !height_ctus.is_multiple_of(s.subpic_h[0]),
+                        "tmpHeightVal % ( sps_subpic_height_minus1[ 0 ] + 1 )",
+                    )?;
                     s.subpic_x[i] = (i as u32 % cols) * s.subpic_w[0];
                     s.subpic_y[i] = (i as u32 / cols) * s.subpic_h[0];
                     s.subpic_w[i] = s.subpic_w[0];
                     s.subpic_h[i] = s.subpic_h[0];
                 }
                 let conf = &s.conf_win;
-                check(u64::from(s.subpic_x[i]) * u64::from(ctb) >= i64::from(s.max_width).wrapping_sub(i64::from(conf.right * sub_w)) as u64, "sps_subpic_ctu_top_left_x")?;
-                check(u64::from(s.subpic_x[i].wrapping_add(s.subpic_w[i])) * u64::from(ctb) <= u64::from(conf.left * sub_w), "sps_subpic_width_minus1")?;
-                check(u64::from(s.subpic_y[i]) * u64::from(ctb) >= i64::from(s.max_height).wrapping_sub(i64::from(conf.bottom * sub_h)) as u64, "sps_subpic_ctu_top_left_y")?;
-                check(u64::from(s.subpic_y[i].wrapping_add(s.subpic_h[i])) * u64::from(ctb) <= u64::from(conf.top * sub_h), "sps_subpic_height_minus1")?;
+                check(
+                    u64::from(s.subpic_x[i]) * u64::from(ctb)
+                        >= i64::from(s.max_width).wrapping_sub(i64::from(conf.right * sub_w))
+                            as u64,
+                    "sps_subpic_ctu_top_left_x",
+                )?;
+                check(
+                    u64::from(s.subpic_x[i].wrapping_add(s.subpic_w[i])) * u64::from(ctb)
+                        <= u64::from(conf.left * sub_w),
+                    "sps_subpic_width_minus1",
+                )?;
+                check(
+                    u64::from(s.subpic_y[i]) * u64::from(ctb)
+                        >= i64::from(s.max_height).wrapping_sub(i64::from(conf.bottom * sub_h))
+                            as u64,
+                    "sps_subpic_ctu_top_left_y",
+                )?;
+                check(
+                    u64::from(s.subpic_y[i].wrapping_add(s.subpic_h[i])) * u64::from(ctb)
+                        <= u64::from(conf.top * sub_h),
+                    "sps_subpic_height_minus1",
+                )?;
                 if !s.independent_subpics {
                     s.subpic_treated_as_pic[i] = r.flag()?;
                     s.loop_filter_across_subpic[i] = r.flag()?;
@@ -478,12 +593,17 @@ pub fn parse_sps(r: &mut BitReader) -> Result<Sps, Error> {
             }
         }
         s.subpic_id_len = r.uvlc_range(0, 15, "sps_subpic_id_len_minus1")? + 1;
-        check((1u64 << s.subpic_id_len) < u64::from(s.num_subpics), "sps_subpic_id_len_minus1")?;
+        check(
+            (1u64 << s.subpic_id_len) < u64::from(s.num_subpics),
+            "sps_subpic_id_len_minus1",
+        )?;
         s.subpic_id_mapping_explicit = r.flag()?;
         if s.subpic_id_mapping_explicit {
             s.subpic_id_mapping_present = r.flag()?;
             if s.subpic_id_mapping_present {
-                s.subpic_id = (0..n).map(|_| r.read(s.subpic_id_len)).collect::<Result<_, _>>()?;
+                s.subpic_id = (0..n)
+                    .map(|_| r.read(s.subpic_id_len))
+                    .collect::<Result<_, _>>()?;
             }
         }
     } else {
@@ -508,7 +628,10 @@ pub fn parse_sps(r: &mut BitReader) -> Result<Sps, Error> {
         _ => 16,
     };
     if s.ptl.profile_idc != 0 {
-        check(bitdepth_minus8 + 8 > max_bit_depth, "sps_bitdepth_minus8 exceeds range supported by signalled profile")?;
+        check(
+            bitdepth_minus8 + 8 > max_bit_depth,
+            "sps_bitdepth_minus8 exceeds range supported by signalled profile",
+        )?;
     }
     s.bit_depth = bitdepth_minus8 + 8;
     s.qp_bd_offset = 6 * bitdepth_minus8 as i32;
@@ -518,87 +641,180 @@ pub fn parse_sps(r: &mut BitReader) -> Result<Sps, Error> {
     s.bits_for_poc = log2_poc_minus4 + 4;
     s.poc_msb_flag = r.flag()?;
     if s.poc_msb_flag {
-        s.poc_msb_len = r.uvlc_range(0, 32 - log2_poc_minus4 - 5, "sps_poc_msb_cycle_len_minus1")? + 1;
+        s.poc_msb_len =
+            r.uvlc_range(0, 32 - log2_poc_minus4 - 5, "sps_poc_msb_cycle_len_minus1")? + 1;
     }
     let extra_ph = r.code_range(2, 0, 2, "sps_num_extra_ph_bytes")?;
-    s.extra_ph_bits = (0..extra_ph * 8).map(|_| r.flag()).collect::<Result<_, _>>()?;
+    s.extra_ph_bits = (0..extra_ph * 8)
+        .map(|_| r.flag())
+        .collect::<Result<_, _>>()?;
     let extra_sh = r.code_range(2, 0, 2, "sps_num_extra_sh_bytes")?;
-    s.extra_sh_bits = (0..extra_sh * 8).map(|_| r.flag()).collect::<Result<_, _>>()?;
+    s.extra_sh_bits = (0..extra_sh * 8)
+        .map(|_| r.flag())
+        .collect::<Result<_, _>>()?;
     if ptl_present {
-        let sublayer_dpb = if max_sublayers_minus1 > 0 { r.flag()? } else { false };
+        let sublayer_dpb = if max_sublayers_minus1 > 0 {
+            r.flag()?
+        } else {
+            false
+        };
         let mut prev_buffering = 0u32;
         let mut prev_reorder = 0u32;
-        for i in if sublayer_dpb { 0 } else { max_sublayers_minus1 }..=max_sublayers_minus1 {
+        for i in if sublayer_dpb {
+            0
+        } else {
+            max_sublayers_minus1
+        }..=max_sublayers_minus1
+        {
             let buffering_minus1 = r.uvlc()?;
-            check(i > 0 && sublayer_dpb && buffering_minus1.wrapping_add(1) < prev_buffering, "dpb_max_dec_pic_buffering_minus1 order")?;
+            check(
+                i > 0 && sublayer_dpb && buffering_minus1.wrapping_add(1) < prev_buffering,
+                "dpb_max_dec_pic_buffering_minus1 order",
+            )?;
             let reorder = r.uvlc_range(0, buffering_minus1, "dpb_max_num_reorder_pics")?;
-            check(i > 0 && sublayer_dpb && buffering_minus1 < prev_reorder, "dpb_max_num_reorder_pics order")?;
+            check(
+                i > 0 && sublayer_dpb && buffering_minus1 < prev_reorder,
+                "dpb_max_num_reorder_pics order",
+            )?;
             r.uvlc_range(0, u32::MAX - 1, "dpb_max_latency_increase_plus1")?;
             prev_buffering = buffering_minus1.wrapping_add(1);
             prev_reorder = reorder;
         }
     }
-    let min_cb_minus2 = r.uvlc_range(0, 4.min(log2_ctu_minus5 + 3), "sps_log2_min_luma_coding_block_size_minus2")?;
+    let min_cb_minus2 = r.uvlc_range(
+        0,
+        4.min(log2_ctu_minus5 + 3),
+        "sps_log2_min_luma_coding_block_size_minus2",
+    )?;
     s.log2_min_cb_size = min_cb_minus2 + 2;
     let min_cb_log2 = s.log2_min_cb_size;
     let min_cb = 1u32 << min_cb_log2;
-    check(min_cb > ctb.min(64), "The value of MinCbSizeY shall be less than or equal to VSize.")?;
-    check(min_cb_log2 > ctb_log2, "Invalid log2_min_luma_coding_block_size_minus2 signalled")?;
-    check(s.max_width == 0 || s.max_width & (8.max(min_cb) - 1) != 0, "sps_pic_width_max_in_luma_samples")?;
-    check(s.max_height == 0 || s.max_height & (8.max(min_cb) - 1) != 0, "sps_pic_height_max_in_luma_samples")?;
+    check(
+        min_cb > ctb.min(64),
+        "The value of MinCbSizeY shall be less than or equal to VSize.",
+    )?;
+    check(
+        min_cb_log2 > ctb_log2,
+        "Invalid log2_min_luma_coding_block_size_minus2 signalled",
+    )?;
+    check(
+        s.max_width == 0 || s.max_width & (8.max(min_cb) - 1) != 0,
+        "sps_pic_width_max_in_luma_samples",
+    )?;
+    check(
+        s.max_height == 0 || s.max_height & (8.max(min_cb) - 1) != 0,
+        "sps_pic_height_max_in_luma_samples",
+    )?;
     s.split_cons_override = r.flag()?;
-    let min_qt_intra_y = r.uvlc_range(0, 6.min(ctb_log2) - min_cb_log2, "sps_log2_diff_min_qt_min_cb_intra_slice_luma")? + min_cb_log2;
-    let mtt_intra_y = r.uvlc_range(0, 2 * (ctb_log2 - min_cb_log2), "sps_max_mtt_hierarchy_depth_intra_slice_luma")?;
+    let min_qt_intra_y = r.uvlc_range(
+        0,
+        6.min(ctb_log2) - min_cb_log2,
+        "sps_log2_diff_min_qt_min_cb_intra_slice_luma",
+    )? + min_cb_log2;
+    let mtt_intra_y = r.uvlc_range(
+        0,
+        2 * (ctb_log2 - min_cb_log2),
+        "sps_max_mtt_hierarchy_depth_intra_slice_luma",
+    )?;
     let mut min_qt = [1u32 << min_qt_intra_y, 0, 0];
     let mut max_depth = [mtt_intra_y, 0, 0];
     let mut max_tt = [1u32 << min_qt_intra_y, 0, 0];
     let mut max_bt = [1u32 << min_qt_intra_y, 0, 0];
     if mtt_intra_y != 0 {
-        max_bt[0] <<= r.uvlc_range(0, ctb_log2 - min_qt_intra_y, "sps_log2_diff_max_bt_min_qt_intra_slice_luma")?;
+        max_bt[0] <<= r.uvlc_range(
+            0,
+            ctb_log2 - min_qt_intra_y,
+            "sps_log2_diff_max_bt_min_qt_intra_slice_luma",
+        )?;
         let tt_max = 6.min(ctb_log2) as i64 - i64::from(min_qt_intra_y);
         let v = r.uvlc()?;
-        check(i64::from(v) > tt_max, "sps_log2_diff_max_tt_min_qt_intra_slice_luma")?;
+        check(
+            i64::from(v) > tt_max,
+            "sps_log2_diff_max_tt_min_qt_intra_slice_luma",
+        )?;
         max_tt[0] <<= v;
     }
-    check(max_tt[0] > 64, "The value of sps_log2_diff_max_tt_min_qt_intra_slice_luma shall be in the range of 0 to min(6,CtbLog2SizeY) - MinQtLog2SizeIntraY")?;
+    check(
+        max_tt[0] > 64,
+        "The value of sps_log2_diff_max_tt_min_qt_intra_slice_luma shall be in the range of 0 to min(6,CtbLog2SizeY) - MinQtLog2SizeIntraY",
+    )?;
     if s.chroma_format_idc != 0 {
         s.dual_tree = r.flag()?;
     }
     if s.dual_tree {
-        let min_qt_c = r.uvlc_range(0, 6.min(ctb_log2) - min_cb_log2, "sps_log2_diff_min_qt_min_cb_intra_slice_chroma")? + min_cb_log2;
-        max_depth[2] = r.uvlc_range(0, 2 * (ctb_log2 - min_cb_log2), "sps_max_mtt_hierarchy_depth_intra_slice_chroma")?;
+        let min_qt_c = r.uvlc_range(
+            0,
+            6.min(ctb_log2) - min_cb_log2,
+            "sps_log2_diff_min_qt_min_cb_intra_slice_chroma",
+        )? + min_cb_log2;
+        max_depth[2] = r.uvlc_range(
+            0,
+            2 * (ctb_log2 - min_cb_log2),
+            "sps_max_mtt_hierarchy_depth_intra_slice_chroma",
+        )?;
         min_qt[2] = 1 << min_qt_c;
         max_tt[2] = min_qt[2];
         max_bt[2] = min_qt[2];
         if max_depth[2] != 0 {
             let lim = 6.min(ctb_log2) as i64 - i64::from(min_qt_c);
             let v = r.uvlc()?;
-            check(i64::from(v) > lim, "sps_log2_diff_max_bt_min_qt_intra_slice_chroma")?;
+            check(
+                i64::from(v) > lim,
+                "sps_log2_diff_max_bt_min_qt_intra_slice_chroma",
+            )?;
             max_bt[2] <<= v;
             let v = r.uvlc()?;
-            check(i64::from(v) > lim, "sps_log2_diff_max_tt_min_qt_intra_slice_chroma")?;
+            check(
+                i64::from(v) > lim,
+                "sps_log2_diff_max_tt_min_qt_intra_slice_chroma",
+            )?;
             max_tt[2] <<= v;
-            check(max_tt[2] > 64, "sps_log2_diff_max_tt_min_qt_intra_slice_chroma")?;
-            check(max_bt[2] > 64, "sps_log2_diff_max_bt_min_qt_intra_slice_chroma")?;
+            check(
+                max_tt[2] > 64,
+                "sps_log2_diff_max_tt_min_qt_intra_slice_chroma",
+            )?;
+            check(
+                max_bt[2] > 64,
+                "sps_log2_diff_max_bt_min_qt_intra_slice_chroma",
+            )?;
         }
     }
-    let min_qt_inter = r.uvlc_range(0, 6.min(ctb_log2) - min_cb_log2, "sps_log2_diff_min_qt_min_cb_inter_slice")? + min_cb_log2;
-    max_depth[1] = r.uvlc_range(0, 2 * (ctb_log2 - min_cb_log2), "sps_max_mtt_hierarchy_depth_inter_slice")?;
+    let min_qt_inter = r.uvlc_range(
+        0,
+        6.min(ctb_log2) - min_cb_log2,
+        "sps_log2_diff_min_qt_min_cb_inter_slice",
+    )? + min_cb_log2;
+    max_depth[1] = r.uvlc_range(
+        0,
+        2 * (ctb_log2 - min_cb_log2),
+        "sps_max_mtt_hierarchy_depth_inter_slice",
+    )?;
     min_qt[1] = 1 << min_qt_inter;
     max_tt[1] = min_qt[1];
     max_bt[1] = min_qt[1];
     if max_depth[1] != 0 {
-        max_bt[1] <<= r.uvlc_range(0, ctb_log2 - min_qt_inter, "sps_log2_diff_max_bt_min_qt_inter_slice")?;
+        max_bt[1] <<= r.uvlc_range(
+            0,
+            ctb_log2 - min_qt_inter,
+            "sps_log2_diff_max_bt_min_qt_inter_slice",
+        )?;
         let lim = 6.min(ctb_log2) as i64 - i64::from(min_qt_inter);
         let v = r.uvlc()?;
-        check(i64::from(v) > lim, "sps_log2_diff_max_tt_min_qt_inter_slice")?;
+        check(
+            i64::from(v) > lim,
+            "sps_log2_diff_max_tt_min_qt_inter_slice",
+        )?;
         max_tt[1] <<= v;
     }
     s.min_qt = min_qt;
     s.max_mtt_depth = max_depth;
     s.max_bt = max_bt;
     s.max_tt = max_tt;
-    s.log2_max_tb_size = if ctb > 32 { 5 + u32::from(r.flag()?) } else { 5 };
+    s.log2_max_tb_size = if ctb > 32 {
+        5 + u32::from(r.flag()?)
+    } else {
+        5
+    };
     s.transform_skip = r.flag()?;
     if s.transform_skip {
         s.log2_max_ts_size = r.uvlc_range(0, 3, "sps_log2_transform_skip_max_size_minus2")? + 2;
@@ -613,11 +829,18 @@ pub fn parse_sps(r: &mut BitReader) -> Result<Sps, Error> {
     if s.chroma_format_idc != 0 {
         s.joint_cbcr = r.flag()?;
         let same = r.flag()?;
-        let num_tables = if same { 1 } else if s.joint_cbcr { 3 } else { 2 };
+        let num_tables = if same {
+            1
+        } else if s.joint_cbcr {
+            3
+        } else {
+            2
+        };
         let mut tables: Vec<Vec<i32>> = Vec::new();
         for _ in 0..num_tables {
             let start = r.svlc_range(-26 - s.qp_bd_offset, 36, "sps_qp_table_start_minus26")?;
-            let points_minus1 = r.uvlc_range(0, (36 - start) as u32, "sps_num_points_in_qp_table_minus1")?;
+            let points_minus1 =
+                r.uvlc_range(0, (36 - start) as u32, "sps_num_points_in_qp_table_minus1")?;
             let mut delta_in = Vec::new();
             let mut delta_out = Vec::new();
             for _ in 0..=points_minus1 {
@@ -626,7 +849,12 @@ pub fn parse_sps(r: &mut BitReader) -> Result<Sps, Error> {
                 delta_in.push(din as i32);
                 delta_out.push((diff ^ din) as i32);
             }
-            tables.push(derive_chroma_qp_table(s.qp_bd_offset, start, &delta_in, &delta_out)?);
+            tables.push(derive_chroma_qp_table(
+                s.qp_bd_offset,
+                start,
+                &delta_in,
+                &delta_out,
+            )?);
         }
         s.chroma_qp_table = [
             tables[0].clone(),
@@ -636,7 +864,11 @@ pub fn parse_sps(r: &mut BitReader) -> Result<Sps, Error> {
     }
     s.sao = r.flag()?;
     s.alf = r.flag()?;
-    s.ccalf = if s.alf && s.chroma_format_idc != 0 { r.flag()? } else { false };
+    s.ccalf = if s.alf && s.chroma_format_idc != 0 {
+        r.flag()?
+    } else {
+        false
+    };
     s.lmcs = r.flag()?;
     s.weighted_pred = r.flag()?;
     s.weighted_bipred = r.flag()?;
@@ -665,7 +897,10 @@ pub fn parse_sps(r: &mut BitReader) -> Result<Sps, Error> {
     }
     s.wraparound = r.flag()?;
     for i in 0..s.num_subpics as usize {
-        check(s.subpic_treated_as_pic[i] && s.subpic_w[i] != width_ctus && s.wraparound, "sps_ref_wraparound_enabled_flag with subpictures")?;
+        check(
+            s.subpic_treated_as_pic[i] && s.subpic_w[i] != width_ctus && s.wraparound,
+            "sps_ref_wraparound_enabled_flag with subpictures",
+        )?;
     }
     s.temporal_mvp = r.flag()?;
     if s.temporal_mvp {
@@ -689,7 +924,11 @@ pub fn parse_sps(r: &mut BitReader) -> Result<Sps, Error> {
     s.sbt = r.flag()?;
     s.affine = r.flag()?;
     if s.affine {
-        s.max_num_affine_merge_cand = 5 - r.uvlc_range(0, 5 - u32::from(s.sbtmvp), "sps_five_minus_max_num_subblock_merge_cand")?;
+        s.max_num_affine_merge_cand = 5 - r.uvlc_range(
+            0,
+            5 - u32::from(s.sbtmvp),
+            "sps_five_minus_max_num_subblock_merge_cand",
+        )?;
         s.affine_type = r.flag()?;
         if s.amvr {
             s.affine_amvr = r.flag()?;
@@ -704,12 +943,18 @@ pub fn parse_sps(r: &mut BitReader) -> Result<Sps, Error> {
     if s.max_num_merge_cand >= 2 {
         s.gpm = r.flag()?;
         if s.gpm && s.max_num_merge_cand >= 3 {
-            s.max_num_gpm_cand = s.max_num_merge_cand - r.uvlc_range(0, s.max_num_merge_cand - 2, "sps_max_num_merge_cand_minus_max_num_gpm_cand")?;
+            s.max_num_gpm_cand = s.max_num_merge_cand
+                - r.uvlc_range(
+                    0,
+                    s.max_num_merge_cand - 2,
+                    "sps_max_num_merge_cand_minus_max_num_gpm_cand",
+                )?;
         } else if s.gpm {
             s.max_num_gpm_cand = 2;
         }
     }
-    s.log2_parallel_merge_level = r.uvlc_range(0, ctb_log2 - 2, "sps_log2_parallel_merge_level_minus2")? + 2;
+    s.log2_parallel_merge_level =
+        r.uvlc_range(0, ctb_log2 - 2, "sps_log2_parallel_merge_level_minus2")? + 2;
     s.isp = r.flag()?;
     s.mrl = r.flag()?;
     s.mip = r.flag()?;
@@ -732,11 +977,13 @@ pub fn parse_sps(r: &mut BitReader) -> Result<Sps, Error> {
         s.act = r.flag()?;
     }
     if s.transform_skip {
-        s.internal_minus_input_bit_depth = r.uvlc_range(0, 8, "sps_internal_bit_depth_minus_input_bit_depth")?;
+        s.internal_minus_input_bit_depth =
+            r.uvlc_range(0, 8, "sps_internal_bit_depth_minus_input_bit_depth")?;
     }
     s.ibc = r.flag()?;
     if s.ibc {
-        s.max_num_ibc_merge_cand = 6 - r.uvlc_range(0, 5, "sps_six_minus_max_num_ibc_merge_cand")?;
+        s.max_num_ibc_merge_cand =
+            6 - r.uvlc_range(0, 5, "sps_six_minus_max_num_ibc_merge_cand")?;
     }
     s.ladf = r.flag()?;
     if s.ladf {
@@ -744,7 +991,8 @@ pub fn parse_sps(r: &mut BitReader) -> Result<Sps, Error> {
         s.ladf_qp_offset = vec![r.svlc_range(-63, 63, "sps_ladf_lowest_interval_qp_offset")?];
         s.ladf_lower_bound = vec![0];
         for i in 0..(n - 1) as usize {
-            s.ladf_qp_offset.push(r.svlc_range(-63, 63, "sps_ladf_qp_offset")?);
+            s.ladf_qp_offset
+                .push(r.svlc_range(-63, 63, "sps_ladf_qp_offset")?);
             let d = r.uvlc_range(0, (1 << s.bit_depth) - 3, "sps_ladf_delta_threshold_minus1")?;
             let prev = s.ladf_lower_bound[i];
             s.ladf_lower_bound.push(prev + d as i32 + 1);
@@ -766,22 +1014,40 @@ pub fn parse_sps(r: &mut BitReader) -> Result<Sps, Error> {
     if s.virtual_boundaries_enabled {
         s.virtual_boundaries_present = r.flag()?;
         if s.virtual_boundaries_present {
-            let nv = r.uvlc_range(0, if s.max_width <= 8 { 0 } else { 3 }, "sps_num_ver_virtual_boundaries")?;
+            let nv = r.uvlc_range(
+                0,
+                if s.max_width <= 8 { 0 } else { 3 },
+                "sps_num_ver_virtual_boundaries",
+            )?;
             for _ in 0..nv {
-                let max = ((s.max_width + 7) / 8).saturating_sub(2);
-                s.vb_pos_x.push((r.uvlc_range(0, max, "sps_virtual_boundary_pos_x_minus1")? + 1) << 3);
+                let max = s.max_width.div_ceil(8).saturating_sub(2);
+                s.vb_pos_x
+                    .push((r.uvlc_range(0, max, "sps_virtual_boundary_pos_x_minus1")? + 1) << 3);
             }
-            let nh = r.uvlc_range(0, if s.max_height <= 8 { 0 } else { 3 }, "sps_num_hor_virtual_boundaries")?;
+            let nh = r.uvlc_range(
+                0,
+                if s.max_height <= 8 { 0 } else { 3 },
+                "sps_num_hor_virtual_boundaries",
+            )?;
             for _ in 0..nh {
-                let max = ((s.max_height + 7) / 8).saturating_sub(2);
-                s.vb_pos_y.push((r.uvlc_range(0, max, "sps_virtual_boundary_pos_y_minus1")? + 1) << 3);
+                let max = s.max_height.div_ceil(8).saturating_sub(2);
+                s.vb_pos_y
+                    .push((r.uvlc_range(0, max, "sps_virtual_boundary_pos_y_minus1")? + 1) << 3);
             }
         }
     }
     if ptl_present && r.flag()? {
         let general = skip_general_hrd(r)?;
-        let sublayer_cpb = if max_sublayers_minus1 > 0 { r.flag()? } else { false };
-        let first = if sublayer_cpb { 0 } else { max_sublayers_minus1 };
+        let sublayer_cpb = if max_sublayers_minus1 > 0 {
+            r.flag()?
+        } else {
+            false
+        };
+        let first = if sublayer_cpb {
+            0
+        } else {
+            max_sublayers_minus1
+        };
         skip_ols_hrd(r, general, first, max_sublayers_minus1)?;
     }
     s.field_seq = r.flag()?;
@@ -915,7 +1181,11 @@ struct RectSlice {
     height_ctus: u32,
 }
 
-fn init_tiles(p: &mut Pps, mut col_widths: Vec<u32>, mut row_heights: Vec<u32>) -> Result<(), Error> {
+fn init_tiles(
+    p: &mut Pps,
+    mut col_widths: Vec<u32>,
+    mut row_heights: Vec<u32>,
+) -> Result<(), Error> {
     let mut remaining = p.width_ctus;
     for &w in &col_widths {
         check(w > remaining, "Tile column width exceeds picture width")?;
@@ -923,7 +1193,10 @@ fn init_tiles(p: &mut Pps, mut col_widths: Vec<u32>, mut row_heights: Vec<u32>) 
     }
     let mut uniform = *col_widths.last().ok_or(Error::Invalid("tile columns"))?;
     while remaining > 0 {
-        check(col_widths.len() >= 20, "Number of tile columns exceeds valid range")?;
+        check(
+            col_widths.len() >= 20,
+            "Number of tile columns exceeds valid range",
+        )?;
         uniform = uniform.min(remaining);
         col_widths.push(uniform);
         remaining -= uniform;
@@ -979,20 +1252,39 @@ fn init_rect_slice_map(p: &mut Pps, sps: &Sps, rect: &mut [RectSlice]) -> Result
                 let right = left + sps.subpic_w[i] - 1;
                 let top = sps.subpic_y[i];
                 let bottom = top + sps.subpic_h[i] - 1;
-                let get = |v: &Vec<u32>, i: u32| v.get(i as usize).copied().ok_or(Error::Invalid("subpicture outside picture"));
-                let width_tiles = get(&p.ctu_to_tile_col, right)? + 1 - get(&p.ctu_to_tile_col, left)?;
-                let height_tiles = get(&p.ctu_to_tile_row, bottom)? + 1 - get(&p.ctu_to_tile_row, top)?;
+                let get = |v: &Vec<u32>, i: u32| {
+                    v.get(i as usize)
+                        .copied()
+                        .ok_or(Error::Invalid("subpicture outside picture"))
+                };
+                let width_tiles =
+                    get(&p.ctu_to_tile_col, right)? + 1 - get(&p.ctu_to_tile_col, left)?;
+                let height_tiles =
+                    get(&p.ctu_to_tile_row, bottom)? + 1 - get(&p.ctu_to_tile_row, top)?;
                 let tile_row = p.ctu_to_tile_row[top as usize] as usize;
                 let row_height = p.tile_row_bd[tile_row + 1] - p.tile_row_bd[tile_row];
                 if height_tiles == 1 && sps.subpic_h[i] < row_height {
-                    add_ctus(&mut p.slice_map[i], left, left + sps.subpic_w[i], top, top + sps.subpic_h[i], w);
+                    add_ctus(
+                        &mut p.slice_map[i],
+                        left,
+                        left + sps.subpic_w[i],
+                        top,
+                        top + sps.subpic_h[i],
+                        w,
+                    );
                 } else {
                     let tx = p.ctu_to_tile_col[left as usize];
                     let ty = p.ctu_to_tile_row[top as usize];
                     for j in 0..height_tiles {
                         for k in 0..width_tiles {
-                            let (x0, x1) = (p.tile_col_bd[(tx + k) as usize], p.tile_col_bd[(tx + k + 1) as usize]);
-                            let (y0, y1) = (p.tile_row_bd[(ty + j) as usize], p.tile_row_bd[(ty + j + 1) as usize]);
+                            let (x0, x1) = (
+                                p.tile_col_bd[(tx + k) as usize],
+                                p.tile_col_bd[(tx + k + 1) as usize],
+                            );
+                            let (y0, y1) = (
+                                p.tile_row_bd[(ty + j) as usize],
+                                p.tile_row_bd[(ty + j + 1) as usize],
+                            );
                             add_ctus(&mut p.slice_map[i], x0, x1, y0, y1, w);
                         }
                     }
@@ -1001,7 +1293,14 @@ fn init_rect_slice_map(p: &mut Pps, sps: &Sps, rect: &mut [RectSlice]) -> Result
         } else {
             for ty in 0..p.num_tile_rows() as usize {
                 for tx in 0..p.num_tile_cols() as usize {
-                    add_ctus(&mut p.slice_map[0], p.tile_col_bd[tx], p.tile_col_bd[tx + 1], p.tile_row_bd[ty], p.tile_row_bd[ty + 1], w);
+                    add_ctus(
+                        &mut p.slice_map[0],
+                        p.tile_col_bd[tx],
+                        p.tile_col_bd[tx + 1],
+                        p.tile_row_bd[ty],
+                        p.tile_row_bd[ty + 1],
+                        w,
+                    );
                 }
             }
         }
@@ -1023,12 +1322,20 @@ fn init_rect_slice_map(p: &mut Pps, sps: &Sps, rect: &mut [RectSlice]) -> Result
                 for j in 0..rect[i].height_tiles {
                     for k in 0..rect[i].width_tiles {
                         let (x0, x1) = (
-                            *p.tile_col_bd.get((tx + k) as usize).ok_or(Error::Invalid("slice tiles"))?,
-                            *p.tile_col_bd.get((tx + k + 1) as usize).ok_or(Error::Invalid("slice tiles"))?,
+                            *p.tile_col_bd
+                                .get((tx + k) as usize)
+                                .ok_or(Error::Invalid("slice tiles"))?,
+                            *p.tile_col_bd
+                                .get((tx + k + 1) as usize)
+                                .ok_or(Error::Invalid("slice tiles"))?,
                         );
                         let (y0, y1) = (
-                            *p.tile_row_bd.get((ty + j) as usize).ok_or(Error::Invalid("slice tiles"))?,
-                            *p.tile_row_bd.get((ty + j + 1) as usize).ok_or(Error::Invalid("slice tiles"))?,
+                            *p.tile_row_bd
+                                .get((ty + j) as usize)
+                                .ok_or(Error::Invalid("slice tiles"))?,
+                            *p.tile_row_bd
+                                .get((ty + j + 1) as usize)
+                                .ok_or(Error::Invalid("slice tiles"))?,
                         );
                         add_ctus(&mut p.slice_map[i], x0, x1, y0, y1, w);
                     }
@@ -1044,9 +1351,19 @@ fn init_rect_slice_map(p: &mut Pps, sps: &Sps, rect: &mut [RectSlice]) -> Result
                     i += 1;
                     check(i >= n, "Invalid rectangular slice signalling")?;
                 }
-                check(y >= p.tile_row_bd[ty as usize + 1], "Invalid rectangular slice signalling")?;
+                check(
+                    y >= p.tile_row_bd[ty as usize + 1],
+                    "Invalid rectangular slice signalling",
+                )?;
                 rect[i].height_ctus = p.tile_row_bd[ty as usize + 1] - y;
-                add_ctus(&mut p.slice_map[i], x0, x1, y, p.tile_row_bd[ty as usize + 1], w);
+                add_ctus(
+                    &mut p.slice_map[i],
+                    x0,
+                    x1,
+                    y,
+                    p.tile_row_bd[ty as usize + 1],
+                    w,
+                );
             }
             i += 1;
         }
@@ -1065,7 +1382,10 @@ fn init_rect_slice_map(p: &mut Pps, sps: &Sps, rect: &mut [RectSlice]) -> Result
 
 fn init_subpics(p: &mut Pps, sps: &Sps) -> Result<(), Error> {
     if p.subpic_id_mapping_present {
-        check(p.num_subpics != sps.num_subpics, "pps_num_subpics_minus1 shall be equal to sps_num_subpics_minus1")?;
+        check(
+            p.num_subpics != sps.num_subpics,
+            "pps_num_subpics_minus1 shall be equal to sps_num_subpics_minus1",
+        )?;
     } else {
         p.num_subpics = sps.num_subpics;
     }
@@ -1073,15 +1393,35 @@ fn init_subpics(p: &mut Pps, sps: &Sps) -> Result<(), Error> {
     let sub_h = sps.sub_height_c();
     for i in 0..sps.num_subpics as usize {
         let conf = &sps.conf_win;
-        check(i64::from(sps.subpic_x[i] * sps.ctu_size) >= i64::from(sps.max_width) - i64::from(conf.right * sub_w), "No subpicture can be located completely outside of the conformance cropping window")?;
-        check(u64::from(sps.subpic_x[i] + sps.subpic_w[i]) * u64::from(sps.ctu_size) <= u64::from(conf.left * sub_w), "No subpicture can be located completely outside of the conformance cropping window")?;
-        check(i64::from(sps.subpic_y[i] * sps.ctu_size) >= i64::from(sps.max_height) - i64::from(conf.bottom * sub_h), "No subpicture can be located completely outside of the conformance cropping window")?;
-        check(u64::from(sps.subpic_y[i] + sps.subpic_h[i]) * u64::from(sps.ctu_size) <= u64::from(conf.top * sub_h), "No subpicture can be located completely outside of the conformance cropping window")?;
+        check(
+            i64::from(sps.subpic_x[i] * sps.ctu_size)
+                >= i64::from(sps.max_width) - i64::from(conf.right * sub_w),
+            "No subpicture can be located completely outside of the conformance cropping window",
+        )?;
+        check(
+            u64::from(sps.subpic_x[i] + sps.subpic_w[i]) * u64::from(sps.ctu_size)
+                <= u64::from(conf.left * sub_w),
+            "No subpicture can be located completely outside of the conformance cropping window",
+        )?;
+        check(
+            i64::from(sps.subpic_y[i] * sps.ctu_size)
+                >= i64::from(sps.max_height) - i64::from(conf.bottom * sub_h),
+            "No subpicture can be located completely outside of the conformance cropping window",
+        )?;
+        check(
+            u64::from(sps.subpic_y[i] + sps.subpic_h[i]) * u64::from(sps.ctu_size)
+                <= u64::from(conf.top * sub_h),
+            "No subpicture can be located completely outside of the conformance cropping window",
+        )?;
     }
     p.subpics.clear();
     for i in 0..p.num_subpics as usize {
         let id = if sps.subpic_id_mapping_explicit {
-            if p.subpic_id_mapping_present { p.subpic_ids[i] } else { sps.subpic_id[i] }
+            if p.subpic_id_mapping_present {
+                p.subpic_ids[i]
+            } else {
+                sps.subpic_id[i]
+            }
         } else {
             i as u32
         };
@@ -1105,7 +1445,10 @@ fn init_subpics(p: &mut Pps, sps: &Sps) -> Result<(), Error> {
             bottom,
         };
         if p.num_slices_in_pic == 1 {
-            check(p.num_subpics != 1, "only one slice in picture, but number of subpic is not one")?;
+            check(
+                p.num_subpics != 1,
+                "only one slice in picture, but number of subpic is not one",
+            )?;
             sub.num_slices = 1;
         } else {
             let mut count = 0;
@@ -1114,14 +1457,21 @@ fn init_subpics(p: &mut Pps, sps: &Sps) -> Result<(), Error> {
             for (j, slice) in p.slice_map.iter().enumerate() {
                 let c = slice[0];
                 let (x, y) = (c % p.width_ctus, c / p.width_ctus);
-                if x >= sub.ctu_x && x < sub.ctu_x + sub.width_ctus && y >= sub.ctu_y && y < sub.ctu_y + sub.height_ctus {
+                if x >= sub.ctu_x
+                    && x < sub.ctu_x + sub.width_ctus
+                    && y >= sub.ctu_y
+                    && y < sub.ctu_y + sub.height_ctus
+                {
                     count += 1;
                     last = j as i64;
                 } else if first_after == p.num_slices_in_pic as i64 && last != -1 {
                     first_after = j as i64;
                 }
             }
-            check(first_after < last, "The signalling order of slices shall follow the coding order")?;
+            check(
+                first_after < last,
+                "The signalling order of slices shall follow the coding order",
+            )?;
             sub.num_slices = count;
         }
         p.subpics.push(sub);
@@ -1130,37 +1480,74 @@ fn init_subpics(p: &mut Pps, sps: &Sps) -> Result<(), Error> {
 }
 
 pub fn parse_pps(r: &mut BitReader, sps_list: &[Option<Sps>]) -> Result<Pps, Error> {
-    let mut p = Pps { id: r.read(6)?, ..Default::default() };
+    let mut p = Pps {
+        id: r.read(6)?,
+        ..Default::default()
+    };
     p.sps_id = r.code_range(4, 0, 15, "pps_seq_parameter_set_id")?;
-    let sps = sps_list[p.sps_id as usize].as_ref().ok_or(Error::Invalid("SPS missing"))?;
-    let sub_w = sps.sub_width_c();
-    let sub_h = sps.sub_height_c();
+    let sps = sps_list[p.sps_id as usize]
+        .as_ref()
+        .ok_or(Error::Invalid("SPS missing"))?;
+    let sub_w = sps.check_sub_width_c();
+    let sub_h = sps.check_sub_height_c();
     p.mixed_nalu_types = r.flag()?;
     let ctb = sps.ctu_size;
     let min_cb = 1u32 << sps.log2_min_cb_size;
     p.width = r.uvlc_range(1, sps.max_width, "pps_pic_width_in_luma_samples")?;
-    check(p.width & (7u32.max(min_cb - 1)) != 0, "pps_pic_width_in_luma_samples not a multiple of 8 or MinCbSizeY")?;
-    check(!sps.res_change_in_clvs && p.width != sps.max_width, "pps_pic_width_in_luma_samples")?;
-    check(sps.wraparound && ctb / min_cb + 1 > (p.width / min_cb).wrapping_sub(1), "wraparound width")?;
+    check(
+        p.width & (7u32.max(min_cb - 1)) != 0,
+        "pps_pic_width_in_luma_samples not a multiple of 8 or MinCbSizeY",
+    )?;
+    check(
+        !sps.res_change_in_clvs && p.width != sps.max_width,
+        "pps_pic_width_in_luma_samples",
+    )?;
+    check(
+        sps.wraparound && ctb / min_cb + 1 > (p.width / min_cb).wrapping_sub(1),
+        "wraparound width",
+    )?;
     p.height = r.uvlc_range(1, sps.max_height, "pps_pic_height_in_luma_samples")?;
-    check(p.height & (7u32.max(min_cb - 1)) != 0, "pps_pic_height_in_luma_samples not a multiple of 8 or MinCbSizeY")?;
-    check(!sps.res_change_in_clvs && p.height != sps.max_height, "pps_pic_height_in_luma_samples")?;
+    check(
+        p.height & (7u32.max(min_cb - 1)) != 0,
+        "pps_pic_height_in_luma_samples not a multiple of 8 or MinCbSizeY",
+    )?;
+    check(
+        !sps.res_change_in_clvs && p.height != sps.max_height,
+        "pps_pic_height_in_luma_samples",
+    )?;
     p.width_ctus = p.width.div_ceil(ctb);
     p.height_ctus = p.height.div_ceil(ctb);
     p.ctu_size = ctb;
     p.conf_win_present = r.flag()?;
-    check(p.conf_win_present && p.width == sps.max_width && p.height == sps.max_height, "pps_conformance_window_flag shall be equal to 0")?;
+    check(
+        p.conf_win_present && p.width == sps.max_width && p.height == sps.max_height,
+        "pps_conformance_window_flag shall be equal to 0",
+    )?;
     if p.conf_win_present {
         let left = r.uvlc()?;
         let right = r.uvlc()?;
         let top = r.uvlc()?;
         let bottom = r.uvlc()?;
-        check(u64::from(sub_w) * (u64::from(left) + u64::from(right)) >= u64::from(p.width), "pps_conf_win_left_offset + pps_conf_win_right_offset too large")?;
-        check(u64::from(sub_h) * (u64::from(top) + u64::from(bottom)) >= u64::from(p.height), "pps_conf_win_top_offset + pps_conf_win_bottom_offset too large")?;
-        p.conf_win = Window { left, right, top, bottom };
+        check(
+            u64::from(sub_w) * (u64::from(left) + u64::from(right)) >= u64::from(p.width),
+            "pps_conf_win_left_offset + pps_conf_win_right_offset too large",
+        )?;
+        check(
+            u64::from(sub_h) * (u64::from(top) + u64::from(bottom)) >= u64::from(p.height),
+            "pps_conf_win_top_offset + pps_conf_win_bottom_offset too large",
+        )?;
+        p.conf_win = Window {
+            left,
+            right,
+            top,
+            bottom,
+        };
     }
     let scaling_window = r.flag()?;
-    check(!sps.rpr_enabled && scaling_window, "pps_scaling_window_explicit_signalling_flag")?;
+    check(
+        !sps.rpr_enabled && scaling_window,
+        "pps_scaling_window_explicit_signalling_flag",
+    )?;
     if scaling_window {
         let w = p.width as i64;
         let h = p.height as i64;
@@ -1170,51 +1557,108 @@ pub fn parse_pps(r: &mut BitReader, sps_list: &[Option<Sps>]) -> Result<Pps, Err
         let bottom = i64::from(r.svlc()?);
         let sw = i64::from(sub_w);
         let sh = i64::from(sub_h);
-        for (v, s, dim) in [(left, sw, w), (right, sw, w), (top, sh, h), (bottom, sh, h), (left + right, sw, w), (top + bottom, sh, h)] {
-            check(s * v < -dim * 15 || s * v >= dim, "pps_scaling_win offset out of bounds")?;
+        for (v, s, dim) in [
+            (left, sw, w),
+            (right, sw, w),
+            (top, sh, h),
+            (bottom, sh, h),
+            (left + right, sw, w),
+            (top + bottom, sh, h),
+        ] {
+            check(
+                s * v < -dim * 15 || s * v >= dim,
+                "pps_scaling_win offset out of bounds",
+            )?;
         }
     }
     p.output_flag_present = r.flag()?;
     p.no_pic_partition = r.flag()?;
-    check((sps.num_subpics > 1 || p.mixed_nalu_types) && p.no_pic_partition, "pps_no_pic_partition_flag shall be equal to 0")?;
+    check(
+        (sps.num_subpics > 1 || p.mixed_nalu_types) && p.no_pic_partition,
+        "pps_no_pic_partition_flag shall be equal to 0",
+    )?;
     p.subpic_id_mapping_present = r.flag()?;
-    check((!sps.subpic_id_mapping_explicit || sps.subpic_id_mapping_present) && p.subpic_id_mapping_present, "pps_subpic_id_mapping_present_flag shall be equal to 0")?;
-    check(sps.subpic_id_mapping_explicit && !sps.subpic_id_mapping_present && !p.subpic_id_mapping_present, "pps_subpic_id_mapping_present_flag shall be equal to 1")?;
+    check(
+        (!sps.subpic_id_mapping_explicit || sps.subpic_id_mapping_present)
+            && p.subpic_id_mapping_present,
+        "pps_subpic_id_mapping_present_flag shall be equal to 0",
+    )?;
+    check(
+        sps.subpic_id_mapping_explicit
+            && !sps.subpic_id_mapping_present
+            && !p.subpic_id_mapping_present,
+        "pps_subpic_id_mapping_present_flag shall be equal to 1",
+    )?;
     if p.subpic_id_mapping_present {
         if !p.no_pic_partition {
             let n = r.uvlc_range(0, 599, "pps_num_subpics_minus1")?;
-            check(n != sps.num_subpics - 1, "pps_num_subpics_minus1 shall be equal to sps_num_subpics_minus1")?;
+            check(
+                n != sps.num_subpics - 1,
+                "pps_num_subpics_minus1 shall be equal to sps_num_subpics_minus1",
+            )?;
             p.num_subpics = n + 1;
         } else {
             p.num_subpics = 1;
         }
         let len = r.uvlc_range(0, 15, "pps_subpic_id_len_minus1")? + 1;
-        check(len != sps.subpic_id_len, "pps_subpic_id_len_minus1 shall be equal to sps_subpic_id_len_minus1")?;
-        check((1u64 << len) < u64::from(p.num_subpics), "pps_subpic_id_len too short")?;
-        p.subpic_ids = (0..p.num_subpics).map(|_| r.read(len)).collect::<Result<_, _>>()?;
+        check(
+            len != sps.subpic_id_len,
+            "pps_subpic_id_len_minus1 shall be equal to sps_subpic_id_len_minus1",
+        )?;
+        check(
+            (1u64 << len) < u64::from(p.num_subpics),
+            "pps_subpic_id_len too short",
+        )?;
+        p.subpic_ids = (0..p.num_subpics)
+            .map(|_| r.read(len))
+            .collect::<Result<_, _>>()?;
     } else {
-        p.subpic_ids = (0..600).map(|i| if sps.subpic_id_mapping_explicit { sps.subpic_id.get(i).copied().unwrap_or(0) } else { i as u32 }).collect();
+        p.subpic_ids = (0..600)
+            .map(|i| {
+                if sps.subpic_id_mapping_explicit {
+                    sps.subpic_id.get(i).copied().unwrap_or(0)
+                } else {
+                    i as u32
+                }
+            })
+            .collect();
     }
     for i in 0..p.num_subpics as usize {
         for j in 0..i {
-            check(p.subpic_ids[i] == p.subpic_ids[j], "SubpicIdVal[ i ] shall not be equal to SubpicIdVal[ j ]")?;
+            check(
+                p.subpic_ids[i] == p.subpic_ids[j],
+                "SubpicIdVal[ i ] shall not be equal to SubpicIdVal[ j ]",
+            )?;
         }
     }
     let mut rect_slices: Vec<RectSlice> = Vec::new();
     if !p.no_pic_partition {
         let log2 = r.code_range(2, 0, 2, "pps_log2_ctu_size_minus5")?;
-        check(log2 + 5 != sps.log2_ctu_size, "pps_log2_ctu_size_minus5 shall be equal to sps_log2_ctu_size_minus5")?;
+        check(
+            log2 + 5 != sps.log2_ctu_size,
+            "pps_log2_ctu_size_minus5 shall be equal to sps_log2_ctu_size_minus5",
+        )?;
         p.log2_ctu_size = log2 + 5;
         let exp_cols = r.uvlc_range(0, p.width_ctus - 1, "pps_num_exp_tile_columns_minus1")? + 1;
         let exp_rows = r.uvlc_range(0, p.height_ctus - 1, "pps_num_exp_tile_rows_minus1")? + 1;
-        check(exp_cols > 20, "Number of explicit tile columns exceeds valid range")?;
-        let cols: Vec<u32> = (0..exp_cols).map(|_| Ok(r.uvlc_range(0, p.width_ctus - 1, "pps_tile_column_width_minus1")? + 1)).collect::<Result<_, Error>>()?;
-        let rows: Vec<u32> = (0..exp_rows).map(|_| Ok(r.uvlc_range(0, p.height_ctus - 1, "pps_tile_row_height_minus1")? + 1)).collect::<Result<_, Error>>()?;
+        check(
+            exp_cols > 20,
+            "Number of explicit tile columns exceeds valid range",
+        )?;
+        let cols: Vec<u32> = (0..exp_cols)
+            .map(|_| Ok(r.uvlc_range(0, p.width_ctus - 1, "pps_tile_column_width_minus1")? + 1))
+            .collect::<Result<_, Error>>()?;
+        let rows: Vec<u32> = (0..exp_rows)
+            .map(|_| Ok(r.uvlc_range(0, p.height_ctus - 1, "pps_tile_row_height_minus1")? + 1))
+            .collect::<Result<_, Error>>()?;
         init_tiles(&mut p, cols, rows)?;
         if p.num_tiles() > 1 {
             p.loop_filter_across_tiles = r.flag()?;
             p.rect_slice = r.flag()?;
-            check((sps.subpic_info_present || p.mixed_nalu_types) && !p.rect_slice, "pps_rect_slice_flag shall be equal to 1")?;
+            check(
+                (sps.subpic_info_present || p.mixed_nalu_types) && !p.rect_slice,
+                "pps_rect_slice_flag shall be equal to 1",
+            )?;
         } else {
             p.loop_filter_across_tiles = false;
             p.rect_slice = true;
@@ -1227,11 +1671,19 @@ pub fn parse_pps(r: &mut BitReader, sps_list: &[Option<Sps>]) -> Result<Pps, Err
             p.num_slices_in_pic = n_minus1 + 1;
             let tile_idx_delta_present = if n_minus1 > 1 { r.flag()? } else { false };
             rect_slices = (0..p.num_slices_in_pic)
-                .map(|_| RectSlice { tile_idx: 0, width_tiles: 0, height_tiles: 0, num_slices_in_tile: 0, height_ctus: 0 })
+                .map(|_| RectSlice {
+                    tile_idx: 0,
+                    width_tiles: 0,
+                    height_tiles: 0,
+                    num_slices_in_tile: 0,
+                    height_ctus: 0,
+                })
                 .collect();
             let cols = p.num_tile_cols();
             let rows = p.num_tile_rows();
-            let row_height = |p: &Pps, t: u32| p.tile_row_bd[(t / cols) as usize + 1] - p.tile_row_bd[(t / cols) as usize];
+            let row_height = |p: &Pps, t: u32| {
+                p.tile_row_bd[(t / cols) as usize + 1] - p.tile_row_bd[(t / cols) as usize]
+            };
             let mut tile_idx: i64 = 0;
             let mut i = 0usize;
             while i + 1 < p.num_slices_in_pic as usize {
@@ -1242,12 +1694,17 @@ pub fn parse_pps(r: &mut BitReader, sps_list: &[Option<Sps>]) -> Result<Pps, Err
                 } else {
                     1
                 };
-                if t / cols != rows - 1 && (tile_idx_delta_present || t % cols == 0) {
-                    rect_slices[i].height_tiles = r.uvlc_range(0, rows - 1, "pps_slice_height_in_tiles_minus1")? + 1;
+                if t / cols != rows - 1 && (tile_idx_delta_present || t.is_multiple_of(cols)) {
+                    rect_slices[i].height_tiles =
+                        r.uvlc_range(0, rows - 1, "pps_slice_height_in_tiles_minus1")? + 1;
                 } else if t / cols == rows - 1 {
                     rect_slices[i].height_tiles = 1;
                 } else {
-                    rect_slices[i].height_tiles = if i > 0 { rect_slices[i - 1].height_tiles } else { 0 };
+                    rect_slices[i].height_tiles = if i > 0 {
+                        rect_slices[i - 1].height_tiles
+                    } else {
+                        0
+                    };
                 }
                 if rect_slices[i].width_tiles == 1 && rect_slices[i].height_tiles == 1 {
                     let rh = row_height(&p, t);
@@ -1262,7 +1719,9 @@ pub fn parse_pps(r: &mut BitReader, sps_list: &[Option<Sps>]) -> Result<Pps, Err
                             let mut j = 0usize;
                             let mut heights = Vec::new();
                             while j < num_exp as usize {
-                                let h = r.uvlc_range(0, rh - 1, "pps_exp_slice_height_in_ctus_minus1")? + 1;
+                                let h =
+                                    r.uvlc_range(0, rh - 1, "pps_exp_slice_height_in_ctus_minus1")?
+                                        + 1;
                                 heights.push(h);
                                 remaining -= i64::from(h);
                                 last = h;
@@ -1281,7 +1740,9 @@ pub fn parse_pps(r: &mut BitReader, sps_list: &[Option<Sps>]) -> Result<Pps, Err
                             }
                             let count = heights.len();
                             for (k, h) in heights.into_iter().enumerate() {
-                                let slot = rect_slices.get_mut(i + k).ok_or(Error::Invalid("Number of slices exceeds pps_num_slices_in_pic"))?;
+                                let slot = rect_slices.get_mut(i + k).ok_or(Error::Invalid(
+                                    "Number of slices exceeds pps_num_slices_in_pic",
+                                ))?;
                                 slot.height_ctus = h;
                                 slot.num_slices_in_tile = count as u32;
                                 slot.width_tiles = 1;
@@ -1298,18 +1759,29 @@ pub fn parse_pps(r: &mut BitReader, sps_list: &[Option<Sps>]) -> Result<Pps, Err
                 if i < n_minus1 as usize {
                     if tile_idx_delta_present {
                         let tiles = p.num_tiles() as i32;
-                        let delta = r.svlc_range(-tiles + 1, tiles - 1, "pps_tile_idx_delta_val")?;
-                        check(delta == 0, "When present, the value of pps_tile_idx_delta_val[ i ] shall not be equal to 0.")?;
+                        let delta =
+                            r.svlc_range(-tiles + 1, tiles - 1, "pps_tile_idx_delta_val")?;
+                        check(
+                            delta == 0,
+                            "When present, the value of pps_tile_idx_delta_val[ i ] shall not be equal to 0.",
+                        )?;
                         tile_idx += i64::from(delta);
-                        check(tile_idx < 0 || tile_idx >= i64::from(p.num_tiles()), "Invalid tile_idx_delta.")?;
+                        check(
+                            tile_idx < 0 || tile_idx >= i64::from(p.num_tiles()),
+                            "Invalid tile_idx_delta.",
+                        )?;
                     } else {
                         tile_idx += i64::from(rect_slices[i].width_tiles);
                         if tile_idx % i64::from(cols) == 0 {
-                            tile_idx += i64::from(rect_slices[i].height_tiles.wrapping_sub(1)) * i64::from(cols);
+                            tile_idx += i64::from(rect_slices[i].height_tiles.wrapping_sub(1))
+                                * i64::from(cols);
                         }
                     }
                 }
-                check(tile_idx < 0 || tile_idx >= i64::from(p.num_tiles()), "Invalid tile_idx_delta.")?;
+                check(
+                    tile_idx < 0 || tile_idx >= i64::from(p.num_tiles()),
+                    "Invalid tile_idx_delta.",
+                )?;
                 i += 1;
             }
             let last = p.num_slices_in_pic as usize - 1;
@@ -1326,24 +1798,43 @@ pub fn parse_pps(r: &mut BitReader, sps_list: &[Option<Sps>]) -> Result<Pps, Err
     p.num_ref_idx_default[1] = r.uvlc_range(0, 14, "pps_num_ref_idx_default_active_minus1")? + 1;
     p.rpl1_idx_present = r.flag()?;
     p.weighted_pred = r.flag()?;
-    check(!sps.weighted_pred && p.weighted_pred, "pps_weighted_pred_flag shall be equal to 0")?;
+    check(
+        !sps.weighted_pred && p.weighted_pred,
+        "pps_weighted_pred_flag shall be equal to 0",
+    )?;
     p.weighted_bipred = r.flag()?;
-    check(!sps.weighted_bipred && p.weighted_bipred, "pps_weighted_bipred_flag shall be equal to 0")?;
+    check(
+        !sps.weighted_bipred && p.weighted_bipred,
+        "pps_weighted_bipred_flag shall be equal to 0",
+    )?;
     p.wraparound = r.flag()?;
-    check((!sps.wraparound || ctb / min_cb + 1 > (p.width / min_cb).wrapping_sub(1)) && p.wraparound, "pps_ref_wraparound_enabled_flag shall be equal to 0")?;
+    check(
+        (!sps.wraparound || ctb / min_cb + 1 > (p.width / min_cb).wrapping_sub(1)) && p.wraparound,
+        "pps_ref_wraparound_enabled_flag shall be equal to 0",
+    )?;
     if p.wraparound {
-        r.uvlc_range(0, (p.width / min_cb) - (ctb / min_cb) - 2, "pps_pic_width_minus_wraparound_offset")?;
+        r.uvlc_range(
+            0,
+            (p.width / min_cb) - (ctb / min_cb) - 2,
+            "pps_pic_width_minus_wraparound_offset",
+        )?;
     }
     p.init_qp_minus26 = r.svlc_range(-(26 + sps.qp_bd_offset), 37, "pps_init_qp_minus26")?;
     p.cu_qp_delta = r.flag()?;
     p.chroma_tool_offsets = r.flag()?;
-    check(sps.chroma_format_idc == 0 && p.chroma_tool_offsets, "pps_chroma_tool_offsets_present_flag shall be equal to 0")?;
+    check(
+        sps.chroma_format_idc == 0 && p.chroma_tool_offsets,
+        "pps_chroma_tool_offsets_present_flag shall be equal to 0",
+    )?;
     p.chroma_qp_offset_list = vec![[0; 3]];
     if p.chroma_tool_offsets {
         p.cb_qp_offset = r.svlc_range(-12, 12, "pps_cb_qp_offset")?;
         p.cr_qp_offset = r.svlc_range(-12, 12, "pps_cr_qp_offset")?;
         p.joint_cbcr_qp_offset_present = r.flag()?;
-        check((sps.chroma_format_idc == 0 || !sps.joint_cbcr) && p.joint_cbcr_qp_offset_present, "pps_joint_cbcr_qp_offset_present_flag shall be equal to 0")?;
+        check(
+            (sps.chroma_format_idc == 0 || !sps.joint_cbcr) && p.joint_cbcr_qp_offset_present,
+            "pps_joint_cbcr_qp_offset_present_flag shall be equal to 0",
+        )?;
         if p.joint_cbcr_qp_offset_present {
             p.joint_cbcr_qp_offset = r.svlc_range(-12, 12, "pps_joint_cbcr_qp_offset_value")?;
         }
@@ -1354,7 +1845,11 @@ pub fn parse_pps(r: &mut BitReader, sps_list: &[Option<Sps>]) -> Result<Pps, Err
             for _ in 0..len {
                 let cb = r.svlc_range(-12, 12, "pps_cb_qp_offset_list")?;
                 let cr = r.svlc_range(-12, 12, "pps_cr_qp_offset_list")?;
-                let joint = if p.joint_cbcr_qp_offset_present { r.svlc_range(-12, 12, "pps_joint_cbcr_qp_offset_list")? } else { 0 };
+                let joint = if p.joint_cbcr_qp_offset_present {
+                    r.svlc_range(-12, 12, "pps_joint_cbcr_qp_offset_list")?
+                } else {
+                    0
+                };
                 p.chroma_qp_offset_list.push([cb, cr, joint]);
             }
         }
@@ -1406,9 +1901,18 @@ pub fn parse_pps(r: &mut BitReader, sps_list: &[Option<Sps>]) -> Result<Pps, Err
         init_tiles(&mut p, vec![wc], vec![hc])?;
         p.rect_slice = true;
         p.num_slices_in_pic = 1;
-        rect_slices = vec![RectSlice { tile_idx: 0, width_tiles: 0, height_tiles: 0, num_slices_in_tile: 0, height_ctus: 0 }];
+        rect_slices = vec![RectSlice {
+            tile_idx: 0,
+            width_tiles: 0,
+            height_tiles: 0,
+            num_slices_in_tile: 0,
+            height_ctus: 0,
+        }];
         init_rect_slice_map(&mut p, sps, &mut rect_slices)?;
-        check(p.num_subpics >= 2, "error, no picture partitions, but have equal to or more than 2 sub pictures")?;
+        check(
+            p.num_subpics >= 2,
+            "error, no picture partitions, but have equal to or more than 2 sub pictures",
+        )?;
     } else if p.rect_slice {
         init_rect_slice_map(&mut p, sps, &mut rect_slices)?;
     }
@@ -1457,14 +1961,22 @@ pub struct ScalingList {
 impl Default for ScalingList {
     fn default() -> Self {
         Self {
-            coef: (0..28).map(|id| vec![0; scaling_matrix_size(id) * scaling_matrix_size(id)]).collect(),
+            coef: (0..28)
+                .map(|id| vec![0; scaling_matrix_size(id) * scaling_matrix_size(id)])
+                .collect(),
             dc: [0; 28],
         }
     }
 }
 
 pub fn scaling_matrix_size(id: usize) -> usize {
-    if id < 2 { 2 } else if id < 8 { 4 } else { 8 }
+    if id < 2 {
+        2
+    } else if id < 8 {
+        4
+    } else {
+        8
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -1500,9 +2012,18 @@ pub fn diag_scan(w: usize, h: usize) -> Vec<u16> {
     out
 }
 
-fn alf_filter_coeffs(r: &mut BitReader, param: &mut AlfParam, chroma: bool, alt: usize) -> Result<(), Error> {
+fn alf_filter_coeffs(
+    r: &mut BitReader,
+    param: &mut AlfParam,
+    chroma: bool,
+    alt: usize,
+) -> Result<(), Error> {
     let num_coeff = if chroma { 7 } else { 13 };
-    let num_filters = if chroma { 1 } else { param.num_luma_filters as usize };
+    let num_filters = if chroma {
+        1
+    } else {
+        param.num_luma_filters as usize
+    };
     for f in 0..num_filters {
         for j in 0..num_coeff - 1 {
             let abs = r.uvlc()?;
@@ -1524,7 +2045,11 @@ fn alf_filter_coeffs(r: &mut BitReader, param: &mut AlfParam, chroma: bool, alt:
             param.luma_coeff[f * 13 + 12] = 1 << 6;
         }
     }
-    let clip = if chroma { param.nonlinear_chroma } else { param.nonlinear_luma };
+    let clip = if chroma {
+        param.nonlinear_chroma
+    } else {
+        param.nonlinear_luma
+    };
     if clip {
         for f in 0..num_filters {
             for j in 0..num_coeff - 1 {
@@ -1551,7 +2076,13 @@ fn parse_scaling_list(r: &mut BitReader, chroma_present: bool) -> Result<Scaling
         let pred_mode = if !copy { r.flag()? } else { false };
         let mut delta = 0usize;
         if (copy || pred_mode) && id != 0 && id != 2 && id != 8 {
-            let max = if id < 2 { id } else if id < 8 { id - 2 } else { id - 8 };
+            let max = if id < 2 {
+                id
+            } else if id < 8 {
+                id - 2
+            } else {
+                id - 8
+            };
             delta = r.uvlc_range(0, max as u32, "scaling_list_pred_id_delta")? as usize;
         }
         let size = scaling_matrix_size(id);
@@ -1566,7 +2097,11 @@ fn parse_scaling_list(r: &mut BitReader, chroma_present: bool) -> Result<Scaling
             dc_pred = 16;
         } else {
             pred = list.coef[ref_id].clone();
-            dc_pred = if ref_id > 13 { list.dc[ref_id] } else { pred[0] };
+            dc_pred = if ref_id > 13 {
+                list.dc[ref_id]
+            } else {
+                pred[0]
+            };
         }
         if copy {
             if id >= 14 {
@@ -1580,7 +2115,10 @@ fn parse_scaling_list(r: &mut BitReader, chroma_present: bool) -> Result<Scaling
             let dc = r.svlc_range(-128, 127, "scaling_list_dc_coef")?;
             next += dc;
             list.dc[id] = (dc_pred + dc) & 255;
-            check(list.dc[id] <= 0, "The value of ScalingMatrixDcRec shall be greater than 0.")?;
+            check(
+                list.dc[id] <= 0,
+                "The value of ScalingMatrixDcRec shall be greater than 0.",
+            )?;
         }
         let scan8 = diag_scan(8, 8);
         let scan = diag_scan(size, size);
@@ -1591,7 +2129,10 @@ fn parse_scaling_list(r: &mut BitReader, chroma_present: bool) -> Result<Scaling
             }
             let pos = scan[i] as usize;
             pred[pos] = (pred[pos] + next) & 255;
-            check(pred[pos] <= 0, "The value of ScalingMatrixRec shall be greater than 0.")?;
+            check(
+                pred[pos] <= 0,
+                "The value of ScalingMatrixRec shall be greater than 0.",
+            )?;
         }
         list.coef[id] = pred;
     }
@@ -1619,7 +2160,10 @@ pub fn parse_aps(r: &mut BitReader) -> Result<Option<Aps>, Error> {
                 p.new_cc[0] = r.flag()?;
                 p.new_cc[1] = r.flag()?;
             }
-            check(!p.new_filter[0] && !p.new_filter[1] && !p.new_cc[0] && !p.new_cc[1], "one of the ALF filter signal flags shall be nonzero")?;
+            check(
+                !p.new_filter[0] && !p.new_filter[1] && !p.new_cc[0] && !p.new_cc[1],
+                "one of the ALF filter signal flags shall be nonzero",
+            )?;
             if p.new_filter[0] {
                 p.nonlinear_luma = r.flag()?;
                 let n_minus1 = r.uvlc_range(0, 24, "alf_luma_num_filters_signalled_minus1")?;
@@ -1627,7 +2171,8 @@ pub fn parse_aps(r: &mut BitReader) -> Result<Option<Aps>, Error> {
                 if n_minus1 > 0 {
                     let len = ceil_log2(n_minus1 + 1);
                     for f in 0..25 {
-                        p.coeff_delta_idx[f] = r.code_range(len, 0, n_minus1, "alf_luma_coeff_delta_idx")? as u8;
+                        p.coeff_delta_idx[f] =
+                            r.code_range(len, 0, n_minus1, "alf_luma_coeff_delta_idx")? as u8;
                     }
                 }
                 alf_filter_coeffs(r, &mut p, false, 0)?;
@@ -1662,10 +2207,16 @@ pub fn parse_aps(r: &mut BitReader) -> Result<Option<Aps>, Error> {
         }
         1 => {
             check(id > 3, "adaptation_parameter_set_id for LMCS_APS")?;
-            let mut p = LmcsParam { min_bin: r.uvlc_range(0, 15, "lmcs_min_bin_idx")?, ..Default::default() };
+            let mut p = LmcsParam {
+                min_bin: r.uvlc_range(0, 15, "lmcs_min_bin_idx")?,
+                ..Default::default()
+            };
             let delta_max = r.uvlc_range(0, 15, "lmcs_delta_max_bin_idx")?;
             p.max_bin = 15 - delta_max;
-            check(p.max_bin < p.min_bin, "The value of LmcsMaxBinIdx shall be greater than or equal to lmcs_min_bin_idx.")?;
+            check(
+                p.max_bin < p.min_bin,
+                "The value of LmcsMaxBinIdx shall be greater than or equal to lmcs_min_bin_idx.",
+            )?;
             p.delta_cw_bits = r.uvlc_range(0, 14, "lmcs_delta_cw_prec_minus1")? + 1;
             for i in p.min_bin..=p.max_bin {
                 let abs = r.read(p.delta_cw_bits)? as i32;
@@ -1689,7 +2240,12 @@ pub fn parse_aps(r: &mut BitReader) -> Result<Option<Aps>, Error> {
         }
     }
     r.trailing_bits()?;
-    Ok(Some(Aps { kind, id, chroma_present, data }))
+    Ok(Some(Aps {
+        kind,
+        id,
+        chroma_present,
+        data,
+    }))
 }
 
 #[derive(Clone, Debug, Default)]
@@ -1776,7 +2332,10 @@ fn parse_pic_or_slice_rpl(
             rpl_idx[list] = -1;
         }
         if is_ph {
-            check(pps.rpl_info_in_ph && ph_inter_allowed && rpl[list].num_entries == 0 && list == 0, "num_ref_entries[ 0 ] shall be greater than 0")?;
+            check(
+                pps.rpl_info_in_ph && ph_inter_allowed && rpl[list].num_entries == 0 && list == 0,
+                "num_ref_entries[ 0 ] shall be greater than 0",
+            )?;
         }
         let ltrp_in_header = rpl[list].ltrp_in_header;
         for j in 0..rpl[list].entries.len() {
@@ -1806,7 +2365,10 @@ fn parse_pred_weight_table(
     let luma_denom = r.uvlc_range(0, 7, "luma_log2_weight_denom")?;
     if chroma {
         let delta = r.svlc()?;
-        check(!(0..=7).contains(&(luma_denom as i32 + delta)), "luma_log2_weight_denom + delta_chroma_log2_weight_denom")?;
+        check(
+            !(0..=7).contains(&(luma_denom as i32 + delta)),
+            "luma_log2_weight_denom + delta_chroma_log2_weight_denom",
+        )?;
     }
     let mut sum = 0u32;
     let mut counts = (0u32, 0u32);
@@ -1863,7 +2425,11 @@ pub fn parse_picture_header(
     pps_list: &[Option<Pps>],
     trailing: bool,
 ) -> Result<PicHeader, Error> {
-    let mut ph = PicHeader { intra_allowed: true, rpl_idx: [-1, -1], ..Default::default() };
+    let mut ph = PicHeader {
+        intra_allowed: true,
+        rpl_idx: [-1, -1],
+        ..Default::default()
+    };
     ph.gdr_or_irap = r.flag()?;
     ph.non_ref = r.flag()?;
     if ph.gdr_or_irap {
@@ -1873,10 +2439,17 @@ pub fn parse_picture_header(
     if ph.inter_allowed {
         ph.intra_allowed = r.flag()?;
     }
-    check(!ph.inter_allowed && !ph.intra_allowed, "Invalid picture without intra or inter slice")?;
+    check(
+        !ph.inter_allowed && !ph.intra_allowed,
+        "Invalid picture without intra or inter slice",
+    )?;
     ph.pps_id = r.uvlc_range(0, 63, "ph_pic_parameter_set_id")?;
-    let pps = pps_list[ph.pps_id as usize].as_ref().ok_or(Error::Invalid("Invalid PPS"))?;
-    let sps = sps_list[pps.sps_id as usize].as_ref().ok_or(Error::Invalid("Invalid SPS"))?;
+    let pps = pps_list[ph.pps_id as usize]
+        .as_ref()
+        .ok_or(Error::Invalid("Invalid PPS"))?;
+    let sps = sps_list[pps.sps_id as usize]
+        .as_ref()
+        .ok_or(Error::Invalid("Invalid SPS"))?;
     let ctb_log2 = sps.log2_ctu_size;
     let min_cb_log2 = sps.log2_min_cb_size;
     ph.poc_lsb = r.read(sps.bits_for_poc)?;
@@ -1936,33 +2509,66 @@ pub fn parse_picture_header(
     if sps.virtual_boundaries_enabled && !sps.virtual_boundaries_present {
         ph.vb_present = r.flag()?;
         if ph.vb_present {
-            let nv = r.uvlc_range(0, if pps.width <= 8 { 0 } else { 3 }, "ph_num_ver_virtual_boundaries")?;
+            let nv = r.uvlc_range(
+                0,
+                if pps.width <= 8 { 0 } else { 3 },
+                "ph_num_ver_virtual_boundaries",
+            )?;
             let mut prev = 0u32;
             for i in 0..nv {
-                let pos = (r.uvlc_range(0, ((pps.width + 7) / 8).saturating_sub(2), "ph_virtual_boundary_pos_x_minus1")? + 1) << 3;
-                check(i > 0 && pos < prev + sps.ctu_size, "vertical virtual boundary distance")?;
+                let pos = (r.uvlc_range(
+                    0,
+                    pps.width.div_ceil(8).saturating_sub(2),
+                    "ph_virtual_boundary_pos_x_minus1",
+                )? + 1)
+                    << 3;
+                check(
+                    i > 0 && pos < prev + sps.ctu_size,
+                    "vertical virtual boundary distance",
+                )?;
                 ph.vb_pos_x.push(pos);
                 prev = pos;
             }
-            let nh = r.uvlc_range(0, if pps.height <= 8 { 0 } else { 3 }, "ph_num_hor_virtual_boundaries")?;
+            let nh = r.uvlc_range(
+                0,
+                if pps.height <= 8 { 0 } else { 3 },
+                "ph_num_hor_virtual_boundaries",
+            )?;
             let mut prev = 0u32;
             for i in 0..nh {
-                let pos = (r.uvlc_range(0, ((pps.height + 7) / 8).saturating_sub(2), "ph_virtual_boundary_pos_y_minus1")? + 1) << 3;
-                check(i > 0 && pos < prev + sps.ctu_size, "horizontal virtual boundary distance")?;
+                let pos = (r.uvlc_range(
+                    0,
+                    pps.height.div_ceil(8).saturating_sub(2),
+                    "ph_virtual_boundary_pos_y_minus1",
+                )? + 1)
+                    << 3;
+                check(
+                    i > 0 && pos < prev + sps.ctu_size,
+                    "horizontal virtual boundary distance",
+                )?;
                 ph.vb_pos_y.push(pos);
                 prev = pos;
             }
-            check(nv + nh == 0, "ph_num_ver_virtual_boundaries + ph_num_hor_virtual_boundaries shall be greater than 0")?;
+            check(
+                nv + nh == 0,
+                "ph_num_ver_virtual_boundaries + ph_num_hor_virtual_boundaries shall be greater than 0",
+            )?;
         }
     } else if sps.virtual_boundaries_present {
         ph.vb_present = true;
         ph.vb_pos_x = sps.vb_pos_x.clone();
         ph.vb_pos_y = sps.vb_pos_y.clone();
         for i in 1..ph.vb_pos_x.len() {
-            check(ph.vb_pos_x[i] < ph.vb_pos_x[i - 1] + sps.ctu_size, "vertical virtual boundary distance")?;
+            check(
+                ph.vb_pos_x[i] < ph.vb_pos_x[i - 1] + sps.ctu_size,
+                "vertical virtual boundary distance",
+            )?;
         }
         for i in 1..ph.vb_pos_y.len() {
-            check(ph.vb_pos_y[i] < ph.vb_pos_y[i - 1] + sps.ctu_size, "horizontal virtual boundary distance")?;
+            check(
+                ph.vb_pos_y[i] < ph.vb_pos_y[i - 1] + sps.ctu_size,
+                "horizontal virtual boundary distance",
+            )?;
         }
     }
     if pps.output_flag_present && !ph.non_ref {
@@ -1985,33 +2591,66 @@ pub fn parse_picture_header(
     if ph.intra_allowed {
         let mut min_qt_log2_y = min_qt[0].trailing_zeros();
         if ph.split_cons_override {
-            min_qt_log2_y = r.uvlc_range(0, 6.min(ctb_log2) - min_cb_log2, "ph_log2_diff_min_qt_min_cb_intra_slice_luma")? + min_cb_log2;
+            min_qt_log2_y = r.uvlc_range(
+                0,
+                6.min(ctb_log2) - min_cb_log2,
+                "ph_log2_diff_min_qt_min_cb_intra_slice_luma",
+            )? + min_cb_log2;
             min_qt[0] = 1 << min_qt_log2_y;
-            max_depth[0] = r.uvlc_range(0, 2 * (ctb_log2 - min_cb_log2), "ph_max_mtt_hierarchy_depth_intra_slice_luma")?;
+            max_depth[0] = r.uvlc_range(
+                0,
+                2 * (ctb_log2 - min_cb_log2),
+                "ph_max_mtt_hierarchy_depth_intra_slice_luma",
+            )?;
             max_tt[0] = min_qt[0];
             max_bt[0] = min_qt[0];
             if max_depth[0] != 0 {
-                let bt_lim = if sps.dual_tree { 6.min(ctb_log2) } else { ctb_log2 } as i64 - i64::from(min_qt_log2_y);
+                let bt_lim = if sps.dual_tree {
+                    6.min(ctb_log2)
+                } else {
+                    ctb_log2
+                } as i64
+                    - i64::from(min_qt_log2_y);
                 let v = r.uvlc()?;
-                check(i64::from(v) > bt_lim, "ph_log2_diff_max_bt_min_qt_intra_slice_luma")?;
+                check(
+                    i64::from(v) > bt_lim,
+                    "ph_log2_diff_max_bt_min_qt_intra_slice_luma",
+                )?;
                 max_bt[0] <<= v;
                 let v = r.uvlc()?;
-                check(i64::from(v) > 6.min(ctb_log2) as i64 - i64::from(min_qt_log2_y), "ph_log2_diff_max_tt_min_qt_intra_slice_luma")?;
+                check(
+                    i64::from(v) > 6.min(ctb_log2) as i64 - i64::from(min_qt_log2_y),
+                    "ph_log2_diff_max_tt_min_qt_intra_slice_luma",
+                )?;
                 max_tt[0] <<= v;
             }
             if sps.dual_tree {
-                let min_qt_c = r.uvlc_range(0, 6.min(ctb_log2) - min_cb_log2, "ph_log2_diff_min_qt_min_cb_intra_slice_chroma")? + min_cb_log2;
+                let min_qt_c = r.uvlc_range(
+                    0,
+                    6.min(ctb_log2) - min_cb_log2,
+                    "ph_log2_diff_min_qt_min_cb_intra_slice_chroma",
+                )? + min_cb_log2;
                 min_qt[2] = 1 << min_qt_c;
-                max_depth[2] = r.uvlc_range(0, 2 * (ctb_log2 - min_cb_log2), "ph_max_mtt_hierarchy_depth_intra_slice_chroma")?;
+                max_depth[2] = r.uvlc_range(
+                    0,
+                    2 * (ctb_log2 - min_cb_log2),
+                    "ph_max_mtt_hierarchy_depth_intra_slice_chroma",
+                )?;
                 max_tt[2] = min_qt[2];
                 max_bt[2] = min_qt[2];
                 if max_depth[2] != 0 {
                     let lim = 6.min(ctb_log2) as i64 - i64::from(min_qt_c);
                     let v = r.uvlc()?;
-                    check(i64::from(v) > lim, "ph_log2_diff_max_bt_min_qt_intra_slice_chroma")?;
+                    check(
+                        i64::from(v) > lim,
+                        "ph_log2_diff_max_bt_min_qt_intra_slice_chroma",
+                    )?;
                     max_bt[2] <<= v;
                     let v = r.uvlc()?;
-                    check(i64::from(v) > lim, "ph_log2_diff_max_tt_min_qt_intra_slice_chroma")?;
+                    check(
+                        i64::from(v) > lim,
+                        "ph_log2_diff_max_tt_min_qt_intra_slice_chroma",
+                    )?;
                     max_tt[2] <<= v;
                 }
             }
@@ -2024,22 +2663,40 @@ pub fn parse_picture_header(
         }
         if pps.cu_chroma_qp_offset_list {
             let v = r.uvlc()?;
-            check(i64::from(v) > lim, "ph_cu_chroma_qp_offset_subdiv_intra_slice")?;
+            check(
+                i64::from(v) > lim,
+                "ph_cu_chroma_qp_offset_subdiv_intra_slice",
+            )?;
             ph.cu_chroma_qp_offset_subdiv[0] = v;
         }
     }
     if ph.inter_allowed {
         let mut min_qt_log2_inter = min_cb_log2;
         if ph.split_cons_override {
-            min_qt_log2_inter += r.uvlc_range(0, 6.min(ctb_log2) - min_cb_log2, "ph_log2_diff_min_qt_min_cb_inter_slice")?;
+            min_qt_log2_inter += r.uvlc_range(
+                0,
+                6.min(ctb_log2) - min_cb_log2,
+                "ph_log2_diff_min_qt_min_cb_inter_slice",
+            )?;
             min_qt[1] = 1 << min_qt_log2_inter;
-            max_depth[1] = r.uvlc_range(0, 2 * (ctb_log2 - min_cb_log2), "ph_max_mtt_hierarchy_depth_inter_slice")?;
+            max_depth[1] = r.uvlc_range(
+                0,
+                2 * (ctb_log2 - min_cb_log2),
+                "ph_max_mtt_hierarchy_depth_inter_slice",
+            )?;
             max_tt[1] = min_qt[1];
             max_bt[1] = min_qt[1];
             if max_depth[1] != 0 {
-                max_bt[1] <<= r.uvlc_range(0, ctb_log2 - min_qt_log2_inter, "ph_log2_diff_max_bt_min_qt_inter_slice")?;
+                max_bt[1] <<= r.uvlc_range(
+                    0,
+                    ctb_log2 - min_qt_log2_inter,
+                    "ph_log2_diff_max_bt_min_qt_inter_slice",
+                )?;
                 let v = r.uvlc()?;
-                check(i64::from(v) > 6.min(ctb_log2) as i64 - i64::from(min_qt_log2_inter), "ph_log2_diff_max_tt_min_qt_inter_slice")?;
+                check(
+                    i64::from(v) > 6.min(ctb_log2) as i64 - i64::from(min_qt_log2_inter),
+                    "ph_log2_diff_max_tt_min_qt_inter_slice",
+                )?;
                 max_tt[1] <<= v;
             }
         }
@@ -2051,14 +2708,23 @@ pub fn parse_picture_header(
         }
         if pps.cu_chroma_qp_offset_list {
             let v = r.uvlc()?;
-            check(i64::from(v) > lim, "ph_cu_chroma_qp_offset_subdiv_inter_slice")?;
+            check(
+                i64::from(v) > lim,
+                "ph_cu_chroma_qp_offset_subdiv_inter_slice",
+            )?;
             ph.cu_chroma_qp_offset_subdiv[1] = v;
         }
         if sps.temporal_mvp {
             ph.temporal_mvp = r.flag()?;
             if ph.temporal_mvp && pps.rpl_info_in_ph {
-                ph.col_from_l0 = if ph.rpl[1].num_entries > 0 { r.flag()? } else { true };
-                if (ph.col_from_l0 && ph.rpl[0].num_entries > 1) || (!ph.col_from_l0 && ph.rpl[1].num_entries > 1) {
+                ph.col_from_l0 = if ph.rpl[1].num_entries > 0 {
+                    r.flag()?
+                } else {
+                    true
+                };
+                if (ph.col_from_l0 && ph.rpl[0].num_entries > 1)
+                    || (!ph.col_from_l0 && ph.rpl[1].num_entries > 1)
+                {
                     let v = r.uvlc()?;
                     let list = if ph.col_from_l0 { 0 } else { 1 };
                     check(v > ph.rpl[list].num_entries - 1, "ph_collocated_ref_idx")?;
@@ -2097,7 +2763,10 @@ pub fn parse_picture_header(
     if pps.qp_delta_info_in_ph {
         ph.qp_delta = r.svlc()?;
         let qp = 26 + pps.init_qp_minus26 + ph.qp_delta;
-        check(qp < -sps.qp_bd_offset || qp > 63, "The value of SliceQpY shall be in the range of -QpBdOffset to +63, inclusive.")?;
+        check(
+            qp < -sps.qp_bd_offset || qp > 63,
+            "The value of SliceQpY shall be in the range of -QpBdOffset to +63, inclusive.",
+        )?;
     }
     if sps.joint_cbcr {
         ph.joint_cbcr_sign = r.flag()?;
@@ -2111,7 +2780,11 @@ pub fn parse_picture_header(
     if pps.dbf_info_in_ph {
         ph.deblocking_override = r.flag()?;
     }
-    ph.deblocking_disabled = if pps.deblocking_disabled && ph.deblocking_override { false } else { pps.deblocking_disabled };
+    ph.deblocking_disabled = if pps.deblocking_disabled && ph.deblocking_override {
+        false
+    } else {
+        pps.deblocking_disabled
+    };
     ph.beta_offset_div2[0] = pps.beta_offset_div2[0];
     ph.tc_offset_div2[0] = pps.tc_offset_div2[0];
     if ph.deblocking_override {
@@ -2130,8 +2803,16 @@ pub fn parse_picture_header(
         ph.tc_offset_div2[2] = r.svlc_range(-12, 12, "ph_cr_tc_offset_div2")?;
     } else {
         for c in 1..3 {
-            ph.beta_offset_div2[c] = if pps.chroma_tool_offsets { pps.beta_offset_div2[c] } else { ph.beta_offset_div2[0] };
-            ph.tc_offset_div2[c] = if pps.chroma_tool_offsets { pps.tc_offset_div2[c] } else { ph.tc_offset_div2[0] };
+            ph.beta_offset_div2[c] = if pps.chroma_tool_offsets {
+                pps.beta_offset_div2[c]
+            } else {
+                ph.beta_offset_div2[0]
+            };
+            ph.tc_offset_div2[c] = if pps.chroma_tool_offsets {
+                pps.tc_offset_div2[c]
+            } else {
+                ph.tc_offset_div2[0]
+            };
         }
     }
     if pps.ph_extension {
@@ -2199,17 +2880,46 @@ pub fn parse_slice_header(
     payload_offset: usize,
 ) -> Result<SliceHeader, Error> {
     let (sps, pps, ph) = (ctx.sps, ctx.pps, ctx.ph);
-    let mut sh = SliceHeader { ph_in_sh, ..Default::default() };
+    let mut sh = SliceHeader {
+        ph_in_sh,
+        ..Default::default()
+    };
     if ph_in_sh {
-        check(pps.rpl_info_in_ph, "When sh_picture_header_in_slice_header_flag is equal to 1, rpl_info_in_ph_flag shall be equal to 0")?;
-        check(pps.dbf_info_in_ph, "When sh_picture_header_in_slice_header_flag is equal to 1, dbf_info_in_ph_flag shall be equal to 0")?;
-        check(pps.sao_info_in_ph, "When sh_picture_header_in_slice_header_flag is equal to 1, sao_info_in_ph_flag shall be equal to 0")?;
-        check(pps.alf_info_in_ph, "When sh_picture_header_in_slice_header_flag is equal to 1, alf_info_in_ph_flag shall be equal to 0")?;
-        check(pps.wp_info_in_ph, "When sh_picture_header_in_slice_header_flag is equal to 1, wp_info_in_ph_flag shall be equal to 0")?;
-        check(pps.qp_delta_info_in_ph, "When sh_picture_header_in_slice_header_flag is equal to 1, qp_delta_info_in_ph_flag shall be equal to 0")?;
-        check(sps.subpic_info_present, "When sps_subpic_info_present_flag is equal to 1, the value of sh_picture_header_in_slice_header_flag shall be equal to 0")?;
+        check(
+            pps.rpl_info_in_ph,
+            "When sh_picture_header_in_slice_header_flag is equal to 1, rpl_info_in_ph_flag shall be equal to 0",
+        )?;
+        check(
+            pps.dbf_info_in_ph,
+            "When sh_picture_header_in_slice_header_flag is equal to 1, dbf_info_in_ph_flag shall be equal to 0",
+        )?;
+        check(
+            pps.sao_info_in_ph,
+            "When sh_picture_header_in_slice_header_flag is equal to 1, sao_info_in_ph_flag shall be equal to 0",
+        )?;
+        check(
+            pps.alf_info_in_ph,
+            "When sh_picture_header_in_slice_header_flag is equal to 1, alf_info_in_ph_flag shall be equal to 0",
+        )?;
+        check(
+            pps.wp_info_in_ph,
+            "When sh_picture_header_in_slice_header_flag is equal to 1, wp_info_in_ph_flag shall be equal to 0",
+        )?;
+        check(
+            pps.qp_delta_info_in_ph,
+            "When sh_picture_header_in_slice_header_flag is equal to 1, qp_delta_info_in_ph_flag shall be equal to 0",
+        )?;
+        check(
+            sps.subpic_info_present,
+            "When sps_subpic_info_present_flag is equal to 1, the value of sh_picture_header_in_slice_header_flag shall be equal to 0",
+        )?;
     }
-    check(sps.subpic_info_present && sps.virtual_boundaries_enabled && !sps.virtual_boundaries_present, "sps_virtual_boundaries_present_flag shall be equal 1")?;
+    check(
+        sps.subpic_info_present
+            && sps.virtual_boundaries_enabled
+            && !sps.virtual_boundaries_present,
+        "sps_virtual_boundaries_present_flag shall be equal 1",
+    )?;
     let chroma = sps.chroma_format_idc != 0;
     if sps.subpic_info_present {
         sh.subpic_id = r.read(sps.subpic_id_len)?;
@@ -2218,12 +2928,18 @@ pub fn parse_slice_header(
     let mut slice_addr = 0u32;
     if !pps.rect_slice {
         if num_tiles > 1 {
-            slice_addr = r.code_range(ceil_log2(num_tiles), 0, num_tiles - 1, "sh_slice_address")?;
+            slice_addr =
+                r.code_range(ceil_log2(num_tiles), 0, num_tiles - 1, "sh_slice_address")?;
         }
     } else {
         let sub = &pps.subpics[pps.subpic_idx_from_id(sh.subpic_id)];
         if sub.num_slices > 1 {
-            slice_addr = r.code_range(ceil_log2(sub.num_slices), 0, sub.num_slices - 1, "sh_slice_address")?;
+            slice_addr = r.code_range(
+                ceil_log2(sub.num_slices),
+                0,
+                sub.num_slices - 1,
+                "sh_slice_address",
+            )?;
         }
     }
     for &present in &sps.extra_sh_bits {
@@ -2240,7 +2956,10 @@ pub fn parse_slice_header(
         for t in slice_addr..slice_addr + num_tiles_in_slice {
             let tx = t % pps.num_tile_cols();
             let ty = t / pps.num_tile_cols();
-            check(ty >= pps.num_tile_rows(), "Number of tiles in slice exceeds the remaining number of tiles in picture")?;
+            check(
+                ty >= pps.num_tile_rows(),
+                "Number of tiles in slice exceeds the remaining number of tiles in picture",
+            )?;
             add_ctus(
                 &mut sh.ctus,
                 pps.tile_col_bd[tx as usize],
@@ -2257,11 +2976,22 @@ pub fn parse_slice_header(
         for s in &pps.subpics[..sub_idx] {
             idx += s.num_slices;
         }
-        sh.ctus = pps.slice_map.get(idx as usize).cloned().ok_or(Error::Invalid("slice index"))?;
+        sh.ctus = pps
+            .slice_map
+            .get(idx as usize)
+            .cloned()
+            .ok_or(Error::Invalid("slice index"))?;
         sh.slice_addr = idx;
     }
-    sh.slice_type = if ph.inter_allowed { r.uvlc_range(0, 2, "sh_slice_type")? } else { I_SLICE };
-    check(!ph.intra_allowed && sh.slice_type == I_SLICE, "When ph_intra_slice_allowed_flag is equal to 0, the value of sh_slice_type shall be equal to 0 or 1.")?;
+    sh.slice_type = if ph.inter_allowed {
+        r.uvlc_range(0, 2, "sh_slice_type")?
+    } else {
+        I_SLICE
+    };
+    check(
+        !ph.intra_allowed && sh.slice_type == I_SLICE,
+        "When ph_intra_slice_allowed_flag is equal to 0, the value of sh_slice_type shall be equal to 0 or 1.",
+    )?;
     // IDR_W_RADL (7), IDR_N_LP (8), CRA (9), GDR (10)
     if (7..=10).contains(&nal_type) {
         r.flag()?;
@@ -2280,8 +3010,16 @@ pub fn parse_slice_header(
     sh.beta_offset_div2[0] = ph.beta_offset_div2[0];
     sh.tc_offset_div2[0] = ph.tc_offset_div2[0];
     for c in 1..3 {
-        sh.beta_offset_div2[c] = if pps.chroma_tool_offsets { ph.beta_offset_div2[c] } else { sh.beta_offset_div2[0] };
-        sh.tc_offset_div2[c] = if pps.chroma_tool_offsets { ph.tc_offset_div2[c] } else { sh.tc_offset_div2[0] };
+        sh.beta_offset_div2[c] = if pps.chroma_tool_offsets {
+            ph.beta_offset_div2[c]
+        } else {
+            sh.beta_offset_div2[0]
+        };
+        sh.tc_offset_div2[c] = if pps.chroma_tool_offsets {
+            ph.tc_offset_div2[c]
+        } else {
+            sh.tc_offset_div2[0]
+        };
     }
     sh.sao_enabled = ph.sao_enabled;
     sh.alf_enabled = ph.alf_enabled;
@@ -2290,7 +3028,11 @@ pub fn parse_slice_header(
     sh.ccalf_enabled = ph.ccalf_enabled;
     sh.ccalf_aps_id = ph.ccalf_aps_id;
     sh.lmcs_used = if ph_in_sh { ph.lmcs_enabled } else { false };
-    sh.explicit_scaling_list_used = if ph_in_sh { ph.explicit_scaling_list } else { false };
+    sh.explicit_scaling_list_used = if ph_in_sh {
+        ph.explicit_scaling_list
+    } else {
+        false
+    };
     let alf_aps = |id: u32| -> Option<&AlfParam> {
         match ctx.aps[0].get(id as usize)?.as_ref()?.data {
             ApsData::Alf(ref p) => Some(p),
@@ -2305,7 +3047,10 @@ pub fn parse_slice_header(
             for _ in 0..n {
                 let id = r.read(3)?;
                 let aps = alf_aps(id).ok_or(Error::Invalid("referenced APS not found"))?;
-                check(!aps.new_filter[0], "alf_luma_filter_signal_flag of the referenced APS shall be equal to 1")?;
+                check(
+                    !aps.new_filter[0],
+                    "alf_luma_filter_signal_flag of the referenced APS shall be equal to 1",
+                )?;
                 sh.alf_aps_ids_luma.push(id);
             }
             if chroma {
@@ -2314,16 +3059,24 @@ pub fn parse_slice_header(
             }
             if sh.alf_enabled[1] || sh.alf_enabled[2] {
                 sh.alf_aps_id_chroma = r.read(3)?;
-                let aps = alf_aps(sh.alf_aps_id_chroma).ok_or(Error::Invalid("referenced APS not found"))?;
-                check(!aps.new_filter[1], "alf_chroma_filter_signal_flag of the referenced APS shall be equal to 1")?;
+                let aps = alf_aps(sh.alf_aps_id_chroma)
+                    .ok_or(Error::Invalid("referenced APS not found"))?;
+                check(
+                    !aps.new_filter[1],
+                    "alf_chroma_filter_signal_flag of the referenced APS shall be equal to 1",
+                )?;
             }
             if sps.ccalf {
                 for cc in 0..2 {
                     sh.ccalf_enabled[cc] = r.flag()?;
                     if sh.ccalf_enabled[cc] {
                         sh.ccalf_aps_id[cc] = r.read(3)?;
-                        let aps = alf_aps(sh.ccalf_aps_id[cc]).ok_or(Error::Invalid("referenced APS not found"))?;
-                        check(!aps.new_cc[cc], "alf_cc_filter_signal_flag of the referenced APS shall be equal to 1")?;
+                        let aps = alf_aps(sh.ccalf_aps_id[cc])
+                            .ok_or(Error::Invalid("referenced APS not found"))?;
+                        check(
+                            !aps.new_cc[cc],
+                            "alf_cc_filter_signal_flag of the referenced APS shall be equal to 1",
+                        )?;
                     }
                 }
             }
@@ -2370,9 +3123,15 @@ pub fn parse_slice_header(
         }
     }
     if is_p || is_b {
-        check(num_ref_idx[0] == 0, "Number of active entries in RPL0 of P or B picture shall be greater than 0")?;
+        check(
+            num_ref_idx[0] == 0,
+            "Number of active entries in RPL0 of P or B picture shall be greater than 0",
+        )?;
         if is_b {
-            check(num_ref_idx[1] == 0, "Number of active entries in RPL1 of B picture shall be greater than 0")?;
+            check(
+                num_ref_idx[1] == 0,
+                "Number of active entries in RPL1 of B picture shall be greater than 0",
+            )?;
         }
     }
     if !intra {
@@ -2393,25 +3152,46 @@ pub fn parse_slice_header(
             parse_pred_weight_table(r, sps, pps, &rpl, num_ref_idx, None)?;
         }
         if pps.wp_info_in_ph {
-            check(pps.weighted_pred && is_p && num_ref_idx[0] > ph.num_l0_weights, "NumRefIdxActive[ 0 ] shall be less than or equal to the value of NumWeightsL0")?;
-            check(pps.weighted_bipred && is_b && num_ref_idx[0] > ph.num_l0_weights, "NumRefIdxActive[ 0 ] shall be less than or equal to the value of NumWeightsL0")?;
-            check(pps.weighted_bipred && is_b && num_ref_idx[1] > ph.num_l1_weights, "NumRefIdxActive[ 1 ] shall be less than or equal to the value of NumWeightsL1")?;
+            check(
+                pps.weighted_pred && is_p && num_ref_idx[0] > ph.num_l0_weights,
+                "NumRefIdxActive[ 0 ] shall be less than or equal to the value of NumWeightsL0",
+            )?;
+            check(
+                pps.weighted_bipred && is_b && num_ref_idx[0] > ph.num_l0_weights,
+                "NumRefIdxActive[ 0 ] shall be less than or equal to the value of NumWeightsL0",
+            )?;
+            check(
+                pps.weighted_bipred && is_b && num_ref_idx[1] > ph.num_l1_weights,
+                "NumRefIdxActive[ 1 ] shall be less than or equal to the value of NumWeightsL1",
+            )?;
         }
     }
     if !pps.qp_delta_info_in_ph {
         let delta = r.svlc()?;
         let qp = 26 + pps.init_qp_minus26 + delta;
-        check(qp < -sps.qp_bd_offset || qp > MAX_QP, "SliceQpY out of range")?;
+        check(
+            qp < -sps.qp_bd_offset || qp > MAX_QP,
+            "SliceQpY out of range",
+        )?;
         sh.qp = qp;
     }
     if pps.slice_chroma_qp_offsets {
         sh.chroma_qp_delta[0] = r.svlc_range(-12, 12, "sh_cb_qp_offset")?;
-        check(!(-12..=12).contains(&(sh.chroma_qp_delta[0] + pps.cb_qp_offset)), "pps_cb_qp_offset + sh_cb_qp_offset")?;
+        check(
+            !(-12..=12).contains(&(sh.chroma_qp_delta[0] + pps.cb_qp_offset)),
+            "pps_cb_qp_offset + sh_cb_qp_offset",
+        )?;
         sh.chroma_qp_delta[1] = r.svlc_range(-12, 12, "sh_cr_qp_offset")?;
-        check(!(-12..=12).contains(&(sh.chroma_qp_delta[1] + pps.cr_qp_offset)), "pps_cr_qp_offset + sh_cr_qp_offset")?;
+        check(
+            !(-12..=12).contains(&(sh.chroma_qp_delta[1] + pps.cr_qp_offset)),
+            "pps_cr_qp_offset + sh_cr_qp_offset",
+        )?;
         if sps.joint_cbcr {
             sh.chroma_qp_delta[2] = r.svlc_range(-12, 12, "sh_joint_cbcr_qp_offset")?;
-            check(!(-12..=12).contains(&(sh.chroma_qp_delta[2] + pps.joint_cbcr_qp_offset)), "pps_joint_cbcr_qp_offset_value + sh_joint_cbcr_qp_offset")?;
+            check(
+                !(-12..=12).contains(&(sh.chroma_qp_delta[2] + pps.joint_cbcr_qp_offset)),
+                "pps_joint_cbcr_qp_offset_value + sh_joint_cbcr_qp_offset",
+            )?;
         }
     }
     if pps.cu_chroma_qp_offset_list {
@@ -2427,7 +3207,11 @@ pub fn parse_slice_header(
     if pps.deblocking_override_enabled && !pps.dbf_info_in_ph {
         dbf_override = r.flag()?;
     }
-    sh.deblocking_disabled = if pps.deblocking_disabled && dbf_override { false } else { ph.deblocking_disabled };
+    sh.deblocking_disabled = if pps.deblocking_disabled && dbf_override {
+        false
+    } else {
+        ph.deblocking_disabled
+    };
     if dbf_override {
         if !pps.deblocking_disabled {
             sh.deblocking_disabled = r.flag()?;

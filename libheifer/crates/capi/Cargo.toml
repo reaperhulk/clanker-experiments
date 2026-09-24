@@ -20,9 +20,10 @@ rav1e = { version = "=0.8.1", optional = true, default-features = false, feature
 unsafe_op_in_unsafe_fn = "deny"
 
 [features]
-default = ["hevc", "av1", "avc", "jpeg", "jpeg2000"]
+default = ["hevc", "av1", "avc", "jpeg", "jpeg2000", "vvc"]
 avc = ["libheifer/avc"]
 jpeg2000 = ["libheifer/jpeg2000"]
 jpeg = ["libheifer/jpeg"]
 hevc = ["libheifer/hevc"]
+vvc = ["libheifer/vvc"]
 av1 = ["libheifer/av1", "dep:rav1e", "dep:num-traits"]

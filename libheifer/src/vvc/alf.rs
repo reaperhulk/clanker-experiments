@@ -72,22 +72,68 @@ const FIXED_COEFF: [[i16; 13]; 64] = [
 ];
 
 const CLASS_TO_FILTER: [[u8; 25]; 16] = [
-    [8, 2, 2, 2, 3, 4, 53, 9, 9, 52, 4, 4, 5, 9, 2, 8, 10, 9, 1, 3, 39, 39, 10, 9, 52],
-    [11, 12, 13, 14, 15, 30, 11, 17, 18, 19, 16, 20, 20, 4, 53, 21, 22, 23, 14, 25, 26, 26, 27, 28, 10],
-    [16, 12, 31, 32, 14, 16, 30, 33, 53, 34, 35, 16, 20, 4, 7, 16, 21, 36, 18, 19, 21, 26, 37, 38, 39],
-    [35, 11, 13, 14, 43, 35, 16, 4, 34, 62, 35, 35, 30, 56, 7, 35, 21, 38, 24, 40, 16, 21, 48, 57, 39],
-    [11, 31, 32, 43, 44, 16, 4, 17, 34, 45, 30, 20, 20, 7, 5, 21, 22, 46, 40, 47, 26, 48, 63, 58, 10],
-    [12, 13, 50, 51, 52, 11, 17, 53, 45, 9, 30, 4, 53, 19, 0, 22, 23, 25, 43, 44, 37, 27, 28, 10, 55],
-    [30, 33, 62, 51, 44, 20, 41, 56, 34, 45, 20, 41, 41, 56, 5, 30, 56, 38, 40, 47, 11, 37, 42, 57, 8],
-    [35, 11, 23, 32, 14, 35, 20, 4, 17, 18, 21, 20, 20, 20, 4, 16, 21, 36, 46, 25, 41, 26, 48, 49, 58],
-    [12, 31, 59, 59, 3, 33, 33, 59, 59, 52, 4, 33, 17, 59, 55, 22, 36, 59, 59, 60, 22, 36, 59, 25, 55],
-    [31, 25, 15, 60, 60, 22, 17, 19, 55, 55, 20, 20, 53, 19, 55, 22, 46, 25, 43, 60, 37, 28, 10, 55, 52],
-    [12, 31, 32, 50, 51, 11, 33, 53, 19, 45, 16, 4, 4, 53, 5, 22, 36, 18, 25, 43, 26, 27, 27, 28, 10],
-    [5, 2, 44, 52, 3, 4, 53, 45, 9, 3, 4, 56, 5, 0, 2, 5, 10, 47, 52, 3, 63, 39, 10, 9, 52],
-    [12, 34, 44, 44, 3, 56, 56, 62, 45, 9, 56, 56, 7, 5, 0, 22, 38, 40, 47, 52, 48, 57, 39, 10, 9],
-    [35, 11, 23, 14, 51, 35, 20, 41, 56, 62, 16, 20, 41, 56, 7, 16, 21, 38, 24, 40, 26, 26, 42, 57, 39],
-    [33, 34, 51, 51, 52, 41, 41, 34, 62, 0, 41, 41, 56, 7, 5, 56, 38, 38, 40, 44, 37, 42, 57, 39, 10],
-    [16, 31, 32, 15, 60, 30, 4, 17, 19, 25, 22, 20, 4, 53, 19, 21, 22, 46, 25, 55, 26, 48, 63, 58, 55],
+    [
+        8, 2, 2, 2, 3, 4, 53, 9, 9, 52, 4, 4, 5, 9, 2, 8, 10, 9, 1, 3, 39, 39, 10, 9, 52,
+    ],
+    [
+        11, 12, 13, 14, 15, 30, 11, 17, 18, 19, 16, 20, 20, 4, 53, 21, 22, 23, 14, 25, 26, 26, 27,
+        28, 10,
+    ],
+    [
+        16, 12, 31, 32, 14, 16, 30, 33, 53, 34, 35, 16, 20, 4, 7, 16, 21, 36, 18, 19, 21, 26, 37,
+        38, 39,
+    ],
+    [
+        35, 11, 13, 14, 43, 35, 16, 4, 34, 62, 35, 35, 30, 56, 7, 35, 21, 38, 24, 40, 16, 21, 48,
+        57, 39,
+    ],
+    [
+        11, 31, 32, 43, 44, 16, 4, 17, 34, 45, 30, 20, 20, 7, 5, 21, 22, 46, 40, 47, 26, 48, 63,
+        58, 10,
+    ],
+    [
+        12, 13, 50, 51, 52, 11, 17, 53, 45, 9, 30, 4, 53, 19, 0, 22, 23, 25, 43, 44, 37, 27, 28,
+        10, 55,
+    ],
+    [
+        30, 33, 62, 51, 44, 20, 41, 56, 34, 45, 20, 41, 41, 56, 5, 30, 56, 38, 40, 47, 11, 37, 42,
+        57, 8,
+    ],
+    [
+        35, 11, 23, 32, 14, 35, 20, 4, 17, 18, 21, 20, 20, 20, 4, 16, 21, 36, 46, 25, 41, 26, 48,
+        49, 58,
+    ],
+    [
+        12, 31, 59, 59, 3, 33, 33, 59, 59, 52, 4, 33, 17, 59, 55, 22, 36, 59, 59, 60, 22, 36, 59,
+        25, 55,
+    ],
+    [
+        31, 25, 15, 60, 60, 22, 17, 19, 55, 55, 20, 20, 53, 19, 55, 22, 46, 25, 43, 60, 37, 28, 10,
+        55, 52,
+    ],
+    [
+        12, 31, 32, 50, 51, 11, 33, 53, 19, 45, 16, 4, 4, 53, 5, 22, 36, 18, 25, 43, 26, 27, 27,
+        28, 10,
+    ],
+    [
+        5, 2, 44, 52, 3, 4, 53, 45, 9, 3, 4, 56, 5, 0, 2, 5, 10, 47, 52, 3, 63, 39, 10, 9, 52,
+    ],
+    [
+        12, 34, 44, 44, 3, 56, 56, 62, 45, 9, 56, 56, 7, 5, 0, 22, 38, 40, 47, 52, 48, 57, 39, 10,
+        9,
+    ],
+    [
+        35, 11, 23, 14, 51, 35, 20, 41, 56, 62, 16, 20, 41, 56, 7, 16, 21, 38, 24, 40, 26, 26, 42,
+        57, 39,
+    ],
+    [
+        33, 34, 51, 51, 52, 41, 41, 34, 62, 0, 41, 41, 56, 7, 5, 56, 38, 38, 40, 44, 37, 42, 57,
+        39, 10,
+    ],
+    [
+        16, 31, 32, 15, 60, 30, 4, 17, 19, 25, 22, 20, 4, 53, 19, 21, 22, 46, 25, 55, 26, 48, 63,
+        58, 55,
+    ],
 ];
 
 const CLIP_VALUES: [[i32; 4]; 3] = [[256, 32, 8, 2], [512, 64, 16, 4], [1024, 128, 32, 8]];
@@ -206,7 +252,15 @@ fn clip_alf(clip: i32, cur: i32, a: i32, b: i32) -> i32 {
 
 /// vvdec's `deriveClassificationBlk` for one 4x4 block at `(x, y)`;
 /// `ry` is `y` relative to the CTU.
-fn classify<S: Src>(s: &S, x: i32, y: i32, ry: i32, bd: u32, vb_h: i32, vb_pos: i32) -> (usize, usize) {
+fn classify<S: Src>(
+    s: &S,
+    x: i32,
+    y: i32,
+    ry: i32,
+    bd: u32,
+    vb_h: i32,
+    vb_pos: i32,
+) -> (usize, usize) {
     const TH: [usize; 16] = [0, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 4];
     let lap = |dx: i32, dy: i32| -> [i32; 4] {
         let px = x - 2 + dx;
@@ -221,10 +275,14 @@ fn classify<S: Src>(s: &S, x: i32, y: i32, ry: i32, bd: u32, vb_h: i32, vb_pos: 
         let y0 = s.g(px, r1) << 1;
         let yup1 = s.g(px + 1, r2) << 1;
         [
-            (y0 - s.g(px, r0) - s.g(px, r2)).abs() + (yup1 - s.g(px + 1, r1) - s.g(px + 1, r3)).abs(),
-            (y0 - s.g(px + 1, r1) - s.g(px - 1, r1)).abs() + (yup1 - s.g(px + 2, r2) - s.g(px, r2)).abs(),
-            (y0 - s.g(px - 1, r0) - s.g(px + 1, r2)).abs() + (yup1 - s.g(px, r1) - s.g(px + 2, r3)).abs(),
-            (y0 - s.g(px - 1, r2) - s.g(px + 1, r0)).abs() + (yup1 - s.g(px, r3) - s.g(px + 2, r1)).abs(),
+            (y0 - s.g(px, r0) - s.g(px, r2)).abs()
+                + (yup1 - s.g(px + 1, r1) - s.g(px + 1, r3)).abs(),
+            (y0 - s.g(px + 1, r1) - s.g(px - 1, r1)).abs()
+                + (yup1 - s.g(px + 2, r2) - s.g(px, r2)).abs(),
+            (y0 - s.g(px - 1, r0) - s.g(px + 1, r2)).abs()
+                + (yup1 - s.g(px, r1) - s.g(px + 2, r3)).abs(),
+            (y0 - s.g(px - 1, r2) - s.g(px + 1, r0)).abs()
+                + (yup1 - s.g(px, r3) - s.g(px + 2, r1)).abs(),
         ]
     };
     let m = ry % vb_h;
@@ -245,13 +303,25 @@ fn classify<S: Src>(s: &S, x: i32, y: i32, ry: i32, bd: u32, vb_h: i32, vb_pos: 
         }
     }
     let [sv, sh, sd0, sd1] = sum;
-    let mult = if m == vb_pos - 4 || m == vb_pos { 96 } else { 64 };
-    let activity = ((sv + sh) * mult >> (bd + 4)).clamp(0, 15);
+    let mult = if m == vb_pos - 4 || m == vb_pos {
+        96
+    } else {
+        64
+    };
+    let activity = (((sv + sh) * mult) >> (bd + 4)).clamp(0, 15);
     let mut class = TH[activity as usize];
     let (hv1, hv0, dir_hv) = if sv > sh { (sv, sh, 1) } else { (sh, sv, 3) };
-    let (d1, d0, dir_d) = if sd0 > sd1 { (sd0, sd1, 0) } else { (sd1, sd0, 2) };
+    let (d1, d0, dir_d) = if sd0 > sd1 {
+        (sd0, sd1, 0)
+    } else {
+        (sd1, sd0, 2)
+    };
     let (hvd1, hvd0, main, second) =
-        if (d1 as u32).wrapping_mul(hv0 as u32) > (hv1 as u32).wrapping_mul(d0 as u32) { (d1, d0, dir_d, dir_hv) } else { (hv1, hv0, dir_hv, dir_d) };
+        if (d1 as u32).wrapping_mul(hv0 as u32) > (hv1 as u32).wrapping_mul(d0 as u32) {
+            (d1, d0, dir_d, dir_hv)
+        } else {
+            (hv1, hv0, dir_hv, dir_d)
+        };
     let mut strength = 0;
     if hvd1 > 2 * hvd0 {
         strength = 1;
@@ -274,7 +344,22 @@ struct Vb {
 /// vvdec's `filterBlk`: filters `(x, y, w, h)` (picture coordinates) of one
 /// component into `dst`. `ctu_y` is the CTU's first row in this component.
 #[allow(clippy::too_many_arguments)]
-fn filter_blk<S: Src>(s: &S, dst: &mut Plane, x0: i32, y0: i32, w: i32, h: i32, ctu_y: i32, chroma: bool, luma: Option<&LumaFilters>, cc: &[i32; 13], cl: &[i32; 13], vb: &Vb, bd: u32, max: i32) {
+fn filter_blk<S: Src>(
+    s: &S,
+    dst: &mut Plane,
+    x0: i32,
+    y0: i32,
+    w: i32,
+    h: i32,
+    ctu_y: i32,
+    chroma: bool,
+    luma: Option<&LumaFilters>,
+    cc: &[i32; 13],
+    cl: &[i32; 13],
+    vb: &Vb,
+    bd: u32,
+    max: i32,
+) {
     let mut by = 0;
     while by < h {
         let mut bx = 0;
@@ -288,7 +373,8 @@ fn filter_blk<S: Src>(s: &S, dst: &mut Plane, x0: i32, y0: i32, w: i32, h: i32, 
             for ii in 0..4.min(h - by) {
                 let y = y0 + by + ii;
                 let y_vb = (y - ctu_y) & (vb.h - 1);
-                let (mut r1, mut r2, mut r3, mut r4, mut r5, mut r6) = (y + 1, y - 1, y + 2, y - 2, y + 3, y - 3);
+                let (mut r1, mut r2, mut r3, mut r4, mut r5, mut r6) =
+                    (y + 1, y - 1, y + 2, y - 2, y + 3, y - 3);
                 let near = if chroma { 2 } else { 4 };
                 if y_vb < vb.pos && y_vb >= vb.pos - near {
                     if y_vb == vb.pos - 1 {
@@ -303,7 +389,7 @@ fn filter_blk<S: Src>(s: &S, dst: &mut Plane, x0: i32, y0: i32, w: i32, h: i32, 
                         r5 = r3;
                         r6 = r4;
                     }
-                } else if y_vb >= vb.pos && y_vb <= vb.pos + near - 1 {
+                } else if y_vb >= vb.pos && y_vb < vb.pos + near {
                     if y_vb == vb.pos {
                         r2 = y;
                         r1 = y;
@@ -343,7 +429,11 @@ fn filter_blk<S: Src>(s: &S, dst: &mut Plane, x0: i32, y0: i32, w: i32, h: i32, 
                         sum += coeff[4] * clip_alf(clip[4], cur, s.g(x + 2, y), s.g(x - 2, y));
                         sum += coeff[5] * clip_alf(clip[5], cur, s.g(x + 1, y), s.g(x - 1, y));
                     }
-                    sum = if near_vb { (sum + (1 << 9)) >> 10 } else { (sum + 64) >> 7 };
+                    sum = if near_vb {
+                        (sum + (1 << 9)) >> 10
+                    } else {
+                        (sum + 64) >> 7
+                    };
                     dst.set(x, y, (sum + cur).clamp(0, max) as i16);
                 }
             }
@@ -357,7 +447,21 @@ fn filter_blk<S: Src>(s: &S, dst: &mut Plane, x0: i32, y0: i32, w: i32, h: i32, 
 /// `dst` for the chroma block `(x0, y0, w, h)`; `luma` is the unfiltered
 /// luma source.
 #[allow(clippy::too_many_arguments)]
-fn filter_cc<S: Src>(luma: &S, dst: &mut Plane, x0: i32, y0: i32, w: i32, h: i32, ctu_yc: i32, sx: u32, sy: u32, coeff: &[i16; 8], vb: &Vb, bd: u32, max: i32) {
+fn filter_cc<S: Src>(
+    luma: &S,
+    dst: &mut Plane,
+    x0: i32,
+    y0: i32,
+    w: i32,
+    h: i32,
+    ctu_yc: i32,
+    sx: u32,
+    sy: u32,
+    coeff: &[i16; 8],
+    vb: &Vb,
+    bd: u32,
+    max: i32,
+) {
     for yc in y0..y0 + h {
         let pos = ((yc - ctu_yc) << sy) & (vb.h - 1);
         if sy == 0 && (pos == vb.pos || pos == vb.pos + 1) {
@@ -399,7 +503,12 @@ struct CtuFilters {
     cc: [Option<[i16; 8]>; 2],
 }
 
-fn luma_filters(idx: u16, sh: &SliceHeader, aps: &[Option<AlfParam>; 8], bd: u32) -> Option<LumaFilters> {
+fn luma_filters(
+    idx: u16,
+    sh: &SliceHeader,
+    aps: &[Option<AlfParam>; 8],
+    bd: u32,
+) -> Option<LumaFilters> {
     let vls = CLIP_VALUES[(bd - 8) as usize];
     if idx < 16 {
         let set = idx as usize;
@@ -431,9 +540,19 @@ fn luma_filters(idx: u16, sh: &SliceHeader, aps: &[Option<AlfParam>; 8], bd: u32
 }
 
 /// Applies ALF and CC-ALF to the whole (SAO-filtered) picture.
-pub fn alf(pic: &mut Picture, sps: &Sps, pps: &Pps, ph: &PicHeader, slices: &[SliceHeader], aps: &[Option<AlfParam>; 8]) {
+pub fn alf(
+    pic: &mut Picture,
+    sps: &Sps,
+    pps: &Pps,
+    ph: &PicHeader,
+    slices: &[SliceHeader],
+    aps: &[Option<AlfParam>; 8],
+) {
     let nc = pic.fmt.num_comp();
-    let any = pic.ctus.iter().any(|c| c.alf.enable.iter().any(|&e| e) || c.alf.cc.iter().any(|&v| v != 0));
+    let any = pic
+        .ctus
+        .iter()
+        .any(|c| c.alf.enable.iter().any(|&e| e) || c.alf.cc.iter().any(|&v| v != 0));
     if !any || pic.bit_depth > 10 {
         return;
     }
@@ -444,8 +563,14 @@ pub fn alf(pic: &mut Picture, sps: &Sps, pps: &Pps, ph: &PicHeader, slices: &[Sl
     let ctu = 1i32 << pic.ctu_log2;
     let wc = pic.width_ctus as i32;
     let (csx, csy) = pic.fmt.scale(1);
-    let vb_l = Vb { h: ctu, pos: ctu - 4 };
-    let vb_c = Vb { h: ctu >> csy, pos: (ctu >> csy) - 2 };
+    let vb_l = Vb {
+        h: ctu,
+        pos: ctu - 4,
+    };
+    let vb_c = Vb {
+        h: ctu >> csy,
+        pos: (ctu >> csy) - 2,
+    };
     let num_tiles = pps.num_tiles();
     let ctu_count = pic.ctus.len() as u32;
     for addr in 0..pic.ctus.len() {
@@ -458,7 +583,11 @@ pub fn alf(pic: &mut Picture, sps: &Sps, pps: &Pps, ph: &PicHeader, slices: &[Sl
             continue;
         }
         let filters = CtuFilters {
-            luma: if a.enable[0] { luma_filters(a.filter_idx, sh, aps, bd) } else { None },
+            luma: if a.enable[0] {
+                luma_filters(a.filter_idx, sh, aps, bd)
+            } else {
+                None
+            },
             chroma: [1, 2].map(|c| {
                 if nc > 1 && a.enable[c] {
                     let p = aps[sh.alf_aps_id_chroma as usize].as_ref()?;
@@ -517,17 +646,25 @@ pub fn alf(pic: &mut Picture, sps: &Sps, pps: &Pps, ph: &PicHeader, slices: &[Sl
         let subpic_of = |a: usize| -> usize {
             let (x, y) = ((a as i32 % wc) as u32, (a as i32 / wc) as u32);
             (0..sps.num_subpics as usize)
-                .find(|&i| x >= sps.subpic_x[i] && x < sps.subpic_x[i] + sps.subpic_w[i] && y >= sps.subpic_y[i] && y < sps.subpic_y[i] + sps.subpic_h[i])
+                .find(|&i| {
+                    x >= sps.subpic_x[i]
+                        && x < sps.subpic_x[i] + sps.subpic_w[i]
+                        && y >= sps.subpic_y[i]
+                        && y < sps.subpic_y[i] + sps.subpic_h[i]
+                })
                 .unwrap_or(0)
         };
-        let across_subpic = !sps.subpic_info_present || sps.loop_filter_across_subpic[subpic_of(addr)];
+        let across_subpic =
+            !sps.subpic_info_present || sps.loop_filter_across_subpic[subpic_of(addr)];
         let across_tiles = num_tiles <= 1 || pps.loop_filter_across_tiles;
         let slice_ctus = pic.ctus.iter().filter(|c| c.slice == Some(si)).count() as u32;
         let across_slices = slice_ctus == ctu_count || pps.loop_filter_across_slices;
         let restrict_any = !across_slices || !across_tiles || !across_subpic;
         let avail = |o: usize| -> bool {
             let oc = &pic.ctus[o];
-            (across_slices || oc.slice == cd.slice) && (across_tiles || oc.tile == cd.tile) && (across_subpic || subpic_of(o) == subpic_of(addr))
+            (across_slices || oc.slice == cd.slice)
+                && (across_tiles || oc.tile == cd.tile)
+                && (across_subpic || subpic_of(o) == subpic_of(addr))
         };
         let at = |dx: i32, dy: i32| ((cy + dy) * wc + cx + dx) as usize;
         if y0 >= ctu && !ct && restrict_any && !avail(at(0, -1)) {
@@ -543,25 +680,82 @@ pub fn alf(pic: &mut Picture, sps: &Sps, pps: &Pps, ph: &PicHeader, slices: &[Sl
             cr = true;
         }
         let mut raster_pad = 0u8;
-        if !ct && !cl && !across_slices && x0 >= ctu && y0 >= ctu && pic.ctus[at(-1, -1)].slice != cd.slice {
+        if !ct
+            && !cl
+            && !across_slices
+            && x0 >= ctu
+            && y0 >= ctu
+            && pic.ctus[at(-1, -1)].slice != cd.slice
+        {
             raster_pad = 1;
         }
-        if !cb && !cr && !across_slices && x0 + ctu < pic.width && y0 + ctu < pic.height && pic.ctus[at(1, 1)].slice != cd.slice {
+        if !cb
+            && !cr
+            && !across_slices
+            && x0 + ctu < pic.width
+            && y0 + ctu < pic.height
+            && pic.ctus[at(1, 1)].slice != cd.slice
+        {
             raster_pad += 2;
         }
-        let crossed = !vb_hor.is_empty() || !vb_ver.is_empty() || ct || cb || cl || cr || raster_pad != 0;
+        let crossed =
+            !vb_hor.is_empty() || !vb_ver.is_empty() || ct || cb || cl || cr || raster_pad != 0;
         let (planes_y, rest) = pic.planes.split_at_mut(1);
         if !crossed {
             if let Some(lf) = &filters.luma {
-                filter_blk(&PicSrc(&src[0]), &mut planes_y[0], x0, y0, w, h, y0, false, Some(lf), &[0; 13], &[0; 13], &vb_l, bd, max);
+                filter_blk(
+                    &PicSrc(&src[0]),
+                    &mut planes_y[0],
+                    x0,
+                    y0,
+                    w,
+                    h,
+                    y0,
+                    false,
+                    Some(lf),
+                    &[0; 13],
+                    &[0; 13],
+                    &vb_l,
+                    bd,
+                    max,
+                );
             }
             for c in 1..nc {
                 let (bx, by, bw, bh) = (x0 >> csx, y0 >> csy, w >> csx, h >> csy);
                 if let Some((co, cl)) = &filters.chroma[c - 1] {
-                    filter_blk(&PicSrc(&src[c]), &mut rest[c - 1], bx, by, bw, bh, by, true, None, co, cl, &vb_c, bd, max);
+                    filter_blk(
+                        &PicSrc(&src[c]),
+                        &mut rest[c - 1],
+                        bx,
+                        by,
+                        bw,
+                        bh,
+                        by,
+                        true,
+                        None,
+                        co,
+                        cl,
+                        &vb_c,
+                        bd,
+                        max,
+                    );
                 }
                 if let Some(coeff) = &filters.cc[c - 1] {
-                    filter_cc(&PicSrc(&src[0]), &mut rest[c - 1], bx, by, bw, bh, by, csx, csy, coeff, &vb_l, bd, max);
+                    filter_cc(
+                        &PicSrc(&src[0]),
+                        &mut rest[c - 1],
+                        bx,
+                        by,
+                        bw,
+                        bh,
+                        by,
+                        csx,
+                        csy,
+                        coeff,
+                        &vb_l,
+                        bd,
+                        max,
+                    );
                 }
             }
             continue;
@@ -607,10 +801,40 @@ pub fn alf(pic: &mut Picture, sps: &Sps, pps: &Pps, ph: &PicHeader, slices: &[Sl
                         }
                         if c == 0 {
                             if let Some(lf) = &filters.luma {
-                                filter_blk(&t, &mut planes_y[0], xs, ys, ww, hh, y0, false, Some(lf), &[0; 13], &[0; 13], &vb_l, bd, max);
+                                filter_blk(
+                                    &t,
+                                    &mut planes_y[0],
+                                    xs,
+                                    ys,
+                                    ww,
+                                    hh,
+                                    y0,
+                                    false,
+                                    Some(lf),
+                                    &[0; 13],
+                                    &[0; 13],
+                                    &vb_l,
+                                    bd,
+                                    max,
+                                );
                             }
                         } else if let Some((co, clp)) = &filters.chroma[c - 1] {
-                            filter_blk(&t, &mut rest[c - 1], xs >> sx, ys >> sy, ww >> sx, hh >> sy, y0 >> sy, true, None, co, clp, &vb_c, bd, max);
+                            filter_blk(
+                                &t,
+                                &mut rest[c - 1],
+                                xs >> sx,
+                                ys >> sy,
+                                ww >> sx,
+                                hh >> sy,
+                                y0 >> sy,
+                                true,
+                                None,
+                                co,
+                                clp,
+                                &vb_c,
+                                bd,
+                                max,
+                            );
                         }
                     } else {
                         let mut tl = region(0);
@@ -625,10 +849,39 @@ pub fn alf(pic: &mut Picture, sps: &Sps, pps: &Pps, ph: &PicHeader, slices: &[Sl
                         }
                         let (bx, by, bw, bh) = (xs >> sx, ys >> sy, ww >> sx, hh >> sy);
                         if let Some((co, clp)) = &filters.chroma[c - 1] {
-                            filter_blk(&tc, &mut rest[c - 1], bx, by, bw, bh, y0 >> sy, true, None, co, clp, &vb_c, bd, max);
+                            filter_blk(
+                                &tc,
+                                &mut rest[c - 1],
+                                bx,
+                                by,
+                                bw,
+                                bh,
+                                y0 >> sy,
+                                true,
+                                None,
+                                co,
+                                clp,
+                                &vb_c,
+                                bd,
+                                max,
+                            );
                         }
                         if let Some(coeff) = &filters.cc[c - 1] {
-                            filter_cc(&tl, &mut rest[c - 1], bx, by, bw, bh, y0 >> sy, sx, sy, coeff, &vb_l, bd, max);
+                            filter_cc(
+                                &tl,
+                                &mut rest[c - 1],
+                                bx,
+                                by,
+                                bw,
+                                bh,
+                                y0 >> sy,
+                                sx,
+                                sy,
+                                coeff,
+                                &vb_l,
+                                bd,
+                                max,
+                            );
                         }
                     }
                     xs = xe;

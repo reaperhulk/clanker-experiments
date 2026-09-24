@@ -19,7 +19,11 @@ use crate::{
 pub const DECODER_ID: &[u8] = b"libheifer-vvc";
 
 fn error(code: i32, subcode: i32, message: &str) -> ContextError {
-    ContextError::new(code, subcode, format!("{}: {message}", error_text::message(code, subcode)))
+    ContextError::new(
+        code,
+        subcode,
+        format!("{}: {message}", error_text::message(code, subcode)),
+    )
 }
 
 fn plugin_error(subcode: i32, message: &str) -> ContextError {
@@ -55,7 +59,10 @@ impl Bits {
     fn get(&mut self, n: usize) -> u32 {
         let mut value = 0;
         for _ in 0..n {
-            let bit = self.data.get(self.position / 8).map_or(0, |b| u32::from((b >> (7 - self.position % 8)) & 1));
+            let bit = self
+                .data
+                .get(self.position / 8)
+                .map_or(0, |b| u32::from((b >> (7 - self.position % 8)) & 1));
             value = (value << 1) | bit;
             self.position += 1;
         }
@@ -74,7 +81,11 @@ impl Bits {
                 return None;
             }
         }
-        Some(if zeros == 0 { 0 } else { self.get(zeros) + (1u32 << zeros) - 1 })
+        Some(if zeros == 0 {
+            0
+        } else {
+            self.get(zeros) + (1u32 << zeros) - 1
+        })
     }
 }
 
@@ -89,7 +100,11 @@ fn sps_coded_size(sps: &[u8]) -> Result<(u32, u32), ContextError> {
     if r.get(1) != 0 {
         r.get(7 + 1 + 8 + 1 + 1);
         if r.get(1) != 0 {
-            return Err(error(4, 3002, "VVC SPS with general_constraints_info is not supported yet"));
+            return Err(error(
+                4,
+                3002,
+                "VVC SPS with general_constraints_info is not supported yet",
+            ));
         }
         r.align();
         let mut present = vec![false; sublayers as usize];
@@ -114,7 +129,11 @@ fn sps_coded_size(sps: &[u8]) -> Result<(u32, u32), ContextError> {
     let width = r.uvlc().ok_or_else(invalid_uvlc)?;
     let height = r.uvlc().ok_or_else(invalid_uvlc)?;
     if width > 0xFFFF || height > 0xFFFF {
-        return Err(error(9, 2006, "SPS max picture width or height exceeds maximum (65535)"));
+        return Err(error(
+            9,
+            2006,
+            "SPS max picture width or height exceeds maximum (65535)",
+        ));
     }
     if r.get(1) != 0 {
         let left = r.uvlc().ok_or_else(invalid_uvlc)?;
@@ -126,84 +145,28 @@ fn sps_coded_size(sps: &[u8]) -> Result<(u32, u32), ContextError> {
             2 => (2, 1),
             _ => (1, 1),
         };
-        if sx * (u64::from(left) + u64::from(right)) > u64::from(width) || sy * (u64::from(top) + u64::from(bottom)) > u64::from(height) {
-            return Err(error(2, 2006, "SPS conformance window exceeds image dimensions"));
+        if sx * (u64::from(left) + u64::from(right)) > u64::from(width)
+            || sy * (u64::from(top) + u64::from(bottom)) > u64::from(height)
+        {
+            return Err(error(
+                2,
+                2006,
+                "SPS conformance window exceeds image dimensions",
+            ));
         }
     }
     if r.get(1) != 0 {
-        return Err(error(4, 3002, "VVC SPS with subpicture info is not supported yet"));
+        return Err(error(
+            4,
+            3002,
+            "VVC SPS with subpicture info is not supported yet",
+        ));
     }
     let depth = r.uvlc().ok_or_else(invalid_uvlc)?;
     if depth > 0xFF - 8 {
         return Err(error(9, 0, "VCC bit depth out of range."));
     }
     Ok((width, height))
-}
-
-/// The NAL arrays of a `vvcC` box (libheif's `Box_vvcC::parse`).
-fn configuration_nals(body: &[u8]) -> Result<Vec<(u8, Vec<Vec<u8>>)>, ContextError> {
-    let eof = || error(2, 100, "Unexpected end of file");
-    let mut at = 4usize;
-    let byte = |at: &mut usize| -> Result<u8, ContextError> {
-        let v = *body.get(*at).ok_or_else(eof)?;
-        *at += 1;
-        Ok(v)
-    };
-    let read16 = |at: &mut usize| -> Result<u16, ContextError> { Ok(u16::from(byte(at)?) << 8 | u16::from(byte(at)?)) };
-    if body.len() < 4 {
-        return Err(eof());
-    }
-    let first = byte(&mut at)?;
-    if first & 1 == 0 {
-        return Err(error(4, 0, "Reading vvcC configuration with ptl_present_flag=0 is not supported."));
-    }
-    let word = read16(&mut at)?;
-    let sublayers = (word >> 4) & 7;
-    byte(&mut at)?;
-    let constraint_bytes = byte(&mut at)? & 0x3f;
-    if constraint_bytes == 0 {
-        return Err(error(2, 2006, "vvcC with num_bytes_constraint_info==0 is not allowed."));
-    }
-    byte(&mut at)?;
-    byte(&mut at)?;
-    for _ in 0..constraint_bytes {
-        byte(&mut at)?;
-    }
-    if sublayers > 1 {
-        let flags = byte(&mut at)?;
-        let mut mask = 0x80u8;
-        for _ in 0..sublayers - 1 {
-            if flags & mask != 0 {
-                byte(&mut at)?;
-            }
-            mask >>= 1;
-        }
-    }
-    let sub_profiles = byte(&mut at)?;
-    for _ in 0..u32::from(sub_profiles) * 4 {
-        byte(&mut at)?;
-    }
-    for _ in 0..6 {
-        byte(&mut at)?;
-    }
-    let arrays = byte(&mut at)?;
-    let mut out = Vec::new();
-    for _ in 0..arrays {
-        let kind = byte(&mut at)? & 0x3f;
-        let count = read16(&mut at)?;
-        let mut units = Vec::new();
-        for _ in 0..count {
-            let size = usize::from(read16(&mut at)?);
-            if size == 0 {
-                continue;
-            }
-            let unit = body.get(at..at + size).ok_or_else(eof)?;
-            at += size;
-            units.push(unit.to_vec());
-        }
-        out.push((kind, units));
-    }
-    Ok(out)
 }
 
 /// The plugin's `push_data2`: four-byte length-prefixed NAL units.
@@ -223,12 +186,22 @@ fn split_units(mut data: &[u8]) -> Result<Vec<&[u8]>, ContextError> {
     Ok(out)
 }
 
-pub fn decode(document: &Document, id: u32, options: &DecodeOptions) -> Result<Image, ContextError> {
+pub fn decode(
+    document: &Document,
+    id: u32,
+    options: &DecodeOptions,
+) -> Result<Image, ContextError> {
     let container = document.container()?;
-    let config = container.property(id, *b"vvcC").map_err(|_| ContextError::new(2, 141, error_text::message(2, 141)))?;
-    let arrays = configuration_nals(config)?;
+    let config = container
+        .property(id, *b"vvcC")
+        .map_err(|_| ContextError::new(2, 141, error_text::message(2, 141)))?;
+    let arrays = crate::vvc_config::DecoderConfiguration::parse(config)?.arrays;
     if options.decoder_id.is_some_and(|id| id != DECODER_ID) {
-        return Err(ContextError::new(11, 0, "Error while loading plugin: Unspecified: No decoder with that ID found."));
+        return Err(ContextError::new(
+            11,
+            0,
+            "Error while loading plugin: Unspecified: No decoder with that ID found.",
+        ));
     }
     // libheif tightens the pixel limit to the ispe size padded by one CTU,
     // then rejects a configuration SPS coded size beyond it.
@@ -236,14 +209,20 @@ pub fn decode(document: &Document, id: u32, options: &DecodeOptions) -> Result<I
     let mut limits = document.current_limits();
     if info.ispe.0 != 0
         && info.ispe.1 != 0
-        && let Some(padded) = (u64::from(info.ispe.0) + 128).checked_mul(u64::from(info.ispe.1) + 128)
+        && let Some(padded) =
+            (u64::from(info.ispe.0) + 128).checked_mul(u64::from(info.ispe.1) + 128)
     {
         let maximum = padded.max(65536);
         if limits.max_image_size_pixels == 0 || maximum < limits.max_image_size_pixels {
             limits.max_image_size_pixels = maximum;
         }
     }
-    if let Some(sps) = arrays.iter().find(|(kind, _)| *kind == 15).and_then(|(_, units)| units.first()).filter(|s| !s.is_empty()) {
+    if let Some(sps) = arrays
+        .iter()
+        .find(|(kind, _)| *kind == 15)
+        .and_then(|(_, units)| units.first())
+        .filter(|s| !s.is_empty())
+    {
         let (width, height) = sps_coded_size(sps)?;
         limits.check_image_size(width, height)?;
     }
@@ -257,20 +236,32 @@ pub fn decode(document: &Document, id: u32, options: &DecodeOptions) -> Result<I
     }
     data.extend_from_slice(&crate::decoding::decoder_payload(document, id)?);
     if data.is_empty() {
-        return Err(ContextError::invalid(0, "Unspecified: Input with empty data extent."));
+        return Err(ContextError::invalid(
+            0,
+            "Unspecified: Input with empty data extent.",
+        ));
     }
     let units = split_units(&data)?;
-    let frame = match super::decode_nals(units.into_iter()) {
+    let frame = match super::decode_nals(units) {
         Ok(frame) => frame,
-        Err(super::Error::NoPicture) => return Err(plugin_error(0, "Decoding the input data did not give a decompressed image.")),
+        Err(super::Error::NoPicture) => {
+            return Err(plugin_error(
+                0,
+                "Decoding the input data did not give a decompressed image.",
+            ));
+        }
         Err(_) => return Err(plugin_error(0, "vvdec decoding error")),
     };
     frame_image(&frame, document, limits.max_image_size_pixels)
 }
 
 /// The plugin's output image, with planes added under the pixel limit.
-fn frame_image(frame: &super::Frame, document: &Document, maximum: u64) -> Result<Image, ContextError> {
-    let (width, height) = (frame.width as u32, frame.height as u32);
+fn frame_image(
+    frame: &super::Frame,
+    document: &Document,
+    maximum: u64,
+) -> Result<Image, ContextError> {
+    let (width, height) = (frame.width, frame.height);
     let chroma = frame.chroma_format as i32;
     let mut image = Image::new(width, height, if chroma == 0 { 2 } else { 0 }, chroma)?;
     image.budget = Some(document.budget.clone());
@@ -281,11 +272,15 @@ fn frame_image(frame: &super::Frame, document: &Document, maximum: u64) -> Resul
             return Err(ContextError::new(
                 6,
                 1000,
-                format!("Memory allocation error: Security limit exceeded: Allocating an image of size {w32}x{h32} exceeds the security limit of {maximum} pixels"),
+                format!(
+                    "Memory allocation error: Security limit exceeded: Allocating an image of size {w32}x{h32} exceeds the security limit of {maximum} pixels"
+                ),
             ));
         }
         image.add_plane(channel as i32, w32, h32, depth as i32)?;
-        let plane = image.plane_mut(channel as i32).ok_or_else(|| plugin_error(0, "vvdec decoding error"))?;
+        let plane = image
+            .plane_mut(channel as i32)
+            .ok_or_else(|| plugin_error(0, "vvdec decoding error"))?;
         let stride = plane.stride;
         for y in 0..*h {
             let row = &samples[y * w..(y + 1) * w];
@@ -295,7 +290,10 @@ fn frame_image(frame: &super::Frame, document: &Document, maximum: u64) -> Resul
                     *d = *s as u8;
                 }
             } else {
-                for (d, s) in out[y * stride..y * stride + w * 2].chunks_exact_mut(2).zip(row) {
+                for (d, s) in out[y * stride..y * stride + w * 2]
+                    .chunks_exact_mut(2)
+                    .zip(row)
+                {
                     d.copy_from_slice(&s.to_ne_bytes());
                 }
             }

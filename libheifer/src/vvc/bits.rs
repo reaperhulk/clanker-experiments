@@ -50,7 +50,7 @@ impl<'a> BitReader<'a> {
     }
 
     pub fn is_byte_aligned(&self) -> bool {
-        self.pos % 8 == 0
+        self.pos.is_multiple_of(8)
     }
 
     pub fn byte_pos(&self) -> usize {
@@ -127,7 +127,13 @@ impl<'a> BitReader<'a> {
         Ok(value)
     }
 
-    pub fn code_range(&mut self, n: u32, min: u32, max: u32, what: &'static str) -> Result<u32, Error> {
+    pub fn code_range(
+        &mut self,
+        n: u32,
+        min: u32,
+        max: u32,
+        what: &'static str,
+    ) -> Result<u32, Error> {
         let value = self.read(n)?;
         if value < min || value > max {
             return Err(Error::Invalid(what));
@@ -190,5 +196,9 @@ impl<'a> BitReader<'a> {
 
 /// `Ceil( Log2( n ) )` for n >= 1.
 pub fn ceil_log2(n: u32) -> u32 {
-    if n <= 1 { 0 } else { 32 - (n - 1).leading_zeros() }
+    if n <= 1 {
+        0
+    } else {
+        32 - (n - 1).leading_zeros()
+    }
 }

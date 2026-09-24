@@ -522,6 +522,8 @@ fn decode_native_mode(
             b"jpeg" => crate::jpeg::decode(document, id, options)?,
             #[cfg(feature = "av1")]
             b"av01" => crate::av1::decode(document, id, options)?,
+            #[cfg(feature = "vvc")]
+            b"vvc1" => crate::vvc::heif::decode(document, id, options)?,
             #[cfg(feature = "hevc")]
             b"hvc1" => {
                 // Each decode replaces the decoder's input extent. The buffer remains

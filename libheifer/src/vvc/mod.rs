@@ -2,6 +2,13 @@
 //! Pure Rust VVC (H.266) still-picture decoder, written to reproduce the
 //! output of vvdec 3.2.0 as used by libheif's vvdec plugin. Intra pictures
 //! only; inter prediction reports [`Error::Unsupported`].
+// The codec modules port vvdec's routines and keep its index loops and
+// parameter lists so they stay easy to compare.
+#![allow(
+    clippy::needless_range_loop,
+    clippy::too_many_arguments,
+    clippy::type_complexity
+)]
 /// Emits vvdec-style `D_SYNTAX` lines on stderr when `VVC_TRACE` is set;
 /// a development aid for diffing against vvdec's tracing build.
 macro_rules! vtrace {
@@ -27,8 +34,8 @@ mod filter;
 pub mod heif;
 mod pic;
 pub mod ps;
-mod sao;
 mod recon;
+mod sao;
 mod tables;
 
 use bits::BitReader;
@@ -144,7 +151,9 @@ impl Decoder {
                     self.done = true;
                     return Ok(());
                 }
-                self.ph = Some(ps::parse_picture_header(&mut r, &self.sps, &self.pps, true)?);
+                self.ph = Some(ps::parse_picture_header(
+                    &mut r, &self.sps, &self.pps, true,
+                )?);
                 self.ph_pending = true;
             }
             0..=3 | 7..=10 => self.decode_slice(kind, &rbsp, &removed, &mut r)?,
@@ -153,7 +162,13 @@ impl Decoder {
         Ok(())
     }
 
-    fn decode_slice(&mut self, kind: u32, rbsp: &[u8], removed: &[usize], r: &mut BitReader) -> Result<(), Error> {
+    fn decode_slice(
+        &mut self,
+        kind: u32,
+        rbsp: &[u8],
+        removed: &[usize],
+        r: &mut BitReader,
+    ) -> Result<(), Error> {
         let ph_in_sh = r.flag()?;
         if ph_in_sh {
             if !self.slices.is_empty() {
@@ -165,15 +180,26 @@ impl Decoder {
         } else if self.ph_pending && !self.slices.is_empty() {
             // unreachable: a PH NAL finishes the picture above
         }
-        let ph = self.ph.clone().ok_or(Error::Invalid("Picture Header missing"))?;
+        let ph = self
+            .ph
+            .clone()
+            .ok_or(Error::Invalid("Picture Header missing"))?;
         self.ph_pending = false;
-        let pps = self.pps[ph.pps_id as usize].clone().ok_or(Error::Invalid("Invalid PPS"))?;
-        let sps = self.sps[pps.sps_id as usize].clone().ok_or(Error::Invalid("Invalid SPS"))?;
+        let pps = self.pps[ph.pps_id as usize]
+            .clone()
+            .ok_or(Error::Invalid("Invalid PPS"))?;
+        let sps = self.sps[pps.sps_id as usize]
+            .clone()
+            .ok_or(Error::Invalid("Invalid SPS"))?;
         if self.pic.is_none() {
             // ALF APS as available for the picture.
             let mut alf: [Option<AlfParam>; 8] = Default::default();
             for (i, a) in self.aps[0].iter().enumerate() {
-                if let Some(Aps { data: ApsData::Alf(p), .. }) = a {
+                if let Some(Aps {
+                    data: ApsData::Alf(p),
+                    ..
+                }) = a
+                {
                     alf[i] = Some(p.clone());
                 }
             }
@@ -181,8 +207,11 @@ impl Decoder {
             self.lmcs = None;
             if ph.lmcs_enabled {
                 match &self.aps[1][ph.lmcs_aps_id as usize] {
-                    Some(Aps { data: ApsData::Lmcs(p), .. }) => {
-                        self.lmcs = Some(recon::Lmcs::new(p, sps.bit_depth, ph.chroma_residual_scale)?);
+                    Some(Aps {
+                        data: ApsData::Lmcs(p),
+                        ..
+                    }) => {
+                        self.lmcs = Some(recon::Lmcs::new(p, sps.bit_depth)?);
                     }
                     _ => return Err(Error::Invalid("LMCS APS activation failed!")),
                 }
@@ -190,7 +219,10 @@ impl Decoder {
             self.scaling = None;
             if ph.explicit_scaling_list {
                 match &self.aps[2][ph.scaling_list_aps_id as usize] {
-                    Some(Aps { data: ApsData::Scaling(l), .. }) => self.scaling = Some(recon::ScalingMatrices::new(l)),
+                    Some(Aps {
+                        data: ApsData::Scaling(l),
+                        ..
+                    }) => self.scaling = Some(recon::ScalingMatrices::new(l)),
                     _ => return Err(Error::Invalid("scaling list APS not found")),
                 }
             }
@@ -201,7 +233,12 @@ impl Decoder {
         }
         let slice_idx = self.slices.len() as u32;
         let aps_ctx: Vec<Vec<Option<Aps>>> = self.aps.clone();
-        let ctx = ps::SliceContext { sps: &sps, pps: &pps, ph: &ph, aps: &aps_ctx };
+        let ctx = ps::SliceContext {
+            sps: &sps,
+            pps: &pps,
+            ph: &ph,
+            aps: &aps_ctx,
+        };
         let sh = ps::parse_slice_header(r, kind, &ctx, ph_in_sh, removed, 0)?;
         if sh.slice_type != ps::I_SLICE {
             return Err(Error::Unsupported("inter slices"));
@@ -242,14 +279,22 @@ impl Decoder {
         let pic = self.pic.as_ref().ok_or(Error::NoPicture)?;
         let sps = self.pic_sps.as_ref().unwrap();
         let pps = self.pic_pps.as_ref().unwrap();
-        let win = if pps.conf_win_present { &pps.conf_win } else { &sps.conf_win };
+        let win = if pps.conf_win_present {
+            &pps.conf_win
+        } else {
+            &sps.conf_win
+        };
         let (ux, uy) = (sps.sub_width_c(), sps.sub_height_c());
         let left = win.left * ux;
         let right = win.right * ux;
         let top = win.top * uy;
         let bottom = win.bottom * uy;
-        let w = (pic.width as u32).checked_sub(left + right).ok_or(Error::Invalid("conformance window"))?;
-        let h = (pic.height as u32).checked_sub(top + bottom).ok_or(Error::Invalid("conformance window"))?;
+        let w = (pic.width as u32)
+            .checked_sub(left + right)
+            .ok_or(Error::Invalid("conformance window"))?;
+        let h = (pic.height as u32)
+            .checked_sub(top + bottom)
+            .ok_or(Error::Invalid("conformance window"))?;
         if w == 0 || h == 0 {
             return Err(Error::Invalid("empty output picture"));
         }
@@ -261,16 +306,27 @@ impl Decoder {
             let (x0, y0) = ((left >> sx) as usize, (top >> sy) as usize);
             let mut data = Vec::with_capacity(pw * phh);
             for y in 0..phh {
-                let row = &plane.data[(y0 + y) * plane.stride + x0..(y0 + y) * plane.stride + x0 + pw];
+                let row =
+                    &plane.data[(y0 + y) * plane.stride + x0..(y0 + y) * plane.stride + x0 + pw];
                 data.extend(row.iter().map(|&v| v as u16));
             }
             planes.push((data, pw, phh));
         }
-        Ok(Frame { width: w, height: h, chroma_format: sps.chroma_format_idc, bit_depth: sps.bit_depth, planes })
+        Ok(Frame {
+            width: w,
+            height: h,
+            chroma_format: sps.chroma_format_idc,
+            bit_depth: sps.bit_depth,
+            planes,
+        })
     }
 }
 
-fn decode_slice_data<'d>(pic: &mut Picture, si: &ctu::SliceInfo, data: &'d [u8]) -> Result<(), Error> {
+fn decode_slice_data<'d>(
+    pic: &mut Picture,
+    si: &ctu::SliceInfo,
+    data: &'d [u8],
+) -> Result<(), Error> {
     let sps = si.sps;
     let pps = si.pps;
     let sh = si.sh;
@@ -278,7 +334,10 @@ fn decode_slice_data<'d>(pic: &mut Picture, si: &ctu::SliceInfo, data: &'d [u8])
     let mut subs: Vec<&'d [u8]> = Vec::new();
     let mut pos = 0usize;
     for &size in &sh.entry_points {
-        let end = pos.checked_add(size as usize).filter(|&e| e <= data.len()).ok_or(Error::Invalid("Exceeded FIFO size"))?;
+        let end = pos
+            .checked_add(size as usize)
+            .filter(|&e| e <= data.len())
+            .ok_or(Error::Invalid("Exceeded FIFO size"))?;
         subs.push(&data[pos..end]);
         pos = end;
     }
@@ -312,19 +371,24 @@ fn decode_slice_data<'d>(pic: &mut Picture, si: &ctu::SliceInfo, data: &'d [u8])
         let tw = pps.tile_col_bd[tcol + 1] - tx;
         let th = pps.tile_row_bd[trow + 1] - ty;
         let tile_idx = trow as u32 * pps.num_tile_cols() + tcol as u32;
-        if cx > 0 && dec.pic.ctus[addr as usize - 1].slice.is_none() && sh.ctus.first() != Some(&addr) && !pps.rect_slice {
+        if cx > 0
+            && dec.pic.ctus[addr as usize - 1].slice.is_none()
+            && sh.ctus.first() != Some(&addr)
+            && !pps.rect_slice
+        {
             // vvdec requires the left CTU to be parsed; with ordered slices
             // this always holds.
         }
-        let restart = |dec: &mut ctu::CtuDecoder<'_, '_, 'd>, sub_id: usize, cur_sub: &mut usize| {
-            dec.cabac.ctx = cabac::Contexts::new(init_type, sh.qp);
-            if sub_id != *cur_sub {
-                dec.cabac.restart(subs[sub_id]);
-                *cur_sub = sub_id;
-            } else {
-                dec.cabac.restart_here();
-            }
-        };
+        let restart =
+            |dec: &mut ctu::CtuDecoder<'_, '_, 'd>, sub_id: usize, cur_sub: &mut usize| {
+                dec.cabac.ctx = cabac::Contexts::new(init_type, sh.qp);
+                if sub_id != *cur_sub {
+                    dec.cabac.restart(subs[sub_id]);
+                    *cur_sub = sub_id;
+                } else {
+                    dec.cabac.restart_here();
+                }
+            };
         if cx == tx {
             dec.pic.ibc_hist.clear();
         }
@@ -338,7 +402,10 @@ fn decode_slice_data<'d>(pic: &mut Picture, si: &ctu::SliceInfo, data: &'d [u8])
                 restart(&mut dec, sub_id, &mut cur_sub);
             }
             let (px, py) = (cx as i32 * ctu_size, cy as i32 * ctu_size);
-            if dec.pic.get_cu_restricted_pos(px, py - 1, px, py, si.slice_idx, tile_idx, 0, wpp).is_some()
+            if dec
+                .pic
+                .get_cu_restricted_pos(px, py - 1, px, py, si.slice_idx, tile_idx, 0, wpp)
+                .is_some()
                 && let Some(c) = &wpp_ctx
             {
                 dec.cabac.ctx = c.clone();
@@ -349,7 +416,12 @@ fn decode_slice_data<'d>(pic: &mut Picture, si: &ctu::SliceInfo, data: &'d [u8])
         dec.pic.ctus[addr as usize].tile = tile_idx;
         dec.ctu_addr = addr;
         dec.tile = tile_idx;
-        let area = dec.pic.fmt.unit(cx as i32 * ctu_size, cy as i32 * ctu_size, ctu_size, ctu_size);
+        let area = dec.pic.fmt.unit(
+            cx as i32 * ctu_size,
+            cy as i32 * ctu_size,
+            ctu_size,
+            ctu_size,
+        );
         dec.coding_tree_unit(area, &mut prev_qp)?;
         if cx == tx && wpp {
             wpp_ctx = Some(dec.cabac.ctx.clone());
@@ -359,14 +431,18 @@ fn decode_slice_data<'d>(pic: &mut Picture, si: &ctu::SliceInfo, data: &'d [u8])
                 return Err(Error::Invalid("Expecting a terminating bit"));
             }
             if !dec.cabac.finish_ok() {
-                return Err(Error::Invalid("No proper stop/alignment pattern at end of CABAC stream."));
+                return Err(Error::Invalid(
+                    "No proper stop/alignment pattern at end of CABAC stream.",
+                ));
             }
         } else if cx + 1 == tx + tw && (cy + 1 == ty + th || wpp) {
             if dec.cabac.decode_terminate() == 0 {
                 return Err(Error::Invalid("Expecting a terminating bit"));
             }
             if !dec.cabac.finish_ok() {
-                return Err(Error::Invalid("No proper stop/alignment pattern at end of CABAC stream."));
+                return Err(Error::Invalid(
+                    "No proper stop/alignment pattern at end of CABAC stream.",
+                ));
             }
             if sps.entry_points_present {
                 sub_id += 1;
@@ -386,7 +462,10 @@ pub fn decode_nals<'a>(nals: impl IntoIterator<Item = &'a [u8]>) -> Result<Frame
     for nal in nals {
         if let Err(e) = d.push_nal(nal) {
             if std::env::var_os("VVC_DEBUG").is_some() {
-                eprintln!("NAL type {} failed: {e:?}", nal.get(1).map_or(0, |b| b >> 3));
+                eprintln!(
+                    "NAL type {} failed: {e:?}",
+                    nal.get(1).map_or(0, |b| b >> 3)
+                );
             }
             return Err(e);
         }

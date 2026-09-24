@@ -3,7 +3,7 @@
 //! edge parameters are derived per coding unit into 4x4 luma-grid maps,
 //! then all vertical and afterwards all horizontal edges are filtered.
 use super::pic::{Cu, Picture, Pred, Tree, Tu};
-use super::ps::{PicHeader, Pps, SliceHeader, Sps, I_SLICE};
+use super::ps::{I_SLICE, PicHeader, Pps, SliceHeader, Sps};
 
 const MARK: u8 = 3 << 6;
 
@@ -25,11 +25,13 @@ struct Lfp {
 }
 
 const TC_TABLE: [u16; 66] = [
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 4, 4, 4, 4, 5, 5, 5, 5, 7, 7, 8, 9, 10, 10, 11, 13, 14, 15, 17, 19, 21, 24, 25, 29, 33, 36, 41, 45, 51, 57, 64, 71, 80, 89, 100,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 4, 4, 4, 4, 5, 5, 5, 5, 7, 7, 8, 9,
+    10, 10, 11, 13, 14, 15, 17, 19, 21, 24, 25, 29, 33, 36, 41, 45, 51, 57, 64, 71, 80, 89, 100,
     112, 125, 141, 157, 177, 198, 222, 250, 280, 314, 352, 395,
 ];
 const BETA_TABLE: [u8; 64] = [
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48, 50, 52, 54, 56, 58, 60, 62, 64, 66,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18,
+    20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48, 50, 52, 54, 56, 58, 60, 62, 64, 66,
     68, 70, 72, 74, 76, 78, 80, 82, 84, 86, 88,
 ];
 
@@ -105,10 +107,18 @@ impl<'a> Ctx<'a> {
             (cx, cy)
         } else {
             let (sx, sy) = self.scale(1);
-            (((c.blk[1].x << sx) / ctu) as u32, ((c.blk[1].y << sy) / ctu) as u32)
+            (
+                ((c.blk[1].x << sx) / ctu) as u32,
+                ((c.blk[1].y << sy) / ctu) as u32,
+            )
         };
         for i in 0..self.sps.num_subpics as usize {
-            let (x, y, w, h) = (self.sps.subpic_x[i], self.sps.subpic_y[i], self.sps.subpic_w[i], self.sps.subpic_h[i]);
+            let (x, y, w, h) = (
+                self.sps.subpic_x[i],
+                self.sps.subpic_y[i],
+                self.sps.subpic_w[i],
+                self.sps.subpic_h[i],
+            );
             if cx >= x && cx < x + w && cy >= y && cy < y + h {
                 return i;
             }
@@ -133,15 +143,15 @@ impl<'a> Ctx<'a> {
         let b = c.blk[Self::comp(ch)];
         let mut left = false;
         let mut top = false;
-        if b.x > 0 {
-            if let Some(l) = c.left.or_else(|| self.get_cu(b.x - 1, b.y, ch)) {
-                left = self.available(c, self.cu(l));
-            }
+        if b.x > 0
+            && let Some(l) = c.left.or_else(|| self.get_cu(b.x - 1, b.y, ch))
+        {
+            left = self.available(c, self.cu(l));
         }
-        if b.y > 0 {
-            if let Some(a) = c.above.or_else(|| self.get_cu(b.x, b.y - 1, ch)) {
-                top = self.available(c, self.cu(a));
-            }
+        if b.y > 0
+            && let Some(a) = c.above.or_else(|| self.get_cu(b.x, b.y - 1, ch))
+        {
+            top = self.available(c, self.cu(a));
         }
         (left, top)
     }
@@ -172,7 +182,8 @@ impl<'a> Ctx<'a> {
         let ch = c.ch_type;
         let area = c.blk[Self::comp(ch)];
         let (csx, csy) = self.scale(ch);
-        let (vb_ver, vb_hor) = self.virtual_boundaries(area.x << csx, area.y << csy, area.w << csx, area.h << csy);
+        let (vb_ver, vb_hor) =
+            self.virtual_boundaries(area.x << csx, area.y << csy, area.w << csx, area.h << csy);
         let crossed = !vb_ver.is_empty() || !vb_hor.is_empty();
         let (left_edge, top_edge) = self.cu_edges(id);
         let refine = c.isp != 0;
@@ -180,8 +191,16 @@ impl<'a> Ctx<'a> {
         let mask_y = !((1i32 << (2 - csy)) - 1);
         for t in c.first_tu..c.first_tu + c.num_tu {
             let at = self.tu(t).blk[Self::comp(ch)];
-            let mut ver = if (at.x & mask_x) == area.x { left_edge } else { true };
-            let mut hor = if (at.y & mask_y) == area.y { top_edge } else { true };
+            let mut ver = if (at.x & mask_x) == area.x {
+                left_edge
+            } else {
+                true
+            };
+            let mut hor = if (at.y & mask_y) == area.y {
+                top_edge
+            } else {
+                true
+            };
             if crossed {
                 let (px, py) = ((at.x & mask_x) << csx, (at.y & mask_y) << csy);
                 if vb_ver.contains(&px) {
@@ -204,7 +223,14 @@ impl<'a> Ctx<'a> {
         let mut y = 0;
         while y < area.h {
             cu_p = match cu_p {
-                Some(p) if { let b = self.cu(p).blk[Self::comp(ch)]; b.y + b.h > area.y + y } => Some(p),
+                Some(p)
+                    if {
+                        let b = self.cu(p).blk[Self::comp(ch)];
+                        b.y + b.h > area.y + y
+                    } =>
+                {
+                    Some(p)
+                }
                 _ => self.get_cu(area.x - 1, area.y + y, ch),
             };
             let mut x = 0;
@@ -231,7 +257,14 @@ impl<'a> Ctx<'a> {
             while x < area.w {
                 if y == 0 {
                     cu_p = match cu_p {
-                        Some(p) if { let b = self.cu(p).blk[Self::comp(ch)]; b.x + b.w > area.x + x } => Some(p),
+                        Some(p)
+                            if {
+                                let b = self.cu(p).blk[Self::comp(ch)];
+                                b.x + b.w > area.x + x
+                            } =>
+                        {
+                            Some(p)
+                        }
                         _ => self.get_cu(area.x + x, area.y - 1, ch),
                     };
                 }
@@ -292,23 +325,29 @@ impl<'a> Ctx<'a> {
             let cb = c.blk[Self::comp(ct)];
             let sb = c.blk[Self::comp(start)];
             let tsb = tu.blk[Self::comp(start)];
-            let mut cu_p = if neigh.is_some() && perp(dir, tb.x, tb.y) == perp(dir, cb.x, cb.y) { neigh.unwrap() } else { id };
-            let mut cu_pf = if neigh.is_some() && perp(dir, tsb.x, tsb.y) == perp(dir, sb.x, sb.y) { neigh.unwrap() } else { id };
+            let mut cu_p = match neigh {
+                Some(n) if perp(dir, tb.x, tb.y) == perp(dir, cb.x, cb.y) => n,
+                _ => id,
+            };
+            let mut cu_pf = match neigh {
+                Some(n) if perp(dir, tsb.x, tsb.y) == perp(dir, sb.x, sb.y) => n,
+                _ => id,
+            };
             let (fsx, fsy) = self.scale(start);
             let inc_f = if dir == 1 { 4 >> fsx } else { 4 >> fsy };
             let off = |x: i32, y: i32| if dir == 0 { (x - 1, y) } else { (x, y - 1) };
             if cu_p == id && neigh.is_none() && perp(dir, cb.x, cb.y) > 0 {
                 let (px, py) = off(tb.x, tb.y);
                 let (fx, fy) = off(tsb.x, tsb.y);
-                if !cb.contains(px, py) {
-                    if let Some(p) = self.get_cu(px, py, ct) {
-                        cu_p = p;
-                    }
+                if !cb.contains(px, py)
+                    && let Some(p) = self.get_cu(px, py, ct)
+                {
+                    cu_p = p;
                 }
-                if !self.cu(cu_pf).blk[Self::comp(start)].contains(fx, fy) {
-                    if let Some(p) = self.get_cu(fx, fy, start) {
-                        cu_pf = p;
-                    }
+                if !self.cu(cu_pf).blk[Self::comp(start)].contains(fx, fy)
+                    && let Some(p) = self.get_cu(fx, fy, start)
+                {
+                    cu_pf = p;
                 }
             }
             let same_cu_tu = perp(dir, tb.x, tb.y) == perp(dir, cb.x, cb.y);
@@ -316,25 +355,44 @@ impl<'a> Ctx<'a> {
             let size_q = perp(dir, tb.w, tb.h);
             let refresh = |s: &Self, p: u32, x: i32, y: i32, ch: usize| -> u32 {
                 let b = s.cu(p).blk[Self::comp(ch)];
-                if parl(dir, b.x, b.y) + parl(dir, b.w, b.h) > parl(dir, x, y) { p } else { s.get_cu(x, y, ch).unwrap_or(p) }
+                if parl(dir, b.x, b.y) + parl(dir, b.w, b.h) > parl(dir, x, y) {
+                    p
+                } else {
+                    s.get_cu(x, y, ch).unwrap_or(p)
+                }
             };
             if ct == end && derive {
                 if start != end {
                     let mut d = 0;
                     let mut d_f = 0;
                     while d < psize {
-                        let (qx, qy) = if dir == 0 { (tb.x, tb.y + d) } else { (tb.x + d, tb.y) };
+                        let (qx, qy) = if dir == 0 {
+                            (tb.x, tb.y + d)
+                        } else {
+                            (tb.x + d, tb.y)
+                        };
                         let (px, py) = off(qx, qy);
                         cu_p = refresh(self, cu_p, px, py, ct);
-                        let (fx, fy) = if dir == 1 { (tsb.x + d_f, tsb.y - 1) } else { (tsb.x - 1, tsb.y + d_f) };
+                        let (fx, fy) = if dir == 1 {
+                            (tsb.x + d_f, tsb.y - 1)
+                        } else {
+                            (tsb.x - 1, tsb.y + d_f)
+                        };
                         cu_pf = refresh(self, cu_pf, fx, fy, start);
                         let tp = self.get_tu(cu_p, px, py, ct);
-                        let size_p = { let b = self.tu(tp).blk[Self::comp(ct)]; perp(dir, b.w, b.h) };
+                        let size_p = {
+                            let b = self.tu(tp).blk[Self::comp(ct)];
+                            perp(dir, b.w, b.h)
+                        };
                         let i = li as usize;
                         let mut l = self.maps[dir][i];
                         l.cmfl = size_q >= 8 && size_p >= 8;
                         if bvalue {
-                            let (lx, ly) = if dir == 0 { (area.x << csx, (area.y + d) << csy) } else { ((area.x + d) << csx, area.y << csy) };
+                            let (lx, ly) = if dir == 0 {
+                                (area.x << csx, (area.y + d) << csy)
+                            } else {
+                                ((area.x + d) << csx, area.y << csy)
+                            };
                             self.bs_single(dir, &mut l, id, lx, ly, cu_pf);
                         }
                         l.bs &= !MARK;
@@ -346,11 +404,18 @@ impl<'a> Ctx<'a> {
                 } else {
                     let mut d = 0;
                     while d < psize {
-                        let (qx, qy) = if dir == 0 { (tb.x, tb.y + d) } else { (tb.x + d, tb.y) };
+                        let (qx, qy) = if dir == 0 {
+                            (tb.x, tb.y + d)
+                        } else {
+                            (tb.x + d, tb.y)
+                        };
                         let (px, py) = off(qx, qy);
                         cu_p = refresh(self, cu_p, px, py, ct);
                         let tp = self.get_tu(cu_p, px, py, ct);
-                        let size_p = { let b = self.tu(tp).blk[Self::comp(ct)]; perp(dir, b.w, b.h) };
+                        let size_p = {
+                            let b = self.tu(tp).blk[Self::comp(ct)];
+                            perp(dir, b.w, b.h)
+                        };
                         let i = li as usize;
                         let mut l = self.maps[dir][i];
                         l.edge[c.ch_type] = bvalue;
@@ -365,7 +430,11 @@ impl<'a> Ctx<'a> {
                             l.cmfl = size_q >= 8 && size_p >= 8;
                         }
                         if bvalue {
-                            let (lx, ly) = if dir == 0 { (area.x, area.y + d) } else { (area.x + d, area.y) };
+                            let (lx, ly) = if dir == 0 {
+                                (area.x, area.y + d)
+                            } else {
+                                (area.x + d, area.y)
+                            };
                             self.bs_single(dir, &mut l, id, lx, ly, cu_p);
                         }
                         l.bs &= !MARK;
@@ -377,13 +446,19 @@ impl<'a> Ctx<'a> {
             } else {
                 let mut d = 0;
                 while d < psize {
-                    let (qx, qy) = if dir == 0 { (tb.x, tb.y + d) } else { (tb.x + d, tb.y) };
+                    let (qx, qy) = if dir == 0 {
+                        (tb.x, tb.y + d)
+                    } else {
+                        (tb.x + d, tb.y)
+                    };
                     let (px, py) = off(qx, qy);
                     cu_p = refresh(self, cu_p, px, py, ct);
                     let tp = self.get_tu(cu_p, px, py, ct);
                     let tpb = self.tu(tp).blk[Self::comp(ct)];
                     let size_p = perp(dir, tpb.w, tpb.h);
-                    let distance = (parl(dir, tpb.x, tpb.y) + parl(dir, tpb.w, tpb.h) - parl(dir, qx, qy)).min(psize - d);
+                    let distance = (parl(dir, tpb.x, tpb.y) + parl(dir, tpb.w, tpb.h)
+                        - parl(dir, qx, qy))
+                    .min(psize - d);
                     if ct == 0 {
                         let i = li as usize;
                         let mut l = self.maps[dir][i];
@@ -442,8 +517,16 @@ impl<'a> Ctx<'a> {
         let cp = self.cu(p);
         let ch = cq.ch_type;
         let (px, py) = if dir == 0 { (x - 1, y) } else { (x, y - 1) };
-        let tq = if cq.num_tu == 1 { cq.first_tu } else { self.get_tu(q, x, y, ch) };
-        let tp = if cp.num_tu == 1 { cp.first_tu } else { self.get_tu(p, px, py, ch) };
+        let tq = if cq.num_tu == 1 {
+            cq.first_tu
+        } else {
+            self.get_tu(q, x, y, ch)
+        };
+        let tp = if cp.num_tu == 1 {
+            cp.first_tu
+        } else {
+            self.get_tu(p, px, py, ch)
+        };
         let tuq = self.tu(tq);
         let tup = self.tu(tp);
         let has_luma = cq.blk[0].valid();
@@ -456,26 +539,51 @@ impl<'a> Ctx<'a> {
         if has_chroma {
             let bd2 = self.sps.qp_bd_offset << 1;
             let diff_ch = ch == 0 && cp.tree != Tree::D;
-            let tqc = if cq.isp != 0 { self.tu(self.last_tu(q)) } else { tuq };
+            let tqc = if cq.isp != 0 {
+                self.tu(self.last_tu(q))
+            } else {
+                tuq
+            };
             let (cpc, tpc) = if diff_ch {
                 let (sx, sy) = self.scale(1);
                 let (cx, cy) = (px >> sx, py >> sy);
                 let pc = self.get_cu(cx, cy, 1).unwrap_or(p);
                 (self.cu(pc), self.tu(self.get_tu(pc, cx, cy, 1)))
             } else {
-                (cp, if cp.isp != 0 { self.tu(self.last_tu(p)) } else { tup })
+                (
+                    cp,
+                    if cp.isp != 0 {
+                        self.tu(self.last_tu(p))
+                    } else {
+                        tup
+                    },
+                )
             };
             pc_intra = cpc.pred == Pred::Intra;
             lfp.qp[1] = (tpc.cqp[0] + tqc.cqp[0] - bd2 + 1) >> 1;
             lfp.qp[2] = (tpc.cqp[1] + tqc.cqp[1] - bd2 + 1) >> 1;
             if pc_intra {
-                chrm_bs = if cpc.bdpcm[1] != 0 && cq.pred == Pred::Intra && cq.bdpcm[1] != 0 { 0 } else { 2 };
+                chrm_bs = if cpc.bdpcm[1] != 0 && cq.pred == Pred::Intra && cq.bdpcm[1] != 0 {
+                    0
+                } else {
+                    2
+                };
             }
         }
-        let mask = (if has_luma { bs_set(3, 0) } else { 0 }) | bs_set(3, 3) | if has_chroma { bs_set(3, 1) | bs_set(3, 2) } else { 0 };
+        let mask = (if has_luma { bs_set(3, 0) } else { 0 })
+            | bs_set(3, 3)
+            | if has_chroma {
+                bs_set(3, 1) | bs_set(3, 2)
+            } else {
+                0
+            };
         if cp.pred == Pred::Intra || cq.pred == Pred::Intra {
             let edge_idx = (perp(dir, x, y) - perp(dir, cq.blk[ch].x, cq.blk[ch].y)) / 4;
-            let bs_y = if cp.bdpcm[0] != 0 && cq.bdpcm[0] != 0 { 0 } else { 2 };
+            let bs_y = if cp.bdpcm[0] != 0 && cq.bdpcm[0] != 0 {
+                0
+            } else {
+                2
+            };
             if cq.isp != 0 && edge_idx != 0 {
                 lfp.bs |= bs_set(bs_y, 0) & mask;
             } else {
@@ -528,7 +636,6 @@ fn clip3(lo: i32, hi: i32, v: i32) -> i32 {
 
 struct Samples<'a> {
     data: &'a mut [i16],
-    stride: isize,
 }
 
 impl Samples<'_> {
@@ -546,7 +653,15 @@ const DB7: [i32; 7] = [59, 50, 41, 32, 23, 14, 5];
 const DB5: [i32; 5] = [58, 45, 32, 19, 6];
 const DB3: [i32; 3] = [53, 32, 11];
 
-fn filtering_pq(s: &mut Samples, src: isize, step: isize, offset: isize, np: usize, nq: usize, tc: i32) {
+fn filtering_pq(
+    s: &mut Samples,
+    src: isize,
+    step: isize,
+    offset: isize,
+    np: usize,
+    nq: usize,
+    tc: i32,
+) {
     let cp: &[i32] = match np {
         7 => &DB7,
         5 => &DB5,
@@ -571,19 +686,64 @@ fn filtering_pq(s: &mut Samples, src: isize, step: isize, offset: isize, np: usi
         let sq = |k: isize| s.g(q + k * offset);
         let ref_m = if np == nq {
             if np == 5 {
-                (2 * (sp(0) + sq(0) + sp(1) + sq(1) + sp(2) + sq(2)) + sp(3) + sq(3) + sp(4) + sq(4) + 8) >> 4
+                (2 * (sp(0) + sq(0) + sp(1) + sq(1) + sp(2) + sq(2))
+                    + sp(3)
+                    + sq(3)
+                    + sp(4)
+                    + sq(4)
+                    + 8)
+                    >> 4
             } else {
-                (2 * (sp(0) + sq(0)) + sp(1) + sq(1) + sp(2) + sq(2) + sp(3) + sq(3) + sp(4) + sq(4) + sp(5) + sq(5) + sp(6) + sq(6) + 8) >> 4
+                (2 * (sp(0) + sq(0))
+                    + sp(1)
+                    + sq(1)
+                    + sp(2)
+                    + sq(2)
+                    + sp(3)
+                    + sq(3)
+                    + sp(4)
+                    + sq(4)
+                    + sp(5)
+                    + sq(5)
+                    + sp(6)
+                    + sq(6)
+                    + 8)
+                    >> 4
             }
         } else {
             // the longer side takes the role of P
-            let (pt, qt, op, oq, n_p, n_q) = if nq > np { (q, p, offset, -offset, nq, np) } else { (p, q, -offset, offset, np, nq) };
+            let (pt, qt, op, oq, n_p, n_q) = if nq > np {
+                (q, p, offset, -offset, nq, np)
+            } else {
+                (p, q, -offset, offset, np, nq)
+            };
             let a = |k: isize| s.g(pt + k * op);
             let b = |k: isize| s.g(qt + k * oq);
             if n_p == 7 && n_q == 5 {
-                (2 * (sp(0) + sq(0) + sp(1) + sq(1)) + sp(2) + sq(2) + sp(3) + sq(3) + sp(4) + sq(4) + sp(5) + sq(5) + 8) >> 4
+                (2 * (sp(0) + sq(0) + sp(1) + sq(1))
+                    + sp(2)
+                    + sq(2)
+                    + sp(3)
+                    + sq(3)
+                    + sp(4)
+                    + sq(4)
+                    + sp(5)
+                    + sq(5)
+                    + 8)
+                    >> 4
             } else if n_p == 7 && n_q == 3 {
-                (2 * (a(0) + b(0)) + b(0) + 2 * (b(1) + b(2)) + a(1) + b(1) + a(2) + a(3) + a(4) + a(5) + a(6) + 8) >> 4
+                (2 * (a(0) + b(0))
+                    + b(0)
+                    + 2 * (b(1) + b(2))
+                    + a(1)
+                    + b(1)
+                    + a(2)
+                    + a(3)
+                    + a(4)
+                    + a(5)
+                    + a(6)
+                    + 8)
+                    >> 4
             } else {
                 (sp(0) + sq(0) + sp(1) + sq(1) + sp(2) + sq(2) + sp(3) + sq(3) + 4) >> 3
             }
@@ -592,19 +752,44 @@ fn filtering_pq(s: &mut Samples, src: isize, step: isize, offset: isize, np: usi
             let pos = p - offset * k as isize;
             let v = s.g(pos);
             let cv = (tc * tcp[k]) >> 1;
-            s.s(pos, clip3(v - cv, v + cv, (ref_m * cp[k] + ref_p * (64 - cp[k]) + 32) >> 6));
+            s.s(
+                pos,
+                clip3(
+                    v - cv,
+                    v + cv,
+                    (ref_m * cp[k] + ref_p * (64 - cp[k]) + 32) >> 6,
+                ),
+            );
         }
         for k in 0..nq {
             let pos = q + offset * k as isize;
             let v = s.g(pos);
             let cv = (tc * tcq[k]) >> 1;
-            s.s(pos, clip3(v - cv, v + cv, (ref_m * cq[k] + ref_q * (64 - cq[k]) + 32) >> 6));
+            s.s(
+                pos,
+                clip3(
+                    v - cv,
+                    v + cv,
+                    (ref_m * cq[k] + ref_q * (64 - cq[k]) + 32) >> 6,
+                ),
+            );
         }
     }
 }
 
 #[allow(clippy::too_many_arguments)]
-fn pel_filter_luma(s: &mut Samples, src: isize, step: isize, off: isize, tc: i32, sw: bool, thr_cut: i32, fp: bool, fq: bool, max: i32) {
+fn pel_filter_luma(
+    s: &mut Samples,
+    src: isize,
+    step: isize,
+    off: isize,
+    tc: i32,
+    sw: bool,
+    thr_cut: i32,
+    fp: bool,
+    fq: bool,
+    max: i32,
+) {
     for i in 0..4isize {
         let c = src + step * i;
         let m1 = s.g(c - 3 * off);
@@ -616,12 +801,38 @@ fn pel_filter_luma(s: &mut Samples, src: isize, step: isize, off: isize, tc: i32
         if sw {
             let m0 = s.g(c - 4 * off);
             let m7 = s.g(c + 3 * off);
-            s.s(c - 3 * off, clip3(m1 - tc, m1 + tc, (2 * m0 + 3 * m1 + m2 + m3 + m4 + 4) >> 3));
-            s.s(c - 2 * off, clip3(m2 - 2 * tc, m2 + 2 * tc, (m1 + m2 + m3 + m4 + 2) >> 2));
-            s.s(c - off, clip3(m3 - 3 * tc, m3 + 3 * tc, (m1 + 2 * m2 + 2 * m3 + 2 * m4 + m5 + 4) >> 3));
-            s.s(c, clip3(m4 - 3 * tc, m4 + 3 * tc, (m2 + 2 * m3 + 2 * m4 + 2 * m5 + m6 + 4) >> 3));
-            s.s(c + off, clip3(m5 - 2 * tc, m5 + 2 * tc, (m3 + m4 + m5 + m6 + 2) >> 2));
-            s.s(c + 2 * off, clip3(m6 - tc, m6 + tc, (m3 + m4 + m5 + 3 * m6 + 2 * m7 + 4) >> 3));
+            s.s(
+                c - 3 * off,
+                clip3(m1 - tc, m1 + tc, (2 * m0 + 3 * m1 + m2 + m3 + m4 + 4) >> 3),
+            );
+            s.s(
+                c - 2 * off,
+                clip3(m2 - 2 * tc, m2 + 2 * tc, (m1 + m2 + m3 + m4 + 2) >> 2),
+            );
+            s.s(
+                c - off,
+                clip3(
+                    m3 - 3 * tc,
+                    m3 + 3 * tc,
+                    (m1 + 2 * m2 + 2 * m3 + 2 * m4 + m5 + 4) >> 3,
+                ),
+            );
+            s.s(
+                c,
+                clip3(
+                    m4 - 3 * tc,
+                    m4 + 3 * tc,
+                    (m2 + 2 * m3 + 2 * m4 + 2 * m5 + m6 + 4) >> 3,
+                ),
+            );
+            s.s(
+                c + off,
+                clip3(m5 - 2 * tc, m5 + 2 * tc, (m3 + m4 + m5 + m6 + 2) >> 2),
+            );
+            s.s(
+                c + 2 * off,
+                clip3(m6 - tc, m6 + tc, (m3 + m4 + m5 + 3 * m6 + 2 * m7 + 4) >> 3),
+            );
         } else {
             let mut delta = (9 * (m4 - m3) - 3 * (m5 - m2) + 8) >> 4;
             if delta.abs() < thr_cut {
@@ -642,7 +853,15 @@ fn pel_filter_luma(s: &mut Samples, src: isize, step: isize, off: isize, tc: i32
     }
 }
 
-fn pel_filter_chroma(s: &mut Samples, c: isize, off: isize, tc: i32, sw: bool, max: i32, ctb_hor: bool) {
+fn pel_filter_chroma(
+    s: &mut Samples,
+    c: isize,
+    off: isize,
+    tc: i32,
+    sw: bool,
+    max: i32,
+    ctb_hor: bool,
+) {
     let m2 = s.g(c - 2 * off);
     let m3 = s.g(c - off);
     let m4 = s.g(c);
@@ -651,19 +870,73 @@ fn pel_filter_chroma(s: &mut Samples, c: isize, off: isize, tc: i32, sw: bool, m
         let m6 = s.g(c + 2 * off);
         let m7 = s.g(c + 3 * off);
         if ctb_hor {
-            s.s(c - off, clip3(m3 - tc, m3 + tc, (3 * m2 + 2 * m3 + m4 + m5 + m6 + 4) >> 3));
-            s.s(c, clip3(m4 - tc, m4 + tc, (2 * m2 + m3 + 2 * m4 + m5 + m6 + m7 + 4) >> 3));
-            s.s(c + off, clip3(m5 - tc, m5 + tc, (m2 + m3 + m4 + 2 * m5 + m6 + 2 * m7 + 4) >> 3));
-            s.s(c + 2 * off, clip3(m6 - tc, m6 + tc, (m3 + m4 + m5 + 2 * m6 + 3 * m7 + 4) >> 3));
+            s.s(
+                c - off,
+                clip3(m3 - tc, m3 + tc, (3 * m2 + 2 * m3 + m4 + m5 + m6 + 4) >> 3),
+            );
+            s.s(
+                c,
+                clip3(
+                    m4 - tc,
+                    m4 + tc,
+                    (2 * m2 + m3 + 2 * m4 + m5 + m6 + m7 + 4) >> 3,
+                ),
+            );
+            s.s(
+                c + off,
+                clip3(
+                    m5 - tc,
+                    m5 + tc,
+                    (m2 + m3 + m4 + 2 * m5 + m6 + 2 * m7 + 4) >> 3,
+                ),
+            );
+            s.s(
+                c + 2 * off,
+                clip3(m6 - tc, m6 + tc, (m3 + m4 + m5 + 2 * m6 + 3 * m7 + 4) >> 3),
+            );
         } else {
             let m0 = s.g(c - 4 * off);
             let m1 = s.g(c - 3 * off);
-            s.s(c - 3 * off, clip3(m1 - tc, m1 + tc, (3 * m0 + 2 * m1 + m2 + m3 + m4 + 4) >> 3));
-            s.s(c - 2 * off, clip3(m2 - tc, m2 + tc, (2 * m0 + m1 + 2 * m2 + m3 + m4 + m5 + 4) >> 3));
-            s.s(c - off, clip3(m3 - tc, m3 + tc, (m0 + m1 + m2 + 2 * m3 + m4 + m5 + m6 + 4) >> 3));
-            s.s(c, clip3(m4 - tc, m4 + tc, (m1 + m2 + m3 + 2 * m4 + m5 + m6 + m7 + 4) >> 3));
-            s.s(c + off, clip3(m5 - tc, m5 + tc, (m2 + m3 + m4 + 2 * m5 + m6 + 2 * m7 + 4) >> 3));
-            s.s(c + 2 * off, clip3(m6 - tc, m6 + tc, (m3 + m4 + m5 + 2 * m6 + 3 * m7 + 4) >> 3));
+            s.s(
+                c - 3 * off,
+                clip3(m1 - tc, m1 + tc, (3 * m0 + 2 * m1 + m2 + m3 + m4 + 4) >> 3),
+            );
+            s.s(
+                c - 2 * off,
+                clip3(
+                    m2 - tc,
+                    m2 + tc,
+                    (2 * m0 + m1 + 2 * m2 + m3 + m4 + m5 + 4) >> 3,
+                ),
+            );
+            s.s(
+                c - off,
+                clip3(
+                    m3 - tc,
+                    m3 + tc,
+                    (m0 + m1 + m2 + 2 * m3 + m4 + m5 + m6 + 4) >> 3,
+                ),
+            );
+            s.s(
+                c,
+                clip3(
+                    m4 - tc,
+                    m4 + tc,
+                    (m1 + m2 + m3 + 2 * m4 + m5 + m6 + m7 + 4) >> 3,
+                ),
+            );
+            s.s(
+                c + off,
+                clip3(
+                    m5 - tc,
+                    m5 + tc,
+                    (m2 + m3 + m4 + 2 * m5 + m6 + 2 * m7 + 4) >> 3,
+                ),
+            );
+            s.s(
+                c + 2 * off,
+                clip3(m6 - tc, m6 + tc, (m3 + m4 + m5 + 2 * m6 + 3 * m7 + 4) >> 3),
+            );
         }
     } else {
         let delta = clip3(-tc, tc, (((m4 - m3) * 4) + m2 - m5 + 4) >> 3);
@@ -685,7 +958,19 @@ fn calc_dq(s: &Samples, c: isize, off: isize) -> i32 {
 }
 
 #[allow(clippy::too_many_arguments)]
-fn strong(s: &Samples, c: isize, off: isize, d: i32, beta: i32, tc: i32, p_large: bool, q_large: bool, max_p: isize, max_q: isize, ctb_hor: bool) -> bool {
+fn strong(
+    s: &Samples,
+    c: isize,
+    off: isize,
+    d: i32,
+    beta: i32,
+    tc: i32,
+    p_large: bool,
+    q_large: bool,
+    max_p: isize,
+    max_q: isize,
+    ctb_hor: bool,
+) -> bool {
     let m3 = s.g(c - off);
     let m4 = s.g(c);
     if !(d < (beta >> 2) && (m3 - m4).abs() < ((tc * 5 + 1) >> 1)) {
@@ -729,7 +1014,11 @@ fn strong(s: &Samples, c: isize, off: isize, d: i32, beta: i32, tc: i32, p_large
 
 fn tc_from_table(idx: i32, bd: u32) -> i32 {
     let t = i32::from(TC_TABLE[idx as usize]);
-    if bd < 10 { (t + (1 << (9 - bd))) >> (10 - bd) } else { t << (bd - 10) }
+    if bd < 10 {
+        (t + (1 << (9 - bd))) >> (10 - bd)
+    } else {
+        t << (bd - 10)
+    }
 }
 
 impl Ctx<'_> {
@@ -744,7 +1033,9 @@ impl Ctx<'_> {
         let bd = self.pic.bit_depth;
         let max = (1 << bd) - 1;
         let stride = plane.stride as isize;
-        let mut s = Samples { stride, data: &mut plane.data };
+        let mut s = Samples {
+            data: &mut plane.data,
+        };
         let src = y as isize * stride + x as isize;
         let (offset, step) = if dir == 0 { (1, stride) } else { (stride, 1) };
         let bs = bs_get(lfp.bs, 0) as i32;
@@ -791,17 +1082,64 @@ impl Ctx<'_> {
         let d3 = dp3 + dq3;
         if p_large || q_large {
             let off3 = 3 * offset;
-            let dp0l = if p_large { (dp0 + calc_dp(&s, s0 - off3, offset, false) + 1) >> 1 } else { dp0 };
-            let dq0l = if q_large { (dq0 + calc_dq(&s, s0 + off3, offset) + 1) >> 1 } else { dq0 };
-            let dp3l = if p_large { (dp3 + calc_dp(&s, s3 - off3, offset, false) + 1) >> 1 } else { dp3 };
-            let dq3l = if q_large { (dq3 + calc_dq(&s, s3 + off3, offset) + 1) >> 1 } else { dq3 };
+            let dp0l = if p_large {
+                (dp0 + calc_dp(&s, s0 - off3, offset, false) + 1) >> 1
+            } else {
+                dp0
+            };
+            let dq0l = if q_large {
+                (dq0 + calc_dq(&s, s0 + off3, offset) + 1) >> 1
+            } else {
+                dq0
+            };
+            let dp3l = if p_large {
+                (dp3 + calc_dp(&s, s3 - off3, offset, false) + 1) >> 1
+            } else {
+                dp3
+            };
+            let dq3l = if q_large {
+                (dq3 + calc_dq(&s, s3 + off3, offset) + 1) >> 1
+            } else {
+                dq3
+            };
             let d0l = dp0l + dq0l;
             let d3l = dp3l + dq3l;
             if d0l + d3l < beta {
-                let swl = strong(&s, s0, offset, 2 * d0l, beta, tc, p_large, q_large, max_p, max_q, false)
-                    && strong(&s, s3, offset, 2 * d3l, beta, tc, p_large, q_large, max_p, max_q, false);
+                let swl = strong(
+                    &s,
+                    s0,
+                    offset,
+                    2 * d0l,
+                    beta,
+                    tc,
+                    p_large,
+                    q_large,
+                    max_p,
+                    max_q,
+                    false,
+                ) && strong(
+                    &s,
+                    s3,
+                    offset,
+                    2 * d3l,
+                    beta,
+                    tc,
+                    p_large,
+                    q_large,
+                    max_p,
+                    max_q,
+                    false,
+                );
                 if swl {
-                    filtering_pq(&mut s, src, step, offset, if p_large { max_p as usize } else { 3 }, if q_large { max_q as usize } else { 3 }, tc);
+                    filtering_pq(
+                        &mut s,
+                        src,
+                        step,
+                        offset,
+                        if p_large { max_p as usize } else { 3 },
+                        if q_large { max_q as usize } else { 3 },
+                        tc,
+                    );
                     return;
                 }
             }
@@ -817,14 +1155,22 @@ impl Ctx<'_> {
             }
             let mut sw = false;
             if max_p > 2 && max_q > 2 {
-                sw = strong(&s, s0, offset, 2 * d0, beta, tc, false, false, 7, 7, false) && strong(&s, s3, offset, 2 * d3, beta, tc, false, false, 7, 7, false);
+                sw = strong(&s, s0, offset, 2 * d0, beta, tc, false, false, 7, 7, false)
+                    && strong(&s, s3, offset, 2 * d3, beta, tc, false, false, 7, 7, false);
             }
             pel_filter_luma(&mut s, src, step, offset, tc, sw, thr_cut, fp, fq, max);
         }
     }
 
     /// `(x, y)` in chroma coordinates; `lfp` is the luma-grid entry.
-    fn edge_filter_chroma(&self, dir: Dir, planes: &mut [super::pic::Plane], x: i32, y: i32, lfp: &Lfp) {
+    fn edge_filter_chroma(
+        &self,
+        dir: Dir,
+        planes: &mut [super::pic::Plane],
+        x: i32,
+        y: i32,
+        lfp: &Lfp,
+    ) {
         let (csx, csy) = self.scale(1);
         let slice = self.ctu_slice(x << csx, y << csy);
         let bd = self.pic.bit_depth;
@@ -842,11 +1188,17 @@ impl Ctx<'_> {
             }
             let plane = &mut planes[ci + 1];
             let stride = plane.stride as isize;
-            let mut s = Samples { stride, data: &mut plane.data };
+            let mut s = Samples {
+                data: &mut plane.data,
+            };
             let src = y as isize * stride + x as isize;
             let (offset, step) = if dir == 0 { (1, stride) } else { (stride, 1) };
             let qp = lfp.qp[ci + 1];
-            let idx_tc = clip3(0, 65, qp + 2 * (i32::from(bs[ci]) - 1) + slice.tc_offset_div2[ci + 1] * 2);
+            let idx_tc = clip3(
+                0,
+                65,
+                qp + 2 * (i32::from(bs[ci]) - 1) + slice.tc_offset_div2[ci + 1] * 2,
+            );
             let tc = tc_from_table(idx_tc, bd);
             if large {
                 let idx_b = clip3(0, 63, qp + slice.beta_offset_div2[ci + 1] * 2);
@@ -860,8 +1212,31 @@ impl Ctx<'_> {
                 let d0 = dp0 + dq0;
                 let d3 = dp3 + dq3;
                 if d0 + d3 < beta {
-                    let sw = strong(&s, src, offset, 2 * d0, beta, tc, false, false, 7, 7, ctb_hor)
-                        && strong(&s, src + o3, offset, 2 * d3, beta, tc, false, false, 7, 7, ctb_hor);
+                    let sw = strong(
+                        &s,
+                        src,
+                        offset,
+                        2 * d0,
+                        beta,
+                        tc,
+                        false,
+                        false,
+                        7,
+                        7,
+                        ctb_hor,
+                    ) && strong(
+                        &s,
+                        src + o3,
+                        offset,
+                        2 * d3,
+                        beta,
+                        tc,
+                        false,
+                        false,
+                        7,
+                        7,
+                        ctb_hor,
+                    );
                     for k in 0..loop_len as isize {
                         pel_filter_chroma(&mut s, src + step * k, offset, tc, sw, max, ctb_hor);
                     }
@@ -883,7 +1258,14 @@ pub fn deblock(pic: &mut Picture, sps: &Sps, pps: &Pps, ph: &PicHeader, slices: 
     let n = pic.map_w * pic.map_h;
     let mut planes = std::mem::take(&mut pic.planes);
     {
-        let mut ctx = Ctx { pic, sps, pps, ph, slices, maps: [vec![Lfp::default(); n], vec![Lfp::default(); n]] };
+        let mut ctx = Ctx {
+            pic,
+            sps,
+            pps,
+            ph,
+            slices,
+            maps: [vec![Lfp::default(); n], vec![Lfp::default(); n]],
+        };
         for id in 0..ctx.pic.cus.len() as u32 {
             let c = ctx.cu(id);
             if ctx.slices[c.slice as usize].deblocking_disabled {
@@ -906,7 +1288,8 @@ pub fn deblock(pic: &mut Picture, sps: &Sps, pps: &Pps, ph: &PicHeader, slices: 
                     while dy < chh {
                         let mut dx = 0;
                         while dx < cw {
-                            let l = ctx.maps[dir][((cy + dy) >> 2) as usize * ctx.pic.map_w + ((cx + dx) >> 2) as usize];
+                            let l = ctx.maps[dir][((cy + dy) >> 2) as usize * ctx.pic.map_w
+                                + ((cx + dx) >> 2) as usize];
                             if bs_get(l.bs, 0) != 0 {
                                 ctx.edge_filter_luma(dir, &mut planes[0], cx + dx, cy + dy, &l);
                             }
@@ -918,14 +1301,23 @@ pub fn deblock(pic: &mut Picture, sps: &Sps, pps: &Pps, ph: &PicHeader, slices: 
                         continue;
                     }
                     let (ccx, ccy, ccw, cch) = (cx >> csx, cy >> csy, cw >> csx, chh >> csy);
-                    let cincy = if dir == 0 { 4 >> csy } else { (8 << csy) / 4 * (4 >> csy) };
-                    let cincx = if dir == 1 { 4 >> csx } else { (8 << csx) / 4 * (4 >> csx) };
+                    let cincy = if dir == 0 {
+                        4 >> csy
+                    } else {
+                        (8 << csy) / 4 * (4 >> csy)
+                    };
+                    let cincx = if dir == 1 {
+                        4 >> csx
+                    } else {
+                        (8 << csx) / 4 * (4 >> csx)
+                    };
                     let mut cdy = 0;
                     while cdy < cch {
                         let mut cdx = 0;
                         while cdx < ccw {
                             let (lx, ly) = ((ccx + cdx) << csx, (ccy + cdy) << csy);
-                            let l = ctx.maps[dir][(ly >> 2) as usize * ctx.pic.map_w + (lx >> 2) as usize];
+                            let l = ctx.maps[dir]
+                                [(ly >> 2) as usize * ctx.pic.map_w + (lx >> 2) as usize];
                             if bs_get(l.bs, 1) | bs_get(l.bs, 2) != 0 {
                                 ctx.edge_filter_chroma(dir, &mut planes, ccx + cdx, ccy + cdy, &l);
                             }

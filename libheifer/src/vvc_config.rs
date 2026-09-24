@@ -225,3 +225,101 @@ impl EncoderConfiguration {
 fn write_error(message: &str) -> ContextError {
     ContextError::new(9, 0, format!("Encoding error: Unspecified: {message}"))
 }
+
+/// The decoder-relevant fields of a `vvcC` box (libheif's `Box_vvcC::parse`).
+pub struct DecoderConfiguration {
+    pub chroma: u8,
+    pub depth: u8,
+    /// NAL arrays as (NAL unit type, units).
+    pub arrays: Vec<(u8, Vec<Vec<u8>>)>,
+}
+
+fn error(code: i32, subcode: i32, message: &str) -> ContextError {
+    ContextError::new(
+        code,
+        subcode,
+        format!("{}: {message}", crate::error_text::message(code, subcode)),
+    )
+}
+
+impl DecoderConfiguration {
+    pub fn parse(body: &[u8]) -> Result<Self, ContextError> {
+        let eof = || error(2, 100, "Unexpected end of file");
+        let mut at = 4usize;
+        let byte = |at: &mut usize| -> Result<u8, ContextError> {
+            let v = *body.get(*at).ok_or_else(eof)?;
+            *at += 1;
+            Ok(v)
+        };
+        let read16 = |at: &mut usize| -> Result<u16, ContextError> {
+            Ok(u16::from(byte(at)?) << 8 | u16::from(byte(at)?))
+        };
+        if body.len() < 4 {
+            return Err(eof());
+        }
+        let first = byte(&mut at)?;
+        if first & 1 == 0 {
+            return Err(error(
+                4,
+                0,
+                "Reading vvcC configuration with ptl_present_flag=0 is not supported.",
+            ));
+        }
+        let word = read16(&mut at)?;
+        let sublayers = (word >> 4) & 7;
+        let chroma = (word & 3) as u8;
+        let depth = 8 + (byte(&mut at)? >> 5);
+        let constraint_bytes = byte(&mut at)? & 0x3f;
+        if constraint_bytes == 0 {
+            return Err(error(
+                2,
+                2006,
+                "vvcC with num_bytes_constraint_info==0 is not allowed.",
+            ));
+        }
+        byte(&mut at)?;
+        byte(&mut at)?;
+        for _ in 0..constraint_bytes {
+            byte(&mut at)?;
+        }
+        if sublayers > 1 {
+            let flags = byte(&mut at)?;
+            let mut mask = 0x80u8;
+            for _ in 0..sublayers - 1 {
+                if flags & mask != 0 {
+                    byte(&mut at)?;
+                }
+                mask >>= 1;
+            }
+        }
+        let sub_profiles = byte(&mut at)?;
+        for _ in 0..u32::from(sub_profiles) * 4 {
+            byte(&mut at)?;
+        }
+        for _ in 0..6 {
+            byte(&mut at)?;
+        }
+        let arrays = byte(&mut at)?;
+        let mut out = Vec::new();
+        for _ in 0..arrays {
+            let kind = byte(&mut at)? & 0x3f;
+            let count = read16(&mut at)?;
+            let mut units = Vec::new();
+            for _ in 0..count {
+                let size = usize::from(read16(&mut at)?);
+                if size == 0 {
+                    continue;
+                }
+                let unit = body.get(at..at + size).ok_or_else(eof)?;
+                at += size;
+                units.push(unit.to_vec());
+            }
+            out.push((kind, units));
+        }
+        Ok(Self {
+            chroma,
+            depth,
+            arrays: out,
+        })
+    }
+}

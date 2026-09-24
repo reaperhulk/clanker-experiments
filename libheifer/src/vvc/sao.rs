@@ -2,7 +2,7 @@
 //! Sample adaptive offset (H.266 clause 8.8.4), following vvdec's
 //! `SampleAdaptiveOffset::offsetBlock_core`.
 use super::pic::{Picture, Plane, SaoParam};
-use super::ps::{Pps, PicHeader, Sps};
+use super::ps::{PicHeader, Pps, Sps};
 
 fn sgn(v: i32) -> i32 {
     v.signum()
@@ -27,7 +27,8 @@ struct Vb<'a> {
 
 impl Vb<'_> {
     fn off(&self, x: i32, y: i32, use_ver: bool, use_hor: bool) -> bool {
-        (use_ver && self.ver.iter().any(|&p| x == p || x == p - 1)) || (use_hor && self.hor.iter().any(|&p| y == p || y == p - 1))
+        (use_ver && self.ver.iter().any(|&p| x == p || x == p - 1))
+            || (use_hor && self.hor.iter().any(|&p| y == p || y == p - 1))
     }
     fn any(&self) -> bool {
         !self.ver.is_empty() || !self.hor.is_empty()
@@ -37,7 +38,19 @@ impl Vb<'_> {
 /// vvdec's `offsetBlock_core`; `src` is the deblocked picture, `dst` the
 /// output, both addressed at the block origin `(bx, by)`.
 #[allow(clippy::too_many_arguments)]
-fn offset_block(bd: u32, type_idc: u8, offsets: &[i32; 32], src: &Plane, dst: &mut Plane, bx: i32, by: i32, w: i32, h: i32, av: Avail, vb: &Vb) {
+fn offset_block(
+    bd: u32,
+    type_idc: u8,
+    offsets: &[i32; 32],
+    src: &Plane,
+    dst: &mut Plane,
+    bx: i32,
+    by: i32,
+    w: i32,
+    h: i32,
+    av: Avail,
+    vb: &Vb,
+) {
     let max = (1i32 << bd) - 1;
     let s = |x: i32, y: i32| i32::from(src.at(bx + x, by + y));
     let mut put = |x: i32, y: i32, v: i32| dst.set(bx + x, by + y, v.clamp(0, max) as i16);
@@ -193,7 +206,11 @@ pub fn sao(pic: &mut Picture, sps: &Sps, pps: &Pps, ph: &PicHeader) {
         for comp in 0..pic.fmt.num_comp() {
             let p = params[addr][comp];
             if p.mode == 2 {
-                let src = if p.type_idc == 0 { addr.checked_sub(1).filter(|_| cx > 0) } else { addr.checked_sub(wc).filter(|_| cy > 0) };
+                let src = if p.type_idc == 0 {
+                    addr.checked_sub(1).filter(|_| cx > 0)
+                } else {
+                    addr.checked_sub(wc).filter(|_| cy > 0)
+                };
                 params[addr][comp] = src.map_or(SaoParam::default(), |s| params[s][comp]);
             }
         }
@@ -208,7 +225,12 @@ pub fn sao(pic: &mut Picture, sps: &Sps, pps: &Pps, ph: &PicHeader) {
     let subpic = |a: usize| -> usize {
         let (x, y) = ((a % wc) as u32, (a / wc) as u32);
         (0..sps.num_subpics as usize)
-            .find(|&i| x >= sps.subpic_x[i] && x < sps.subpic_x[i] + sps.subpic_w[i] && y >= sps.subpic_y[i] && y < sps.subpic_y[i] + sps.subpic_h[i])
+            .find(|&i| {
+                x >= sps.subpic_x[i]
+                    && x < sps.subpic_x[i] + sps.subpic_w[i]
+                    && y >= sps.subpic_y[i]
+                    && y < sps.subpic_y[i] + sps.subpic_h[i]
+            })
             .unwrap_or(0)
     };
     let hc = pic.height_ctus as usize;
@@ -219,20 +241,51 @@ pub fn sao(pic: &mut Picture, sps: &Sps, pps: &Pps, ph: &PicHeader) {
         let (cx, cy) = (addr % wc, addr / wc);
         let nb = |dx: i32, dy: i32| -> Option<usize> {
             let (x, y) = (cx as i32 + dx, cy as i32 + dy);
-            if x < 0 || y < 0 || x >= wc as i32 || y >= hc as i32 { None } else { Some(y as usize * wc + x as usize) }
+            if x < 0 || y < 0 || x >= wc as i32 || y >= hc as i32 {
+                None
+            } else {
+                Some(y as usize * wc + x as usize)
+            }
         };
         let (l, r, a, b) = (nb(-1, 0), nb(1, 0), nb(0, -1), nb(0, 1));
-        let al = if l.is_some() && a.is_some() { nb(-1, -1) } else { None };
-        let ar = if r.is_some() && a.is_some() { nb(1, -1) } else { None };
-        let bl = if l.is_some() && b.is_some() { nb(-1, 1) } else { None };
-        let br = if r.is_some() && b.is_some() { nb(1, 1) } else { None };
+        let al = if l.is_some() && a.is_some() {
+            nb(-1, -1)
+        } else {
+            None
+        };
+        let ar = if r.is_some() && a.is_some() {
+            nb(1, -1)
+        } else {
+            None
+        };
+        let bl = if l.is_some() && b.is_some() {
+            nb(-1, 1)
+        } else {
+            None
+        };
+        let br = if r.is_some() && b.is_some() {
+            nb(1, 1)
+        } else {
+            None
+        };
         let ok = |o: Option<usize>| -> bool {
             let Some(o) = o else { return false };
             (pps.loop_filter_across_slices || ctu_slice(o) == ctu_slice(addr))
                 && (pps.loop_filter_across_tiles || ctu_tile(o) == ctu_tile(addr))
-                && (!sps.subpic_info_present || sps.loop_filter_across_subpic[subpic(addr)] || subpic(o) == subpic(addr))
+                && (!sps.subpic_info_present
+                    || sps.loop_filter_across_subpic[subpic(addr)]
+                    || subpic(o) == subpic(addr))
         };
-        let av = Avail { l: ok(l), r: ok(r), a: ok(a), b: ok(b), al: ok(al), ar: ok(ar), bl: ok(bl), br: ok(br) };
+        let av = Avail {
+            l: ok(l),
+            r: ok(r),
+            a: ok(a),
+            b: ok(b),
+            al: ok(al),
+            ar: ok(ar),
+            bl: ok(bl),
+            br: ok(br),
+        };
         let (x0, y0) = (cx as i32 * size, cy as i32 * size);
         let (w, h) = (size.min(pic.width - x0), size.min(pic.height - y0));
         let mut vb_ver = Vec::new();
@@ -270,7 +323,22 @@ pub fn sao(pic: &mut Picture, sps: &Sps, pps: &Pps, ph: &PicHeader) {
                     offs[i] = p.offset[i] << step_log2;
                 }
             }
-            offset_block(pic.bit_depth, p.type_idc, &offs, &src[comp], &mut pic.planes[comp], bx, by, bw, bh, av, &Vb { ver: &ver, hor: &hor });
+            offset_block(
+                pic.bit_depth,
+                p.type_idc,
+                &offs,
+                &src[comp],
+                &mut pic.planes[comp],
+                bx,
+                by,
+                bw,
+                bh,
+                av,
+                &Vb {
+                    ver: &ver,
+                    hor: &hor,
+                },
+            );
         }
     }
 }

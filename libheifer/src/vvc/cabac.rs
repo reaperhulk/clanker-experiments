@@ -18,7 +18,12 @@ impl Model {
         let state = (((slope * (qp - 16)) >> 1) + offset).clamp(1, 127);
         let shift0 = 2 + ((window >> 2) & 3);
         let shift1 = 3 + shift0 + (window & 3);
-        Self { s0: (state << 3) as u16, s1: (state << 7) as u16, shift0, shift1 }
+        Self {
+            s0: (state << 3) as u16,
+            s1: (state << 7) as u16,
+            shift0,
+            shift1,
+        }
     }
 }
 
@@ -50,7 +55,15 @@ pub struct Cabac<'a> {
 
 impl<'a> Cabac<'a> {
     pub fn new(data: &'a [u8], ctx: Contexts) -> Self {
-        let mut c = Self { data, pos: 0, range: 510, value: 0, bits_needed: -8, overrun: false, ctx };
+        let mut c = Self {
+            data,
+            pos: 0,
+            range: 510,
+            value: 0,
+            bits_needed: -8,
+            overrun: false,
+            ctx,
+        };
         c.start();
         c
     }
@@ -95,7 +108,9 @@ impl<'a> Cabac<'a> {
         // pState = s1 + 16 * s0 (15 bits); valMps = pState >> 14.
         let p_state = u32::from(m.s1) + 16 * u32::from(m.s0);
         let mps = p_state >> 14;
-        let lps = (((self.range >> 5) * ((if mps != 0 { 32767 - p_state } else { p_state }) >> 9)) >> 1) + 4;
+        let lps = (((self.range >> 5) * ((if mps != 0 { 32767 - p_state } else { p_state }) >> 9))
+            >> 1)
+            + 4;
         self.range -= lps;
         let scaled = self.range << 7;
         let bin;
@@ -192,15 +207,13 @@ impl<'a> Cabac<'a> {
             offset = prefix << rice;
         } else {
             offset = ((1u32 << (prefix - cutoff)) + cutoff - 1) << rice;
-            length += if prefix == 32 - max_log2_range { max_log2_range - rice } else { prefix - cutoff };
+            length += if prefix == 32 - max_log2_range {
+                max_log2_range - rice
+            } else {
+                prefix - cutoff
+            };
         }
         offset.wrapping_add(self.decode_bypass_bins(length))
-    }
-
-    /// Byte position after a terminating bin and trailing alignment, for the
-    /// next substream when entry points are absent.
-    pub fn byte_pos(&self) -> usize {
-        self.pos
     }
 
     /// vvdec's `BinDecoder::finish` check after `end_of_slice_segment_flag`
@@ -214,4 +227,6 @@ impl<'a> Cabac<'a> {
     }
 }
 
-static RENORM: [u8; 32] = [6, 5, 4, 4, 3, 3, 3, 3, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
+static RENORM: [u8; 32] = [
+    6, 5, 4, 4, 3, 3, 3, 3, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+];

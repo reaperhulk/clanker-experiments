@@ -880,6 +880,16 @@ impl Document {
                 } else {
                     image.error = Some(ContextError::invalid(131, "No 'av1C' box"));
                 }
+            } else if item.kind == *b"vvc1" {
+                if let Ok(config) = container.property(item.id, *b"vvcC") {
+                    let config = crate::vvc_config::DecoderConfiguration::parse(config)?;
+                    image.luma_bits = i32::from(config.depth);
+                    image.chroma_bits = image.luma_bits;
+                    image.chroma = i32::from(config.chroma);
+                    image.colorspace = if image.chroma == 0 { 2 } else { 0 };
+                } else {
+                    image.error = Some(ContextError::invalid(141, "No 'vvcC' box"));
+                }
             } else if item.kind == *b"j2k1" {
                 if container.property(item.id, *b"j2kH").is_err() {
                     image.error = Some(ContextError::invalid(0, "Unspecified: No j2kH box found."));
