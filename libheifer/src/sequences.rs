@@ -136,6 +136,21 @@ pub struct Track {
     pub first_clock: Option<Box<ClockInfo>>,
     pub auxiliary_urn: Vec<u8>,
     pub alpha: bool,
+    /// Chunk index of every sample (libheif keeps one decoder per chunk).
+    pub sample_chunks: Vec<u32>,
+    /// libheif's stateful per-chunk AVC decoding (built-in decoder only).
+    #[cfg(feature = "avc")]
+    pub avc: Option<Box<AvcTrack>>,
+}
+/// State of libheif's `Track_Visual::decode_next_image_sample` loop over the
+/// OpenH264 plugin, emulated with the built-in AVC decoder.
+#[cfg(feature = "avc")]
+#[derive(Default)]
+pub struct AvcTrack {
+    decoders: std::sync::Mutex<Vec<Option<crate::avc::SequenceDecoder>>>,
+    next_decoded: u64,
+    next_output: u64,
+    flushed: bool,
 }
 impl Track {
     fn new(
@@ -186,6 +201,9 @@ impl Track {
             first_clock: None,
             auxiliary_urn: Vec::new(),
             alpha: false,
+            sample_chunks: Vec::new(),
+            #[cfg(feature = "avc")]
+            avc: None,
         }
     }
     pub fn visual(&self) -> bool {
@@ -837,6 +855,7 @@ impl Context {
                 for _ in 0..row[1] {
                     let size = t.sizes[t.ranges.len()];
                     t.ranges.push((pos, size));
+                    t.sample_chunks.push(chunks.len() as u32);
                     pos = pos
                         .checked_add(u64::from(size))
                         .ok_or_else(|| invalid("Chunk file offset overflows 64-bit range."))?;
@@ -1099,6 +1118,18 @@ impl Track {
         options: crate::decoding::DecodeOptions,
         ignore_editlist: bool,
     ) -> Result<crate::image::Image> {
+        if self.entry_kind == u32::from_be_bytes(*b"avc1") {
+            // Without a built-in decoder, selection fails as libheif's does.
+            let builtin = match options.decoder_provider {
+                Some(provider) => provider.select(2, options.decoder_id)?.is_none(),
+                None => true,
+            };
+            #[cfg(feature = "avc")]
+            if builtin {
+                return self.decode_next_avc(context, colorspace, chroma, options, ignore_editlist);
+            }
+            let _ = builtin;
+        }
         if !self.decode_failed && ignore_editlist && self.next as usize >= self.ranges.len() {
             return Err(ContextError::new(
                 13,
@@ -1175,6 +1206,191 @@ impl Track {
             }
         }
     }
+}
+
+impl Track {
+    /// The sample entry's configuration properties (avcC, colr, ...).
+    #[cfg(feature = "avc")]
+    fn entry_properties(&self) -> Result<Vec<(crate::properties::Property, bool)>> {
+        let description = sub(&self.sample_description, 8)?;
+        Ok(crate::context::children(sub(description, 78)?)?
+            .into_iter()
+            .filter(|(kind, _)| !matches!(kind, b"ccst" | b"taic" | b"auxi"))
+            .map(|(kind, data)| (crate::encoding::property(kind, data.to_vec()), false))
+            .collect())
+    }
+
+    /// libheif's `Track_Visual::decode_next_image_sample` with the OpenH264
+    /// plugin: samples are pushed into one stateful decoder per chunk (the avcC
+    /// units with sample 0), frames are polled before each push, and the
+    /// decoder is flushed at the end of the samples.
+    #[cfg(feature = "avc")]
+    fn decode_next_avc(
+        &mut self,
+        context: &Context,
+        colorspace: i32,
+        chroma: i32,
+        options: crate::decoding::DecodeOptions,
+        ignore_editlist: bool,
+    ) -> Result<crate::image::Image> {
+        let count = self.ranges.len() as u64;
+        let limit = if ignore_editlist {
+            count
+        } else {
+            self.output_count
+        };
+        let mut state = self.avc.take().unwrap_or_default();
+        let result = self.avc_loop(
+            &mut state, context, colorspace, chroma, options, count, limit,
+        );
+        self.avc = Some(state);
+        result
+    }
+
+    #[cfg(feature = "avc")]
+    #[allow(clippy::too_many_arguments)]
+    fn avc_loop(
+        &mut self,
+        state: &mut AvcTrack,
+        context: &Context,
+        colorspace: i32,
+        chroma: i32,
+        options: crate::decoding::DecodeOptions,
+        count: u64,
+        limit: u64,
+    ) -> Result<crate::image::Image> {
+        if state.next_output >= limit || count == 0 {
+            return Err(ContextError::new(
+                13,
+                0,
+                "End of sequence: Unspecified: End of sequence",
+            ));
+        }
+        let properties = self.entry_properties()?;
+        let config = properties
+            .iter()
+            .find(|(p, _)| p.kind == *b"avcC")
+            .and_then(|(p, _)| crate::avc_config::parse_configuration(&p.data));
+        let limits = *context
+            .limits
+            .read()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let maximum = limits.max_image_size_pixels;
+        let (image, sample_idx, decoded_idx) = loop {
+            let sample_idx = (state.next_decoded % count) as usize;
+            let chunk = self.sample_chunks.get(sample_idx).copied().unwrap_or(0) as usize;
+            let mut decoders = state
+                .decoders
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            if decoders.len() <= chunk {
+                decoders.resize_with(chunk + 1, || None);
+            }
+            if state.next_decoded != 0 {
+                let document = context_document(context)?;
+                if let Some(decoder) = decoders[chunk].as_mut()
+                    && let Some((image, user)) = decoder.decode_next(&document, maximum)?
+                {
+                    break (image, sample_idx, user as usize);
+                }
+                if state.flushed {
+                    return Err(ContextError::new(
+                        7,
+                        0,
+                        "Decoder plugin generated an error: Unspecified: Did not decode all frames",
+                    ));
+                }
+            }
+            if state.next_decoded < self.output_count {
+                // libheif checks the avcC coded size against the context limits.
+                if let Some(config) = &config
+                    && let Some((w, h)) = crate::avc_config::coded_size(config)?
+                {
+                    limits.check_image_size(w, h)?;
+                }
+                let (offset, size) = self.ranges[sample_idx];
+                let sample = self.read_range(offset, u64::from(size))?.into_owned();
+                state.next_decoded += 1;
+                let mut data = if sample_idx == 0 {
+                    config.as_ref().map(|c| c.header_nals()).unwrap_or_default()
+                } else {
+                    Vec::new()
+                };
+                data.extend_from_slice(&sample);
+                decoders[chunk]
+                    .get_or_insert_with(Default::default)
+                    .push(data, sample_idx as u64)?;
+            } else {
+                if let Some(decoder) = decoders[chunk].as_mut() {
+                    decoder.flush();
+                }
+                state.flushed = true;
+            }
+        };
+        // libheif resets the flushed flag after the last frame of an edit-list
+        // segment, before counting the output.
+        if (state.next_output + 1).is_multiple_of(count) {
+            state.flushed = false;
+        }
+        state.next_output += 1;
+        self.next = state.next_output as u32;
+        // Colour handling, transforms and metadata follow the still-image path
+        // on a temporary item that carries the decoded frame.
+        let mut temporary = Context {
+            budget: context.budget.clone(),
+            limits: context.limits.clone(),
+            ..Default::default()
+        };
+        let template = crate::image::Image::new(
+            u32::from(self.dimensions.0),
+            u32::from(self.dimensions.1),
+            2,
+            0,
+        )?;
+        let item = temporary.insert_encoded(
+            &template,
+            *b"avc1",
+            Vec::new(),
+            properties,
+            &crate::encoding::Options::default(),
+        )?;
+        let document = temporary.decoding_document().unwrap();
+        *document.images[&item.id]
+            .predecoded
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner) = Some(image);
+        let mut image = crate::decoding::decode(&document, item.id, colorspace, chroma, options)?;
+        image.sample.duration = self.durations.get(sample_idx).copied().unwrap_or(0);
+        let saved = self.next;
+        self.next = decoded_idx as u32;
+        let metadata = self.next_raw().map(|s| (s.metadata, s.timestamp));
+        self.next = saved;
+        if let Ok((metadata, timestamp)) = metadata {
+            image.sample.content_id = metadata.content_id;
+            image.tai_timestamp = timestamp.map(|t| *t);
+        }
+        Ok(image)
+    }
+}
+
+#[cfg(feature = "avc")]
+fn context_document(context: &Context) -> Result<Arc<crate::context::Document>> {
+    let mut temporary = Context {
+        budget: context.budget.clone(),
+        limits: context.limits.clone(),
+        ..Default::default()
+    };
+    let template = crate::image::Image::new(1, 1, 2, 0)?;
+    temporary.insert_encoded(
+        &template,
+        *b"avc1",
+        Vec::new(),
+        Vec::new(),
+        &crate::encoding::Options::default(),
+    )?;
+    temporary
+        .decoding_document()
+        .ok_or_else(|| invalid("Missing decoding document"))
 }
 
 fn validate_sequence_boxes(data: &[u8], limits: &crate::security::Limits) -> Result<()> {

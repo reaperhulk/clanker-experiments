@@ -75,6 +75,14 @@ pub fn decode(
     id: u32,
     options: &DecodeOptions,
 ) -> Result<Image, ContextError> {
+    if let Some(image) = document.images[&id]
+        .predecoded
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
+        .take()
+    {
+        return Ok(image);
+    }
     if options.decoder_id.is_some_and(|id| id != b"rusty_h264") {
         return Err(ContextError::new(
             11,
@@ -132,9 +140,17 @@ pub fn decode(
                 )
             }
         })?;
+    frame_image(&frame, document, limits.max_image_size_pixels)
+}
+
+/// The plugin's output image: I420 planes added with `heif_image_add_plane_safe`
+/// under the given pixel limit (the luma plane is checked first).
+fn frame_image(
+    frame: &rusty_h264_decoder::YuvFrame,
+    document: &Document,
+    maximum: u64,
+) -> Result<Image, ContextError> {
     let (width, height) = (frame.width as u32, frame.height as u32);
-    // heif_image_add_plane_safe with the tightened limits; the luma plane is first.
-    let maximum = limits.max_image_size_pixels;
     if maximum != 0 && height != 0 && maximum / u64::from(height) < u64::from(width) {
         return Err(ContextError::new(
             6,
@@ -162,6 +178,195 @@ pub fn decode(
         }
     }
     Ok(image)
+}
+
+/// A decoded picture waiting in OpenH264's output (reordering) list.
+struct Buffered {
+    frame: rusty_h264_decoder::YuvFrame,
+    poc: i32,
+    seq: i32,
+    dts: u32,
+    user_data: u64,
+}
+
+/// libheif's OpenH264 plugin over one track chunk: packets are queued by
+/// `push`, and each `decode_next` runs `DecodeFrameNoDelay` on one packet (or
+/// `FlushFrame` after end of input), with OpenH264's single-threaded output
+/// ordering (`ReorderPicturesInDisplay`).
+pub struct SequenceDecoder {
+    syntax: crate::avc_openh264::Syntax,
+    decoder: rusty_h264_decoder::Decoder,
+    queue: std::collections::VecDeque<(Vec<u8>, u64)>,
+    eof: bool,
+    dts: u32,
+    seq: i32,
+    active_sps: Option<usize>,
+    list: Vec<Buffered>,
+    has_b: bool,
+    last_written_poc: Option<i32>,
+    last_seq: i32,
+}
+
+impl Default for SequenceDecoder {
+    fn default() -> Self {
+        SequenceDecoder {
+            syntax: crate::avc_openh264::Syntax::default(),
+            decoder: rusty_h264_decoder::Decoder::new(),
+            queue: std::collections::VecDeque::new(),
+            eof: false,
+            dts: 0,
+            seq: 0,
+            active_sps: None,
+            list: Vec::new(),
+            has_b: false,
+            last_written_poc: None,
+            last_seq: 0,
+        }
+    }
+}
+
+impl SequenceDecoder {
+    /// `openh264_push_data2`: packets under four bytes are refused.
+    pub fn push(&mut self, data: Vec<u8>, user_data: u64) -> Result<(), ContextError> {
+        if data.len() < 4 {
+            return Err(plugin_error(2006, "Invalid input data"));
+        }
+        self.queue.push_back((data, user_data));
+        Ok(())
+    }
+
+    /// `openh264_flush_data`.
+    pub fn flush(&mut self) {
+        self.eof = true;
+    }
+
+    /// `openh264_decode_next_image2`: `Ok(None)` when no picture is output.
+    pub fn decode_next(
+        &mut self,
+        document: &Document,
+        maximum: u64,
+    ) -> Result<Option<(Image, u64)>, ContextError> {
+        let output = if let Some((data, user_data)) = self.queue.pop_front() {
+            let stream = annex_b(&data)?;
+            self.dts = self.dts.wrapping_add(1);
+            let accepted = self.syntax.accept(&stream).map_err(|_| decoder_error())?;
+            let frame = self
+                .decoder
+                .decode_units(accepted.units.iter().map(Vec::as_slice))
+                .map_err(|_| decoder_error())?;
+            let Some(frame) = frame else {
+                if accepted.constructed_early {
+                    return Err(decoder_error());
+                }
+                return Ok(None);
+            };
+            let slice = accepted.last_slice.ok_or_else(decoder_error)?;
+            if slice.idr || self.active_sps != Some(slice.sps_id) {
+                self.seq = self.seq.wrapping_add(1);
+                self.active_sps = Some(slice.sps_id);
+            }
+            // The picture completes in the data call when an SEI or delimiter
+            // ends its access unit; the flush call then clears that output.
+            let out = self.reorder(frame, slice, user_data);
+            if accepted.constructed_early {
+                None
+            } else {
+                out
+            }
+        } else if self.eof {
+            // FlushFrame
+            if self.has_b {
+                self.release_reorder(true, None)
+            } else {
+                self.release_no_reorder()
+            }
+        } else {
+            return Ok(None);
+        };
+        match output {
+            Some(b) => Ok(Some((
+                frame_image(&b.frame, document, maximum)?,
+                b.user_data,
+            ))),
+            None => Ok(None),
+        }
+    }
+
+    /// `ReorderPicturesInDisplay` for a completed picture.
+    fn reorder(
+        &mut self,
+        frame: rusty_h264_decoder::YuvFrame,
+        slice: crate::avc_openh264::SliceInfo,
+        user_data: u64,
+    ) -> Option<Buffered> {
+        let picture = Buffered {
+            frame,
+            poc: slice.poc_lsb,
+            seq: self.seq,
+            dts: self.dts,
+            user_data,
+        };
+        if matches!(slice.profile, 66 | 83) {
+            return Some(picture);
+        }
+        if self.list.len() >= 16 {
+            // BufferingReadyPicture finds no free slot: the picture is dropped.
+            return None;
+        }
+        if slice.slice_type == 1 {
+            self.has_b = true;
+        }
+        self.list.push(picture);
+        if !self.has_b && self.list.len() > 1 {
+            self.release_no_reorder()
+        } else {
+            self.release_reorder(false, Some((slice.poc_lsb, self.seq)))
+        }
+    }
+
+    /// `ReleaseBufferedReadyPictureNoReorder`: the earliest decoded picture.
+    fn release_no_reorder(&mut self) -> Option<Buffered> {
+        let index = (0..self.list.len()).min_by_key(|&i| self.list[i].dts)?;
+        let picture = self.list.remove(index);
+        self.last_written_poc = Some(picture.poc);
+        self.last_seq = picture.seq;
+        Some(picture)
+    }
+
+    /// `ReleaseBufferedReadyPictureReorder`: the smallest (sequence, POC)
+    /// picture, once ready; `current` is the last decoded picture's (POC,
+    /// sequence number) when not flushing.
+    fn release_reorder(&mut self, flush: bool, current: Option<(i32, i32)>) -> Option<Buffered> {
+        if self.list.is_empty() {
+            return None;
+        }
+        let mut index = 0;
+        for i in 1..self.list.len() {
+            let (a, b) = (&self.list[i], &self.list[index]);
+            let earlier = if a.seq == b.seq {
+                a.poc < b.poc
+            } else {
+                a.seq.wrapping_sub(b.seq) < 0
+            };
+            if earlier {
+                index = i;
+            }
+        }
+        if !flush {
+            let (poc, seq) = (self.list[index].poc, self.list[index].seq);
+            let (last_poc, last_seq) = current.unwrap_or((poc, seq));
+            let ready = self.last_written_poc.is_some_and(|w| poc - w <= 1)
+                || poc < last_poc
+                || seq.wrapping_sub(last_seq) < 0;
+            if !ready {
+                return None;
+            }
+        }
+        let picture = self.list.remove(index);
+        self.last_written_poc = Some(picture.poc);
+        self.last_seq = picture.seq;
+        Some(picture)
+    }
 }
 
 #[cfg(test)]

@@ -90,8 +90,10 @@ macro_rules! thread_local {
 /// are placeholder types that are never constructed — the EDC worker and the
 /// frame pool live behind `std`, so nothing sends.
 pub(crate) mod sync {
+    // libheifer: the `no_std` shims are `spin` primitives, so a decoder is
+    // `Send + Sync` without `std` (and without its worker threads or env knobs).
     #[cfg(not(feature = "std"))]
-    pub use core::cell::OnceCell as Once;
+    pub use single::Once;
     /// The write-once cell for a reference frame's frozen planes: the `std`
     /// `OnceLock` (frame threads share reference frames), a plain `OnceCell`
     /// without it (one thread, nothing to be `Sync` for). Both have the
@@ -117,31 +119,29 @@ pub(crate) mod sync {
 
     #[cfg(not(feature = "std"))]
     mod single {
-        use core::cell::{Ref, RefCell, RefMut};
-
         #[derive(Debug, Default)]
-        pub struct RwLock<T>(RefCell<T>);
-        pub type RwLockReadGuard<'a, T> = Ref<'a, T>;
+        pub struct RwLock<T>(spin::RwLock<T>);
+        pub type RwLockReadGuard<'a, T> = spin::RwLockReadGuard<'a, T>;
         impl<T> RwLock<T> {
             pub const fn new(v: T) -> Self {
-                RwLock(RefCell::new(v))
+                RwLock(spin::RwLock::new(v))
             }
-            pub fn read(&self) -> Result<Ref<'_, T>, ()> {
-                Ok(self.0.borrow())
+            pub fn read(&self) -> Result<spin::RwLockReadGuard<'_, T>, ()> {
+                Ok(self.0.read())
             }
-            pub fn write(&self) -> Result<RefMut<'_, T>, ()> {
-                Ok(self.0.borrow_mut())
+            pub fn write(&self) -> Result<spin::RwLockWriteGuard<'_, T>, ()> {
+                Ok(self.0.write())
             }
         }
 
         #[derive(Debug, Default)]
-        pub struct Mutex<T>(RefCell<T>);
+        pub struct Mutex<T>(spin::Mutex<T>);
         impl<T> Mutex<T> {
             pub const fn new(v: T) -> Self {
-                Mutex(RefCell::new(v))
+                Mutex(spin::Mutex::new(v))
             }
-            pub fn lock(&self) -> Result<RefMut<'_, T>, ()> {
-                Ok(self.0.borrow_mut())
+            pub fn lock(&self) -> Result<spin::MutexGuard<'_, T>, ()> {
+                Ok(self.0.lock())
             }
         }
 
@@ -151,11 +151,39 @@ pub(crate) mod sync {
             pub const fn new() -> Self {
                 Condvar
             }
-            pub fn wait<'a, T>(&self, g: RefMut<'a, T>) -> Result<RefMut<'a, T>, ()> {
+            pub fn wait<G>(&self, g: G) -> Result<G, ()> {
                 Ok(g)
             }
             pub fn notify_all(&self) {}
             pub fn notify_one(&self) {}
+        }
+
+        /// Write-once cell with the `OnceCell` subset the decoder uses.
+        #[derive(Debug)]
+        pub struct Once<T>(spin::Once<T>);
+        impl<T> Default for Once<T> {
+            fn default() -> Self {
+                Self::new()
+            }
+        }
+        impl<T> Once<T> {
+            pub fn take(&mut self) -> Option<T> {
+                core::mem::replace(&mut self.0, spin::Once::new()).try_into_inner()
+            }
+            pub const fn new() -> Self {
+                Once(spin::Once::new())
+            }
+            pub fn get(&self) -> Option<&T> {
+                self.0.get()
+            }
+            pub fn set(&self, v: T) -> Result<(), T> {
+                let mut v = Some(v);
+                self.0.call_once(|| v.take().expect("value"));
+                match v {
+                    None => Ok(()),
+                    Some(v) => Err(v),
+                }
+            }
         }
 
         /// Channel placeholders: never constructed without `std` (the only
@@ -206,6 +234,8 @@ pub use mb16::MvField;
 #[cfg(feature = "std")]
 pub use mb16::MV_DUMP;
 pub use params::{Pps, Sps};
+/// libheifer: the frame type returned by `decode_units*`, nameable by callers.
+pub use rusty_h264_common::YuvFrame;
 
 /// Frame-MT worker count (`RS_H264_FRAME_THREADS`); one thread without `std`.
 #[cfg(feature = "std")]
@@ -290,7 +320,7 @@ use alloc::vec::Vec;
 use mb16::{FrameDecoder, GridPool, WeightTable};
 use rusty_h264_common::bit_reader::OutOfData;
 use rusty_h264_common::nal::{emulation_unprevent, split_annex_b};
-use rusty_h264_common::{BitReader, NalUnitType, YuvFrame};
+use rusty_h264_common::{BitReader, NalUnitType};
 
 /// Decode errors.
 #[derive(Debug, Clone, PartialEq, Eq)]

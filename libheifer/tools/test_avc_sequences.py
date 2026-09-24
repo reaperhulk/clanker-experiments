@@ -1,0 +1,140 @@
+#!/usr/bin/env python3
+"""Original-header AVC image-sequence tracks (intra, P and B frames) against the OpenH264 oracle."""
+import hashlib
+import json
+import struct
+import subprocess
+import sys
+from pathlib import Path
+
+import test_sequence_reading
+from generate_avc_fixtures import REVISION, picture
+from test_avc import avcc, nals
+
+FRAMES = 5
+STREAMS = {
+    'intra-high': ['--profile', 'high', '--keyint', '1'],
+    'ippp-baseline': ['--profile', 'baseline', '--keyint', '30'],
+    'ippp-main': ['--profile', 'main', '--keyint', '30', '--bframes', '0'],
+    'ippp-high': ['--profile', 'high', '--keyint', '30', '--bframes', '0'],
+    'ippp-high-cavlc': ['--profile', 'high', '--no-cabac', '--keyint', '30', '--bframes', '0'],
+    'ippp-refs': ['--profile', 'high', '--keyint', '30', '--bframes', '0', '--ref', '3'],
+    'ippp-weightp': ['--profile', 'main', '--keyint', '30', '--bframes', '0', '--weightp', '2'],
+    'ibbp-main': ['--profile', 'main', '--keyint', '30', '--bframes', '2', '--b-pyramid', 'none'],
+    'ibbp-pyramid': ['--profile', 'high', '--keyint', '30', '--bframes', '3', '--b-pyramid', 'normal'],
+    'idr-every-2': ['--profile', 'high', '--keyint', '2', '--min-keyint', '1', '--bframes', '0'],
+    'ibbp-noweightb': ['--profile', 'main', '--keyint', '30', '--bframes', '2', '--b-pyramid', 'none', '--no-weightb'],
+    'ibbp-temporal': ['--profile', 'main', '--keyint', '30', '--bframes', '2', '--b-pyramid', 'none', '--no-weightb', '--direct', 'temporal'],
+    'ibbp-cavlc': ['--profile', 'high', '--no-cabac', '--keyint', '30', '--bframes', '2', '--b-pyramid', 'none', '--no-weightb'],
+}
+
+
+def box(kind, body):
+    return struct.pack('>I', 8 + len(body)) + kind + body
+
+
+def full(kind, version, flags, body):
+    return box(kind, bytes([version]) + flags.to_bytes(3, 'big') + body)
+
+
+def frames(w, h, n, pattern):
+    """n frames of a moving deterministic pattern (horizontal shift per frame)."""
+    base = picture(w + 4 * n, h, 'i420', 8, pattern)
+    planes = [(w + 4 * n, h, 0)]
+    cw, ch = (w + 4 * n + 1) // 2, (h + 1) // 2
+    planes += [(cw, ch, (w + 4 * n) * h), (cw, ch, (w + 4 * n) * h + cw * ch)]
+    out = []
+    for i in range(n):
+        frame = bytearray()
+        for c, (pw, ph, offset) in enumerate(planes):
+            shift = 4 * i if c == 0 else 2 * i
+            width = w if c == 0 else (w + 1) // 2
+            for y in range(ph):
+                row = base[offset + y * pw:offset + (y + 1) * pw]
+                frame += row[shift:shift + width]
+        out.append(bytes(frame))
+    return out
+
+
+def sequence(w, h, units, frame_units, delta=40):
+    """A HEIF image sequence with one avc1 track; SPS/PPS in avcC, slices in samples."""
+    samples = [b''.join(struct.pack('>I', len(u)) + u for u in au) for au in frame_units]
+    duration = delta * len(samples)
+    ftyp = box(b'ftyp', b'msf1' + b'\0\0\0\0' + b'msf1isom')
+    mvhd = full(b'mvhd', 0, 0, struct.pack('>IIII', 0, 0, 1000, duration) + bytes.fromhex(
+        '000100000100000000000000000000000001000000000000000000000000000000010000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000000002'))
+    # tkhd tail: layer/alt group/volume/reserved, matrix, then width/height (16.16).
+    tkhd = full(b'tkhd', 0, 7, struct.pack('>IIIII', 0, 0, 1, 0, duration) + bytes(8) + struct.pack('>HHHH', 0, 0, 0, 0)
+                + bytes.fromhex('000100000000000000000000000000000001000000000000000000000000000040000000')
+                + struct.pack('>II', w << 16, h << 16))
+    mdhd = full(b'mdhd', 0, 0, struct.pack('>IIII', 0, 0, 1000, duration) + bytes.fromhex('55c40000'))
+    hdlr = bytes.fromhex('0000002168646c7200000000000000007069637400000000000000000000000000')
+    dinf = bytes.fromhex('0000002464696e660000001c6472656600000000000000010000000c75726c2000000001')
+    vmhd = bytes.fromhex('00000014766d6864000000010000000000000000')
+    entry = box(b'avc1', bytes(6) + struct.pack('>H', 1) + bytes(16) + struct.pack('>HH', w, h)
+                + bytes.fromhex('0048000000480000') + bytes(4) + struct.pack('>H', 1) + bytes(32)
+                + bytes.fromhex('0018ffff') + avcc(units))
+    stsd = full(b'stsd', 0, 0, struct.pack('>I', 1) + entry)
+    stts = full(b'stts', 0, 0, struct.pack('>III', 1, len(samples), delta))
+    stsc = full(b'stsc', 0, 0, struct.pack('>IIII', 1, 1, len(samples), 1))
+    stsz = full(b'stsz', 0, 0, struct.pack('>II', 0, len(samples)) + b''.join(struct.pack('>I', len(s)) for s in samples))
+
+    def build(offset):
+        stco = full(b'stco', 0, 0, struct.pack('>II', 1, offset))
+        stbl = box(b'stbl', stsd + stts + stsc + stsz + stco)
+        minf = box(b'minf', dinf + stbl + vmhd)
+        mdia = box(b'mdia', mdhd + hdlr + minf)
+        trak = box(b'trak', tkhd + mdia)
+        return ftyp + box(b'moov', mvhd + trak)
+
+    head = build(0)
+    head = build(len(head) + 8)
+    return head + box(b'mdat', b''.join(samples))
+
+
+def access_units(units):
+    """Slice NAL units grouped per picture (x264 writes one slice per picture here)."""
+    out = []
+    for u in units:
+        if u[0] & 31 in (1, 5):
+            out.append([u])
+    return out
+
+
+def corpus():
+    work = Path('.build/avc-sequences-inputs').resolve()
+    work.mkdir(parents=True, exist_ok=True)
+    source = Path('.build/x264-source').resolve()
+    if subprocess.check_output(['git', '-C', str(source), 'rev-parse', 'HEAD'], text=True).strip() != REVISION:
+        raise SystemExit('wrong native x264 revision')
+    x264 = Path('.build/x264-install/bin/x264').resolve()
+    cases = []
+    for (name, options), (w, h), pattern in [((n, o), size, p) for n, o in STREAMS.items() for size, p in [((64, 48), 4), ((50, 36), 3)]]:
+        raw = work / f'{name}-{w}x{h}.yuv'
+        out = work / f'{name}-{w}x{h}.264'
+        raw.write_bytes(b''.join(frames(w, h, FRAMES, pattern)))
+        subprocess.run([str(x264), '--quiet', '--no-progress', '--threads', '1', '--frames', str(FRAMES), '--input-res', f'{w}x{h}',
+                        '--input-csp', 'i420', '--qp', '26', *options, '-o', str(out), str(raw)], check=True)
+        units = nals(out.read_bytes())
+        aus = access_units(units)
+        data = sequence(w, h, units, aus)
+        cases.append((f'{name}-{w}x{h}', data))
+        # Truncated tracks: fewer samples than frames, and a missing last slice byte.
+        cases.append((f'{name}-{w}x{h}-short', sequence(w, h, units, aus[:3])))
+        broken = aus[:-1] + [[aus[-1][0][:-1]]]
+        cases.append((f'{name}-{w}x{h}-cut', sequence(w, h, units, broken)))
+    return cases
+
+
+def main():
+    for flag, value in [('--work', '.build/avc-sequences'), ('--output', '.build/avc-sequences-report.json'),
+                        ('--reference-build', '.build/reference-avc')]:
+        if flag not in sys.argv:
+            sys.argv += [flag, value]
+    test_sequence_reading.corpus = corpus
+    test_sequence_reading.__doc__ = __doc__
+    test_sequence_reading.main()
+
+
+if __name__ == '__main__':
+    main()

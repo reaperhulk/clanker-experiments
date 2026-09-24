@@ -20,6 +20,10 @@ Build configuration:
 - A `simd-detect` feature (both crates) enables fearless_simd's `std` feature for
   runtime CPU detection only; the crates themselves stay `no_std`.
 - Fixed a missing `Vec` import on the `no_std` diagnostic path in `mb16.rs`.
+- The `no_std` lock shims use the `spin` crate (mutex, rwlock, once) instead of
+  single-threaded `RefCell` stand-ins, so `Decoder` is `Send + Sync` without
+  `unsafe`; `std` stays off because it enables worker threads. `YuvFrame` is
+  re-exported from the decoder crate.
 
 libheif's only AVC decoder is its OpenH264 plugin, so these changes follow
 OpenH264 (the pinned test oracle) where it differs from the unmodified crate:
@@ -42,8 +46,15 @@ OpenH264 (the pinned test oracle) where it differs from the unmodified crate:
   when they pass the end of the slice data, as OpenH264's engine does
   (`ERR_CABAC_NO_BS_TO_READ`), including its five-byte initialization window and
   two-byte minimum. The unmodified crate zero-fills past the end and decodes.
-- CAVLC I slices end exactly at the RBSP stop bit and fail when a macroblock
-  reads past it (`WelsDecodeMbCavlcISlice`), instead of `more_rbsp_data()`.
+- CAVLC I, P and B slices end exactly at the RBSP stop bit and fail when a
+  macroblock reads past it (`WelsDecodeMbCavlc{I,P,B}Slice`), instead of
+  `more_rbsp_data()`; the check follows skip runs too. A P skip run past the
+  picture end fills the picture and stops; only B slices reject it.
+- A Bi-predicted 16x8 or 8x16 partition predicts as OpenH264's `GetInterBPred`
+  does: its destination pointer advances once per used list, so partition 0
+  comes out list 1 only and partition 1 list 0 only (the displaced list-1
+  write lands in the next macroblock's area, which that macroblock rewrites).
+  The upstream crate had removed this replication.
 - Invalid `coeff_token` patterns decode as TotalCoeff 0 consuming 8 bits
   (nC < 8) or 6 bits (nC >= 8), as OpenH264's VLC tables map them, rather than
   failing. The mapping was extracted from OpenH264's own tables for every 16-bit

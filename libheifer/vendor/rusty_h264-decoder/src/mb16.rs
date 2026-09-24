@@ -3331,9 +3331,9 @@ impl FrameDecoder {
                                 self.b_set_motion(
                                     mbx, mby, rx, ry, rw, rh, refi0, mv[0], refi1, mv[1],
                                 );
-                                // Proper spec bi-prediction (average of L0+L1). NOTE: the CAVLC
-                                // decode_b_mb replicates an openh264 bug here for a Bi 16×8/8×16
-                                // partition; our pixel gate is ffmpeg (spec-correct), so we do NOT.
+                                // libheifer: openh264's GetInterBPred mis-steps the destination
+                                // pointer for a Bi 16×8/8×16 partition (see bi_partition_refs).
+                                let (refi0, refi1) = bi_partition_refs(p, refi0, refi1);
                                 if rec_mode {
                                     self.b_mc_or_record(
                                         mbx,
@@ -4881,9 +4881,14 @@ impl FrameDecoder {
                 // A run past the picture end is a corrupt stream (ffmpeg errors
                 // here too); a run TO the end is legal. Silently clamping used
                 // to fill the remainder with skip MBs.
-                if skip_run > total - addr {
+                // libheifer: only B slices check the run against the remaining
+                // macroblocks (WelsDecodeMbCavlcBSlice); a P run past the picture
+                // end fills it and stops there.
+                if self.is_b && skip_run > total - addr {
                     return Err(MbError::Truncated);
                 }
+                let run_left = skip_run.saturating_sub(total - addr);
+                let skip_run = skip_run.min(total - addr);
                 // The run length is KNOWN here (CAVLC codes it as one syntax
                 // element). P runs: after the first skip commits (0,0), every
                 // later run MB is FORCED (0,0) by the zero-MV rule — process
@@ -4957,11 +4962,18 @@ impl FrameDecoder {
                         self.skip_zero_next = addr;
                     }
                 }
-                if addr >= total {
-                    break;
+                // libheifer: openh264 checks the stop bit after every skipped
+                // macroblock; nothing is read inside a run, so checking once at
+                // its end is equivalent. The slice ends when the run is used up
+                // exactly at the stop bit; reading past it is incomplete.
+                if skip_run > 0 {
+                    match r.bit_pos().cmp(&r.stop_pos()) {
+                        core::cmp::Ordering::Greater => return Err(MbError::Truncated),
+                        core::cmp::Ordering::Equal if run_left == 0 => break,
+                        _ => {}
+                    }
                 }
-                // A trailing skip run with no following macroblock ends the slice.
-                if skip_run > 0 && !r.more_rbsp_data() {
+                if addr >= total {
                     break;
                 }
             }
@@ -4986,22 +4998,15 @@ impl FrameDecoder {
             }
             addr += 1;
             mbx += 1;
-            if !is_p && !self.is_b {
-                // libheifer: openh264's I-slice rule (WelsDecodeMbCavlcISlice):
-                // the slice ends exactly at the stop bit, and reading past it
-                // is an incomplete bitstream.
-                let used = r.bit_pos();
-                if used == r.stop_pos() {
-                    break;
-                }
-                if used > r.stop_pos() {
-                    return Err(MbError::Truncated);
-                }
-                continue;
-            }
-            // CAVLC slice end: no more data after this macroblock.
-            if !r.more_rbsp_data() {
+            // libheifer: openh264's rule for I, P and B slices
+            // (WelsDecodeMbCavlc{I,P,B}Slice): the slice ends exactly at the stop
+            // bit, and reading past it is an incomplete bitstream.
+            let used = r.bit_pos();
+            if used == r.stop_pos() {
                 break;
+            }
+            if used > r.stop_pos() {
+                return Err(MbError::Truncated);
             }
         }
         self.edc_flush(); // slice end: no job crosses a slice boundary
@@ -7507,15 +7512,8 @@ impl FrameDecoder {
                 refi[p & 3][1],
                 mv[1],
             );
-            // Spec-correct bi-prediction (average of L0 and L1), matching the CABAC
-            // path. This used to replicate an openh264 bug for a Bi 16x8/8x16
-            // partition -- openh264 mis-handles the destination buffer there, so
-            // partition 0 came out List-1-only and partition 1 List-0-only. That was
-            // deliberate when openh264's h264dec WAS the conformance oracle, but the
-            // gate is ffmpeg now and the CABAC path already went spec-correct; the
-            // CAVLC path was simply left behind. Measured: mb_type 12..21 (every B
-            // 16x8/8x16 with at least one Bi partition) were 100% wrong vs ffmpeg,
-            // while 1..11 (no Bi partition) were only collaterally damaged.
+            // libheifer: openh264's Bi 16x8/8x16 prediction (see bi_partition_refs).
+            let (refi0, refi1) = bi_partition_refs(p, refi[p & 3][0], refi[p & 3][1]);
             self.b_mc_or_record(
                 mb_x,
                 mb_y,
@@ -7523,9 +7521,9 @@ impl FrameDecoder {
                 ry,
                 rw,
                 rh,
-                refi[p & 3][0],
+                refi0,
                 mv[0],
-                refi[p & 3][1],
+                refi1,
                 mv[1],
                 &mut pred_y,
                 &mut c_pred,
@@ -13263,6 +13261,21 @@ fn parse_intra_chroma_pred_mode_cabac(cab: &mut crate::cabac::Cabac, ctx_inc: us
 /// (top/left neighbours unavailable → their terms are 0). ctxIdxOffset 73 (luma) with 4
 /// z-order 8×8 bins whose ctxInc uses the EARLIER-decoded bits within this MB, then
 /// chroma bits at 77/81. Returns cbp: bits 0-3 = luma 8×8, bits 4-5 = chroma pattern.
+/// libheifer: the lists openh264 actually predicts from for a 16×8/8×16 partition.
+/// `GetInterBPred` advances the frame destination pointer once per used list, so
+/// for a Bi partition 0 list 1 overwrites list 0 in place and the average with
+/// the list-1 temp is list 1 alone; for partition 1 the list-1 half lands 8
+/// samples (or rows) past the partition, in the next macroblock's area (which
+/// that macroblock rewrites, or padding), leaving list 0 alone. Implicit weights
+/// sum to 64, so weighting a list with itself is the identity.
+fn bi_partition_refs(p: usize, refi0: i32, refi1: i32) -> (i32, i32) {
+    match (p, refi0 >= 0 && refi1 >= 0) {
+        (0, true) => (-1, refi1),
+        (_, true) => (refi0, -1),
+        _ => (refi0, refi1),
+    }
+}
+
 /// libheifer: monochrome `coded_block_pattern` me(v) mapping for intra macroblocks
 /// (spec Table 9-4, ChromaArrayType 0; openh264 `g_kuiIntra4x4CbpTable400`).
 fn read_cbp_intra_mono(r: &mut BitReader) -> Result<u32, MbError> {

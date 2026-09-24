@@ -144,6 +144,7 @@ fn bit_size(payload: &[u8]) -> i64 {
 
 #[derive(Clone)]
 struct Sps {
+    profile: u32,
     chroma_format: u32,
     scaling_4x4: [[u8; 16]; 6],
     scaling_8x8: [[u8; 64]; 2],
@@ -161,6 +162,7 @@ struct Sps {
 impl Default for Sps {
     fn default() -> Self {
         Sps {
+            profile: 0,
             chroma_format: 1,
             scaling_4x4: [[16; 16]; 6],
             scaling_8x8: [[16; 64]; 2],
@@ -421,7 +423,10 @@ fn parse_sps(r: &mut Bits) -> Result<SpsResult> {
     }
     let (max_fs, max_dpb) = level_limits(level, constraint[3]).ok_or(Rejected)?;
     let (max_fs_52, _) = level_limits(52, false).unwrap();
-    let mut sps = Sps::default();
+    let mut sps = Sps {
+        profile,
+        ..Sps::default()
+    };
     if matches!(profile, 83 | 86 | 100 | 110 | 122 | 244 | 44) {
         sps.chroma_format = r.ue()?;
         if sps.chroma_format > 1 {
@@ -585,7 +590,7 @@ fn parse_slice_header(
     nal_ref_idc: u8,
     sps_list: &[Option<Box<Sps>>],
     pps_list: &[Option<Pps>],
-) -> Result<()> {
+) -> Result<SliceInfo> {
     let first_mb = r.ue()?;
     if first_mb > 36863 {
         return Err(Rejected);
@@ -631,8 +636,9 @@ fn parse_slice_header(
             return Err(Rejected);
         }
     }
+    let mut poc_lsb = 0;
     if sps.poc_type == 0 {
-        r.u(sps.log2_max_poc_lsb)?;
+        poc_lsb = r.u(sps.log2_max_poc_lsb)? as i32;
         if pps.pic_order_present {
             r.se()?;
         }
@@ -727,7 +733,25 @@ fn parse_slice_header(
             }
         }
     }
-    Ok(())
+    Ok(SliceInfo {
+        slice_type,
+        poc_lsb,
+        profile: sps.profile,
+        idr,
+        sps_id: pps.sps_id,
+    })
+}
+
+/// What OpenH264's output reordering needs to know about a coded slice.
+#[derive(Clone, Copy, Debug)]
+pub struct SliceInfo {
+    /// 0 P, 1 B, 2 I.
+    pub slice_type: u32,
+    /// `pic_order_cnt_lsb` (0 unless `pic_order_cnt_type` is 0).
+    pub poc_lsb: i32,
+    pub profile: u32,
+    pub idr: bool,
+    pub sps_id: usize,
 }
 
 /// `ParsePredWeightedTable`.
@@ -874,106 +898,143 @@ pub struct Accepted {
     /// error; otherwise it is decoded by the flush call, where an incomplete
     /// picture yields no image and no error.
     pub constructed_early: bool,
+    /// The last accepted slice header.
+    pub last_slice: Option<SliceInfo>,
 }
 
-/// Decide what OpenH264 does with an Annex B stream: reject it, or accept NAL
-/// units for reconstruction.
-pub fn accept(stream: &[u8]) -> Result<Accepted> {
-    let mut sps: Vec<Option<Box<Sps>>> = vec![None; MAX_SPS_COUNT];
-    let mut pps: Vec<Option<Pps>> = vec![None; MAX_PPS_COUNT];
-    let (mut sps_exist, mut subsps_exist, mut pps_exist) = (false, false, false);
-    let mut accepted = Vec::new();
-    let mut pending_slices = false;
-    let mut constructed_early = false;
-    for mut unit in split(stream)? {
-        // ParseNalHeader: trailing zero bytes are not part of the unit.
-        while unit.last() == Some(&0) {
-            unit.pop();
-        }
-        // An empty unit reads its header from OpenH264's zeroed reserve bytes.
-        let header = unit.first().copied().unwrap_or(0);
-        if header & 0x80 != 0 {
-            return Err(Rejected);
-        }
-        let nal_ref_idc = (header >> 5) & 3;
-        let kind = header & 31;
-        if !matches!(kind, 6 | 7 | 9) && !sps_exist {
-            return Err(Rejected);
-        }
-        if !matches!(kind, 6 | 7 | 8 | 9 | 15) && !pps_exist {
-            return Err(Rejected);
-        }
-        let payload = unit.get(1..).unwrap_or(&[]);
-        if (matches!(kind, 1 | 5) && !(sps_exist || pps_exist))
-            || (matches!(kind, 14 | 20) && !(sps_exist || subsps_exist || pps_exist))
-        {
-            return Err(Rejected);
-        }
-        match kind {
-            1 | 5 => {
-                let mut r = Bits::new(payload, bit_size(payload))?;
-                parse_slice_header(&mut r, kind == 5, nal_ref_idc, &sps, &pps)?;
-                pending_slices = true;
-                accepted.push(unit);
-            }
-            14 | 20 => {
-                // Prefix NAL / coded slice extension header (SVC).
-                if payload.len() < 3 {
-                    return Err(Rejected);
-                }
-                // DecodeNalHeaderExt.
-                let quality_id = payload[1] & 0x0F;
-                let use_ref_base = payload[2] & 0x10 != 0;
-                if quality_id != 0 || use_ref_base {
-                    return Err(Rejected);
-                }
-                if kind == 14 && nal_ref_idc != 0 {
-                    // The prefix unit's own syntax is parsed with its result ignored,
-                    // but its bitstream must initialize.
-                    let rest = &payload[3..];
-                    Bits::new(rest, bit_size(rest))?;
-                }
-                if kind == 20 {
-                    // Extension slices need a stored subset SPS, which this
-                    // single-layer model never has: the slice header fails.
-                    return Err(Rejected);
-                }
-            }
-            7 | 15 if !payload.is_empty() => {
-                let mut r = Bits::new(payload, bit_size(payload))?;
-                match parse_sps(&mut r)? {
-                    SpsResult::Stored(id, parsed) => {
-                        sps[id] = Some(parsed);
-                        if kind == 7 {
-                            sps_exist = true;
-                        } else {
-                            subsps_exist = true;
-                        }
-                        if kind == 7 {
-                            accepted.push(unit);
-                        }
-                    }
-                    SpsResult::Ignored => {}
-                }
-            }
-            8 if !payload.is_empty() => {
-                let mut r = Bits::new(payload, bit_size(payload))?;
-                let (id, parsed) = parse_pps(&mut r, &sps)?;
-                pps[id] = Some(parsed);
-                pps_exist = true;
-                accepted.push(unit);
-            }
-            6 | 9 if pending_slices => {
-                constructed_early = true;
-                pending_slices = false;
-            }
-            _ => {}
+/// OpenH264's parameter-set state, which persists across decode calls.
+pub struct Syntax {
+    sps: Vec<Option<Box<Sps>>>,
+    pps: Vec<Option<Pps>>,
+    sps_exist: bool,
+    subsps_exist: bool,
+    pps_exist: bool,
+}
+
+impl Default for Syntax {
+    fn default() -> Self {
+        Syntax {
+            sps: vec![None; MAX_SPS_COUNT],
+            pps: vec![None; MAX_PPS_COUNT],
+            sps_exist: false,
+            subsps_exist: false,
+            pps_exist: false,
         }
     }
-    Ok(Accepted {
-        units: accepted,
-        constructed_early,
-    })
+}
+
+/// Decide what OpenH264 does with an Annex B stream given to a fresh decoder:
+/// reject it, or accept NAL units.
+pub fn accept(stream: &[u8]) -> Result<Accepted> {
+    Syntax::default().accept(stream)
+}
+
+impl Syntax {
+    /// One decode call: accept or reject the stream's NAL units, keeping the
+    /// parameter sets for later calls as OpenH264 does.
+    pub fn accept(&mut self, stream: &[u8]) -> Result<Accepted> {
+        let mut accepted = Vec::new();
+        let mut pending_slices = false;
+        let mut constructed_early = false;
+        let mut last_slice = None;
+        for mut unit in split(stream)? {
+            // ParseNalHeader: trailing zero bytes are not part of the unit.
+            while unit.last() == Some(&0) {
+                unit.pop();
+            }
+            // An empty unit reads its header from OpenH264's zeroed reserve bytes.
+            let header = unit.first().copied().unwrap_or(0);
+            if header & 0x80 != 0 {
+                return Err(Rejected);
+            }
+            let nal_ref_idc = (header >> 5) & 3;
+            let kind = header & 31;
+            if !matches!(kind, 6 | 7 | 9) && !self.sps_exist {
+                return Err(Rejected);
+            }
+            if !matches!(kind, 6 | 7 | 8 | 9 | 15) && !self.pps_exist {
+                return Err(Rejected);
+            }
+            let payload = unit.get(1..).unwrap_or(&[]);
+            if (matches!(kind, 1 | 5) && !(self.sps_exist || self.pps_exist))
+                || (matches!(kind, 14 | 20)
+                    && !(self.sps_exist || self.subsps_exist || self.pps_exist))
+            {
+                return Err(Rejected);
+            }
+            match kind {
+                1 | 5 => {
+                    let mut r = Bits::new(payload, bit_size(payload))?;
+                    last_slice = Some(parse_slice_header(
+                        &mut r,
+                        kind == 5,
+                        nal_ref_idc,
+                        &self.sps,
+                        &self.pps,
+                    )?);
+                    pending_slices = true;
+                    accepted.push(unit);
+                }
+                14 | 20 => {
+                    // Prefix NAL / coded slice extension header (SVC).
+                    if payload.len() < 3 {
+                        return Err(Rejected);
+                    }
+                    // DecodeNalHeaderExt.
+                    let quality_id = payload[1] & 0x0F;
+                    let use_ref_base = payload[2] & 0x10 != 0;
+                    if quality_id != 0 || use_ref_base {
+                        return Err(Rejected);
+                    }
+                    if kind == 14 && nal_ref_idc != 0 {
+                        // The prefix unit's own syntax is parsed with its result ignored,
+                        // but its bitstream must initialize.
+                        let rest = &payload[3..];
+                        Bits::new(rest, bit_size(rest))?;
+                    }
+                    if kind == 20 {
+                        // Extension slices need a stored subset SPS, which this
+                        // single-layer model never has: the slice header fails.
+                        return Err(Rejected);
+                    }
+                }
+                7 | 15 if !payload.is_empty() => {
+                    let mut r = Bits::new(payload, bit_size(payload))?;
+                    match parse_sps(&mut r)? {
+                        SpsResult::Stored(id, parsed) => {
+                            self.sps[id] = Some(parsed);
+                            if kind == 7 {
+                                self.sps_exist = true;
+                            } else {
+                                self.subsps_exist = true;
+                            }
+                            if kind == 7 {
+                                accepted.push(unit);
+                            }
+                        }
+                        SpsResult::Ignored => {}
+                    }
+                }
+                8 if !payload.is_empty() => {
+                    let mut r = Bits::new(payload, bit_size(payload))?;
+                    let (id, parsed) = parse_pps(&mut r, &self.sps)?;
+                    self.pps[id] = Some(parsed);
+                    self.pps_exist = true;
+                    accepted.push(unit);
+                }
+                6 | 9 if pending_slices => {
+                    constructed_early = true;
+                    pending_slices = false;
+                }
+                _ => {}
+            }
+        }
+        Ok(Accepted {
+            units: accepted,
+            constructed_early,
+            last_slice,
+        })
+    }
 }
 
 #[cfg(test)]

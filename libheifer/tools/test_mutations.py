@@ -343,7 +343,7 @@ MUTATIONS = [
     ("avc_decoder_error_text", "src/avc.rs", 'plugin_error(0, "OpenH264 decoder error")', 'plugin_error(0, "OpenH264 decoding error")', "avc"),
     ("avc_cabac_end_of_data", "vendor/rusty_h264-decoder/src/cabac.rs", "self.over || consumed > self.end_bits\n", "self.over || consumed > self.end_bits + 8\n", "avc_errors"),
     ("avc_intra_mode_validity", "vendor/rusty_h264-decoder/src/mb16.rs", "            4..=6 => top && left && self.block_corner_ok(bx, by, top, left),\n            _ => false,\n        };\n        self.intra_invalid |= !ok;", "            4..=6 => top && left && self.block_corner_ok(bx, by, top, left),\n            _ => false,\n        };\n        let _ = ok;", "avc_errors"),
-    ("avc_cavlc_end_of_slice", "vendor/rusty_h264-decoder/src/mb16.rs", "                if used > r.stop_pos() {", "                if used > r.stop_pos() + 8 {", "avc_errors"),
+    ("avc_cavlc_end_of_slice", "vendor/rusty_h264-decoder/src/mb16.rs", "            if used > r.stop_pos() {", "            if used > r.stop_pos() + 8 {", "avc_errors"),
     ("avc_coeff_token_fallback", "vendor/rusty_h264-common/src/cavlc.rs", "c.skip(if NC_TABLE[(nc as usize).min(16)] == 3 { 6 } else { 8 })?;", "c.skip(if NC_TABLE[(nc as usize).min(16)] == 3 { 6 } else { 7 })?;", "avc_errors"),
     ("avc_level_gate", "src/avc_openh264.rs", "let (max_fs, max_dpb) = level_limits(level, constraint[3]).ok_or(Rejected)?;", "let (max_fs, max_dpb) = level_limits(level, constraint[3]).unwrap_or((36864, 184320));", "avc_errors"),
     ("avc_hrd_return_code", "src/avc_openh264.rs", "        Err(ReadError(code)) => code,", "        Err(ReadError(_)) => 0,", "avc_errors"),
@@ -357,6 +357,12 @@ MUTATIONS = [
     ("decoder_tie_order", "crates/capi/src/plugin_registry.rs", "        DecoderSource::Builtin(format) => builtin_decoder(format) as usize,", "        DecoderSource::Builtin(format) => format as usize,", "avc_plugins"),
     ("builtin_decoder_cache", "src/decoding.rs", "                    .store(true, std::sync::atomic::Ordering::Relaxed);", "                    .store(false, std::sync::atomic::Ordering::Relaxed);", "avc_plugins"),
     ("avc_plugin_headers", "src/decoding.rs", "                result = config.header_nals();", "                let _ = config;", "avc_plugins"),
+    ("avc_bi_partition", "vendor/rusty_h264-decoder/src/mb16.rs", "        (0, true) => (-1, refi1),", "        (0, true) => (refi0, refi1),", "avc_sequences"),
+    ("avc_sequence_no_reorder", "src/avc.rs", "if !self.has_b && self.list.len() > 1 {", "if !self.has_b {", "avc_sequences"),
+    ("avc_sequence_ready", "src/avc.rs", "self.last_written_poc.is_some_and(|w| poc - w <= 1)", "self.last_written_poc.is_some_and(|w| poc - w <= 2)", "avc_sequences"),
+    ("avc_sequence_baseline", "src/avc.rs", "if matches!(slice.profile, 66 | 83) {", "if matches!(slice.profile, 83) {", "avc_sequences"),
+    ("avc_sequence_headers", "src/sequences.rs", "let mut data = if sample_idx == 0 {", "let mut data = if sample_idx == 1 {", "avc_sequences"),
+    ("avc_cavlc_p_skip_run", "vendor/rusty_h264-decoder/src/mb16.rs", "if self.is_b && skip_run > total - addr {", "if skip_run > total - addr {", "avc_sequences"),
     ("error_field_order", "crates/capi/src/lib.rs", "pub code: c_int,\n    pub subcode: c_int,", "pub subcode: c_int,\n    pub code: c_int,", "abi"),
 ]
 
@@ -396,7 +402,7 @@ def main():
     def oracle(suite):
         if suite.startswith("jpeg2000_"):
             return str(Path(args.jpeg2000_reference_build).resolve())
-        if suite in ("avc", "avc_errors", "avc_plugins", "avc_limits"):
+        if suite in ("avc", "avc_errors", "avc_plugins", "avc_limits", "avc_sequences"):
             return str(Path(args.avc_reference_build).resolve())
         if suite.startswith("jpeg_"):
             return str(Path(args.jpeg_reference_build).resolve())

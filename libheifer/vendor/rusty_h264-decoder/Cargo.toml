@@ -50,6 +50,11 @@ simd-detect = ["rusty_h264-common/simd-detect"]
 name = "rusty_h264_decoder"
 path = "src/lib.rs"
 
+[dependencies.spin]
+version = "0.12"
+default-features = false
+features = ["mutex", "spin_mutex", "rwlock", "once"]
+
 [dependencies.rusty_h264-common]
 version = "0.16.0"
 default-features = false
