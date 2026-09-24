@@ -426,7 +426,8 @@ def main():
             return str(Path(args.jpeg2000_reference_build).resolve())
         if suite in ("avc", "avc_errors", "avc_plugins", "avc_limits", "avc_sequences", "plugin_sequences"):
             return str(Path(args.avc_reference_build).resolve())
-        if suite.startswith("jpeg_"):
+        # The JPEG oracle has libheif's JPEG encoder, like the candidate.
+        if suite.startswith("jpeg_") or suite == "other_encoding":
             return str(Path(args.jpeg_reference_build).resolve())
         if suite in ('av1', 'av1_limits', 'mini_reader'):
             return str(Path(args.av1_reference_build).resolve())
