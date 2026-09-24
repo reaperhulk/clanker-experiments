@@ -111,8 +111,8 @@ MUTATIONS = [
     ('mini_diffuse_white', 'src/mini.rs', 'data.extend([0; 4]); // ndwt is a version-zero FullBox.', '// deliberately omit the FullBox header', 'mini_properties'),
     ('mini_context_table_limit', 'src/mini.rs', 'max_items: 0,', 'max_items: limits.max_items,', 'av1_limits'),
     ('mini_nclx_range', 'src/mini.rs', 'nclx.push(u8::from(full_range) << 7);', 'nclx.push(u8::from(!full_range) << 7);', 'mini'),
-    ('plugin_decode_threads', 'crates/capi/src/plugin_decoding.rs', 'num_threads: options.num_codec_threads,', 'num_threads: options.num_codec_threads + 1,', 'plugin_decoding'),
-    ('plugin_decode_strict', 'crates/capi/src/plugin_decoding.rs', 'strict_decoding: options.plugin_strict,', 'strict_decoding: i32::from(options.strict),', 'plugin_decoding'),
+    ('plugin_decode_threads', 'crates/capi/src/plugin_decoding.rs', '\n                num_threads: options.num_codec_threads,', '\n                num_threads: options.num_codec_threads + 1,', 'plugin_decoding'),
+    ('plugin_decode_strict', 'crates/capi/src/plugin_decoding.rs', '\n                strict_decoding: options.plugin_strict,', '\n                strict_decoding: i32::from(options.strict),', 'plugin_decoding'),
     ('plugin_decode_poll_limit', 'crates/capi/src/plugin_decoding.rs', 'for _ in 0..50 {', 'for _ in 0..49 {', 'plugin_decoding'),
     ('plugin_decode_release', 'crates/capi/src/plugin_decoding.rs', 'unsafe { f(self.state) }', 'let _ = f;', 'plugin_decoding'),
     ('plugin_decode_error_unpack', 'crates/capi/src/plugin_decoding.rs', 'if unpack && let Some(rest) = detail.strip_prefix(code) {', 'if !unpack && let Some(rest) = detail.strip_prefix(code) {', 'plugin_decoding'),
@@ -363,6 +363,11 @@ MUTATIONS = [
     ("avc_sequence_baseline", "src/avc.rs", "if matches!(slice.profile, 66 | 83) {", "if matches!(slice.profile, 83) {", "avc_sequences"),
     ("avc_sequence_headers", "src/sequences.rs", "let mut data = if sample_idx == 0 {", "let mut data = if sample_idx == 1 {", "avc_sequences"),
     ("sequence_decoder_per_description", "src/sequences.rs", "if previous.is_some_and(|p| p != row[2]) {", "if previous.is_some() {", "avc_sequences"),
+    ("plugin_sequence_push_count", "src/sequences.rs", "                state.next_decoded += 1;\n                select_group(slot, format, &options)?;", "                select_group(slot, format, &options)?;\n                state.next_decoded += 1;", "plugin_sequences"),
+    ("plugin_sequence_failed_instance", "crates/capi/src/plugin_decoding.rs", "            if !instance.state.is_null() {", "            if err.code == 0 && !instance.state.is_null() {", "plugin_sequences"),
+    ("plugin_sequence_flush_without_instance", "crates/capi/src/plugin_decoding.rs", "            let state = self.instance.as_ref().map_or(ptr::null_mut(), |i| i.state);\n            let err = unsafe { f(state) };", "            let Some(instance) = &self.instance else {\n                return Ok(());\n            };\n            let err = unsafe { f(instance.state) };", "plugin_sequences"),
+    ("plugin_sequence_user_data", "src/sequences.rs", "stream.push(&data, sample_idx as u64, &options)?", "stream.push(&data, 0, &options)?", "plugin_sequences"),
+    ("sequence_frame_size", "src/decoding.rs", "    if !sequence_frame\n        && expected.0 != 0", "    if expected.0 != 0", "plugin_sequences"),
     ("avc_cavlc_p_skip_run", "vendor/rusty_h264-decoder/src/mb16.rs", "if self.is_b && skip_run > total - addr {", "if skip_run > total - addr {", "avc_sequences"),
     ("error_field_order", "crates/capi/src/lib.rs", "pub code: c_int,\n    pub subcode: c_int,", "pub subcode: c_int,\n    pub code: c_int,", "abi"),
 ]
@@ -403,7 +408,7 @@ def main():
     def oracle(suite):
         if suite.startswith("jpeg2000_"):
             return str(Path(args.jpeg2000_reference_build).resolve())
-        if suite in ("avc", "avc_errors", "avc_plugins", "avc_limits", "avc_sequences"):
+        if suite in ("avc", "avc_errors", "avc_plugins", "avc_limits", "avc_sequences", "plugin_sequences"):
             return str(Path(args.avc_reference_build).resolve())
         if suite.startswith("jpeg_"):
             return str(Path(args.jpeg_reference_build).resolve())

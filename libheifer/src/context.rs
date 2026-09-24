@@ -583,7 +583,6 @@ pub struct ImageInfo {
     pub(crate) builtin_decoder: std::sync::atomic::AtomicBool,
     /// A frame decoded by a stateful sequence decoder, used in place of the
     /// codec for this (temporary sample) item.
-    #[cfg(feature = "avc")]
     pub(crate) predecoded: std::sync::Mutex<Option<crate::image::Image>>,
     pub gimi_content_id: std::sync::Mutex<Vec<u8>>,
     pub(crate) projection: std::sync::atomic::AtomicI32,
@@ -635,7 +634,6 @@ impl ImageInfo {
         Self {
             item_decoder: std::sync::Mutex::new(None),
             builtin_decoder: std::sync::atomic::AtomicBool::new(false),
-            #[cfg(feature = "avc")]
             predecoded: std::sync::Mutex::new(None),
             gimi_content_id: std::sync::Mutex::new(Vec::new()),
             projection: std::sync::atomic::AtomicI32::new(crate::omaf::FLAT),

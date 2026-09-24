@@ -3,7 +3,7 @@
 use crate::{HeifError, context::SharedContext, plugin_registry::field, plugin_types::*};
 use libheifer::{
     context::{ContextError, Document},
-    decoding::{DecodeOptions, DecoderProvider, ItemDecoder},
+    decoding::{DecodeOptions, DecoderProvider, ItemDecoder, SequenceStream},
     image::Image,
 };
 use std::{
@@ -82,7 +82,144 @@ impl Drop for Instance {
         }
     }
 }
+/// libheif's sequence `Decoder` over a registered plugin: the instance is
+/// created lazily by the first push and freed with the track state.
+struct Sequence {
+    plugin: *const DecoderPlugin,
+    parent: Weak<SharedContext>,
+    format: i32,
+    instance: Option<Instance>,
+}
+// SAFETY: as for `Decoder`; the plugin instance is only used under the
+// track's lock.
+unsafe impl Send for Sequence {}
+impl Sequence {
+    fn limits(&self) -> Result<*const crate::security::SecurityLimits, ContextError> {
+        let parent = self
+            .parent
+            .upgrade()
+            .ok_or_else(|| loading("Decoder context is no longer available."))?;
+        Ok(parent.limits.pointer())
+    }
+}
+impl SequenceStream for Sequence {
+    fn push(
+        &mut self,
+        data: &[u8],
+        user_data: u64,
+        options: &DecodeOptions,
+    ) -> Result<(), ContextError> {
+        let p = self.plugin;
+        let version = field!(p, plugin_api_version);
+        if self.instance.is_none() {
+            let Some(old_new) = field!(p, new_decoder) else {
+                return Err(loading("Cannot decode with a dummy decoder plugin."));
+            };
+            let mut instance = Instance {
+                plugin: p,
+                state: ptr::null_mut(),
+            };
+            let err = if version >= 5 {
+                let Some(new) = field!(p, new_decoder2) else {
+                    return Err(loading("Cannot decode with a dummy decoder plugin."));
+                };
+                let opts = DecoderPluginOptions {
+                    format: self.format,
+                    strict_decoding: options.plugin_strict,
+                    num_threads: options.num_codec_threads,
+                    limits: self.limits()?,
+                };
+                unsafe { new(&mut instance.state, &opts) }
+            } else {
+                unsafe { old_new(&mut instance.state) }
+            };
+            if err.code == 0
+                && (2..5).contains(&version)
+                && let Some(f) = field!(p, set_strict_decoding)
+            {
+                unsafe { f(instance.state, options.plugin_strict) };
+            }
+            // libheif keeps whatever instance the plugin wrote, even on failure.
+            if !instance.state.is_null() {
+                self.instance = Some(instance);
+            }
+            if err.code != 0 {
+                return Err(callback_error(err, false));
+            }
+        }
+        let state = self.instance.as_ref().map_or(ptr::null_mut(), |i| i.state);
+        if data.is_empty() {
+            return Err(ContextError::invalid(
+                0,
+                "Unspecified: Input with empty data extent.",
+            ));
+        }
+        let err = if version >= 5
+            && let Some(f) = field!(p, push_data2)
+        {
+            unsafe { f(state, data.as_ptr().cast(), data.len(), user_data as usize) }
+        } else if let Some(f) = field!(p, push_data) {
+            unsafe { f(state, data.as_ptr().cast(), data.len()) }
+        } else {
+            return Err(loading("Cannot decode with a dummy decoder plugin."));
+        };
+        if err.code != 0 {
+            return Err(callback_error(err, false));
+        }
+        Ok(())
+    }
+    fn flush(&mut self) -> Result<(), ContextError> {
+        let p = self.plugin;
+        if field!(p, plugin_api_version) >= 5
+            && let Some(f) = field!(p, flush_data)
+        {
+            let state = self.instance.as_ref().map_or(ptr::null_mut(), |i| i.state);
+            let err = unsafe { f(state) };
+            if err.code != 0 {
+                return Err(callback_error(err, true));
+            }
+        }
+        Ok(())
+    }
+    fn next(&mut self, user_data: &mut u64) -> Result<Option<Image>, ContextError> {
+        let Some(instance) = &self.instance else {
+            return Ok(None);
+        };
+        let p = self.plugin;
+        let version = field!(p, plugin_api_version);
+        let limits = self.limits()?;
+        let mut image = ptr::null_mut();
+        let err = if version >= 5
+            && let Some(f) = field!(p, decode_next_image2)
+        {
+            let mut user = *user_data as usize;
+            let err = unsafe { f(instance.state, &mut image, &mut user, limits) };
+            *user_data = user as u64;
+            err
+        } else if version >= 4
+            && let Some(f) = field!(p, decode_next_image)
+        {
+            unsafe { f(instance.state, &mut image, limits) }
+        } else if let Some(f) = field!(p, decode_image) {
+            unsafe { f(instance.state, &mut image) }
+        } else {
+            return Err(loading("Cannot decode with a dummy decoder plugin."));
+        };
+        if err.code != 0 {
+            return Err(callback_error(err, true));
+        }
+        Ok((!image.is_null()).then(|| *unsafe { Box::from_raw(image) }))
+    }
+}
 impl ItemDecoder for Decoder {
+    fn sequence(&self) -> Option<Box<dyn SequenceStream>> {
+        Some(Box::new(Sequence {
+            plugin: self.plugin,
+            parent: self.parent.clone(),
+            format: self.format,
+            instance: None,
+        }))
+    }
     fn validate(&self) -> Result<(), ContextError> {
         if field!(self.plugin, plugin_api_version) < 5 {
             Err(loading("Decoder plugin needs to be at least version 5."))

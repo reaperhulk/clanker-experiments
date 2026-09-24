@@ -75,14 +75,6 @@ pub fn decode(
     id: u32,
     options: &DecodeOptions,
 ) -> Result<Image, ContextError> {
-    if let Some(image) = document.images[&id]
-        .predecoded
-        .lock()
-        .unwrap_or_else(std::sync::PoisonError::into_inner)
-        .take()
-    {
-        return Ok(image);
-    }
     if options.decoder_id.is_some_and(|id| id != b"rusty_h264") {
         return Err(ContextError::new(
             11,

@@ -654,11 +654,21 @@ pub unsafe extern "C" fn heif_track_decode_next_image(
     let mut opts = crate::decoding::DecodingOptions::default();
     unsafe { crate::decoding::heif_decoding_options_copy(&mut opts, options) };
     let state = lock(&track.shared);
-    // AVC tracks select their decoder as libheif's track decoding does.
+    // Coded tracks select their decoder plugin as libheif's track decoding does.
     let provider = crate::plugin_decoding::Provider(Arc::downgrade(&track.shared));
-    let avc = t.entry_kind == u32::from_be_bytes(*b"avc1");
+    let coded = matches!(
+        &t.entry_kind.to_be_bytes(),
+        b"avc1" | b"hvc1" | b"hev1" | b"av01"
+    );
     let core = libheifer::decoding::DecodeOptions {
-        decoder_provider: avc.then_some(&provider as &dyn libheifer::decoding::DecoderProvider),
+        decoder_provider: coded.then_some(&provider as &dyn libheifer::decoding::DecoderProvider),
+        decoder_id: if opts.decoder_id.is_null() {
+            None
+        } else {
+            Some(unsafe { std::ffi::CStr::from_ptr(opts.decoder_id) }.to_bytes())
+        },
+        plugin_strict: i32::from(opts.strict_decoding),
+        num_codec_threads: opts.num_codec_threads,
         ignore_transformations: opts.ignore_transformations != 0,
         strict: opts.strict_decoding != 0,
         profile_passthrough: opts.output_image_nclx_profile_passthrough != 0,

@@ -37,6 +37,24 @@ pub trait ItemDecoder: Send + Sync {
         id: u32,
         options: &DecodeOptions,
     ) -> Result<Image, ContextError>;
+    /// A sequence decoder with this selection, when the decoder supports it.
+    fn sequence(&self) -> Option<Box<dyn SequenceStream>> {
+        None
+    }
+}
+/// A registered decoder driving an image-sequence track through libheif's
+/// push/poll/flush interface. The decoder instance is created by the first push.
+pub trait SequenceStream: Send {
+    /// Pushes one sample (preceded by configuration units when it carries them).
+    fn push(
+        &mut self,
+        data: &[u8],
+        user_data: u64,
+        options: &DecodeOptions,
+    ) -> Result<(), ContextError>;
+    fn flush(&mut self) -> Result<(), ContextError>;
+    /// Polls for a decoded frame; the decoder may write its user data.
+    fn next(&mut self, user_data: &mut u64) -> Result<Option<Image>, ContextError>;
 }
 pub trait DecoderProvider: Sync {
     fn select(
@@ -400,7 +418,16 @@ fn decode_native_mode(
         };
         options = &builtin_options;
     }
-    let mut image = if let Some(decoder) = external {
+    // A sequence frame decoded by the track's stateful decoder.
+    let predecoded = info
+        .predecoded
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
+        .take();
+    let sequence_frame = predecoded.is_some();
+    let mut image = if let Some(image) = predecoded {
+        image
+    } else if let Some(decoder) = external {
         decoder.decode(document, id, options)?
     } else {
         match &container.items[&id].kind {
@@ -595,7 +622,12 @@ fn decode_native_mode(
     } else {
         info.ispe
     };
-    if expected.0 != 0 && expected.1 != 0 && (image.width, image.height) != expected {
+    // libheif does not compare sequence frames with the track dimensions.
+    if !sequence_frame
+        && expected.0 != 0
+        && expected.1 != 0
+        && (image.width, image.height) != expected
+    {
         return Err(ContextError::invalid(
             129,
             "Invalid image size: Decoded image does not have the size signaled in the file.",

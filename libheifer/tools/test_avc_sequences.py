@@ -66,6 +66,11 @@ def sequence(w, h, units, frame_units, delta=40, repeat=None, per_chunk=None, al
     `alternate` assigns to two identical sample descriptions in turn.
     """
     samples = [b''.join(struct.pack('>I', len(u)) + u for u in au) for au in frame_units]
+    return track_file(w, h, b'avc1', avcc(units), samples, delta, repeat, per_chunk, alternate)
+
+
+def track_file(w, h, kind, config, samples, delta=40, repeat=None, per_chunk=None, alternate=False):
+    """A HEIF image sequence with one visual track of `kind` samples and a configuration box."""
     duration = delta * len(samples)
     movie = duration if repeat is None else int(duration * repeat)
     ftyp = box(b'ftyp', b'msf1' + b'\0\0\0\0' + b'msf1isom')
@@ -79,9 +84,9 @@ def sequence(w, h, units, frame_units, delta=40, repeat=None, per_chunk=None, al
     hdlr = bytes.fromhex('0000002168646c7200000000000000007069637400000000000000000000000000')
     dinf = bytes.fromhex('0000002464696e660000001c6472656600000000000000010000000c75726c2000000001')
     vmhd = bytes.fromhex('00000014766d6864000000010000000000000000')
-    entry = box(b'avc1', bytes(6) + struct.pack('>H', 1) + bytes(16) + struct.pack('>HH', w, h)
+    entry = box(kind, bytes(6) + struct.pack('>H', 1) + bytes(16) + struct.pack('>HH', w, h)
                 + bytes.fromhex('0048000000480000') + bytes(4) + struct.pack('>H', 1) + bytes(32)
-                + bytes.fromhex('0018ffff') + avcc(units))
+                + bytes.fromhex('0018ffff') + config)
     stsd = full(b'stsd', 0, 0, struct.pack('>I', 2 if alternate else 1) + entry * (2 if alternate else 1))
     stts = full(b'stts', 0, 0, struct.pack('>III', 1, len(samples), delta))
     per = per_chunk or len(samples)

@@ -5,6 +5,7 @@ from pathlib import Path
 from test_context import corpus,box,full
 from item_fixtures import item_file,ispe
 from test_decode_overlay import overlay
+CLIENT=Path('tests/plugin_decoding.c')
 
 def cases():
     tests=[]
@@ -57,7 +58,7 @@ def cases():
     return tests
 
 def main():
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--reference-build',required=True);p.add_argument('--candidate',default='target/release/libheifer.so');p.add_argument('--work',default='.build/plugin-decoding');p.add_argument('--output',default='.build/plugin-decoding-report.json');p.add_argument('--sanitize',action='store_true');p.add_argument('--no-leak-check',action='store_true');a=p.parse_args();Path(a.output).unlink(missing_ok=True);work=Path(a.work).resolve();inc=work/'include/libheif';inc.mkdir(parents=True,exist_ok=True);ref=Path(a.reference_build).resolve();(inc/'heif_version.h').write_bytes((ref/'libheif/heif_version.h').read_bytes());tests=cases();payload=b''.join(data for _,data in tests);libs={'reference':ref/'libheif/libheif.so','candidate':Path(a.candidate).resolve()};hashes={k:hashlib.sha256(v.read_bytes()).hexdigest() for k,v in libs.items()};clients=[Path('tests/plugin_decoding.c')];lines={};env=dict(os.environ)
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--reference-build',required=True);p.add_argument('--candidate',default='target/release/libheifer.so');p.add_argument('--work',default='.build/plugin-decoding');p.add_argument('--output',default='.build/plugin-decoding-report.json');p.add_argument('--sanitize',action='store_true');p.add_argument('--no-leak-check',action='store_true');a=p.parse_args();Path(a.output).unlink(missing_ok=True);work=Path(a.work).resolve();inc=work/'include/libheif';inc.mkdir(parents=True,exist_ok=True);ref=Path(a.reference_build).resolve();(inc/'heif_version.h').write_bytes((ref/'libheif/heif_version.h').read_bytes());tests=cases();payload=b''.join(data for _,data in tests);libs={'reference':ref/'libheif/libheif.so','candidate':Path(a.candidate).resolve()};hashes={k:hashlib.sha256(v.read_bytes()).hexdigest() for k,v in libs.items()};clients=[CLIENT];lines={};env=dict(os.environ)
     if a.sanitize:env['UBSAN_OPTIONS']='halt_on_error=1'
     if a.no_leak_check:env['ASAN_OPTIONS']='detect_leaks=0'
     for name,lib in libs.items():
