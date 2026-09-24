@@ -6,8 +6,8 @@
   "leak_check": false,
   "client_sha256": "c7cb0444757eb1d323d165c8e0803e2ffff7aabc0c0cbd247c18342dd830311a",
   "reference_sha256": "44e009fcef37fe6609c0c4ba59715b3285cfef62c79742f20c679cc5f856f000",
-  "candidate_sha256": "9eb49f26d2578ba716b39eb7573741b31a7fe56c79a2d530670f866c85fd50d6",
+  "candidate_sha256": "bb4ae2da2320d07d2db460bd6728d9681dad9cfff9ab3697671e89a7f133201f",
   "full_report": "avc-decode-errors-no-codecs-full.json.gz",
-  "full_report_sha256": "76745bf44b71982574ff74e1dc7e6b04c1e5269e30851438c8234b89fbda45a4",
-  "compressed_report_sha256": "433b78a6dd170523c5bdc43964bdec7413d41ae1756a8a0bac2c1f9834628ddc"
+  "full_report_sha256": "cba987c5b41ee89d06276078269b06687745b0e62a340dc463dfb657c3867943",
+  "compressed_report_sha256": "c8ab52742fba30620ea755fb370e349ffc0d2a65dbebdd44e577756ad324f8cc"
 }

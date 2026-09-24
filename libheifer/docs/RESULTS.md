@@ -1287,13 +1287,13 @@ implementation is pure Rust AVC decoding with a pinned OpenH264 test oracle.
 ## Built-in Rust AVC decoding
 
 Oracle: libheif 1.23.4 with its OpenH264 plugin and OpenH264 v2.6.0 (scalar).
-Fixtures: 429 x264 (b35605ac, no assembly) streams in `tests/fixtures/avc-generated.json`.
+Fixtures: 457 x264 (b35605ac, no assembly) streams in `tests/fixtures/avc-generated.json`.
 
 | Suite | Cases | Mismatches | Report |
 |---|---|---|---|
-| test_avc (normal) | 10,925 | 0 | results/avc-decode-normal-report.json |
-| test_avc (ASan/UBSan client, local leak check off under ptrace) | 10,925 | 0 | results/avc-decode-sanitized-report.json |
-| test_avc (codec-free candidate vs HEVC-only oracle) | 10,925 | 0 | results/avc-decode-no-codecs-report.json |
+| test_avc (normal) | 11,625 | 0 | results/avc-decode-normal-report.json |
+| test_avc (ASan/UBSan client, local leak check off under ptrace) | 11,625 | 0 | results/avc-decode-sanitized-report.json |
+| test_avc (codec-free candidate vs HEVC-only oracle) | 11,625 | 0 | results/avc-decode-no-codecs-report.json |
 | test_avc_errors (normal) | 37,047 | 0 | results/avc-decode-errors-normal-report.json |
 | test_avc_errors (ASan/UBSan client) | 37,047 | 0 | results/avc-decode-errors-sanitized-report.json |
 | test_avc_errors (codec-free) | 37,047 | 0 | results/avc-decode-errors-no-codecs-report.json |
@@ -1352,7 +1352,7 @@ libheifer:
 
 Raw samples: `results/avc-decode-benchmark-openh264-{asm,scalar}.json`. These
 are single-machine, single-image decode timings, not whole-library performance
-claims. CABAC I_PCM, multi-access-unit input, AVC sequences, encoding and the
+claims. Multi-access-unit input, AVC sequences, encoding and the
 remaining plan gates stay open. All 465 functions remain partial; strict
 completion remains false.
 
@@ -1394,3 +1394,24 @@ mutation survived, because the padded limit only binds when the coded picture
 exceeds the declared ispe. Items whose ispe is just below the coded size now
 detect it (24 mismatches); both mutation reports are retained. All 2,527 cases
 match in normal, sanitizer-client and codec-free builds; 319 mutations total.
+
+### I_PCM macroblocks
+
+x264 emits I_PCM under rate-distortion analysis at low QP with psy-RD off. There
+are 28 new streams: all four profiles at QP 1, 6 and 10, with a noise pattern
+and an alternating noisy/smooth macroblock pattern, plus cropped and
+monochrome variants. They cover all-PCM pictures, CABAC re-initialization
+after PCM, and intra prediction and deblocking next to PCM macroblocks. Every
+CABAC and CAVLC colour stream matched on the first run. The monochrome CAVLC
+stream differed in 23 cases. OpenH264 stores all 384 I_PCM bytes even without
+chroma. Its chroma planes start at 128 and are output as reconstructed. It
+skips the chroma mode check, so its DC chroma prediction assumes both
+neighbours and reads 128 outside the picture. The vendored decoder now does
+the same. All 11,625 valid-stream and 37,047 malformed-stream cases match.
+
+The existing `avc_mono_chroma` mutation targeted the old flat-128 output, which
+no longer exists. Moved to the initial plane fill, it survived: DC prediction
+from the 128 border overwrites every predicted macroblock, so that mutant is
+equivalent (`results/avc-decode-mutations-pcm-initial-report.json`). Anchored
+on the border value, it is detected (1,702 mismatches). The new
+`avc_mono_chroma_dc` mutation is detected (23); 320 mutations total.

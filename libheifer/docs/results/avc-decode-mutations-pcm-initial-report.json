@@ -1,0 +1,29 @@
+{
+  "scope": "2 deliberate defects; not comprehensive mutation coverage",
+  "shard": null,
+  "mutations": [
+    {
+      "mutation": "avc_mono_chroma",
+      "suite": "avc",
+      "source": "vendor/rusty_h264-decoder/src/mb16.rs",
+      "before": "            self.rec_u.fill(128);",
+      "after": "            self.rec_u.fill(127);",
+      "candidate_sha256": "2b7642278d49ee7316fb8a5b6364e97ee7d45dcacb6c6ec2f3c1cba961ae6460",
+      "mismatches": 0,
+      "process_failures": [],
+      "detected": false
+    },
+    {
+      "mutation": "avc_mono_chroma_dc",
+      "suite": "avc",
+      "source": "vendor/rusty_h264-decoder/src/mb16.rs",
+      "before": "chroma8x8_pred(0, true, true, &ctop, &cleft, ccorner)",
+      "after": "chroma8x8_pred(0, cy > 0, cx > 0, &ctop, &cleft, ccorner)",
+      "candidate_sha256": "42f4d71d367900890098007ef8c888c322945410bc4cace8195f5335b6f9a1c6",
+      "mismatches": 23,
+      "process_failures": [],
+      "detected": true
+    }
+  ],
+  "all_detected": false
+}

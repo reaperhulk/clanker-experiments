@@ -716,5 +716,9 @@ See `docs/RESULTS.md`.
 AVC pixel and memory limits at read and decode match on 2,527 cases, including
 items whose declared ispe is smaller than the coded picture.
 
-Next: CABAC I_PCM and AVC sequences, then remaining plan gates. All 465 functions remain partial; strict completion
+I_PCM streams in both entropy modes match, after reproducing OpenH264's
+monochrome chroma behaviour: I_PCM chroma bytes are kept, and DC prediction
+assumes both neighbours.
+
+Next: AVC sequences, then remaining plan gates. All 465 functions remain partial; strict completion
 remains false.

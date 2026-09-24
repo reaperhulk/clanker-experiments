@@ -33,7 +33,10 @@ in the vendored trees, and pins every reviewed build script by hash.
   `tests/fixtures/avc-generated.json`. Profiles, sizes and cropping, QP sweeps,
   scaling matrices, deblocking parameters, slices, presets, encoder options and
   monochrome streams are covered. Streams OpenH264 rejects (4:2:2, 4:4:4, 10-bit,
-  lossless, interlaced, extended CAVLC escapes) are kept for error parity.
+  lossless, interlaced, extended CAVLC escapes) are kept for error parity. I_PCM
+  streams (x264 chooses PCM under rate-distortion analysis at low QP without
+  psy-RD) cover CABAC re-initialization and I_PCM neighbours in both entropy
+  modes, including monochrome.
 
 ## Adapter behavior
 
@@ -93,7 +96,7 @@ SIMD does not help.
 - Coverage is finite: the truncation/corruption corpus covers six source streams,
   including SPS variants whose VUI HRD reaches OpenH264's error-code loop.
   SVC extension units are rejected as OpenH264's header checks decide, never
-  decoded; multi-access-unit input, FMO slice groups, CABAC I_PCM and
-  constrained-intra P prediction are not yet compared.
+  decoded; multi-access-unit input, FMO slice groups and constrained-intra P
+  prediction are not yet compared.
 - AVC sequences/tracks (P/B slices), registered-plugin priority interaction with
   the built-in decoder and resource-limit corpora remain open.

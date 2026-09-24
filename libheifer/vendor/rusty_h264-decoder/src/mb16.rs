@@ -981,8 +981,14 @@ impl FrameDecoder {
     }
 
     /// libheifer: monochrome (`chroma_format_idc == 0`) syntax.
+    /// OpenH264 still allocates chroma planes filled with 128; only I_PCM
+    /// samples (which always carry 384 bytes) and deblocking change them.
     pub fn set_monochrome(&mut self, on: bool) {
         self.mono = on;
+        if on {
+            self.rec_u.fill(128);
+            self.rec_v.fill(128);
+        }
     }
 
     pub fn set_scaling(&mut self, scaling: [[i32; 16]; 6], scaling8: [[i32; 64]; 2]) {
@@ -4658,7 +4664,31 @@ impl FrameDecoder {
                     ccorner = self.top_c_px(c, cy, cx - 1);
                 }
             }
-            let pred8 = chroma8x8_pred(chroma_mode, avail_top, avail_left, &ctop, &cleft, ccorner);
+            // libheifer: openh264 skips the chroma mode check for monochrome streams,
+            // so its (unparsed) DC mode predicts as if both neighbours existed,
+            // reading 128 from its initial picture fill outside the picture.
+            let pred8 = if self.mono {
+                ctop = if cy > 0 {
+                    self.top_c_row(c, cy, cx, 8).try_into().unwrap_or([128; 8])
+                } else {
+                    [128; 8]
+                };
+                if cx == 0 {
+                    cleft = [128; 8];
+                } else if !avail_left {
+                    let rec_c = if c == 0 { &self.rec_u } else { &self.rec_v };
+                    let cbase = cy * self.ccw + cx - 1;
+                    for (o, &v) in cleft
+                        .iter_mut()
+                        .zip(rec_c[cbase..].iter().step_by(self.ccw))
+                    {
+                        *o = v;
+                    }
+                }
+                chroma8x8_pred(0, true, true, &ctop, &cleft, ccorner)
+            } else {
+                chroma8x8_pred(chroma_mode, avail_top, avail_left, &ctop, &cleft, ccorner)
+            };
             // Coded AC blocks parked (up to 4), then the SIMD IDCT+add kernel per block.
             for &(bx, by) in &CHROMA_4X4_SCAN_XY {
                 let p_off = (by * 4) * 8 + bx * 4;
@@ -9881,12 +9911,14 @@ impl FrameDecoder {
 
     /// libheifer: `crop` is the SPS (left, right, top, bottom) window in units of
     /// two luma samples, applied on every side as openh264 does (including for
-    /// monochrome streams). Monochrome chroma planes are flat 128.
+    /// monochrome streams). Monochrome chroma planes start at 128 and, as in
+    /// openh264, change only through I_PCM samples, chroma prediction from them
+    /// and deblocking.
     pub fn into_frame(self, crop: [usize; 4]) -> YuvFrame {
         let [crop_l, crop_r, crop_t, crop_b] = crop;
         // No cropping (the common case): the reconstruction planes ARE the output —
         // move them out instead of allocating + copying three full planes per frame.
-        if crop == [0; 4] && !self.mono {
+        if crop == [0; 4] {
             return YuvFrame {
                 width: self.cw,
                 height: self.ch,
@@ -9905,12 +9937,10 @@ impl FrameDecoder {
         let (cdw, cdh) = (dw / 2, dh / 2);
         let mut u = vec![128u8; cdw * cdh];
         let mut v = vec![128u8; cdw * cdh];
-        if !self.mono {
-            for row in 0..cdh {
-                let at = (row + crop_t) * self.ccw + crop_l;
-                u[row * cdw..row * cdw + cdw].copy_from_slice(&self.rec_u[at..at + cdw]);
-                v[row * cdw..row * cdw + cdw].copy_from_slice(&self.rec_v[at..at + cdw]);
-            }
+        for row in 0..cdh {
+            let at = (row + crop_t) * self.ccw + crop_l;
+            u[row * cdw..row * cdw + cdw].copy_from_slice(&self.rec_u[at..at + cdw]);
+            v[row * cdw..row * cdw + cdw].copy_from_slice(&self.rec_v[at..at + cdw]);
         }
         let _ = self.cch;
         YuvFrame {

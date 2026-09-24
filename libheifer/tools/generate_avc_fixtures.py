@@ -42,6 +42,10 @@ def picture(w, h, csp, depth, pattern):
                     v = noise() & 255
                 elif pattern == 2:
                     v = 230 if ((x >> 2) + (y >> 3) + c) & 1 else 20
+                elif pattern == 5:
+                    # Alternating noisy and smooth macroblocks (I_PCM next to predicted ones).
+                    mb = 16 if c == 0 or not CSP[csp] else 16 // CSP[csp][0]
+                    v = noise() & 255 if ((x // mb) + (y // mb)) & 1 else (x * 4 + y * 2 + c * 40) & 255
                 elif pattern == 3:
                     v = (x * x + y * 7 * (c + 1) + (noise() & 15)) & 255
                 else:
@@ -149,6 +153,14 @@ def main():
     # Above libheif's 65536-pixel floor for the ispe-padded limit (resource limits).
     add('limits-272x256-high', 272, 256, ['--qp', '30', *profiles['high']], pattern=4)
     add('limits-270x250-baseline', 270, 250, ['--qp', '30', *profiles['baseline']], pattern=4)
+    # I_PCM macroblocks (x264 picks PCM under RD at low QP without psy-rd), alone and
+    # mixed with predicted macroblocks: CABAC re-initialization, PCM neighbours.
+    for (profile, options), qp, pattern in itertools.product(profiles.items(), [1, 6, 10], [3, 5]):
+        add(f'pcm-{profile}-{qp}-{pattern}', 64, 48,
+            ['--qp', str(qp), '--ipratio', '1', '--no-psy', '--subme', '9', *options], pattern=pattern)
+    for (profile, options) in [('high', profiles['high']), ('high-cavlc', profiles['high-cavlc'])]:
+        add(f'pcm-{profile}-crop-80x40', 80, 40, ['--qp', '6', '--ipratio', '1', '--no-psy', '--subme', '9', *options], pattern=5)
+        add(f'pcm-mono-{profile}', 48, 32, ['--qp', '6', '--ipratio', '1', '--no-psy', '--subme', '9', *options], csp='i400', pattern=5)
     # Streams outside OpenH264 still-image support: retained for exact error parity.
     for csp in ['i400', 'i422', 'i444']:
         add(f'format-{csp}-8', 32, 32, ['--qp', '26'], csp=csp)

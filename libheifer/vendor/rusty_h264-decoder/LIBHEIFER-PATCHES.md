@@ -26,8 +26,13 @@ OpenH264 (the pinned test oracle) where it differs from the unmodified crate:
 
 - Monochrome (`chroma_format_idc == 0`) streams are accepted. Chroma syntax is
   absent (`intra_chroma_pred_mode`, chroma CBP bins, the I_16x16 chroma CBP), the
-  4:0:0 CAVLC CBP mappings are used, and chroma is reconstructed as flat 128 as
-  OpenH264 outputs it. I_16x16 macroblock types carrying chroma CBP are rejected.
+  4:0:0 CAVLC CBP mappings are used, and I_16x16 macroblock types carrying
+  chroma CBP are rejected. Chroma planes start at 128 as OpenH264's picture
+  buffer does. I_PCM macroblocks still carry and store 384 bytes, and OpenH264
+  skips its chroma mode check, so its DC chroma prediction runs as if both
+  neighbours existed, reading 128 outside the picture. The planes are output
+  as reconstructed, so I_PCM chroma samples and their prediction and
+  deblocking effects appear in the output as they do in OpenH264.
 - Frame cropping applies all four SPS offsets in two-sample units, as OpenH264
   does for every chroma format; the crop bound is OpenH264's (a window may crop
   to zero samples).
