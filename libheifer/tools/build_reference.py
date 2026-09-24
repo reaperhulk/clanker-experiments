@@ -44,7 +44,7 @@ def main():
              f"-DWITH_JPEG_DECODER={'ON' if a.jpeg else 'OFF'}", "-DWITH_JPEG_ENCODER=OFF",
              "-DWITH_JPEG_DECODER_PLUGIN=OFF", "-DWITH_JPEG_ENCODER_PLUGIN=OFF",
              f"-DWITH_OpenJPEG_DECODER={'ON' if a.jpeg2000 else 'OFF'}",
-             "-DWITH_OpenJPEG_DECODER_PLUGIN=OFF", "-DWITH_OpenJPEG_ENCODER=OFF", "-DWITH_OpenJPEG_ENCODER_PLUGIN=OFF"]
+             "-DWITH_OpenJPEG_DECODER_PLUGIN=OFF", f"-DWITH_OpenJPEG_ENCODER={'ON' if a.jpeg2000 else 'OFF'}", "-DWITH_OpenJPEG_ENCODER_PLUGIN=OFF"]
     if a.hevc:
         decoder = build.parent / "libde265-source"
         install = build.parent / "libde265-install"

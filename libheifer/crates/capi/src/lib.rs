@@ -12,6 +12,8 @@ use std::ffi::{c_char, c_int};
 use std::ptr;
 
 mod auxiliary;
+#[cfg(feature = "jpeg2000")]
+mod builtin_jpeg2000_encoder;
 #[cfg(feature = "jpeg")]
 mod builtin_jpeg_encoder;
 pub use auxiliary::DepthRepresentationInfo;

@@ -79,6 +79,8 @@ mod jpeg_header;
 #[cfg(feature = "jpeg2000")]
 pub mod jpeg2000;
 pub mod jpeg2000_config;
+#[cfg(feature = "jpeg2000")]
+pub mod jpeg2000_encoder;
 mod jpeg2000_properties;
 
 #[cfg(feature = "avc")]

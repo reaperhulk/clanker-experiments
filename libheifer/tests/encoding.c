@@ -41,9 +41,11 @@ int main(void) {
   while(fread(v,sizeof(v),1,stdin)==1) {
     heif_context* ctx=heif_context_alloc(); heif_encoder* enc=NULL;
     error(heif_context_get_encoder_for_format(ctx,(heif_compression_format)(v[0]&255),&enc));
-    /* v[0] bits 16-23: lossy quality + 1; bit 14: lossless. */
-    if(enc&&(v[0]>>16)) error(heif_encoder_set_lossy_quality(enc,(int)(v[0]>>16)-1));
+    /* v[0] bits 16-23: lossy quality + 1; bit 14: lossless; bit 15: not lossless; bit 11: chroma "420". */
+    if(enc&&(v[0]>>16)) error(heif_encoder_set_lossy_quality(enc,(int)((v[0]>>16)&255)-1));
     if(enc&&(v[0]&16384)) error(heif_encoder_set_lossless(enc,1));
+    if(enc&&(v[0]&32768)) error(heif_encoder_set_lossless(enc,0));
+    if(enc&&(v[0]&2048)) error(heif_encoder_set_parameter_string(enc,"chroma","420"));
     heif_image* img=NULL; error(heif_image_create(v[1],v[2],(heif_colorspace)v[3],(heif_chroma)v[4],&img));
     if(img&&v[5]) {
       int channels[4]={0,1,2,6}; int count=v[3]==2?1:3;
