@@ -426,6 +426,15 @@ MUTATIONS = [
     ("jpeg_encode_fdct_constant", "src/jpeg_encoder.rs", "            let tmp4 = tmp4 * 2446;", "            let tmp4 = tmp4 * 2447;", "jpeg_encoding"),
     ("jpeg_encode_density_axes", "crates/capi/src/builtin_jpeg_encoder.rs", "(h as u16, v as u16)", "(v as u16, h as u16)", "jpeg_encoding"),
     ("avc_cavlc_p_skip_run", "vendor/rusty_h264-decoder/src/mb16.rs", "if self.is_b && skip_run > total - addr {", "if skip_run > total - addr {", "avc_sequences"),
+    ('vvc_deblock_ctb_long_filter', 'src/vvc/deblock.rs', 'p_large = false;', 'p_large = true;', 'vvc'),
+    ('vvc_sao_band_position', 'src/vvc/sao.rs', 'offs[(p.band_pos as usize + i) % 32]', 'offs[(p.band_pos as usize + i + 1) % 32]', 'vvc'),
+    ('vvc_alf_boundary_rounding', 'src/vvc/alf.rs', '(sum + (1 << 9)) >> 10', '(sum + (1 << 6)) >> 7', 'vvc'),
+    ('vvc_ccalf_rounding', 'src/vvc/alf.rs', 'sum = (sum + 64) >> 7;', 'sum = (sum + 63) >> 7;', 'vvc'),
+    ('vvc_alf_transpose', 'src/vvc/alf.rs', 'const TRANSPOSE_TABLE: [usize; 8] = [0, 1, 0, 2, 2, 3, 1, 3];', 'const TRANSPOSE_TABLE: [usize; 8] = [0, 1, 0, 2, 2, 3, 1, 2];', 'vvc'),
+    ('vvc_mrl_line', 'src/vvc/ctu.rs', 'mrl = if self.bin(ctx::MULTI_REF_LINE_IDX + 1) == 1 {\n                        2', 'mrl = if self.bin(ctx::MULTI_REF_LINE_IDX + 1) == 1 {\n                        3', 'vvc'),
+    ('vvc_lmcs_chroma_rounding', 'src/vvc/recon.rs', '((abs * scale + (1 << 10)) >> 11)', '((abs * scale + (1 << 9)) >> 11)', 'vvc'),
+    ('vvc_configuration_length', 'src/vvc/heif.rs', 'data.extend_from_slice(&(nal.len() as u16).to_be_bytes());', 'data.extend_from_slice(&(nal.len() as u16 + 1).to_be_bytes());', 'vvc'),
+    ('vvc_mono_window_check', 'src/vvc/ps.rs', 'if self.chroma_format_idc == 3 { 1 } else { 2 }', 'if self.chroma_format_idc == 3 || self.chroma_format_idc == 0 { 1 } else { 2 }', 'vvc'),
     ("error_field_order", "crates/capi/src/lib.rs", "pub code: c_int,\n    pub subcode: c_int,", "pub subcode: c_int,\n    pub code: c_int,", "abi"),
 ]
 
@@ -444,6 +453,7 @@ def main():
     parser.add_argument("--jpeg2000-reference-build", default=".build/reference-jpeg2000")
     parser.add_argument("--jpeg-reference-build", default=".build/reference-jpeg")
     parser.add_argument("--avc-reference-build", default=".build/reference-avc")
+    parser.add_argument("--vvc-reference-build", default=".build/reference-vvc")
     parser.add_argument("--encoders-reference-build", default=".build/reference-encoders")
     parser.add_argument("--candidate", default="target/release/libheifer.so")
     parser.add_argument("--output", default=".build/mutations-report.json")
@@ -468,6 +478,8 @@ def main():
             return str(Path(args.jpeg2000_reference_build).resolve())
         if suite in ("avc", "avc_errors", "avc_plugins", "avc_limits", "avc_sequences", "plugin_sequences"):
             return str(Path(args.avc_reference_build).resolve())
+        if suite == "vvc":
+            return str(Path(args.vvc_reference_build).resolve())
         # The encoder oracle has libheif's JPEG and OpenJPEG encoders, like the candidate.
         if suite in ("other_encoding", "encoding"):
             return str(Path(args.encoders_reference_build).resolve())

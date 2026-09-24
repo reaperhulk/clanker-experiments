@@ -32,6 +32,8 @@ notices in the test submodule. See COPYING. The default DEFLATE encoder adapts
 zlib 1.3 algorithms under its zlib license (see `licenses/zlib.txt`); the pure Rust
 inflater retains its license in `vendor/zlib-rs/LICENSE`.
 The Rust AV1 decoder retains rav1d's BSD-2-Clause notices in `vendor/rav1d`.
+The in-tree VVC decoder (`src/vvc`) translates vvdec 3.2.0 under the Clear BSD
+License (see `licenses/vvdec.txt`).
 
 ## Development validation
 

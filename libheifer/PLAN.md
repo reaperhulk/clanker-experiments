@@ -755,5 +755,10 @@ AV1 encoding uses vendored Rust-only rav1e 0.8.1 behind a transliteration of
 libheif's rav1e plugin, byte-identical to libheif with the same rav1e (143
 encoding cases).
 
+VVC decoding uses an in-tree pure Rust decoder written from vvdec 3.2.0. It
+matches vvdec on 39 of 42 intra JVET conformance streams (the other three use
+palette, which vvdec also rejects) and libheif's vvdec plugin on 270
+vvenc-generated items (6750 cases). Inter pictures remain unsupported.
+
 Next: remaining plan gates. All 465 functions remain partial; strict completion
 remains false.

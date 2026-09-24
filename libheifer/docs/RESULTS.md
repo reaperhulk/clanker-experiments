@@ -1872,3 +1872,57 @@ The initial report keeps the first run, in which three mutants survived:
 The last two were replaced by a tile-column default mutant. 389 mutations
 total.
 
+
+## Built-in Rust VVC decoding
+
+libheif's only VVC decoder is its vvdec plugin. `src/vvc` is an in-tree pure
+Rust decoder written from vvdec 3.2.0 (Clear BSD, `licenses/vvdec.txt`),
+registered as the built-in decoder "libheifer VVC decoder" (id
+`libheifer-vvc`, priority 100 like the plugin). It decodes intra pictures:
+
+- parameter sets with vvdec's checks, CABAC, partitioning with dual and local
+  dual trees;
+- intra prediction (MIP, ISP, MRL, CCLM, PDPC, wide angles) and intra block
+  copy with vvdec's merge list and history;
+- residual coding with dependent quantization, sign hiding, transform skip,
+  BDPCM, LFNST, MTS, JCCR, ACT and scaling lists;
+- LMCS, deblocking with LADF, SAO, ALF and CC-ALF;
+- tiles, rectangular and raster slices, WPP, subpictures and virtual
+  boundaries.
+
+`src/vvc/heif.rs` reproduces libheif's VVC item path and the plugin:
+
+- the `vvcC` NAL arrays with four-byte lengths;
+- the pre-decode configuration SPS size check, including its unsupported
+  GCI and subpicture cases;
+- the plugin's NAL splitting and error codes;
+- planar output in the stream's chroma format and bit depth, without colour
+  information.
+
+`vvc1` handles report chroma format and bit depth from `vvcC`.
+
+The decoder was debugged against vvdec's syntax trace, with vvdec's in-loop
+filters disabled stage by stage in a local tracing build. The first picture
+of every intra JVET conformance stream that vvdec decodes matches it
+bit-exactly (39 of the 42 streams, 4:0:0 to 4:4:4, 8 and 10 bit). The three
+palette streams are rejected, as they are by vvdec.
+
+`tools/generate_vvc_fixtures.py` encodes 270 owned single-picture streams with
+the pinned test-only vvenc 1.14.0 (`tests/vvc_fixture_encoder.c`). They cover
+presets, QPs 0-63, 8/10-bit 4:2:0 and 4:0:0, sizes from 1x1 to 256x160 with
+conformance windows, and 33 tool toggles. vvenc rejects 4:2:2, 4:4:4, 12-bit
+and odd 4:2:0 sizes; those are recorded as generator failures.
+`tools/test_vvc.py` wraps them as `vvc1` items the way libheif's encoder
+writes them. It compares samples, handles, conversions and errors against
+libheif with vvdec in 25 modes: 6750 cases with no mismatches, and the same in
+the codec-free build against libheif without vvdec. The two 1x1 streams fail
+in both, because vvdec's conformance-window check treats 4:0:0 horizontally
+like 4:2:0.
+
+Known differences:
+
+- inter pictures are reported as unsupported; vvdec decodes them;
+- malformed-stream behavior (vvdec's exception and recovery paths) has not
+  been compared systematically;
+- decoding is scalar: the first 720p picture of ALF_A takes about 0.13 s
+  against 0.033 s for single-threaded vvdec with SIMD.

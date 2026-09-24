@@ -2,6 +2,11 @@
 //! Pure Rust VVC (H.266) still-picture decoder, written to reproduce the
 //! output of vvdec 3.2.0 as used by libheif's vvdec plugin. Intra pictures
 //! only; inter prediction reports [`Error::Unsupported`].
+//!
+//! The decoding processes and tables are translated from vvdec 3.2.0,
+//! Copyright (c) 2018-2026 Fraunhofer-Gesellschaft zur Förderung der
+//! angewandten Forschung e.V. & The VVdeC Authors, under the Clear BSD
+//! License retained in licenses/vvdec.txt.
 // The codec modules port vvdec's routines and keep its index loops and
 // parameter lists so they stay easy to compare.
 #![allow(

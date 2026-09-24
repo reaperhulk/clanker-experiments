@@ -97,6 +97,7 @@ jobs:
           python tools/build_reference.py --jpeg2000 --htj2k --build .build/reference-jpeg2000
           python tools/build_reference.py --plugins --build .build/reference-plugins
           python tools/build_reference.py --avc --build .build/reference-avc
+          python tools/build_reference.py --vvc --build .build/reference-vvc
           python tools/build_reference.py --jpeg --jpeg2000 --htj2k --av1 --rav1e --build .build/reference-encoders
 
   differential:
