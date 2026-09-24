@@ -1491,3 +1491,27 @@ build has no built-in HEVC or AV1 decoder, so they differed by build
 configuration, not behaviour. All 466 cases match in normal, sanitizer-client
 and codec-free builds. Five new mutations are detected; two plugin-decoding
 anchors were made unique. 332 mutations total.
+
+### Multi-picture AVC packets
+
+An `avc1` item, or a sequence sample, may hold several access units. The
+OpenH264 plugin passes the whole payload to one `DecodeFrameNoDelay` call.
+Its data half decodes every NAL unit except the last one in the buffer,
+which waits for the call's flush half. `ReorderPicturesInDisplay` runs once
+per half, not once per picture. It sees the last picture completed in that
+half, with the slice header decoded last. When the final picture has several
+slices, its first slices were decoded in the data half, so the earlier
+picture is filed under the final picture's POC and slice type. Pictures
+completed earlier in the data half never reach the output list. The flush
+half resets the output before completing the final picture. An instrumented
+scratch build of OpenH264 confirmed which pictures are buffered; it is never
+used as the oracle.
+
+`tools/test_avc.py` now also decodes every sequence stream as one item, and
+as an item with only its first two pictures (56 files, 25 modes). The first
+run differed on 1,173 cases, where libheifer returned the last picture. It
+then differed on 138 multi-slice and B-frame cases under a per-picture
+reorder model, before the model above. All 13,225 still-image cases match in
+normal, sanitizer-client and codec-free builds. The malformed-stream,
+sequence, plugin, limits and plugin-sequence suites still match. Two new
+mutations are detected (23 and 115 mismatches); 334 mutations total.

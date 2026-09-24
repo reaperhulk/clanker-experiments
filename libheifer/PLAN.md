@@ -728,5 +728,8 @@ prediction into the vendored decoder. See `docs/RESULTS.md`.
 Registered decoder plugins now drive AVC, HEVC and AV1 sequence tracks as in
 libheif (466 cases). See `docs/RESULTS.md`.
 
+AVC items holding several access units output the same picture as the
+OpenH264 plugin (13,225 still-image cases).
+
 Next: remaining plan gates. All 465 functions remain partial; strict completion
 remains false.
