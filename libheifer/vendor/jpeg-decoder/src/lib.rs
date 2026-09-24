@@ -44,6 +44,7 @@ use std::io;
 
 #[cfg(not(feature = "platform_independent"))]
 mod arch;
+mod arithmetic;
 mod decoder;
 mod error;
 mod huffman;

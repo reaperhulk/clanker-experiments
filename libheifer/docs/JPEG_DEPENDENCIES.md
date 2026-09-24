@@ -42,7 +42,11 @@ Local ASan/UBSan client runs disable LeakSanitizer under ptrace; CI retains leak
 checking. The linked Linux candidate depends only on libc, libgcc_s and the ELF
 loader. Symbol inspection finds no foreign JPEG/AV1/HEVC codec entry points.
 
+Arithmetic-coded sequential and progressive JPEG (SOF9/SOF10) is decoded by a
+Rust port of libjpeg-turbo's jdarith.c, including DAC conditioning and restart
+resynchronization; arithmetic lossless is rejected as libjpeg-turbo does.
+
 This is finite compatibility evidence, not complete JPEG or libheif conformance.
-Arithmetic JPEG decoding, built-in JPEG encoding, broader restart/corruption and
-sequence behavior, cross-platform C clients and downstream/performance gates
-remain open. Strict project completion remains false.
+Built-in JPEG encoding, broader Huffman restart/corruption and sequence
+behavior, cross-platform C clients and downstream/performance gates remain open.
+Strict project completion remains false.

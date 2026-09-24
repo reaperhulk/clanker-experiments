@@ -137,6 +137,9 @@ fn decoder_error(error: jpeg_decoder::Error, data: &[u8]) -> ContextError {
         Error::Format(ref text)
             if text.starts_with("Bogus ")
                 || text.starts_with("Invalid component ID ")
+                || text.starts_with("Unsupported marker type ")
+                || text.starts_with("Unsupported JPEG process: ")
+                || text.starts_with("Invalid JPEG file structure: two SOF")
                 || text.starts_with("Invalid progressive/lossless parameters ")
                 || text.starts_with("Huffman table ")
                 || text.starts_with("Quantization table ") =>

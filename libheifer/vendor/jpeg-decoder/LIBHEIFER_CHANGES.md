@@ -22,8 +22,8 @@ The independent oracle is libheif 1.23.4 with native libjpeg-turbo 3.1.1. Native
 sources are test-only. Fixture pixels are encoded by native cjpeg from owned
 synthetic patterns; expected decoded bytes come from the original-header native
 client, never this implementation. This integration is not a complete JPEG
-conformance claim; arithmetic coding, lossless profiles, malformed streams and
-other open compatibility requirements remain subject to implementation and tests.
+conformance claim; lossless profiles, malformed streams and other open
+compatibility requirements remain subject to implementation and tests.
 
 The follow-up compatibility work also matches native post-IDCT range limiting,
 zero-symbol recovery for invalid entropy codes, MCU preservation after truncated
@@ -39,4 +39,16 @@ Ordinary and progressive Huffman JPEG, restart intervals, grayscale lossless
 predictors/point transforms and 2–8-bit lossless sample precision have independent
 original-header comparisons. Higher-precision and RGB conversion errors are
 compared separately. Every byte prefix of representative baseline, progressive
-and grayscale streams is tested. Arithmetic JPEG remains unimplemented.
+and grayscale streams is tested.
+
+`src/arithmetic.rs` ports libjpeg-turbo's arithmetic entropy decoder
+(jdarith.c and jaricom.c, developed by Guido Vollbeding for the IJG) for
+sequential (SOF9) and progressive (SOF10) DCT frames. It covers the QM-coder
+statistics and conditioning, DAC segments, restart statistics resets and
+`jpeg_resync_to_restart` actions, the zero data supplied after a marker inside a
+scan, and the code-error state that stops a scan. Arithmetic lossless (SOF11) is
+rejected, as libjpeg-turbo has no decoder for it. Markers follow libjpeg's
+`read_markers`: reserved and hierarchical markers are "Unsupported marker type",
+differential SOF types and JPG are unsupported processes, a second supported SOF
+is a structure error, and RSTn/TEM are skipped anywhere. `Marker::RES` keeps its
+code.

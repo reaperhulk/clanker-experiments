@@ -46,6 +46,7 @@ pub(crate) struct Header {
     pub components: Vec<(u8, u8, u8)>,
     progressive: bool,
     lossless: bool,
+    arithmetic: bool,
     scan: Vec<(u8, u8)>,
     ss: u8,
     se: u8,
@@ -72,7 +73,8 @@ impl Header {
                 self.ss, self.se, self.ah, self.al
             )));
         }
-        for &(_, tables) in &self.scan {
+        // Arithmetic scans may use any of the 16 conditioning tables.
+        for &(_, tables) in self.scan.iter().filter(|_| !self.arithmetic) {
             if (!self.progressive || self.ss == 0) && tables >> 4 > 3 {
                 return Err(codec_error(format!(
                     "Huffman table 0x{:02x} was not defined",
@@ -127,9 +129,20 @@ pub(crate) fn read(data: &[u8]) -> Result<Header, ContextError> {
         if (208..=215).contains(&marker) || marker == 1 {
             continue;
         }
+        // libjpeg's read_markers: unsupported frame types and reserved markers.
+        if matches!(marker, 197..=200 | 205..=207) {
+            return Err(codec_error(format!(
+                "Unsupported JPEG process: SOF type 0x{marker:02x}"
+            )));
+        }
+        if matches!(marker, 2..=191 | 222 | 223 | 240..=253) {
+            return Err(codec_error(format!(
+                "Unsupported marker type 0x{marker:02x}"
+            )));
+        }
         let length = input.word();
         let start = input.at;
-        if matches!(marker,192..=195 | 197..=199 | 201..=203 | 205..=207) {
+        if matches!(marker, 192..=195 | 201..=203) {
             if frame {
                 return Err(codec_error("Invalid JPEG file structure: two SOF markers"));
             }
@@ -150,6 +163,7 @@ pub(crate) fn read(data: &[u8]) -> Result<Header, ContextError> {
             }
             header.progressive = matches!(marker, 194 | 198 | 202 | 206);
             header.lossless = matches!(marker, 195 | 199 | 203 | 207);
+            header.arithmetic = marker >= 201;
             frame = true;
         } else if marker == 218 {
             if !frame {
@@ -202,6 +216,29 @@ pub(crate) fn read(data: &[u8]) -> Result<Header, ContextError> {
                 let count = if table >> 4 != 0 { 128 } else { 64 };
                 input.skip(count);
                 remaining -= (count + 1) as i64;
+            }
+            if remaining != 0 {
+                return Err(codec_error("Bogus marker length"));
+            }
+        } else if marker == 221 {
+            // get_dri
+            if length != 4 {
+                return Err(codec_error("Bogus marker length"));
+            }
+            input.skip(2);
+        } else if marker == 204 {
+            // get_dac: arithmetic conditioning.
+            let mut remaining = length as i64 - 2;
+            while remaining > 0 {
+                let index = input.byte();
+                let value = input.byte();
+                remaining -= 2;
+                if index >= 32 {
+                    return Err(codec_error(format!("Bogus DAC index {index}")));
+                }
+                if index < 16 && value & 15 > value >> 4 {
+                    return Err(codec_error(format!("Bogus DAC value 0x{value:x}")));
+                }
             }
             if remaining != 0 {
                 return Err(codec_error("Bogus marker length"));

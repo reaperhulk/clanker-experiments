@@ -1,8 +1,9 @@
 use crate::error::{Error, Result, UnsupportedFeature};
+use crate::arithmetic::{ArithmeticDecoder, Conditioning};
 use crate::huffman::{fill_default_mjpeg_tables, HuffmanDecoder, HuffmanTable};
 use crate::marker::Marker;
 use crate::parser::{
-    parse_app, parse_com, parse_dht, parse_dqt, parse_dri, parse_sof, parse_sos,
+    parse_app, parse_com, parse_dac, parse_dht, parse_dqt, parse_dri, parse_sof, parse_sos,
     AdobeColorTransform, AppData, CodingProcess, Component, Dimensions, EntropyCoding, FrameInfo,
     IccChunk, ScanInfo,
 };
@@ -24,7 +25,7 @@ mod lossless;
 use self::lossless::compute_image_lossless;
 
 #[rustfmt::skip]
-static UNZIGZAG: [u8; 64] = [
+pub(crate) static UNZIGZAG: [u8; 64] = [
      0,  1,  8, 16,  9,  2,  3, 10,
     17, 24, 32, 25, 18, 11,  4,  5,
     12, 19, 26, 33, 40, 48, 41, 34,
@@ -107,6 +108,8 @@ pub struct Decoder<R> {
     quantization_tables: [Option<Arc<[u16; 64]>>; 4],
 
     restart_interval: u16,
+    // libheifer: DAC arithmetic conditioning.
+    conditioning: Conditioning,
 
     adobe_color_transform: Option<AdobeColorTransform>,
     color_transform: Option<ColorTransform>,
@@ -143,6 +146,7 @@ impl<R: Read> Decoder<R> {
             ac_huffman_tables: vec![None, None, None, None],
             quantization_tables: [None, None, None, None],
             restart_interval: 0,
+            conditioning: Conditioning::default(),
             adobe_color_transform: None,
             color_transform: None,
             is_jfif: false,
@@ -344,12 +348,13 @@ impl<R: Read> Decoder<R> {
             match marker {
                 // Frame header
                 Marker::SOF(..) => {
-                    // Section 4.10
-                    // "An image contains only one frame in the cases of sequential and
-                    //  progressive coding processes; an image contains multiple frames for the
-                    //  hierarchical mode."
+                    // libheifer: libjpeg rejects differential SOF types before their
+                    // parameters, and a second frame header in get_sof.
+                    if let Marker::SOF(n @ (5..=7 | 13..=15)) = marker {
+                        return Err(Error::Format(format!("Unsupported JPEG process: SOF type 0x{:02x}", 0xC0 + n)));
+                    }
                     if self.frame.is_some() {
-                        return Err(Error::Unsupported(UnsupportedFeature::Hierarchical));
+                        return Err(Error::Format("Invalid JPEG file structure: two SOF markers".to_owned()));
                     }
 
                     let frame = parse_sof(&mut self.reader, marker)?;
@@ -358,7 +363,11 @@ impl<R: Read> Decoder<R> {
                     if frame.is_differential {
                         return Err(Error::Unsupported(UnsupportedFeature::Hierarchical));
                     }
-                    if frame.entropy_coding == EntropyCoding::Arithmetic {
+                    // libheifer: arithmetic coding is decoded for DCT frames; libjpeg-turbo
+                    // has no arithmetic lossless decoder.
+                    if frame.entropy_coding == EntropyCoding::Arithmetic
+                        && frame.coding_process == CodingProcess::Lossless
+                    {
                         return Err(Error::Unsupported(
                             UnsupportedFeature::ArithmeticEntropyCoding,
                         ));
@@ -534,11 +543,7 @@ impl<R: Read> Decoder<R> {
                         .collect();
                 }
                 // Arithmetic conditioning table-specification
-                Marker::DAC => {
-                    return Err(Error::Unsupported(
-                        UnsupportedFeature::ArithmeticEntropyCoding,
-                    ))
-                }
+                Marker::DAC => parse_dac(&mut self.reader, &mut self.conditioning)?,
                 // Restart interval definition
                 Marker::DRI => self.restart_interval = parse_dri(&mut self.reader)?,
                 // Comment
@@ -575,14 +580,16 @@ impl<R: Read> Decoder<R> {
                     }
                 }
                 // Restart
-                Marker::RST(..) => {
-                    // Some encoders emit a final RST marker after entropy-coded data, which
-                    // decode_scan does not take care of. So if we encounter one, we ignore it.
-                    if previous_marker != Marker::SOS {
-                        return Err(Error::Format(
-                            "RST found outside of entropy-coded data".to_owned(),
-                        ));
-                    }
+                // libheifer: libjpeg skips parameterless RSTn and TEM markers anywhere.
+                Marker::RST(..) | Marker::TEM => {}
+                Marker::JPG => {
+                    return Err(Error::Format("Unsupported JPEG process: SOF type 0xc8".to_owned()));
+                }
+                Marker::RES(n) => {
+                    return Err(Error::Format(format!("Unsupported marker type 0x{n:02x}")));
+                }
+                Marker::JPGn(n) => {
+                    return Err(Error::Format(format!("Unsupported marker type 0x{:02x}", 0xF0 + n)));
                 }
 
                 // Define number of lines
@@ -600,7 +607,8 @@ impl<R: Read> Decoder<R> {
 
                 // Hierarchical mode markers
                 Marker::DHP | Marker::EXP => {
-                    return Err(Error::Unsupported(UnsupportedFeature::Hierarchical))
+                    let n = if marker == Marker::DHP { 0xDE } else { 0xDF };
+                    return Err(Error::Format(format!("Unsupported marker type 0x{n:02x}")));
                 }
 
                 // End of image
@@ -832,14 +840,15 @@ impl<R: Read> Decoder<R> {
             let index=component.quantization_table_index;
             if self.quantization_tables[index].is_none() {return Err(Error::Format(format!("Quantization table 0x{index:02x} was not defined")));}
         }
+        let arithmetic = frame.entropy_coding == EntropyCoding::Arithmetic;
         // Native JPEG installs the standard Huffman tables when absent.
-        fill_default_mjpeg_tables(scan,&mut self.dc_huffman_tables,&mut self.ac_huffman_tables);
-        if scan.spectral_selection.start == 0 && scan.successive_approximation_high == 0 {
+        if !arithmetic { fill_default_mjpeg_tables(scan,&mut self.dc_huffman_tables,&mut self.ac_huffman_tables); }
+        if !arithmetic && scan.spectral_selection.start == 0 && scan.successive_approximation_high == 0 {
             for &index in &scan.dc_table_indices {
                 if self.dc_huffman_tables.get(index).and_then(Option::as_ref).is_none() {return Err(Error::Format(format!("Huffman table 0x{index:02x} was not defined")));}
             }
         }
-        if scan.spectral_selection.end > 1 {
+        if !arithmetic && scan.spectral_selection.end > 1 {
             for &index in &scan.ac_table_indices {
                 if self.ac_huffman_tables.get(index).and_then(Option::as_ref).is_none() {return Err(Error::Format(format!("Huffman table 0x{:02x} was not defined",16+index)));}
             }
@@ -865,6 +874,11 @@ impl<R: Read> Decoder<R> {
         let is_interleaved = components.len() > 1;
         let mut dummy_block = [0i16; 64];
         let mut huffman = HuffmanDecoder::new();
+        // libheifer: arithmetic scans (jdarith.c); statistics the scan uses start cleared.
+        let mut arith = ArithmeticDecoder::new();
+        let arith_dc = !is_progressive || (scan.spectral_selection.start == 0 && scan.successive_approximation_high == 0);
+        let arith_ac = !is_progressive || scan.spectral_selection.start != 0;
+        arith.reset(&scan.dc_table_indices, &scan.ac_table_indices, arith_dc, arith_ac);
         let mut dc_predictors = [0i16; MAX_COMPONENTS];
         let mut mcus_left_until_restart = self.restart_interval;
         let mut expected_rst_num = 0;
@@ -920,7 +934,35 @@ impl<R: Read> Decoder<R> {
 
                 if self.restart_interval > 0 {
                     if mcus_left_until_restart == 0 {
-                        match huffman.take_marker(&mut self.reader)? {
+                        let marker = if arithmetic {
+                            // libheifer: read_restart_marker with jpeg_resync_to_restart.
+                            let mut marker = match arith.marker.take() { Some(marker) => marker, None => self.read_marker()? };
+                            let pending = loop {
+                                let action = match marker {
+                                    Marker::RST(n) if n == expected_rst_num => 1,
+                                    Marker::RES(_) | Marker::TEM => 2,
+                                    Marker::RST(n) if n == (expected_rst_num + 1) % 8 || n == (expected_rst_num + 2) % 8 => 3,
+                                    Marker::RST(n) if n == (expected_rst_num + 7) % 8 || n == (expected_rst_num + 6) % 8 => 2,
+                                    Marker::RST(_) => 1,
+                                    _ => 3,
+                                };
+                                match action {
+                                    1 => break None,
+                                    2 => marker = self.read_marker()?,
+                                    _ => break Some(marker),
+                                }
+                            };
+                            arith.reset(&scan.dc_table_indices, &scan.ac_table_indices, arith_dc, arith_ac);
+                            // A marker left in place makes the segment decode from zero data.
+                            arith.marker = pending;
+                            expected_rst_num = (expected_rst_num + 1) % 8;
+                            mcus_left_until_restart = self.restart_interval;
+                            None
+                        } else {
+                            huffman.take_marker(&mut self.reader)?
+                        };
+                        if !arithmetic {
+                        match marker {
                             Some(Marker::RST(n)) => {
                                 if n != expected_rst_num {
                                     return Err(Error::Format(format!(
@@ -951,12 +993,13 @@ impl<R: Read> Decoder<R> {
                                 )))
                             }
                         }
+                        }
                     }
 
                     mcus_left_until_restart -= 1;
                 }
 
-                let skip_mcu = huffman.insufficient_data;
+                let skip_mcu = !arithmetic && huffman.insufficient_data;
                 if !skip_mcu { self.last_good_mcu_row = usize::from(mcu_y) / if is_interleaved { 1 } else {usize::from(components[0].vertical_sampling_factor)}; }
                 for (i, component) in components.iter().enumerate() {
                     for v_pos in 0..mcu_vertical_samples[i] {
@@ -991,7 +1034,25 @@ impl<R: Read> Decoder<R> {
                             .unwrap();
 
                             if skip_mcu { continue; }
-                            if scan.successive_approximation_high == 0 {
+                            if arithmetic {
+                                let (dc_table, ac_table) = (scan.dc_table_indices[i], scan.ac_table_indices[i]);
+                                let (start, end) = (scan.spectral_selection.start, scan.spectral_selection.end - 1);
+                                let al = scan.successive_approximation_low;
+                                let conditioning = self.conditioning;
+                                if !is_progressive {
+                                    arith.sequential(&mut self.reader, coefficients, i, dc_table, ac_table, &conditioning)?;
+                                } else if scan.successive_approximation_high == 0 {
+                                    if start == 0 {
+                                        arith.dc_first(&mut self.reader, coefficients, i, dc_table, al, &conditioning)?;
+                                    } else {
+                                        arith.ac_first_block(&mut self.reader, coefficients, ac_table, start, end, al, &conditioning)?;
+                                    }
+                                } else if start == 0 {
+                                    arith.dc_refine(&mut self.reader, coefficients, al)?;
+                                } else {
+                                    arith.ac_refine(&mut self.reader, coefficients, ac_table, start, end, al)?;
+                                }
+                            } else if scan.successive_approximation_high == 0 {
                                 decode_block(
                                     &mut self.reader,
                                     coefficients,
@@ -1065,7 +1126,7 @@ impl<R: Read> Decoder<R> {
             }
         }
 
-        let mut marker = huffman.take_marker(&mut self.reader)?;
+        let mut marker = if arithmetic { arith.marker.take() } else { huffman.take_marker(&mut self.reader)? };
         while let Some(Marker::RST(_)) = marker {
             marker = self.read_marker().ok();
         }

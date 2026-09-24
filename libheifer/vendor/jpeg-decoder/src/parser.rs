@@ -435,10 +435,12 @@ pub fn parse_sos<R: Read>(reader: &mut R, frame: &FrameInfo) -> Result<ScanInfo>
         successive_approximation_high=0;
         successive_approximation_low=0;
     }
-    if spectral_selection_start == 0 && successive_approximation_high == 0 {
+    // libheifer: arithmetic scans may use any of the 16 conditioning tables.
+    let huffman = frame.entropy_coding != EntropyCoding::Arithmetic;
+    if huffman && spectral_selection_start == 0 && successive_approximation_high == 0 {
         if let Some(&i)=dc_table_indices.iter().find(|&&i|i>3) {return Err(Error::Format(format!("Huffman table 0x{i:02x} was not defined")));}
     }
-    if spectral_selection_end > 0 && frame.coding_process != CodingProcess::Lossless {
+    if huffman && spectral_selection_end > 0 && frame.coding_process != CodingProcess::Lossless {
         if let Some(&i)=ac_table_indices.iter().find(|&&i|i>3) {return Err(Error::Format(format!("Huffman table 0x{:02x} was not defined",i+16)));}
     }
 
@@ -556,6 +558,32 @@ pub fn parse_dht<R: Read>(reader: &mut R, _is_baseline: Option<bool>) -> Result<
     }
 
     Ok((dc_tables, ac_tables))
+}
+
+// libheifer: Section B.2.4.3, as libjpeg's get_dac.
+pub(crate) fn parse_dac<R: Read>(reader: &mut R, conditioning: &mut crate::arithmetic::Conditioning) -> Result<()> {
+    let mut length = read_u16_from_be(reader)? as i32 - 2;
+    while length > 0 {
+        let index = read_u8(reader)? as usize;
+        let value = read_u8(reader)?;
+        length -= 2;
+        if index >= 32 {
+            return Err(Error::Format(format!("Bogus DAC index {index}")));
+        }
+        if index >= 16 {
+            conditioning.ac_k[index - 16] = value;
+        } else {
+            conditioning.dc_l[index] = value & 0x0F;
+            conditioning.dc_u[index] = value >> 4;
+            if conditioning.dc_l[index] > conditioning.dc_u[index] {
+                return Err(Error::Format(format!("Bogus DAC value 0x{value:x}")));
+            }
+        }
+    }
+    if length != 0 {
+        return Err(Error::Format("Bogus marker length".to_owned()));
+    }
+    Ok(())
 }
 
 // Section B.2.4.4
