@@ -731,5 +731,8 @@ libheif (466 cases). See `docs/RESULTS.md`.
 AVC items holding several access units output the same picture as the
 OpenH264 plugin (13,225 still-image cases).
 
+Arithmetic-coded JPEG (SOF9/SOF10, DAC, restart resynchronization) now
+decodes as libjpeg-turbo does (11,225 decode and 24,108 error cases).
+
 Next: remaining plan gates. All 465 functions remain partial; strict completion
 remains false.

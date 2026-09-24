@@ -1,13 +1,13 @@
 {
   "scope": "Independent JPEG truncation, marker and frame-description error comparisons.",
-  "cases": 7158,
+  "cases": 24108,
   "mismatches": 0,
   "client_sanitizers": true,
-  "leak_check": false,
+  "leak_check": true,
   "client_sha256": "c7cb0444757eb1d323d165c8e0803e2ffff7aabc0c0cbd247c18342dd830311a",
-  "reference_sha256": "5f6f6fa26fb491bbee5911457a5aa11ec873d7e56b6fcc740760593173d50693",
-  "candidate_sha256": "cc5df7efd74473662eac25edf80e04b531e7ee01059ce1671541286118fc0941",
+  "reference_sha256": "3ef20edf76161288d0bc1c42aa529b4158a802103fe62c096d76a5d9a626ffba",
+  "candidate_sha256": "1dfe985c24dc127590deb9e31af9b9c40efe67c3e803e215c6931ad174758a4b",
   "full_report": "jpeg-errors-sanitized-full.json.gz",
-  "full_report_sha256": "07bb6ae3f7d226e1016adbe883fe190b84440c0e6aa23532c11853e2fc981523",
-  "compressed_report_sha256": "f974746532f72728162e848c5eb8806ccd1be006b1cdd6df19a3fcec34b1084d"
+  "full_report_sha256": "667b68c36a703bf612a1685a12a3ffa12faed5f5e9c4f2c62b7e0aba073d2f34",
+  "compressed_report_sha256": "4ce8238fec315e708f5d11b700564a16e3fbc2bc18771d420f84ece672989ab2"
 }

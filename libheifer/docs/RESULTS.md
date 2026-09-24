@@ -1515,3 +1515,51 @@ reorder model, before the model above. All 13,225 still-image cases match in
 normal, sanitizer-client and codec-free builds. The malformed-stream,
 sequence, plugin, limits and plugin-sequence suites still match. Two new
 mutations are detected (23 and 115 mismatches); 334 mutations total.
+
+### Arithmetic-coded JPEG
+
+The vendored jpeg-decoder now decodes arithmetic-coded sequential (SOF9) and
+progressive (SOF10) JPEG. `vendor/jpeg-decoder/src/arithmetic.rs` ports
+libjpeg-turbo's jdarith.c and jaricom.c:
+
+- the QM coder, and DC/AC statistics with DAC conditioning (L, U, K);
+- sequential blocks, and DC/AC first and refinement scans;
+- per-scan and per-restart statistics resets;
+- zero data after a marker inside a scan;
+- the code-error state, which stops a scan (DC refinement ignores it, as in
+  libjpeg);
+- `jpeg_resync_to_restart` at restart points.
+
+Arithmetic lossless (SOF11) stays rejected, as libjpeg-turbo has no decoder
+for it. Marker handling now follows libjpeg's `read_markers`, in both
+libheifer's header model and the decoder:
+
+- reserved and hierarchical markers are "Unsupported marker type 0x..";
+- differential SOF types and JPG are "Unsupported JPEG process";
+- a second supported SOF is "two SOF markers";
+- RSTn and TEM are skipped anywhere;
+- DRI must have length 4, and DAC is parsed as `get_dac`.
+
+`tools/generate_jpeg_fixtures.py` adds 156 `cjpeg -arithmetic` streams: four
+sizes, five samplings, three qualities, sequential and progressive, plus 1B and
+2-row restart intervals. DAC variants are spliced before every scan header: the
+defaults, other valid conditioning and invalid segments. The first DAC
+fixtures placed the segment before the frame header, where the encoder's own
+per-scan DAC overrode it. They are now spliced after it and decode to 16
+distinct outputs. `tools/test_jpeg_errors.py` adds every byte prefix of
+sequential, progressive and restart arithmetic streams. It also adds byte flips
+and inserted markers in the entropy data, and each restart marker replaced by
+the next, second-next, previous and a far RST, and by APP/COM/TEM/reserved
+markers.
+
+All 11,225 decode, 24,108 error and 2,297 limit cases match libjpeg-turbo 3.1.1
+in normal, sanitizer-client and codec-free builds. The first damaged-stream
+run differed on 363 cases (marker messages, DAC/DRI in the header model,
+Huffman table checks on arithmetic scans, restart resynchronization); all were
+fixed. Eight mutations are detected. Two first survived: `jpeg_arith_resync_other_marker`
+had only truncated restart streams, whose EOI makes both resync actions
+equivalent. The chosen restart fixture also had no RST markers. Marker
+replacements on streams with restarts now detect it (675 mismatches). The
+first `jpeg_dac_index` mutant was equivalent: the decoder's own DAC parser
+reports the same error. Disabling the header model's DAC handling is detected
+(84). Both reports are retained. 342 mutations total.
