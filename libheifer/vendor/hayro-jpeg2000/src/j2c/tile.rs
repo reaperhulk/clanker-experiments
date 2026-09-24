@@ -767,6 +767,7 @@ mod tests {
             size_info: component_size_info_0,
             coding_style: dummy_component_coding_style.clone(),
             quantization_info: dummy_quantization_info.clone(),
+            roi_shift: 0,
         };
 
         let component_size_info_1 = ComponentSizeInfo {
@@ -779,6 +780,7 @@ mod tests {
             size_info: component_size_info_1,
             coding_style: dummy_component_coding_style.clone(),
             quantization_info: dummy_quantization_info.clone(),
+            roi_shift: 0,
         };
 
         let size_data = SizeData {

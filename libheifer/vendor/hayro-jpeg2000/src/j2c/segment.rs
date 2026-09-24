@@ -1,6 +1,7 @@
 //! Parsing of layers and their segments, as specified in Annex B.
 
 use alloc::boxed::Box;
+use alloc::vec::Vec;
 
 use super::build::Segment;
 use super::codestream::markers::{EPH, SOP};
@@ -19,15 +20,21 @@ pub(crate) fn parse<'a, 'b>(
     header: &Header<'_>,
     storage: &mut DecompositionStorage<'a>,
 ) -> Result<()> {
+    // OpenJPEG concatenates the tile-part bodies into one buffer.
+    let mut body_base = 0;
     for tile_part in &tile.tile_parts {
         let mut oversized_segment = false;
+        let mut part = tile_part.clone();
+        let body_len = part.body().len();
         let complete = parse_inner(
-            tile_part.clone(),
+            part,
             &mut progression_iterator,
             &tile.component_infos,
             storage,
             &mut oversized_segment,
+            body_base,
         ).is_some();
+        body_base += body_len;
         if oversized_segment || (!complete && header.strict) {
             bail!(TileError::Invalid);
         }
@@ -42,6 +49,7 @@ fn parse_inner<'a>(
     component_infos: &[ComponentInfo],
     storage: &mut DecompositionStorage<'a>,
     oversized_segment: &mut bool,
+    body_base: usize,
 ) -> Option<()> {
     while !tile_part.header().at_end() {
         let progression_data = progression_iterator.next()?;
@@ -104,13 +112,29 @@ fn parse_inner<'a>(
 
                     if let Some(segments) = layer.segments.clone() {
                         let segments = &mut storage.segments[segments.clone()];
+                        let high_throughput =
+                            component_info.code_block_style().high_throughput;
 
                         for segment in segments {
+                            let offset = body_base + body_reader.offset();
                             let Some(data) = body_reader.read_bytes(segment.data_length as usize) else {
                                 *oversized_segment = true;
                                 return None;
                             };
                             segment.data = data;
+                            segment.offset = offset;
+                            segment.read = true;
+
+                            if high_throughput {
+                                // opj_t2_read_packet_data: a segment beyond the
+                                // last one read starts a new segment.
+                                if segment.idx as u32 >= code_block.ht_num_segments {
+                                    code_block.ht_num_segments = segment.idx as u32 + 1;
+                                    code_block.ht_last_passes = 0;
+                                    code_block.ht_last_max_passes = segment.max_passes;
+                                }
+                                code_block.ht_last_passes += segment.coding_pases as u32;
+                            }
                         }
                     }
                 }
@@ -194,13 +218,14 @@ fn resolve_segments(
         // value of P is coded in the packet header with a separate tag tree for every
         // precinct, in the same manner as the code block inclusion information."
         if included_first_time {
-            code_block.missing_bit_planes = precinct.zero_bitplane_tree.read(
+            code_block.zero_bitplanes = precinct.zero_bitplane_tree.read(
                 code_block.x_idx,
                 code_block.y_idx,
                 reader,
                 u32::MAX,
                 &mut storage.tag_tree_nodes,
-            )? as u8;
+            )?;
+            code_block.missing_bit_planes = code_block.zero_bitplanes as u8;
             trace!(
                 "zero bit-plane information: {}",
                 code_block.missing_bit_planes
@@ -247,6 +272,17 @@ fn resolve_segments(
         }
 
         code_block.l_block += k;
+
+        if component_info.code_block_style().high_throughput {
+            let layer_start = storage.segments.len();
+            resolve_ht_segments(code_block, added_coding_passes, component_info, reader, &mut storage.segments)?;
+            let end = storage.segments.len();
+            let layer = &mut storage.layers[code_block.layers.clone()]
+                [progression_data.layer_num as usize];
+            layer.segments = Some(layer_start..end);
+            code_block.non_empty_layer_count += 1;
+            continue;
+        }
 
         let previous_layers_passes = code_block.number_of_coding_passes;
         let cumulative_passes = previous_layers_passes.checked_add(added_coding_passes)?;
@@ -300,6 +336,9 @@ fn resolve_segments(
                 coding_pases: coding_passes_for_segment,
                 // Will be set later.
                 data: &[],
+                offset: 0,
+                read: false,
+                max_passes: 0,
             });
 
             trace!("length({segment}) {}", length);
@@ -331,6 +370,72 @@ fn resolve_segments(
         layer.segments = Some(start..end);
         code_block.number_of_coding_passes += added_coding_passes;
         code_block.non_empty_layer_count += 1;
+    }
+
+    Some(())
+}
+
+/// The segments of an HT code-block contribution, as OpenJPEG's
+/// `opj_t2_read_packet_header` assigns them: the first segment only ever
+/// takes one pass per packet, later ones take all remaining passes.
+fn resolve_ht_segments(
+    code_block: &super::build::CodeBlock,
+    added_coding_passes: u8,
+    component_info: &ComponentInfo,
+    reader: &mut BitReader<'_>,
+    segments: &mut Vec<Segment<'_>>,
+) -> Option<()> {
+    let style = component_info.code_block_style();
+    let max_passes = |first: bool, previous: u32| {
+        if style.termination_on_each_pass {
+            1
+        } else if style.selective_arithmetic_coding_bypass {
+            if first {
+                10
+            } else if previous == 1 || previous == 10 {
+                2
+            } else {
+                1
+            }
+        } else {
+            109
+        }
+    };
+
+    let (mut segno, mut current_max) = if code_block.ht_num_segments == 0 {
+        (0, max_passes(true, 0))
+    } else if code_block.ht_last_passes == code_block.ht_last_max_passes {
+        (
+            code_block.ht_num_segments,
+            max_passes(false, code_block.ht_last_max_passes),
+        )
+    } else {
+        (code_block.ht_num_segments - 1, code_block.ht_last_max_passes)
+    };
+
+    let mut n = added_coding_passes as i32;
+    loop {
+        let new_passes = if segno == 0 { 1 } else { n as u32 };
+        let bits = code_block.l_block + new_passes.ilog2();
+        if bits > 32 {
+            return None;
+        }
+        let length = reader.read_bits_with_stuffing(bits as u8)?;
+        segments.push(Segment {
+            idx: u8::try_from(segno).ok()?,
+            data_length: length,
+            coding_pases: new_passes as u8,
+            data: &[],
+            offset: 0,
+            read: false,
+            max_passes: current_max,
+        });
+        n -= new_passes as i32;
+        if n <= 0 {
+            break;
+        }
+        segno += 1;
+        current_max = max_passes(false, current_max);
     }
 
     Some(())

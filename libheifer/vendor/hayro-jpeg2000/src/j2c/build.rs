@@ -262,6 +262,10 @@ fn build_code_blocks(
                 number_of_coding_passes: 0,
                 layers: start..end,
                 non_empty_layer_count: 0,
+                zero_bitplanes: 0,
+                ht_num_segments: 0,
+                ht_last_passes: 0,
+                ht_last_max_passes: 0,
             });
 
             x += code_block_width;
@@ -328,6 +332,13 @@ pub(crate) struct CodeBlock {
     pub(crate) number_of_coding_passes: u8,
     pub(crate) l_block: u32,
     pub(crate) non_empty_layer_count: u8,
+    /// The zero bit-plane tag-tree value, untruncated.
+    pub(crate) zero_bitplanes: u32,
+    /// OpenJPEG's segment state for HT code-blocks: segments with data, and
+    /// the passes and maximum passes of the last one.
+    pub(crate) ht_num_segments: u32,
+    pub(crate) ht_last_passes: u32,
+    pub(crate) ht_last_max_passes: u32,
 }
 
 pub(crate) struct Segment<'a> {
@@ -335,6 +346,12 @@ pub(crate) struct Segment<'a> {
     pub(crate) coding_pases: u8,
     pub(crate) data_length: u32,
     pub(crate) data: &'a [u8],
+    /// Offset of the data in the concatenated tile-part bodies.
+    pub(crate) offset: usize,
+    /// Whether the packet body holding the data was read.
+    pub(crate) read: bool,
+    /// Maximum passes of the segment (HT code-blocks).
+    pub(crate) max_passes: u32,
 }
 
 #[derive(Clone)]

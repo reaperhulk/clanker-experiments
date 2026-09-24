@@ -52,6 +52,7 @@ pub(crate) fn read_header<'a>(
     let num_components = size_data.component_sizes.len() as u16;
     let mut cod_components = vec![None; num_components as usize];
     let mut qcd_components = vec![None; num_components as usize];
+    let mut roi_shifts = vec![0u8; num_components as usize];
     let mut ppm_markers = vec![];
 
     loop {
@@ -83,7 +84,11 @@ pub(crate) fn read_header<'a>(
             }
             markers::RGN => {
                 reader.read_marker()?;
-                rgn_marker(reader).ok_or(MarkerError::ParseFailure("RGN"))?;
+                if let Some((component, shift)) = rgn_marker(reader, num_components)
+                    .ok_or(MarkerError::ParseFailure("RGN"))?
+                {
+                    roi_shifts[component as usize] = shift;
+                }
             }
             markers::TLM => {
                 reader.read_marker()?;
@@ -100,6 +105,11 @@ pub(crate) fn read_header<'a>(
             markers::CRG => {
                 reader.read_marker()?;
                 skip_marker_segment(reader);
+            }
+            // HTJ2K capabilities and profile: OpenJPEG ignores their contents.
+            markers::CAP | markers::CPF => {
+                reader.read_marker()?;
+                skip_marker_segment(reader).ok_or(MarkerError::ParseFailure("CAP"))?;
             }
             (0x30..=0x3F) => {
                 // "All markers with the marker code between 0xFF30 and 0xFF3F
@@ -132,6 +142,7 @@ pub(crate) fn read_header<'a>(
                 })
                 .unwrap_or(cod.component_parameters.clone()),
             quantization_info: qcd_components[idx].clone().unwrap_or(qcd.clone()),
+            roi_shift: roi_shifts[idx],
         })
         .collect();
 
@@ -220,6 +231,8 @@ pub(crate) struct ComponentInfo {
     pub(crate) size_info: ComponentSizeInfo,
     pub(crate) coding_style: CodingStyleComponent,
     pub(crate) quantization_info: QuantizationInfo,
+    /// SPrgn of a main-header RGN marker.
+    pub(crate) roi_shift: u8,
 }
 
 impl ComponentInfo {
@@ -361,11 +374,17 @@ pub(crate) struct CodeBlockStyle {
     pub(crate) termination_on_each_pass: bool,
     pub(crate) vertically_causal_context: bool,
     pub(crate) segmentation_symbols: bool,
+    /// HTJ2K (ITU-T T.814) code-blocks.
+    pub(crate) high_throughput: bool,
 }
 
 impl CodeBlockStyle {
-    fn from_u8(value: u8) -> Self {
-        Self {
+    fn from_u8(value: u8) -> Option<Self> {
+        // Like OpenJPEG, mixed HT code-blocks are rejected.
+        if value & 0x80 != 0 {
+            return None;
+        }
+        Some(Self {
             selective_arithmetic_coding_bypass: (value & 0x01) != 0,
             reset_context_probabilities: (value & 0x02) != 0,
             termination_on_each_pass: (value & 0x04) != 0,
@@ -373,7 +392,8 @@ impl CodeBlockStyle {
             // The predictable termination flag is only informative and
             // can therefore be ignored.
             segmentation_symbols: (value & 0x20) != 0,
-        }
+            high_throughput: (value & 0x40) != 0,
+        })
     }
 }
 
@@ -681,7 +701,7 @@ fn coding_style_parameters(
     let num_resolution_levels = num_decomposition_levels.checked_add(1)?;
     let code_block_width = reader.read_byte()?.checked_add(2)?;
     let code_block_height = reader.read_byte()?.checked_add(2)?;
-    let code_block_style = CodeBlockStyle::from_u8(reader.read_byte()?);
+    let code_block_style = CodeBlockStyle::from_u8(reader.read_byte()?)?;
     let transformation = WaveletTransform::from_u8(reader.read_byte()?).ok()?;
 
     let mut precinct_exponents = Vec::new();
@@ -751,9 +771,25 @@ fn ppm_marker<'a>(reader: &mut BitReader<'a>) -> Option<PpmMarkerData<'a>> {
     })
 }
 
-/// RGN marker (A.6.3).
-fn rgn_marker(reader: &mut BitReader<'_>) -> Option<()> {
-    skip_marker_segment(reader)
+/// RGN marker (A.6.3): the component and its ROI shift when well formed.
+fn rgn_marker(reader: &mut BitReader<'_>, csiz: u16) -> Option<Option<(u16, u8)>> {
+    let segment = reader.peek_bytes(2)?;
+    let length = u16::from_be_bytes([segment[0], segment[1]]) as usize;
+    let room = if csiz <= 256 { 1 } else { 2 };
+    let parsed = if length == 4 + room {
+        reader.peek_bytes(length).map(|b| {
+            let component = if room == 1 {
+                b[2] as u16
+            } else {
+                u16::from_be_bytes([b[2], b[3]])
+            };
+            (component, b[3 + room])
+        })
+    } else {
+        None
+    };
+    skip_marker_segment(reader)?;
+    Some(parsed.filter(|(component, _)| *component < csiz))
 }
 
 pub(crate) fn skip_marker_segment(reader: &mut BitReader<'_>) -> Option<()> {
@@ -932,6 +968,10 @@ pub(crate) mod markers {
     pub(crate) const COC: u8 = 0x53;
     /// Region-of-interest - 'RGN'.
     pub(crate) const RGN: u8 = 0x5E;
+    /// Extended capabilities (T.814).
+    pub(crate) const CAP: u8 = 0x50;
+    /// Corresponding profile (T.814).
+    pub(crate) const CPF: u8 = 0x59;
     /// Quantization default - 'QCD'.
     pub(crate) const QCD: u8 = 0x5C;
     /// Quantization component - 'QCC'.

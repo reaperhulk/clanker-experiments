@@ -25,3 +25,15 @@ All other upstream licenses and profile notices are retained. Original-header
 native oracle comparisons, fixture provenance, deliberate mutations and sanitizer
 results are recorded by the enclosing libheifer project. These changes do not
 claim full JPEG2000 or HTJ2K conformance.
+
+## HTJ2K (ITU-T T.814) code-blocks
+
+- `j2c/ht.rs` ports OpenJPEG's `ht_dec.c` block decoder (cleanup, SigProp and
+  MagRef passes, its malformed-block checks and the address-aligned initial
+  MEL reads); `j2c/ht_luts.rs` holds its VLC tables.
+- HT code-blocks follow OpenJPEG's segment assignment
+  (`opj_t2_read_packet_header`/`opj_t2_read_packet_data`): the first segment
+  takes one pass per packet, the zero bit-plane count is the tag-tree value
+  plus one, and T1 output is halved (5/3) or scaled by half the step (9/7).
+- CAP and CPF main-header markers are skipped; mixed HT code-block style
+  (0x80) is rejected; a main-header RGN shift fails HT decoding.

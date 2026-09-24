@@ -15,6 +15,15 @@ import sys
 import tempfile
 
 MUTATIONS = [
+    ('ht_zero_bitplanes', 'vendor/hayro-jpeg2000/src/j2c/decode.rs', 'code_block.zero_bitplanes.wrapping_add(1)', 'code_block.zero_bitplanes', 'htj2k'),
+    ('ht_reversible_halving', 'vendor/hayro-jpeg2000/src/j2c/decode.rs', '(value / 2) as f32', '(value >> 1) as f32', 'htj2k'),
+    ('ht_mel_initial_unstuff', 'vendor/hayro-jpeg2000/src/j2c/ht.rs', 'if mel.unstuff && byte(data, mel.pos) > 0x8F {', 'if false && byte(data, mel.pos) > 0x8F {', 'htj2k_errors'),
+    ('ht_first_segment_pass', 'vendor/hayro-jpeg2000/src/j2c/segment.rs', 'let new_passes = if segno == 0 { 1 } else { n as u32 };', 'let new_passes = n as u32;', 'htj2k_errors'),
+    ('ht_magref_half', 'vendor/hayro-jpeg2000/src/j2c/ht.rs', 'decoded[idx] |= half;', 'decoded[idx] |= 0;', 'htj2k_errors'),
+    ('ht_stripe_causal', 'vendor/hayro-jpeg2000/src/j2c/ht.rs', '        if !stripe_causal {\n', '        if true {\n', 'htj2k_errors'),
+    ('ht_roi_shift', 'vendor/hayro-jpeg2000/src/j2c/ht.rs', 'if cb.roi_shift != 0 {', 'if false {', 'htj2k_errors'),
+    ('ht_mixed_style', 'vendor/hayro-jpeg2000/src/j2c/codestream.rs', '        if value & 0x80 != 0 {', '        if value & 0x00 != 0 {', 'htj2k_errors'),
+    ('ht_empty_refinement', 'vendor/hayro-jpeg2000/src/j2c/ht.rs', 'if num_passes > 1 && lengths2 == 0 {', 'if false {', 'htj2k_errors'),
     ('jpeg2000_packet_extent', 'vendor/hayro-jpeg2000/src/j2c/segment.rs', 'if oversized_segment || (!complete && header.strict)', 'if !complete && header.strict', 'jpeg2000_sampling'),
     ('jpeg2000_tile_transform', 'vendor/hayro-jpeg2000/src/j2c/decode.rs', 'if tile.mct && !tile.tile_parts.is_empty()', 'if tiles[0].mct && !tile.tile_parts.is_empty()', 'jpeg2000_tiles'),
     ('jpeg2000_tile_wavelet', 'vendor/hayro-jpeg2000/src/j2c/decode.rs', 'for (idx, component_info) in tile.component_infos.iter().enumerate()', 'for (idx, component_info) in header.component_infos.iter().enumerate()', 'jpeg2000_tiles'),
@@ -422,7 +431,7 @@ def main():
     reference = str(Path(args.reference_build).resolve())
     candidate = str(Path(args.candidate).resolve())
     def oracle(suite):
-        if suite.startswith("jpeg2000_"):
+        if suite.startswith("jpeg2000_") or suite.startswith("htj2k"):
             return str(Path(args.jpeg2000_reference_build).resolve())
         if suite in ("avc", "avc_errors", "avc_plugins", "avc_limits", "avc_sequences", "plugin_sequences"):
             return str(Path(args.avc_reference_build).resolve())

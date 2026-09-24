@@ -3,6 +3,8 @@ mod bitplane;
 mod build;
 mod codestream;
 mod decode;
+mod ht;
+mod ht_luts;
 mod idwt;
 mod mct;
 mod progression;

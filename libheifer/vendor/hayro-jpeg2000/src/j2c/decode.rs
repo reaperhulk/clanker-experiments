@@ -22,7 +22,7 @@ use super::progression::{
 };
 use super::tag_tree::TagNode;
 use super::tile::{ComponentTile, ResolutionTile, Tile};
-use super::{ComponentData, bitplane, build, idwt, mct, segment, tile};
+use super::{ComponentData, bitplane, build, ht, idwt, mct, segment, tile};
 use crate::error::{DecodingError, Result, TileError, ValidationError, bail};
 use crate::j2c::segment::MAX_BITPLANE_COUNT;
 use crate::math::SimdBuffer;
@@ -298,6 +298,9 @@ pub(crate) struct TileDecodeContext {
     pub(crate) bit_plane_decode_context: BitPlaneDecodeContext,
     /// Reusable buffers for decoding bitplanes.
     pub(crate) bit_plane_decode_buffers: BitPlaneDecodeBuffers,
+    /// Concatenated data and decoded samples of HT code-blocks.
+    pub(crate) ht_data: Vec<u8>,
+    pub(crate) ht_samples: Vec<i32>,
 }
 
 impl TileDecodeContext {
@@ -400,6 +403,39 @@ fn decode_sub_band_bitplanes(
             .clone()
             .map(|idx| &storage.code_blocks[idx])
         {
+            if component_info.code_block_style().high_throughput {
+                decode_ht_code_block(
+                    code_block,
+                    num_bitplanes,
+                    component_info,
+                    tile_ctx,
+                    &storage.layers,
+                    &storage.segments,
+                )?;
+
+                // OpenJPEG's T1 output: halved for the reversible
+                // transform, scaled by half the step size otherwise.
+                let x_offset = code_block.rect.x0 - sub_band.rect.x0;
+                let y_offset = code_block.rect.y0 - sub_band.rect.y0;
+                let width = code_block.rect.width() as usize;
+                let half_step = 0.5 * dequantization_step;
+                let base_store = &mut storage.coefficients[sub_band.coefficients.clone()];
+                let mut base_idx = (y_offset * sub_band.rect.width()) as usize + x_offset as usize;
+                if width > 0 {
+                    for row in tile_ctx.ht_samples.chunks_exact(width) {
+                        for (output, &value) in base_store[base_idx..].iter_mut().zip(row) {
+                            *output = if irreversible {
+                                value as f32 * half_step
+                            } else {
+                                (value / 2) as f32
+                            };
+                        }
+                        base_idx += sub_band.rect.width() as usize;
+                    }
+                }
+                continue;
+            }
+
             bitplane::decode(
                 code_block,
                 sub_band.sub_band_type,
@@ -436,6 +472,57 @@ fn decode_sub_band_bitplanes(
         }
     }
 
+    Ok(())
+}
+
+/// Collects the segments read for an HT code-block as OpenJPEG's chunks and
+/// decodes it into `tile_ctx.ht_samples`.
+fn decode_ht_code_block(
+    code_block: &CodeBlock,
+    num_bitplanes: u8,
+    component_info: &ComponentInfo,
+    tile_ctx: &mut TileDecodeContext,
+    layers: &[Layer],
+    segments: &[Segment<'_>],
+) -> Result<()> {
+    let mut seg = [(0u32, 0u32); 2];
+    let mut num_chunks = 0;
+    let mut first_offset = 0;
+    tile_ctx.ht_data.clear();
+    for layer in &layers[code_block.layers.clone()] {
+        let Some(range) = layer.segments.clone() else {
+            continue;
+        };
+        for segment in segments[range].iter().filter(|s| s.read) {
+            if num_chunks == 0 {
+                first_offset = segment.offset;
+            }
+            num_chunks += 1;
+            tile_ctx.ht_data.extend_from_slice(segment.data);
+            if let Some(entry) = seg.get_mut(segment.idx as usize) {
+                entry.0 += segment.coding_pases as u32;
+                entry.1 = entry.1.wrapping_add(segment.data_length);
+            }
+        }
+    }
+
+    let block = ht::HtCodeBlock {
+        data: &tile_ctx.ht_data,
+        // A single chunk is read in place from the tile buffer; several are
+        // first copied to a fresh, aligned buffer.
+        align: if num_chunks == 1 { first_offset & 3 } else { 0 },
+        num_chunks,
+        segments: seg,
+        num_segments: code_block.ht_num_segments as usize,
+        mb: num_bitplanes as u32,
+        // OpenJPEG counts tag-tree thresholds, one more than the value.
+        zero_bitplanes: code_block.zero_bitplanes.wrapping_add(1),
+        width: code_block.rect.width() as usize,
+        height: code_block.rect.height() as usize,
+        stripe_causal: component_info.code_block_style().vertically_causal_context,
+        roi_shift: component_info.roi_shift,
+    };
+    ht::decode(&block, &mut tile_ctx.ht_samples).ok_or(DecodingError::CodeBlockDecodeFailure)?;
     Ok(())
 }
 
