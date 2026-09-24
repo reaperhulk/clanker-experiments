@@ -756,7 +756,7 @@ libheif's rav1e plugin, byte-identical to libheif with the same rav1e (143
 encoding cases).
 
 VVC decoding uses an in-tree pure Rust decoder written from vvdec 3.2.0. It
-matches vvdec on 39 of 42 intra JVET conformance streams (the other three use
+matches vvdec on 41 of 44 intra JVET conformance streams (the other three use
 palette, which vvdec also rejects) and libheif's vvdec plugin on 270
 vvenc-generated items (6750 cases). Inter pictures remain unsupported.
 

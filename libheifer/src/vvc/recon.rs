@@ -2167,32 +2167,48 @@ fn inv_transform(ctx: &Ctx, tu: &Tu, comp: usize, act: bool) -> Result<Vec<i32>,
     if w > 1 && h > 1 {
         let s1 = 7;
         let s2 = 20 - bd;
-        // vertical first: tmp[x][k]
+        // Columns and rows past the last non-zero coefficient contribute
+        // nothing; 32-bit accumulation cannot overflow (vvdec uses int).
+        let (mut mx, mut my) = (0usize, 0usize);
+        for (i, &c) in coeff.iter().enumerate() {
+            if c != 0 {
+                mx = mx.max(i % w);
+                my = my.max(i / w);
+            }
+        }
+        // vertical first: tmp[x][j]
         let mv = matrix(tr_v, h);
-        let mut tmp = vec![0i64; w * h];
-        for x in 0..w {
-            for j in 0..h {
-                let mut acc = 0i64;
-                for k in 0..h {
-                    let c = coeff[k * w + x];
-                    if c != 0 {
-                        acc += i64::from(c) * i64::from(mv[k * h + j]);
+        let mut tmp = vec![0i32; w * h];
+        let mut acc = vec![0i32; h.max(w)];
+        for x in 0..=mx {
+            acc[..h].fill(0);
+            for k in 0..=my {
+                let c = coeff[k * w + x];
+                if c != 0 {
+                    let row = &mv[k * h..k * h + h];
+                    for (a, &m) in acc[..h].iter_mut().zip(row) {
+                        *a += c * i32::from(m);
                     }
                 }
-                tmp[x * h + j] = ((acc + (1 << (s1 - 1))) >> s1).clamp(clip_min, clip_max);
+            }
+            for (t, &a) in tmp[x * h..x * h + h].iter_mut().zip(&acc[..h]) {
+                *t = ((a + (1 << (s1 - 1))) >> s1).clamp(clip_min, clip_max);
             }
         }
         let mh = matrix(tr_h, w);
         for y in 0..h {
-            for j in 0..w {
-                let mut acc = 0i64;
-                for k in 0..w {
-                    let c = tmp[k * h + y];
-                    if c != 0 {
-                        acc += c * i64::from(mh[k * w + j]);
+            acc[..w].fill(0);
+            for k in 0..=mx {
+                let c = tmp[k * h + y];
+                if c != 0 {
+                    let row = &mh[k * w..k * w + w];
+                    for (a, &m) in acc[..w].iter_mut().zip(row) {
+                        *a += c * i32::from(m);
                     }
                 }
-                out[y * w + j] = ((acc + (1 << (s2 - 1))) >> s2).clamp(clip_min, clip_max) as i32;
+            }
+            for (o, &a) in out[y * w..y * w + w].iter_mut().zip(&acc[..w]) {
+                *o = ((a + (1 << (s2 - 1))) >> s2).clamp(clip_min, clip_max);
             }
         }
     } else {
@@ -2204,7 +2220,7 @@ fn inv_transform(ctx: &Ctx, tu: &Tu, comp: usize, act: bool) -> Result<Vec<i32>,
             for k in 0..n {
                 acc += i64::from(coeff[k]) * i64::from(m[k * n + j]);
             }
-            out[j] = ((acc + (1 << (s - 1))) >> s).clamp(clip_min, clip_max) as i32;
+            out[j] = ((acc + (1 << (s - 1))) >> s).clamp(i64::from(clip_min), i64::from(clip_max)) as i32;
         }
     }
     Ok(out)

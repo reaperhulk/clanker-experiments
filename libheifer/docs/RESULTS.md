@@ -1904,7 +1904,7 @@ registered as the built-in decoder "libheifer VVC decoder" (id
 The decoder was debugged against vvdec's syntax trace, with vvdec's in-loop
 filters disabled stage by stage in a local tracing build. The first picture
 of every intra JVET conformance stream that vvdec decodes matches it
-bit-exactly (39 of the 42 streams, 4:0:0 to 4:4:4, 8 and 10 bit). The three
+bit-exactly (41 of the 44 streams, 4:0:0 to 4:4:4, 8 and 10 bit). The three
 palette streams are rejected, as they are by vvdec.
 
 `tools/generate_vvc_fixtures.py` encodes 270 owned single-picture streams with

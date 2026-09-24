@@ -245,63 +245,121 @@ impl Src for TmpSrc {
     }
 }
 
+/// A block with a four-sample margin read from another source, so the
+/// filters index directly instead of clamping every tap.
+struct Padded {
+    ox: i32,
+    oy: i32,
+    stride: i32,
+    data: Vec<i32>,
+}
+
+impl Padded {
+    const MARGIN: i32 = 4;
+
+    fn new<S: Src>(s: &S, x: i32, y: i32, w: i32, h: i32) -> Self {
+        let m = Self::MARGIN;
+        let (ox, oy, stride, rows) = (x - m, y - m, w + 2 * m, h + 2 * m);
+        let mut data = Vec::with_capacity((stride * rows) as usize);
+        for yy in oy..oy + rows {
+            for xx in ox..ox + stride {
+                data.push(s.g(xx, yy));
+            }
+        }
+        Self {
+            ox,
+            oy,
+            stride,
+            data,
+        }
+    }
+}
+
+impl Src for Padded {
+    #[inline(always)]
+    fn g(&self, x: i32, y: i32) -> i32 {
+        self.data[((y - self.oy) * self.stride + x - self.ox) as usize]
+    }
+}
+
 #[inline]
 fn clip_alf(clip: i32, cur: i32, a: i32, b: i32) -> i32 {
     (a - cur).clamp(-clip, clip) + (b - cur).clamp(-clip, clip)
 }
 
-/// vvdec's `deriveClassificationBlk` for one 4x4 block at `(x, y)`;
-/// `ry` is `y` relative to the CTU.
-fn classify<S: Src>(
-    s: &S,
-    x: i32,
-    y: i32,
-    ry: i32,
+/// One subsampled Laplacian sample of vvdec's `deriveClassificationBlk` at
+/// `(px, py)`; `rr` is `py` relative to the CTU.
+#[inline]
+fn laplacian(s: &Padded, px: i32, py: i32, rr: i32, vb_h: i32, vb_pos: i32) -> [i32; 4] {
+    let (mut r0, r1, r2, mut r3) = (py - 1, py, py + 1, py + 2);
+    if rr > 0 && rr % vb_h == vb_pos - 2 {
+        r3 = r2;
+    } else if rr > 0 && rr % vb_h == vb_pos {
+        r0 = r1;
+    }
+    let y0 = s.g(px, r1) << 1;
+    let yup1 = s.g(px + 1, r2) << 1;
+    [
+        (y0 - s.g(px, r0) - s.g(px, r2)).abs() + (yup1 - s.g(px + 1, r1) - s.g(px + 1, r3)).abs(),
+        (y0 - s.g(px + 1, r1) - s.g(px - 1, r1)).abs()
+            + (yup1 - s.g(px + 2, r2) - s.g(px, r2)).abs(),
+        (y0 - s.g(px - 1, r0) - s.g(px + 1, r2)).abs()
+            + (yup1 - s.g(px, r1) - s.g(px + 2, r3)).abs(),
+        (y0 - s.g(px - 1, r2) - s.g(px + 1, r0)).abs()
+            + (yup1 - s.g(px, r3) - s.g(px + 2, r1)).abs(),
+    ]
+}
+
+/// vvdec's `deriveClassificationBlk`: the class and transpose index of every
+/// 4x4 block of `(x0, y0, w, h)`, from Laplacians on the even-sample grid.
+fn classify_area(
+    s: &Padded,
+    x0: i32,
+    y0: i32,
+    w: i32,
+    h: i32,
+    ctu_y: i32,
     bd: u32,
     vb_h: i32,
     vb_pos: i32,
-) -> (usize, usize) {
-    const TH: [usize; 16] = [0, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 4];
-    let lap = |dx: i32, dy: i32| -> [i32; 4] {
-        let px = x - 2 + dx;
-        let py = y - 2 + dy;
-        let rr = ry - 2 + dy;
-        let (mut r0, r1, r2, mut r3) = (py - 1, py, py + 1, py + 2);
-        if rr > 0 && rr % vb_h == vb_pos - 2 {
-            r3 = r2;
-        } else if rr > 0 && rr % vb_h == vb_pos {
-            r0 = r1;
-        }
-        let y0 = s.g(px, r1) << 1;
-        let yup1 = s.g(px + 1, r2) << 1;
-        [
-            (y0 - s.g(px, r0) - s.g(px, r2)).abs()
-                + (yup1 - s.g(px + 1, r1) - s.g(px + 1, r3)).abs(),
-            (y0 - s.g(px + 1, r1) - s.g(px - 1, r1)).abs()
-                + (yup1 - s.g(px + 2, r2) - s.g(px, r2)).abs(),
-            (y0 - s.g(px - 1, r0) - s.g(px + 1, r2)).abs()
-                + (yup1 - s.g(px, r1) - s.g(px + 2, r3)).abs(),
-            (y0 - s.g(px - 1, r2) - s.g(px + 1, r0)).abs()
-                + (yup1 - s.g(px, r3) - s.g(px + 2, r1)).abs(),
-        ]
-    };
-    let m = ry % vb_h;
-    let rows: &[i32] = if m == vb_pos - 4 {
-        &[0, 2, 4]
-    } else if m == vb_pos {
-        &[2, 4, 6]
-    } else {
-        &[0, 2, 4, 6]
-    };
-    let mut sum = [0i32; 4];
-    for &dy in rows {
-        for dx in [0, 2, 4, 6] {
-            let l = lap(dx, dy);
-            for k in 0..4 {
-                sum[k] += l[k];
-            }
+) -> Vec<(usize, usize)> {
+    let (gw, gh) = ((w / 2 + 2) as usize, (h / 2 + 2) as usize);
+    let mut grid = Vec::with_capacity(gw * gh);
+    for gy in 0..gh as i32 {
+        let py = y0 - 2 + 2 * gy;
+        for gx in 0..gw as i32 {
+            grid.push(laplacian(s, x0 - 2 + 2 * gx, py, py - ctu_y, vb_h, vb_pos));
         }
     }
+    let mut out = Vec::with_capacity(((w / 4) * (h / 4)) as usize);
+    for by in (0..h).step_by(4) {
+        let ry = y0 + by - ctu_y;
+        let m = ry % vb_h;
+        let rows: &[usize] = if m == vb_pos - 4 {
+            &[0, 1, 2]
+        } else if m == vb_pos {
+            &[1, 2, 3]
+        } else {
+            &[0, 1, 2, 3]
+        };
+        for bx in (0..w).step_by(4) {
+            let (gx0, gy0) = ((bx / 2) as usize, (by / 2) as usize);
+            let mut sum = [0i32; 4];
+            for &k in rows {
+                for l in &grid[(gy0 + k) * gw + gx0..(gy0 + k) * gw + gx0 + 4] {
+                    for i in 0..4 {
+                        sum[i] += l[i];
+                    }
+                }
+            }
+            out.push(decide(sum, m, bd, vb_pos));
+        }
+    }
+    out
+}
+
+fn decide(sum: [i32; 4], m: i32, bd: u32, vb_pos: i32) -> (usize, usize) {
+    const TH: [usize; 16] = [0, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 4];
     let [sv, sh, sd0, sd1] = sum;
     let mult = if m == vb_pos - 4 || m == vb_pos {
         96
@@ -344,8 +402,8 @@ struct Vb {
 /// vvdec's `filterBlk`: filters `(x, y, w, h)` (picture coordinates) of one
 /// component into `dst`. `ctu_y` is the CTU's first row in this component.
 #[allow(clippy::too_many_arguments)]
-fn filter_blk<S: Src>(
-    s: &S,
+fn filter_blk(
+    s: &Padded,
     dst: &mut Plane,
     x0: i32,
     y0: i32,
@@ -360,86 +418,96 @@ fn filter_blk<S: Src>(
     bd: u32,
     max: i32,
 ) {
-    let mut by = 0;
-    while by < h {
+    let classes = if luma.is_some() {
+        classify_area(s, x0, y0, w, h, ctu_y, bd, vb.h, vb.pos)
+    } else {
+        Vec::new()
+    };
+    let blocks_w = ((w + 3) / 4) as usize;
+    let near = if chroma { 2 } else { 4 };
+    let stride = s.stride as usize;
+    let row = |r: i32| -> &[i32] {
+        let start = ((r - s.oy) * s.stride) as usize;
+        &s.data[start..start + stride]
+    };
+    for y in y0..y0 + h {
+        let by = y - y0;
+        let y_vb = (y - ctu_y) & (vb.h - 1);
+        let (mut r1, mut r2, mut r3, mut r4, mut r5, mut r6) =
+            (y + 1, y - 1, y + 2, y - 2, y + 3, y - 3);
+        if y_vb < vb.pos && y_vb >= vb.pos - near {
+            if y_vb == vb.pos - 1 {
+                r1 = y;
+                r2 = y;
+            }
+            if y_vb >= vb.pos - 2 {
+                r3 = r1;
+                r4 = r2;
+            }
+            if y_vb >= vb.pos - 3 {
+                r5 = r3;
+                r6 = r4;
+            }
+        } else if y_vb >= vb.pos && y_vb < vb.pos + near {
+            if y_vb == vb.pos {
+                r2 = y;
+                r1 = y;
+            }
+            if y_vb <= vb.pos + 1 {
+                r4 = r2;
+                r3 = r1;
+            }
+            if y_vb <= vb.pos + 2 {
+                r6 = r4;
+                r5 = r3;
+            }
+        }
+        let near_vb = y_vb == vb.pos - 1 || y_vb == vb.pos;
+        let (p0, p1, p2, p3, p4, p5, p6) =
+            (row(y), row(r1), row(r2), row(r3), row(r4), row(r5), row(r6));
         let mut bx = 0;
         while bx < w {
             let (coeff, clip) = if let Some(lf) = luma {
-                let (c, t) = classify(s, x0 + bx, y0 + by, y0 + by - ctu_y, bd, vb.h, vb.pos);
+                let (c, t) = classes[(by / 4) as usize * blocks_w + (bx / 4) as usize];
                 (&lf.coeff[c][t], &lf.clip[c][t])
             } else {
                 (cc, cl)
             };
-            for ii in 0..4.min(h - by) {
-                let y = y0 + by + ii;
-                let y_vb = (y - ctu_y) & (vb.h - 1);
-                let (mut r1, mut r2, mut r3, mut r4, mut r5, mut r6) =
-                    (y + 1, y - 1, y + 2, y - 2, y + 3, y - 3);
-                let near = if chroma { 2 } else { 4 };
-                if y_vb < vb.pos && y_vb >= vb.pos - near {
-                    if y_vb == vb.pos - 1 {
-                        r1 = y;
-                        r2 = y;
-                    }
-                    if y_vb >= vb.pos - 2 {
-                        r3 = r1;
-                        r4 = r2;
-                    }
-                    if y_vb >= vb.pos - 3 {
-                        r5 = r3;
-                        r6 = r4;
-                    }
-                } else if y_vb >= vb.pos && y_vb < vb.pos + near {
-                    if y_vb == vb.pos {
-                        r2 = y;
-                        r1 = y;
-                    }
-                    if y_vb <= vb.pos + 1 {
-                        r4 = r2;
-                        r3 = r1;
-                    }
-                    if y_vb <= vb.pos + 2 {
-                        r6 = r4;
-                        r5 = r3;
-                    }
+            for jj in 0..4.min(w - bx) {
+                let x = x0 + bx + jj;
+                let i = (x - s.ox) as usize;
+                let cur = p0[i];
+                let mut sum = 0;
+                if !chroma {
+                    sum += coeff[0] * clip_alf(clip[0], cur, p5[i], p6[i]);
+                    sum += coeff[1] * clip_alf(clip[1], cur, p3[i + 1], p4[i - 1]);
+                    sum += coeff[2] * clip_alf(clip[2], cur, p3[i], p4[i]);
+                    sum += coeff[3] * clip_alf(clip[3], cur, p3[i - 1], p4[i + 1]);
+                    sum += coeff[4] * clip_alf(clip[4], cur, p1[i + 2], p2[i - 2]);
+                    sum += coeff[5] * clip_alf(clip[5], cur, p1[i + 1], p2[i - 1]);
+                    sum += coeff[6] * clip_alf(clip[6], cur, p1[i], p2[i]);
+                    sum += coeff[7] * clip_alf(clip[7], cur, p1[i - 1], p2[i + 1]);
+                    sum += coeff[8] * clip_alf(clip[8], cur, p1[i - 2], p2[i + 2]);
+                    sum += coeff[9] * clip_alf(clip[9], cur, p0[i + 3], p0[i - 3]);
+                    sum += coeff[10] * clip_alf(clip[10], cur, p0[i + 2], p0[i - 2]);
+                    sum += coeff[11] * clip_alf(clip[11], cur, p0[i + 1], p0[i - 1]);
+                } else {
+                    sum += coeff[0] * clip_alf(clip[0], cur, p3[i], p4[i]);
+                    sum += coeff[1] * clip_alf(clip[1], cur, p1[i + 1], p2[i - 1]);
+                    sum += coeff[2] * clip_alf(clip[2], cur, p1[i], p2[i]);
+                    sum += coeff[3] * clip_alf(clip[3], cur, p1[i - 1], p2[i + 1]);
+                    sum += coeff[4] * clip_alf(clip[4], cur, p0[i + 2], p0[i - 2]);
+                    sum += coeff[5] * clip_alf(clip[5], cur, p0[i + 1], p0[i - 1]);
                 }
-                let near_vb = y_vb == vb.pos - 1 || y_vb == vb.pos;
-                for jj in 0..4.min(w - bx) {
-                    let x = x0 + bx + jj;
-                    let cur = s.g(x, y);
-                    let mut sum = 0;
-                    if !chroma {
-                        sum += coeff[0] * clip_alf(clip[0], cur, s.g(x, r5), s.g(x, r6));
-                        sum += coeff[1] * clip_alf(clip[1], cur, s.g(x + 1, r3), s.g(x - 1, r4));
-                        sum += coeff[2] * clip_alf(clip[2], cur, s.g(x, r3), s.g(x, r4));
-                        sum += coeff[3] * clip_alf(clip[3], cur, s.g(x - 1, r3), s.g(x + 1, r4));
-                        sum += coeff[4] * clip_alf(clip[4], cur, s.g(x + 2, r1), s.g(x - 2, r2));
-                        sum += coeff[5] * clip_alf(clip[5], cur, s.g(x + 1, r1), s.g(x - 1, r2));
-                        sum += coeff[6] * clip_alf(clip[6], cur, s.g(x, r1), s.g(x, r2));
-                        sum += coeff[7] * clip_alf(clip[7], cur, s.g(x - 1, r1), s.g(x + 1, r2));
-                        sum += coeff[8] * clip_alf(clip[8], cur, s.g(x - 2, r1), s.g(x + 2, r2));
-                        sum += coeff[9] * clip_alf(clip[9], cur, s.g(x + 3, y), s.g(x - 3, y));
-                        sum += coeff[10] * clip_alf(clip[10], cur, s.g(x + 2, y), s.g(x - 2, y));
-                        sum += coeff[11] * clip_alf(clip[11], cur, s.g(x + 1, y), s.g(x - 1, y));
-                    } else {
-                        sum += coeff[0] * clip_alf(clip[0], cur, s.g(x, r3), s.g(x, r4));
-                        sum += coeff[1] * clip_alf(clip[1], cur, s.g(x + 1, r1), s.g(x - 1, r2));
-                        sum += coeff[2] * clip_alf(clip[2], cur, s.g(x, r1), s.g(x, r2));
-                        sum += coeff[3] * clip_alf(clip[3], cur, s.g(x - 1, r1), s.g(x + 1, r2));
-                        sum += coeff[4] * clip_alf(clip[4], cur, s.g(x + 2, y), s.g(x - 2, y));
-                        sum += coeff[5] * clip_alf(clip[5], cur, s.g(x + 1, y), s.g(x - 1, y));
-                    }
-                    sum = if near_vb {
-                        (sum + (1 << 9)) >> 10
-                    } else {
-                        (sum + 64) >> 7
-                    };
-                    dst.set(x, y, (sum + cur).clamp(0, max) as i16);
-                }
+                sum = if near_vb {
+                    (sum + (1 << 9)) >> 10
+                } else {
+                    (sum + 64) >> 7
+                };
+                dst.set(x, y, (sum + cur).clamp(0, max) as i16);
             }
             bx += 4;
         }
-        by += 4;
     }
 }
 
@@ -702,9 +770,10 @@ pub fn alf(
             !vb_hor.is_empty() || !vb_ver.is_empty() || ct || cb || cl || cr || raster_pad != 0;
         let (planes_y, rest) = pic.planes.split_at_mut(1);
         if !crossed {
+            let luma_src = Padded::new(&PicSrc(&src[0]), x0, y0, w, h);
             if let Some(lf) = &filters.luma {
                 filter_blk(
-                    &PicSrc(&src[0]),
+                    &luma_src,
                     &mut planes_y[0],
                     x0,
                     y0,
@@ -724,7 +793,7 @@ pub fn alf(
                 let (bx, by, bw, bh) = (x0 >> csx, y0 >> csy, w >> csx, h >> csy);
                 if let Some((co, cl)) = &filters.chroma[c - 1] {
                     filter_blk(
-                        &PicSrc(&src[c]),
+                        &Padded::new(&PicSrc(&src[c]), bx, by, bw, bh),
                         &mut rest[c - 1],
                         bx,
                         by,
@@ -742,7 +811,7 @@ pub fn alf(
                 }
                 if let Some(coeff) = &filters.cc[c - 1] {
                     filter_cc(
-                        &PicSrc(&src[0]),
+                        &luma_src,
                         &mut rest[c - 1],
                         bx,
                         by,
@@ -802,7 +871,7 @@ pub fn alf(
                         if c == 0 {
                             if let Some(lf) = &filters.luma {
                                 filter_blk(
-                                    &t,
+                                    &Padded::new(&t, xs, ys, ww, hh),
                                     &mut planes_y[0],
                                     xs,
                                     ys,
@@ -820,7 +889,7 @@ pub fn alf(
                             }
                         } else if let Some((co, clp)) = &filters.chroma[c - 1] {
                             filter_blk(
-                                &t,
+                                &Padded::new(&t, xs >> sx, ys >> sy, ww >> sx, hh >> sy),
                                 &mut rest[c - 1],
                                 xs >> sx,
                                 ys >> sy,
@@ -850,7 +919,7 @@ pub fn alf(
                         let (bx, by, bw, bh) = (xs >> sx, ys >> sy, ww >> sx, hh >> sy);
                         if let Some((co, clp)) = &filters.chroma[c - 1] {
                             filter_blk(
-                                &tc,
+                                &Padded::new(&tc, bx, by, bw, bh),
                                 &mut rest[c - 1],
                                 bx,
                                 by,
@@ -868,7 +937,7 @@ pub fn alf(
                         }
                         if let Some(coeff) = &filters.cc[c - 1] {
                             filter_cc(
-                                &tl,
+                                &Padded::new(&tl, xs, ys, ww, hh),
                                 &mut rest[c - 1],
                                 bx,
                                 by,
