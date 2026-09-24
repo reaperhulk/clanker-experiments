@@ -25,6 +25,7 @@ mod deblock;
 mod filter;
 mod pic;
 pub mod ps;
+mod sao;
 mod recon;
 mod tables;
 
@@ -335,6 +336,7 @@ fn decode_slice_data<'d>(pic: &mut Picture, si: &ctu::SliceInfo, data: &'d [u8])
             prev_qp = [sh.qp, sh.qp];
         }
         dec.pic.ctus[addr as usize].slice = Some(si.slice_idx);
+        dec.pic.ctus[addr as usize].tile = tile_idx;
         dec.ctu_addr = addr;
         dec.tile = tile_idx;
         let area = dec.pic.fmt.unit(cx as i32 * ctu_size, cy as i32 * ctu_size, ctu_size, ctu_size);

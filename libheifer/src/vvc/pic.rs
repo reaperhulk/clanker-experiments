@@ -230,6 +230,7 @@ pub struct AlfCtu {
 #[derive(Clone)]
 pub struct CtuData {
     pub slice: Option<u32>,
+    pub tile: u32,
     pub sao: [SaoParam; 3],
     pub alf: AlfCtu,
     pub num_cus: u32,
@@ -286,7 +287,7 @@ impl Picture {
             map_w,
             map_h,
             ctus: vec![
-                CtuData { slice: None, sao: [SaoParam::default(); 3], alf: AlfCtu::default(), num_cus: 0, num_tus: 0 };
+                CtuData { slice: None, tile: 0, sao: [SaoParam::default(); 3], alf: AlfCtu::default(), num_cus: 0, num_tus: 0 };
                 n
             ],
         }

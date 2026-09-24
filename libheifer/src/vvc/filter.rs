@@ -37,5 +37,8 @@ pub fn loop_filter(
     if std::env::var_os("VVC_NO_DEBLOCK").is_none() {
         super::deblock::deblock(pic, sps, pps, ph, slices);
     }
+    if std::env::var_os("VVC_NO_SAO").is_none() {
+        super::sao::sao(pic, sps, pps, ph);
+    }
     Ok(())
 }
