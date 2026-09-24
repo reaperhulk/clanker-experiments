@@ -38,17 +38,17 @@ const TC0: [[i32; 3]; 52] = [
     [9,12,18],[10,13,20],[11,15,23],[13,17,25],
 ];
 
-// The scalar per-line filters below are the `#[cfg(not(accel))]` production
-// path in `filter_frame_rows` (default-features build — no SIMD crate). Under
-// the accel cfg they compile out entirely, so don't let an --all-features
-// dead-code pass fool you into deleting them (it did, once).
-#[cfg(not(accel))]
+// libheifer: the scalar per-line filters below are the test oracle for the
+// fearless_simd kernels in `simd_deblock.rs`, which replaced them in
+// production. Keep them: `simd_matches_scalar` compares every lane against
+// them.
+#[cfg(all(test, not(accel)))]
 #[inline]
 fn clip1(v: i32) -> u8 {
     v.clamp(0, 255) as u8
 }
 
-#[cfg(not(accel))]
+#[cfg(all(test, not(accel)))]
 #[inline]
 fn clip3(lo: i32, hi: i32, v: i32) -> i32 {
     v.clamp(lo, hi)
@@ -56,7 +56,7 @@ fn clip3(lo: i32, hi: i32, v: i32) -> i32 {
 
 /// One sample line crossing an edge: `p3..p0 | q0..q3` (indices 0..3 from the
 /// edge outward). Reads/writes a plane along `stride`-spaced positions.
-#[cfg(not(accel))]
+#[cfg(all(test, not(accel)))]
 struct Line {
     /// Byte offset of q0 (the first sample on the "right"/"below" side).
     base: usize,
@@ -66,7 +66,7 @@ struct Line {
 }
 
 /// Filters luma samples across one edge line. `bs` is 3 (internal) or 4 (MB edge).
-#[cfg(not(accel))]
+#[cfg(all(test, not(accel)))]
 #[allow(clippy::too_many_arguments)]
 fn filter_luma_line(plane: &mut [u8], line: &Line, bs: i32, alpha: i32, beta: i32, tc0: i32) {
     let at = |i: isize| -> i32 { plane[(line.base as isize + i * line.step) as usize] as i32 };
@@ -128,7 +128,7 @@ fn filter_luma_line(plane: &mut [u8], line: &Line, bs: i32, alpha: i32, beta: i3
 /// keeps literal) replaces eight checked strided indexings. Bit-identical to
 /// the strided form by `contig_line_filters_match_strided`, which keeps the
 /// strided original (still the horizontal-path production code) as the oracle.
-#[cfg(not(accel))]
+#[cfg(all(test, not(accel)))]
 fn filter_luma_line_contig(
     plane: &mut [u8],
     base: usize,
@@ -179,7 +179,7 @@ fn filter_luma_line_contig(
 
 /// [`filter_chroma_line`] specialized for VERTICAL edges — the 4-byte twin of
 /// [`filter_luma_line_contig`], same oracle test.
-#[cfg(not(accel))]
+#[cfg(all(test, not(accel)))]
 fn filter_chroma_line_contig(
     plane: &mut [u8],
     base: usize,
@@ -206,7 +206,7 @@ fn filter_chroma_line_contig(
 }
 
 /// Filters chroma samples across one edge line (only p0/q0 are modified).
-#[cfg(not(accel))]
+#[cfg(all(test, not(accel)))]
 fn filter_chroma_line(plane: &mut [u8], line: &Line, bs: i32, alpha: i32, beta: i32, tc0: i32) {
     let at = |i: isize| -> i32 { plane[(line.base as isize + i * line.step) as usize] as i32 };
     let (p0, p1) = (at(-1), at(-2));
@@ -2579,6 +2579,8 @@ fn filter_frame_rows_impl<const PRE: bool>(
     let qpc = |qpy_val: i32| qpc_plane(qpy_val, 0);
     // Arms resolved ONCE per frame, never per macroblock (see `bs_twopass`).
     let fs = filtstat::on();
+    #[cfg(not(accel))]
+    let level = crate::simd_deblock::level();
     let two_pass = bs_twopass();
     let kind_off = kind_gate_off();
     let verify_kinds = verify_kind();
@@ -2846,20 +2848,12 @@ fn filter_frame_rows_impl<const PRE: bool>(
                         );
                     }
                 }
+                // libheifer: one fearless_simd call per 16-sample edge.
                 #[cfg(not(accel))]
-                for (seg, &bs) in bs4.iter().enumerate() {
-                    if bs == 0 {
-                        continue;
-                    }
-                    let tc0 = tc0_luma(bs);
-                    for row in 0..4 {
-                        let yy = mb_y * 16 + seg * 4 + row;
-                        // Vertical edge → the line is CONTIGUOUS: the window
-                        // variant folds the per-sample bounds checks. `x >= 4`
-                        // here (the `be == 0 && mb_x == 0` edge is skipped
-                        // above), so `base - 4` cannot underflow.
-                        filter_luma_line_contig(y, yy * cw + x, bs, alpha_y, beta_y, tc0);
-                    }
+                {
+                    let _ = tc0_luma;
+                    let lanes = crate::simd_deblock::Lanes::luma(bs4, alpha_y, beta_y, tc0a);
+                    crate::simd_deblock::luma_cols(level, y, mb_y * 16 * cw + x, cw, &lanes);
                 }
             }
             // ---- luma horizontal edges (block rows 0..4) ----
@@ -2952,19 +2946,10 @@ fn filter_frame_rows_impl<const PRE: bool>(
                     }
                 }
                 #[cfg(not(accel))]
-                for (seg, &bs) in bs4.iter().enumerate() {
-                    if bs == 0 {
-                        continue;
-                    }
-                    let tc0 = tc0_luma(bs);
-                    for col in 0..4 {
-                        let x = mb_x * 16 + seg * 4 + col;
-                        let line = Line {
-                            base: yy * cw + x,
-                            step: cw as isize,
-                        };
-                        filter_luma_line(y, &line, bs, alpha_y, beta_y, tc0);
-                    }
+                {
+                    let _ = tc0_luma;
+                    let lanes = crate::simd_deblock::Lanes::luma(bs4, alpha_y, beta_y, tc0a);
+                    crate::simd_deblock::luma_rows(level, y, yy * cw + mb_x * 16, cw, &lanes);
                 }
             }
             // ---- chroma edges (8×8): bS taken from the co-located luma edge ----
@@ -3179,7 +3164,11 @@ fn filter_frame_rows_impl<const PRE: bool>(
                     } else {
                         (0, 0, [0; 3])
                     };
-                    (vertical, horizontal, thresholds(cur_qpc, offset_a, offset_b))
+                    (
+                        vertical,
+                        horizontal,
+                        thresholds(cur_qpc, offset_a, offset_b),
+                    )
                 };
                 let tc0_of = |arr: [i32; 3], bs: i32| {
                     if (1..4).contains(&bs) {
@@ -3235,75 +3224,43 @@ fn filter_frame_rows_impl<const PRE: bool>(
                     }
                     bs4
                 };
-                for (plane_index, plane) in [&mut *u, &mut *v].into_iter().enumerate() {
-                    let (
-                        (alpha_cv, beta_cv, tc0cv),
-                        (alpha_ch, beta_ch, tc0ch),
-                        (alpha_ci, beta_ci, tc0ci),
-                    ) = chroma_thresholds(plane_index);
-                    for cxe in [0usize, 4] {
-                        if cxe == 0 && mb_x == 0 {
-                            continue;
-                        }
-                        if flat_inter && cxe != 0 {
-                            continue;
-                        }
-                        let mb_edge = cxe == 0;
-                        // MB-left edge uses the cross-MB chroma avg; internal uses the MB's own.
-                        let (alpha_c, beta_c, tc0c) = if mb_edge {
-                            (alpha_cv, beta_cv, tc0cv)
-                        } else {
-                            (alpha_ci, beta_ci, tc0ci)
-                        };
-                        let bs4 = chroma_bs(&bs_v, cxe, true, mb_edge);
-                        let x = mb_x * 8 + cxe;
-                        for row in 0..8 {
-                            // Segment = the co-located luma block row (2 chroma rows each).
-                            let bs = bs4[(row * 2) / 4];
-                            if bs == 0 {
-                                continue;
-                            }
-                            let yy = mb_y * 8 + row;
-                            // Vertical edge → contiguous window (x >= 2: the
-                            // left-border MB edge is skipped above).
-                            filter_chroma_line_contig(
-                                plane,
-                                yy * ccw + x,
-                                bs,
-                                alpha_c,
-                                beta_c,
-                                tc0_of(tc0c, bs),
-                            );
-                        }
+                // libheifer: Cb and Cr share one 16-lane fearless_simd call per edge,
+                // each lane with its plane's thresholds.
+                let _ = tc0_of;
+                let th = [chroma_thresholds(0), chroma_thresholds(1)];
+                for cxe in [0usize, 4] {
+                    if cxe == 0 && mb_x == 0 {
+                        continue;
                     }
-                    for cye in [0usize, 4] {
-                        if cye == 0 && mb_y == 0 {
-                            continue;
-                        }
-                        if flat_inter && cye != 0 {
-                            continue;
-                        }
-                        let mb_edge = cye == 0;
-                        let (alpha_c, beta_c, tc0c) = if mb_edge {
-                            (alpha_ch, beta_ch, tc0ch)
-                        } else {
-                            (alpha_ci, beta_ci, tc0ci)
-                        };
-                        let bs4 = chroma_bs(&bs_h, cye, false, mb_edge);
-                        let yy = mb_y * 8 + cye;
-                        for col in 0..8 {
-                            // Segment = the co-located luma block column.
-                            let bs = bs4[(col * 2) / 4];
-                            if bs == 0 {
-                                continue;
-                            }
-                            let line = Line {
-                                base: yy * ccw + (mb_x * 8 + col),
-                                step: ccw as isize,
-                            };
-                            filter_chroma_line(plane, &line, bs, alpha_c, beta_c, tc0_of(tc0c, bs));
-                        }
+                    if flat_inter && cxe != 0 {
+                        continue;
                     }
+                    let mb_edge = cxe == 0;
+                    let bs4 = chroma_bs(&bs_v, cxe, true, mb_edge);
+                    if bs4 == [0; 4] {
+                        continue;
+                    }
+                    let params = th.map(|(ver, _, int)| if mb_edge { ver } else { int });
+                    let lanes = crate::simd_deblock::Lanes::chroma(bs4, params);
+                    let base = mb_y * 8 * ccw + mb_x * 8 + cxe;
+                    crate::simd_deblock::chroma_cols(level, u, v, base, ccw, &lanes);
+                }
+                for cye in [0usize, 4] {
+                    if cye == 0 && mb_y == 0 {
+                        continue;
+                    }
+                    if flat_inter && cye != 0 {
+                        continue;
+                    }
+                    let mb_edge = cye == 0;
+                    let bs4 = chroma_bs(&bs_h, cye, false, mb_edge);
+                    if bs4 == [0; 4] {
+                        continue;
+                    }
+                    let params = th.map(|(_, hor, int)| if mb_edge { hor } else { int });
+                    let lanes = crate::simd_deblock::Lanes::chroma(bs4, params);
+                    let base = (mb_y * 8 + cye) * ccw + mb_x * 8;
+                    crate::simd_deblock::chroma_rows(level, u, v, base, ccw, &lanes);
                 }
             }
         }
@@ -3316,6 +3273,157 @@ fn filter_frame_rows_impl<const PRE: bool>(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// libheifer: the fearless_simd edge kernels agree with the scalar line
+    /// filters lane for lane, at the detected level and the baseline level.
+    #[cfg(not(accel))]
+    #[test]
+    fn simd_matches_scalar() {
+        use crate::simd_deblock::{self as sd, Lanes};
+        let mut st = 0x1234_5678u32;
+        let mut rnd = move || {
+            st ^= st << 13;
+            st ^= st >> 17;
+            st ^= st << 5;
+            st
+        };
+        let levels = [sd::level(), fearless_simd::Level::baseline()];
+        let stride = 40usize;
+        let mut changed = [0usize; 4];
+        for case in 0..20_000 {
+            // Mostly smooth content with occasional steps so every branch fires.
+            let base = (rnd() % 256) as i32;
+            let spread = 1 + (rnd() % 24) as i32;
+            let mut sample = || {
+                let step = if rnd() % 16 == 0 {
+                    (rnd() % 120) as i32 - 60
+                } else {
+                    0
+                };
+                (base + step + (rnd() % spread as u32) as i32 - spread / 2).clamp(0, 255) as u8
+            };
+            let plane: Vec<u8> = (0..stride * 40).map(|_| sample()).collect();
+            let plane2: Vec<u8> = (0..stride * 40).map(|_| sample()).collect();
+            let mut bs = [0i32; 4];
+            for b in &mut bs {
+                *b = (rnd() % 5) as i32;
+            }
+            let pick = |r: u32| {
+                let index = (r % 52) as usize;
+                (ALPHA[index], BETA[index], TC0[index])
+            };
+            let (alpha, beta, tc0) = pick(rnd());
+            let second = pick(rnd());
+            let tc = |t: [i32; 3], b: i32| {
+                if (1..4).contains(&b) {
+                    t[b as usize - 1]
+                } else {
+                    0
+                }
+            };
+            let level = levels[case % 2];
+            let (r0, x0) = (4 + (rnd() % 16) as usize, 4 + (rnd() % 16) as usize);
+
+            let mut want = plane.clone();
+            for r in 0..16 {
+                let b = bs[r / 4];
+                if b != 0 {
+                    filter_luma_line_contig(
+                        &mut want,
+                        (r0 + r) * stride + x0,
+                        b,
+                        alpha,
+                        beta,
+                        tc(tc0, b),
+                    );
+                }
+            }
+            let mut got = plane.clone();
+            sd::luma_cols(
+                level,
+                &mut got,
+                r0 * stride + x0,
+                stride,
+                &Lanes::luma(bs, alpha, beta, tc0),
+            );
+            assert_eq!(got, want, "luma cols case {case}");
+            changed[0] += (want != plane) as usize;
+
+            let mut want = plane.clone();
+            for c in 0..16 {
+                let b = bs[c / 4];
+                if b != 0 {
+                    let line = Line {
+                        base: r0 * stride + x0 + c,
+                        step: stride as isize,
+                    };
+                    filter_luma_line(&mut want, &line, b, alpha, beta, tc(tc0, b));
+                }
+            }
+            let mut got = plane.clone();
+            sd::luma_rows(
+                level,
+                &mut got,
+                r0 * stride + x0,
+                stride,
+                &Lanes::luma(bs, alpha, beta, tc0),
+            );
+            assert_eq!(got, want, "luma rows case {case}");
+            changed[1] += (want != plane) as usize;
+
+            let params = [(alpha, beta, tc0), second];
+            let lanes = Lanes::chroma(bs, params);
+            let (mut want_u, mut want_v) = (plane.clone(), plane2.clone());
+            for (k, want) in [&mut want_u, &mut want_v].into_iter().enumerate() {
+                let (a, b_, t) = params[k];
+                for r in 0..8 {
+                    let b = bs[r / 2];
+                    if b != 0 {
+                        filter_chroma_line_contig(want, (r0 + r) * stride + x0, b, a, b_, tc(t, b));
+                    }
+                }
+            }
+            let (mut got_u, mut got_v) = (plane.clone(), plane2.clone());
+            sd::chroma_cols(
+                level,
+                &mut got_u,
+                &mut got_v,
+                r0 * stride + x0,
+                stride,
+                &lanes,
+            );
+            changed[2] += (want_u != plane || want_v != plane2) as usize;
+            assert_eq!((got_u, got_v), (want_u, want_v), "chroma cols case {case}");
+
+            let (mut want_u, mut want_v) = (plane.clone(), plane2.clone());
+            for (k, want) in [&mut want_u, &mut want_v].into_iter().enumerate() {
+                let (a, b_, t) = params[k];
+                for c in 0..8 {
+                    let b = bs[c / 2];
+                    if b != 0 {
+                        let line = Line {
+                            base: r0 * stride + x0 + c,
+                            step: stride as isize,
+                        };
+                        filter_chroma_line(want, &line, b, a, b_, tc(t, b));
+                    }
+                }
+            }
+            let (mut got_u, mut got_v) = (plane.clone(), plane2.clone());
+            sd::chroma_rows(
+                level,
+                &mut got_u,
+                &mut got_v,
+                r0 * stride + x0,
+                stride,
+                &lanes,
+            );
+            changed[3] += (want_u != plane || want_v != plane2) as usize;
+            assert_eq!((got_u, got_v), (want_u, want_v), "chroma rows case {case}");
+        }
+        // Guard against a vacuous comparison: most cases must filter something.
+        assert!(changed.iter().all(|&n| n > 5_000), "{changed:?}");
+    }
 
     /// The contiguous-window vertical-edge filters must be BIT-IDENTICAL to
     /// the strided originals (which remain the horizontal-path production

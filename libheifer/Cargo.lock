@@ -53,6 +53,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4e7648175b45a9a48536d676f68d918270699102aa8dab5496df06904c914600"
 
 [[package]]
+name = "fearless_simd"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f3772b63c40606beea8fe1f7b06a60de27ceb9bfc2d9dad3427368ca41dc7e62"
+dependencies = [
+ "libm",
+]
+
+[[package]]
 name = "hayro-jpeg2000"
 version = "0.4.0"
 
@@ -211,6 +220,7 @@ name = "rusty_h264-common"
 version = "0.16.0"
 dependencies = [
  "bytemuck",
+ "fearless_simd",
  "libm",
  "once_cell",
  "portable-atomic",

@@ -161,7 +161,8 @@ pub struct Engine {
     /// libheifer: openh264's CABAC input end, in bits from the RBSP start. Its
     /// engine fails once the arithmetic decoder consumes past this point.
     end_bits: usize,
-    /// libheifer: sticky openh264 `ERR_CABAC_NO_BS_TO_READ` condition.
+    /// libheifer: openh264 `ERR_CABAC_NO_BS_TO_READ` carried across an I_PCM
+    /// re-initialization or set by a too-short slice.
     over: bool,
 }
 
@@ -204,18 +205,19 @@ impl Engine {
         self.range <<= n;
         self.low <<= n;
         self.cnt -= n as i32;
-        self.check_end();
         if self.cnt < REFILL_AT {
             self.refill(data);
         }
     }
 
-    /// libheifer: bits consumed by the arithmetic decoder (the 9-bit offset
-    /// window plus every renormalization and bypass shift).
+    /// libheifer: whether the arithmetic decoder has consumed (the 9-bit offset
+    /// window plus every renormalization and bypass shift) past openh264's input
+    /// end. Consumption only grows, so evaluating this where the decoder asks
+    /// gives the same answer as a sticky per-bin check, without the per-bin cost.
     #[inline(always)]
-    fn check_end(&mut self) {
+    fn overran(&self) -> bool {
         let consumed = (self.byte_pos * 8).wrapping_sub(self.cnt as usize);
-        self.over |= consumed > self.end_bits;
+        self.over || consumed > self.end_bits
     }
 
     /// Decodes a context-coded bin (spec 9.3.3.2.1), updating the context model.
@@ -272,7 +274,6 @@ impl Engine {
         tr("B", self);
         self.low <<= 1;
         self.cnt -= 1;
-        self.check_end();
         if self.cnt < REFILL_AT {
             self.refill(data);
         }
@@ -299,7 +300,6 @@ impl Engine {
         debug_assert!(self.cnt >= 1, "sign bypass needs a buffered bit");
         self.low <<= 1;
         self.cnt -= 1;
-        self.check_end();
         let scaled = (self.range as u64) << OFF;
         let mask = ((scaled as i64 - self.low as i64 - 1) >> 63) as u64;
         self.low -= scaled & mask;
@@ -409,7 +409,7 @@ impl<'a> Cabac<'a> {
             cnt: 0,
             range: 510,
             end_bits: (self.data.len() * 8).max(byte * 8 + 40),
-            over: self.eng.over || byte + 2 > self.data.len(),
+            over: self.eng.overran() || byte + 2 > self.data.len(),
         };
         self.eng.refill(self.data);
         self.eng.low <<= 9;
@@ -418,7 +418,7 @@ impl<'a> Cabac<'a> {
 
     /// libheifer: whether openh264's engine would have run out of input.
     pub fn exhausted(&self) -> bool {
-        self.eng.over
+        self.eng.overran()
     }
 
     /// Split into `(data, engine copy, contexts)` for a register-resident run

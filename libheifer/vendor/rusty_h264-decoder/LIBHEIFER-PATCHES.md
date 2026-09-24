@@ -16,6 +16,9 @@ Build configuration:
 - libheifer builds both crates `no_std` with `libm`: no `RS_H264_*` environment
   knobs, no frame or entropy-decoding threads and no global allocator. The core
   remains `forbid(unsafe_code)`.
+- `rust-version` is 1.89, fearless_simd's minimum.
+- A `simd-detect` feature (both crates) enables fearless_simd's `std` feature for
+  runtime CPU detection only; the crates themselves stay `no_std`.
 - Fixed a missing `Vec` import on the `no_std` diagnostic path in `mb16.rs`.
 
 libheif's only AVC decoder is its OpenH264 plugin, so these changes follow
@@ -56,6 +59,25 @@ OpenH264 (the pinned test oracle) where it differs from the unmodified crate:
   Coefficients are stored as `int16_t` after dequantization, in the luma/chroma
   DC transforms, the 4x4 inverse transform's row pass and every 8x8 inverse
   transform temporary, as in OpenH264's C implementation.
+
+Performance changes (no C or assembly; Rust SIMD through fearless_simd 1.0):
+
+- `simd_deblock.rs` replaces the scalar per-line loop filter with fearless_simd
+  kernels that filter a whole 16-sample luma edge, or the Cb and Cr edges of a
+  macroblock packed into one 16-lane vector, per call (vertical edges through
+  an in-register zip transpose). Each lane carries its own alpha, beta, tc0 and
+  boundary strength, so the separate Cb/Cr offsets are kept. The scalar line
+  filters are retained as the test oracle (`simd_matches_scalar`, 20,000
+  randomized edges at the detected and the baseline SIMD level).
+- `Decoder::decode_units` / `decode_units_still` accept already split and
+  unescaped NAL units, so libheifer's OpenH264 syntax layer hands over its RBSP
+  instead of re-escaping it for a second unescape pass. `decode_units_still`
+  (a decoder dropped after one call) skips the padded reference copy of a
+  picture completed by the final slice unit; no later slice can reference it,
+  and an incomplete picture is an error rather than a reference.
+- The CABAC input-exhaustion rule is evaluated where the decoder queries it
+  instead of after every bin. Consumed bits only grow, so the result is the
+  same; an I_PCM re-initialization carries the state across.
 
 For streams whose intermediate values stay in the 16-bit range and whose
 factors do not wrap, these changes preserve the standard reconstruction.

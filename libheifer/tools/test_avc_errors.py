@@ -8,7 +8,7 @@ from pathlib import Path
 
 import test_decode
 from item_fixtures import item_file, ispe
-from test_avc import avcc, nals, unescape
+from test_avc import Bits, avcc, nals, unescape
 from test_context import box
 
 SOURCES = ['size-18x34-baseline-1', 'size-18x34-high-1', 'slices-main-slice-max-mbs', 'cqm-high-custom-10',
@@ -37,6 +37,54 @@ def with_byte(unit, at, value):
     if at < len(rbsp):
         rbsp[at] = value
     return unit[:1] + escape(bytes(rbsp))
+
+
+def sps_head_bits(sps):
+    """RBSP bits of an SPS up to (excluding) vui_parameters_present_flag."""
+    rbsp = unescape(sps[1:])
+    r = Bits(rbsp)
+    profile = r.u(8)
+    r.u(16)
+    r.ue()
+    if profile in (100, 110, 122, 244, 44, 83, 86, 118, 128):
+        chroma = r.ue()
+        if chroma == 3:
+            r.u(1)
+        r.ue()
+        r.ue()
+        r.u(1)
+        assert r.u(1) == 0, 'scaling matrices are not rewritten'
+    r.ue()
+    poc = r.ue()
+    if poc == 0:
+        r.ue()
+    elif poc == 1:
+        r.u(1)
+        r.ue()
+        r.ue()
+        for _ in range(r.ue()):
+            r.ue()
+    r.ue()
+    r.u(1)
+    r.ue()
+    r.ue()
+    if not r.u(1):
+        r.u(1)
+    r.u(1)
+    if r.u(1):
+        for _ in range(4):
+            r.ue()
+    return ''.join(str((rbsp[i >> 3] >> (7 - (i & 7))) & 1) for i in range(r.pos))
+
+
+def hrd_sps(sps, vcl, zeros, tail):
+    """The SPS with a VUI whose (NAL or VCL) HRD cpb_cnt_minus1 is a run of
+    `zeros` zero bits followed by `tail`: openh264 2.6.0 loops over the read's
+    error code there, not the value."""
+    bits = sps_head_bits(sps) + '1' + '00000' + ('01' if vcl else '1') + '0' * zeros + tail + '1'
+    bits += '0' * (-len(bits) % 8)
+    rbsp = bytes(int(bits[i:i + 8], 2) for i in range(0, len(bits), 8))
+    return sps[:1] + escape(rbsp)
 
 
 def cases(entry):
@@ -87,6 +135,10 @@ def cases(entry):
     for at in range(0, min(len(unescape(pps[0][1:])), 6)):
         for value in [0, 0x40, 0x80, 0xFF]:
             out.append((f'pps-byte-{at}-{value}', avcc_raw(entry, sps, [with_byte(pps[0], at, value)]), payload))
+    for vcl, zeros, tail in [(v, z, t) for v in (False, True) for z in (32, 33, 40, 47)
+                             for t in ('', '1', '1' * 8, '1' * 16, '10' * 12, '1' * 40, '0000000100000001', '1' + '0' * 20 + '1')]:
+        label = f'sps-{"vcl" if vcl else "nal"}-hrd-{zeros}-{len(tail)}-{tail.count("1")}'
+        out.append((label, avcc_raw(entry, [hrd_sps(sps[0], vcl, zeros, tail)], pps), payload))
     out.append(('no-avcc', None, payload))
     out.append(('two-sps', avcc_raw(entry, sps + sps, pps), payload))
     out.append(('two-pps', avcc_raw(entry, sps, pps + pps), payload))

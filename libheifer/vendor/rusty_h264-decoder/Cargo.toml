@@ -11,7 +11,7 @@
 
 [package]
 edition = "2021"
-rust-version = "1.80"
+rust-version = "1.89"
 name = "rusty_h264-decoder"
 version = "0.16.0"
 authors = ["Mata Network"]
@@ -44,6 +44,7 @@ cabac-trace = []
 default = ["std"]
 libm = ["rusty_h264-common/libm"]
 std = ["rusty_h264-common/std"]
+simd-detect = ["rusty_h264-common/simd-detect"]
 
 [lib]
 name = "rusty_h264_decoder"

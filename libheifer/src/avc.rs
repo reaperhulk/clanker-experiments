@@ -70,25 +70,6 @@ fn annex_b(input: &[u8]) -> Result<Vec<u8>, ContextError> {
     Ok(out)
 }
 
-/// Annex B stream of the NAL units OpenH264 accepted, re-escaped canonically so
-/// the Rust decoder reads exactly OpenH264's RBSP bytes.
-fn canonical(units: &[Vec<u8>]) -> Vec<u8> {
-    let mut out = Vec::new();
-    for unit in units {
-        out.extend_from_slice(&[0, 0, 1]);
-        let mut zeros = 0;
-        for (i, &b) in unit.iter().enumerate() {
-            if i > 0 && zeros >= 2 && b <= 3 {
-                out.push(3);
-                zeros = 0;
-            }
-            out.push(b);
-            zeros = if b == 0 { zeros + 1 } else { 0 };
-        }
-    }
-    out
-}
-
 pub fn decode(
     document: &Document,
     id: u32,
@@ -135,10 +116,9 @@ pub fn decode(
         return Err(plugin_error(2006, "Invalid input data"));
     }
     let accepted = crate::avc_openh264::accept(&annex_b(&data)?).map_err(|_| decoder_error())?;
-    let stream = canonical(&accepted.units);
     let mut decoder = rusty_h264_decoder::Decoder::new();
     let frame = decoder
-        .decode(&stream)
+        .decode_units_still(&accepted.units.iter().map(Vec::as_slice).collect::<Vec<_>>())
         .map_err(|_| decoder_error())?
         .ok_or_else(|| {
             // With error concealment disabled, an incomplete picture decoded

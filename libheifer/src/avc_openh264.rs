@@ -852,8 +852,14 @@ fn split(stream: &[u8]) -> Result<Vec<Vec<u8>>> {
             }
             continue;
         }
-        current.push(src[at]);
-        at += 1;
+        // Only a zero byte can start the special cases above: copy the run up
+        // to the next zero (or this non-special zero) in one step.
+        let run = src[at + 1..]
+            .iter()
+            .position(|&b| b == 0)
+            .map_or(src.len(), |n| at + 1 + n);
+        current.extend_from_slice(&src[at..run]);
+        at = run;
     }
     units.push(current);
     Ok(units)

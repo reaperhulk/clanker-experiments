@@ -340,7 +340,7 @@ MUTATIONS = [
     ("avc_profile_gate", "src/avc_openh264.rs", "if !matches!(profile, 66 | 77 | 83 | 86 | 88 | 100) {", "if !matches!(profile, 66 | 77 | 83 | 86 | 88 | 100 | 244) {", "avc"),
     ("avc_mono_intra_cbp", "vendor/rusty_h264-decoder/src/mb16.rs", "const T: [u8; 16] = [15, 0, 7, 11, 13, 14, 3, 5, 10, 12, 1, 2, 4, 8, 6, 9];", "const T: [u8; 16] = [15, 7, 0, 11, 13, 14, 3, 5, 10, 12, 1, 2, 4, 8, 6, 9];", "avc"),
     ("avc_decoder_error_text", "src/avc.rs", 'plugin_error(0, "OpenH264 decoder error")', 'plugin_error(0, "OpenH264 decoding error")', "avc"),
-    ("avc_cabac_end_of_data", "vendor/rusty_h264-decoder/src/cabac.rs", "self.over |= consumed > self.end_bits;", "self.over |= consumed > self.end_bits + 8;", "avc_errors"),
+    ("avc_cabac_end_of_data", "vendor/rusty_h264-decoder/src/cabac.rs", "self.over || consumed > self.end_bits\n", "self.over || consumed > self.end_bits + 8\n", "avc_errors"),
     ("avc_intra_mode_validity", "vendor/rusty_h264-decoder/src/mb16.rs", "            4..=6 => top && left && self.block_corner_ok(bx, by, top, left),\n            _ => false,\n        };\n        self.intra_invalid |= !ok;", "            4..=6 => top && left && self.block_corner_ok(bx, by, top, left),\n            _ => false,\n        };\n        let _ = ok;", "avc_errors"),
     ("avc_cavlc_end_of_slice", "vendor/rusty_h264-decoder/src/mb16.rs", "                if used > r.stop_pos() {", "                if used > r.stop_pos() + 8 {", "avc_errors"),
     ("avc_coeff_token_fallback", "vendor/rusty_h264-common/src/cavlc.rs", "c.skip(if NC_TABLE[(nc as usize).min(16)] == 3 { 6 } else { 8 })?;", "c.skip(if NC_TABLE[(nc as usize).min(16)] == 3 { 6 } else { 7 })?;", "avc_errors"),
@@ -357,7 +357,7 @@ MUTATIONS = [
 
 
 def execute(command, cwd, env, log):
-    run = subprocess.run(command, cwd=cwd, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=180)
+    run = subprocess.run(command, cwd=cwd, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=1200)
     log.write_bytes(run.stdout)
     return run
 

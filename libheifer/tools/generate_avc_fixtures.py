@@ -114,6 +114,17 @@ def main():
             [('high', profiles['high']), ('high-cavlc', profiles['high-cavlc'])], ['flat', 'jvt', 'custom'], [10, 28, 36, 44, 50, 51]):
         extra = ['--cqmfile', str(cqm)] if matrix == 'custom' else ['--cqm', matrix]
         add(f'cqm-{profile}-{matrix}-{qp}', 64, 48, ['--qp', str(qp), *options, *extra], pattern=4)
+    # x264 codes an I-frame at `--qp` minus its ipratio offset (about 3), so the
+    # sweeps above never reach QP 49..51. `--ipratio 1` makes the slice QP exact.
+    # QP 50/51 4x4 blocks with nonzero levels under the custom matrix (openh264's
+    # uint16 factors and its uninitialized QP 51 row): noisy input, 4x4 only, no deadzone.
+    for (profile, options), qp, pattern in itertools.product(
+            [('high', profiles['high']), ('high-cavlc', profiles['high-cavlc'])], [50, 51], [1, 3]):
+        add(f'cqm-{profile}-custom-i4x4-{qp}-{pattern}', 64, 48,
+            ['--qp', str(qp), '--ipratio', '1', *options, '--cqmfile', str(cqm), '--no-8x8dct', '--partitions', 'i4x4',
+             '--deadzone-intra', '0', '--trellis', '0'], pattern=pattern)
+    for (profile, options), qp, pattern in itertools.product(profiles.items(), [49, 50, 51], [1, 3]):
+        add(f'qp-exact-{profile}-{qp}-{pattern}', 48, 32, ['--qp', str(qp), '--ipratio', '1', *options], pattern=pattern)
     for (profile, options), deblock in itertools.product(profiles.items(), ['off', '-6:-6', '6:6', '3:-2', '-2:4']):
         extra = ['--no-deblock'] if deblock == 'off' else ['--deblock', deblock]
         add(f'deblock-{profile}-{deblock}', 64, 48, ['--qp', '36', *options, *extra], pattern=2)

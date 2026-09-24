@@ -1,0 +1,13 @@
+{
+  "scope": "Independent AVC truncations, malformed parameter sets, NAL framing and avcC boxes.",
+  "cases": 37047,
+  "mismatches": 0,
+  "client_sanitizers": true,
+  "leak_check": false,
+  "client_sha256": "c7cb0444757eb1d323d165c8e0803e2ffff7aabc0c0cbd247c18342dd830311a",
+  "reference_sha256": "1678e871daafebd624c78b12494a87b7f17709e1be2ee2dd7d622720b814e764",
+  "candidate_sha256": "9d37af22e818f6631b19f10990e67d2c252e04ec8d18eb552554aa12f1e1338c",
+  "full_report": "avc-decode-errors-sanitized-full.json.gz",
+  "full_report_sha256": "d2bce4ede792e18a2f037ea585aef78b4f3d0c1c2640bb3253e9b7487c05a379",
+  "compressed_report_sha256": "b6b50301d6fa059a05cf3c63b96c90dc4a569c3292df4d91ef5c4e716261c571"
+}

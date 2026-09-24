@@ -11,7 +11,7 @@
 
 [package]
 edition = "2021"
-rust-version = "1.80"
+rust-version = "1.89"
 name = "rusty_h264-common"
 version = "0.16.0"
 authors = ["Mata Network"]
@@ -44,6 +44,9 @@ repository = "https://github.com/remade-with-rust/rusty_h264"
 default = ["std"]
 libm = ["dep:libm"]
 std = []
+# libheifer: runtime SIMD level detection (fearless_simd's `std`) without the
+# crate's own `std` diagnostics.
+simd-detect = ["fearless_simd/std"]
 
 [lib]
 name = "rusty_h264_common"
@@ -51,6 +54,11 @@ path = "src/lib.rs"
 
 [dependencies.bytemuck]
 version = "1"
+
+[dependencies.fearless_simd]
+version = "1.0"
+default-features = false
+features = ["libm"]
 
 [dependencies.libm]
 version = "0.2"

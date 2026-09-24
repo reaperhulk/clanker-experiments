@@ -1284,22 +1284,68 @@ sequence behavior and the remaining platform/downstream/performance gates stay
 open. All 465 functions remain partial; strict completion remains false. The next
 implementation is pure Rust AVC decoding with a pinned OpenH264 test oracle.
 
-## Built-in scalar Rust AVC decoding
+## Built-in Rust AVC decoding
 
 Oracle: libheif 1.23.4 with its OpenH264 plugin and OpenH264 v2.6.0 (scalar).
-Fixtures: 371 x264 (b35605ac, no assembly) streams in `tests/fixtures/avc-generated.json`.
+Fixtures: 427 x264 (b35605ac, no assembly) streams in `tests/fixtures/avc-generated.json`.
 
 | Suite | Cases | Mismatches | Report |
 |---|---|---|---|
-| test_avc (normal) | 9,475 | 0 | results/avc-decode-normal-report.json |
-| test_avc (ASan/UBSan client, local leak check off under ptrace) | 9,475 | 0 | results/avc-decode-sanitized-report.json |
-| test_avc (codec-free candidate vs HEVC-only oracle) | 9,475 | 0 | results/avc-decode-no-codecs-report.json |
+| test_avc (normal) | 10,875 | 0 | results/avc-decode-normal-report.json |
+| test_avc (ASan/UBSan client, local leak check off under ptrace) | 10,875 | 0 | results/avc-decode-sanitized-report.json |
+| test_avc (codec-free candidate vs HEVC-only oracle) | 10,875 | 0 | results/avc-decode-no-codecs-report.json |
+| test_avc_errors (normal) | 37,047 | 0 | results/avc-decode-errors-normal-report.json |
+| test_avc_errors (ASan/UBSan client) | 37,047 | 0 | results/avc-decode-errors-sanitized-report.json |
+| test_avc_errors (codec-free) | 37,047 | 0 | results/avc-decode-errors-no-codecs-report.json |
 | test_plugin_decoding vs AVC oracle | 616 | 0 | results/avc-decode-regression-plugin-decoding-report.json |
 | test_plugins vs AVC oracle | 224 | 0 | results/avc-decode-regression-plugins-report.json |
-| test_avc_errors (known differences, not a parity claim) | 35,895 | 975 | results/avc-decode-errors-known-differences-report.json |
 
 Mutations: avc_mono_chroma (23), avc_level_prefix_limit (48), avc_profile_gate (24),
 avc_decoder_error_text (192) and the replacement avc_mono_intra_cbp (70) are
 detected by semantic differences without process failures. The initial
 avc_mono_intra_cbp (codes 14/15) survived with a single monochrome fixture; both
 reports are retained. The complete normal differential group passes unchanged.
+
+### OpenH264 syntax layer and Rust SIMD
+
+The malformed-stream corpus had 975 known differences (17,679 on its first run).
+It now matches exactly. `src/avc_openh264.rs` models OpenH264's byte-level NAL
+processing, bit reader, parameter-set, VUI/HRD and slice-header acceptance, and
+access-unit construction. The vendored decoder follows OpenH264's reconstruction
+and end-of-data rules. The corpus adds 1,152 SPS variants whose VUI HRD reaches
+OpenH264's read-error-code loop.
+
+x264's constant-QP mode codes I-frames about 3 below `--qp`, so the earlier QP
+sweep topped out near QP 48. The corpus adds 24 exact (`--ipratio 1`) QP 49..51
+streams, plus 8 QP 50/51 custom-matrix 4x4 streams.
+
+Mutation evidence (`results/avc-decode-mutations-syntax-*`, 12 new mutations,
+315 total): the first run detected 10 of 12. `avc_hrd_return_code` and
+`avc_scaling_qp51` survived. A rerun of all 17 AVC mutations, with the HRD family
+added, detected 16 (`avc_hrd_return_code`: 735 mismatches). The exact QP 51
+streams then catch `avc_scaling_qp51` with 92 mismatches
+(`results/avc-decode-mutations-qp51-replacement-report.json`). All three reports
+are retained.
+
+Deblocking now runs as fearless_simd kernels: Rust SIMD with runtime dispatch,
+no `unsafe`, and no C or assembly. The vendored `simd_matches_scalar` test
+checks them against the scalar filters on 20,000 randomized edges at the
+detected and baseline levels; CI runs it on Linux, macOS and Windows. Every
+suite above uses the SIMD build.
+
+`tools/bench_avc.py` checks full decoded-plane digests on every sample. Medians
+in ms (7x5, 1920x1080, AVX2 container) for OpenH264 asm / OpenH264 scalar /
+libheifer:
+
+| Stream | OpenH264 asm | OpenH264 scalar | libheifer |
+|---|---|---|---|
+| High CABAC QP 22 | 260.5 | 264.9 | 222.7 |
+| High CABAC QP 32 | 23.3 | 35.9 | 19.2 |
+| High CAVLC QP 22 | 68.5 | 75.6 | 61.3 |
+| Baseline QP 27 | 17.8 | 30.9 | 11.9 |
+
+Raw samples: `results/avc-decode-benchmark-openh264-{asm,scalar}.json`. These
+are single-machine, single-image decode timings, not whole-library performance
+claims. CABAC I_PCM, multi-access-unit input, AVC sequences, encoding and the
+remaining plan gates stay open. All 465 functions remain partial; strict
+completion remains false.

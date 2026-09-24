@@ -18,6 +18,10 @@ reference, build configuration, architectures, tested domains and uncovered case
 USER REQUIREMENT: no C or C++ implementation dependencies. All codecs, container
 parsing/writing, image and metadata models, transforms/conversion, resource limits,
 and plugin management must use pure Rust dependencies or code implemented here.
+"Pure Rust" means no C, C++ or assembly linked into the candidate; Rust SIMD is
+allowed. Prefer fearless_simd (safe `core::arch` wrappers with runtime dispatch);
+`unsafe` intrinsics are acceptable only where they give a major measured gain,
+with documented safety contracts and a scalar Rust oracle compared in tests.
 Native libheif and its native codecs are test-only reference oracles. Do not link,
 load, forward to, or spawn native codecs in the candidate. Audit transitive
 dependencies and generated artifacts for native code. Disabling codecs cannot
@@ -671,3 +675,39 @@ CI now builds and caches the OpenH264 oracle and runs the AVC suites.
 Next: an exact port of OpenH264's syntax layer ahead of reconstruction, then
 CABAC I_PCM, registered-plugin priority cases, limits and AVC sequences. All 465
 functions remain partial; strict completion remains false.
+
+### AVC syntax layer and Rust SIMD
+
+`src/avc_openh264.rs` now models OpenH264 ahead of reconstruction. It covers
+Annex B splitting and unescaping, the 32-bit-cache bit reader and its bounded
+over-reads, NAL header checks, and SPS/VUI/HRD, PPS and slice-header acceptance
+with OpenH264 2.6.0's quirks. It also decides when an access unit is
+constructed, which settles whether an incomplete picture is an error or yields
+no image. The vendored decoder follows OpenH264's reconstruction rules: CABAC
+and CAVLC end-of-data, `coeff_token` fallbacks, intra-mode availability,
+separate Cb/Cr QP offsets, macroblock-count completeness, and uint16 scaling
+factors and int16 coefficient storage. Only accepted units reach it, as RBSP.
+The malformed-stream corpus went from 975 differences to 0. It is now a parity
+suite in CI, with an HRD family that reaches OpenH264's error-code loop.
+
+The x264 corpus has 427 streams. x264's constant-QP I-frames are coded about 3
+below `--qp`, so the original sweep never reached QP 49..51. Exact
+`--ipratio 1` streams now cover that range, including OpenH264's uninitialized
+QP 51 scaling row. All 10,875 valid-stream cases and 37,047 malformed-stream
+cases match in normal, ASan/UBSan-client and codec-free builds. Twelve new
+mutations bring the total to 315. The first run missed two:
+`avc_hrd_return_code` and `avc_scaling_qp51`. The added fixtures now catch both,
+and both reports are retained.
+
+Per the clarified requirement (Rust SIMD allowed, no C/C++/assembly),
+deblocking uses fearless_simd kernels with runtime dispatch and no `unsafe`,
+with the scalar filters kept as the test oracle. A still-image decode skips the
+redundant re-escape pass and the final picture's reference copy. On 1920x1080
+streams, libheifer takes 0.67-0.90x the time of libheif with OpenH264's
+assembly build (0.41-0.83x of its scalar build); before this it took up to
+1.48x. See `docs/AVC_DEPENDENCIES.md`. `test_decode`-based suites now run cases
+in parallel. CI runs the vendored crates' tests on Linux, macOS and Windows.
+
+Next: CABAC I_PCM, registered-plugin priority cases, limits and AVC sequences,
+then remaining plan gates. All 465 functions remain partial; strict completion
+remains false.

@@ -1,13 +1,13 @@
 {
   "scope": "Original-header OpenH264/Rust AVC decoded samples, metadata, conversion and errors.",
-  "cases": 9475,
+  "cases": 10875,
   "mismatches": 0,
   "client_sanitizers": false,
   "leak_check": false,
   "client_sha256": "c7cb0444757eb1d323d165c8e0803e2ffff7aabc0c0cbd247c18342dd830311a",
   "reference_sha256": "44e009fcef37fe6609c0c4ba59715b3285cfef62c79742f20c679cc5f856f000",
-  "candidate_sha256": "f31cd6469dfc2b252115fd23efa293a9a3fb5e1543b4273a13ccb6105e0f8050",
+  "candidate_sha256": "9eb49f26d2578ba716b39eb7573741b31a7fe56c79a2d530670f866c85fd50d6",
   "full_report": "avc-decode-no-codecs-full.json.gz",
-  "full_report_sha256": "e458bdaf35e62895685c89ae6c9b65ff78f7c986fc1280a96c4d80144d43ddea",
-  "compressed_report_sha256": "b1db7f4a0a4f58eac435588c1a3cb6419e3de8db4a98c76b967e9a136ad914c1"
+  "full_report_sha256": "24f1078e186e237e9aca42cba247ef9508ffb218297c55ac61740551c288e14f",
+  "compressed_report_sha256": "f4be0fa8d59b13fccafcce8e6327c453244c108b5bad2428eb9950e82523810d"
 }

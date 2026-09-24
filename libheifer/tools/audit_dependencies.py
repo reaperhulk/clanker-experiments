@@ -26,6 +26,7 @@ REVIEWED |= {
     ('rusty_h264-decoder', '0.16.0'), ('rusty_h264-common', '0.16.0'),
     ('wide', '0.7.33'), ('safe_arch', '0.7.4'), ('bytemuck', '1.25.2'),
     ('libm', '0.2.16'), ('once_cell', '1.21.4'), ('portable-atomic', '1.15.0'),
+    ('fearless_simd', '1.0.0'),
 }
 
 
@@ -65,11 +66,18 @@ def main():
             if any(p.suffix.lower() in ('.c', '.cc', '.cpp', '.s', '.asm') for p in root.rglob('*')):
                 problems.append('Native implementation source in hayro-jpeg2000 vendor tree')
         if name[0] in ('rusty_h264-decoder', 'rusty_h264-common'):
-            # no_std + libm: no accel kernels, global allocator, environment knobs or threads.
-            if set(features[package['id']]) != {'libm'}:
-                problems.append(f'{name[0]} must use only the reviewed no_std scalar configuration')
+            # no_std + libm: no accel kernels, global allocator, environment knobs or
+            # threads; `simd-detect` only enables fearless_simd's runtime detection.
+            if set(features[package['id']]) != {'libm', 'simd-detect'}:
+                problems.append(f'{name[0]} must use only the reviewed no_std Rust SIMD configuration')
             if any(p.suffix.lower() in ('.c', '.cc', '.cpp', '.s', '.asm') for p in root.rglob('*')):
                 problems.append(f'Native implementation source in {name[0]} vendor tree')
+        if name[0] == 'fearless_simd':
+            # Pure Rust core::arch wrappers; `std` is used for CPU feature detection.
+            if set(features[package['id']]) != {'libm', 'std'}:
+                problems.append('fearless_simd must use only the reviewed libm/std features')
+            if any(p.suffix.lower() in ('.c', '.cc', '.cpp', '.s', '.asm') for p in root.rglob('*')) or (root / 'build.rs').exists():
+                problems.append('Native source or build script in fearless_simd')
         if name[0] == 'jpeg-decoder':
             if set(features[package['id']]) != {'platform_independent'}:
                 problems.append('jpeg-decoder must use only the reviewed scalar Rust implementation')

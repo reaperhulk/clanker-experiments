@@ -30,6 +30,12 @@ jobs:
       - uses: dtolnay/rust-toolchain@1.90.0
       - run: cargo test --locked -p libheifer --all-features
       - run: cargo build --locked --release -p libheifer-capi
+      # The vendored AVC crates sit outside the workspace; their tests include the
+      # SIMD-against-scalar deblocking oracle, run here on each runner's SIMD level.
+      - run: cargo test --release --manifest-path vendor/rusty_h264-common/Cargo.toml --no-default-features --features libm,simd-detect
+        shell: bash
+      - run: cargo test --release --manifest-path vendor/rusty_h264-decoder/Cargo.toml --no-default-features --features libm,simd-detect --config 'patch.crates-io.rusty_h264-common.path="vendor/rusty_h264-common"'
+        shell: bash
 
   checks:
     name: Lint, unit tests and inventory

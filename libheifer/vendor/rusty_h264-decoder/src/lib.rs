@@ -913,6 +913,10 @@ fn no_pool() -> bool {
 /// and the previous decoded picture (the inter reference) across calls.
 #[derive(Default)]
 pub struct Decoder {
+    /// libheifer: set by [`Decoder::decode_units_still`] while the final slice
+    /// unit of a one-shot decode is processed. A picture completed by that
+    /// slice can never be referenced, so its padded reference copy is skipped.
+    last_slice_of_still: bool,
     /// GATE 1 route of the most recently completed picture (router only).
     last_route: Option<ContentRoute>,
     /// EMA'd router signals (bits/MB, skip frac, coded frac). The thresholds
@@ -1065,33 +1069,83 @@ impl Decoder {
             if nal.is_empty() {
                 continue;
             }
-            let nal_type = NalUnitType::from_id(nal[0]);
             let rbsp = {
                 let _s = rusty_h264_common::prof::scope(rusty_h264_common::prof::Stage::DecRbsp);
                 emulation_unprevent(&nal[1..])
             };
-            match nal_type {
-                NalUnitType::Sps => {
-                    let s = Sps::parse(&rbsp)?;
-                    self.sps
-                        .insert(s.seq_parameter_set_id, crate::sync::Arc::new(s));
-                }
-                NalUnitType::Pps => {
-                    let p = Pps::parse(&rbsp)?;
-                    self.pps
-                        .insert(p.pic_parameter_set_id, crate::sync::Arc::new(p));
-                }
-                NalUnitType::IdrSlice | NalUnitType::NonIdrSlice => {
-                    let nal_ref_idc = (nal[0] >> 5) & 3;
-                    let is_idr = nal_type == NalUnitType::IdrSlice;
-                    if let Some(f) = self.decode_slice(&rbsp, is_idr, nal_ref_idc)? {
-                        frame = Some(f);
-                    }
-                }
-                _ => {} // SEI, AUD, etc. ignored
+            if let Some(f) = self.decode_rbsp(nal[0], &rbsp)? {
+                frame = Some(f);
             }
         }
         Ok(frame)
+    }
+
+    /// libheifer: [`Decoder::decode`] over NAL units that are already split and
+    /// unescaped (header byte followed by the RBSP), skipping a re-escape and
+    /// second unescape pass when the caller parsed the stream itself.
+    pub fn decode_units<'a>(
+        &mut self,
+        units: impl IntoIterator<Item = &'a [u8]>,
+    ) -> Result<Option<YuvFrame>, DecodeError> {
+        let mut frame = None;
+        for unit in units {
+            if unit.is_empty() {
+                continue;
+            }
+            if let Some(f) = self.decode_rbsp(unit[0], &unit[1..])? {
+                frame = Some(f);
+            }
+        }
+        Ok(frame)
+    }
+
+    /// libheifer: [`Decoder::decode_units`] for a decoder that is dropped
+    /// afterwards (a still image). No slice follows the last slice unit, so the
+    /// picture it completes is not kept as a reference.
+    pub fn decode_units_still(&mut self, units: &[&[u8]]) -> Result<Option<YuvFrame>, DecodeError> {
+        let is_slice = |u: &[u8]| {
+            !u.is_empty()
+                && matches!(
+                    NalUnitType::from_id(u[0]),
+                    NalUnitType::IdrSlice | NalUnitType::NonIdrSlice
+                )
+        };
+        let last = units.iter().rposition(|u| is_slice(u));
+        let mut frame = None;
+        for (i, unit) in units.iter().enumerate() {
+            if unit.is_empty() {
+                continue;
+            }
+            self.last_slice_of_still = Some(i) == last;
+            let result = self.decode_rbsp(unit[0], &unit[1..]);
+            self.last_slice_of_still = false;
+            if let Some(f) = result? {
+                frame = Some(f);
+            }
+        }
+        Ok(frame)
+    }
+
+    fn decode_rbsp(&mut self, header: u8, rbsp: &[u8]) -> Result<Option<YuvFrame>, DecodeError> {
+        match NalUnitType::from_id(header) {
+            NalUnitType::Sps => {
+                let s = Sps::parse(rbsp)?;
+                self.sps
+                    .insert(s.seq_parameter_set_id, crate::sync::Arc::new(s));
+            }
+            NalUnitType::Pps => {
+                let p = Pps::parse(rbsp)?;
+                self.pps
+                    .insert(p.pic_parameter_set_id, crate::sync::Arc::new(p));
+            }
+            nal_type @ (NalUnitType::IdrSlice | NalUnitType::NonIdrSlice) => {
+                let nal_ref_idc = (header >> 5) & 3;
+                let is_idr = nal_type == NalUnitType::IdrSlice;
+                return self.decode_slice(rbsp, is_idr, nal_ref_idc);
+            }
+            _ => {} // SEI, AUD, etc. ignored
+        }
+        Ok(None)
     }
 
     /// Decodes a complete Annex-B byte stream and returns every picture in
@@ -1630,7 +1684,7 @@ impl Decoder {
         }
         // The necessary DPB plane clone (rec_y/u/v → RefFrame) — measured as its own
         // stage, OUTSIDE the Finalize scope so the two don't double-count.
-        let reference = if is_reference {
+        let reference = if is_reference && !self.last_slice_of_still {
             let _dg = rusty_h264_common::prof::scope(rusty_h264_common::prof::Stage::DpbClone);
             Some(fd.as_reference_pooled(&mut self.plane_pool))
         } else {

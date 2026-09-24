@@ -26,6 +26,7 @@ def main():
     p.add_argument("--jpeg", action="store_true")
     p.add_argument("--jpeg2000", action="store_true")
     p.add_argument("--avc", action="store_true", help="enable the native OpenH264 decoder oracle (scalar, no assembly)")
+    p.add_argument("--avc-asm", action="store_true", help="with --avc: OpenH264 with its assembly kernels (performance baseline only)")
     p.add_argument("--plugins", action="store_true", help="enable native dynamic-plugin oracle with an empty default search path")
     p.add_argument("-j", default="4")
     a = p.parse_args()
@@ -96,8 +97,9 @@ def main():
         run(cmake, "--install", dbuild)
         flags += [f"-DOpenJPEG_DIR={install / 'lib/cmake/openjpeg-2.5'}"]
     if a.avc:
-        decoder = build.parent / "openh264-source"
-        install = build.parent / "openh264-install"
+        suffix = "-asm" if a.avc_asm else ""
+        decoder = build.parent / f"openh264{suffix}-source"
+        install = build.parent / f"openh264{suffix}-install"
         if not decoder.exists():
             run("git", "init", decoder)
             run("git", "-C", decoder, "remote", "add", "origin", "https://github.com/cisco/openh264.git")
@@ -106,7 +108,7 @@ def main():
         revision = subprocess.check_output(["git", "-C", str(decoder), "rev-parse", "HEAD"], text=True).strip()
         if revision != OPENH264:
             raise SystemExit("Wrong OpenH264 reference revision")
-        run("make", "-C", decoder, "-j", a.j, "USE_ASM=No", "BUILDTYPE=Release", f"PREFIX={install}", "install-shared")
+        run("make", "-C", decoder, "-j", a.j, f"USE_ASM={'Yes' if a.avc_asm else 'No'}", "BUILDTYPE=Release", f"PREFIX={install}", "install-shared")
         flags += ["-DWITH_OpenH264_DECODER=ON", f"-DOpenH264_INCLUDE_DIR={install / 'include'}",
                   f"-DOpenH264_LIBRARY={install / 'lib/libopenh264.so'}"]
     if a.jpeg:
