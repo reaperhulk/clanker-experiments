@@ -154,11 +154,9 @@ impl<'a> BitReader<'a> {
 
     #[inline]
     pub(crate) fn read_stuff_bit(&mut self) -> Option<()> {
-        let stuff_bit = self.read_bit()?;
-
-        if stuff_bit != 0 {
-            return None;
-        }
+        // Like OpenJPEG's opj_bio, the byte after 0xFF carries seven bits
+        // and its most significant bit is ignored.
+        self.read_bit()?;
 
         Some(())
     }
