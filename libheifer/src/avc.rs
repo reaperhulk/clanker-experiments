@@ -116,23 +116,21 @@ pub fn decode(
         return Err(plugin_error(2006, "Invalid input data"));
     }
     let accepted = crate::avc_openh264::accept(&annex_b(&data)?).map_err(|_| decoder_error())?;
+    // One data call, then flush calls until a picture comes out. With error
+    // concealment disabled, an incomplete picture decoded in OpenH264's data
+    // call is an error (see `decode_call`); in its flush call it is not.
     let mut decoder = rusty_h264_decoder::Decoder::new();
-    let frame = decoder
-        .decode_units_still(&accepted.units.iter().map(Vec::as_slice).collect::<Vec<_>>())
-        .map_err(|_| decoder_error())?
-        .ok_or_else(|| {
-            // With error concealment disabled, an incomplete picture decoded
-            // in OpenH264's data call is an error; in its flush call it is not.
-            if accepted.constructed_early {
-                decoder_error()
-            } else {
-                plugin_error(
-                    0,
-                    "Decoding the input data did not give a decompressed image.",
-                )
-            }
-        })?;
-    frame_image(&frame, document, limits.max_image_size_pixels)
+    let mut reorder = Reorder::default();
+    let picture = match decode_call(&mut reorder, &mut decoder, &accepted, 0, true)? {
+        Some(picture) => picture,
+        None => reorder.flush_frame().ok_or_else(|| {
+            plugin_error(
+                0,
+                "Decoding the input data did not give a decompressed image.",
+            )
+        })?,
+    };
+    frame_image(&picture.frame, document, limits.max_image_size_pixels)
 }
 
 /// The plugin's output image: I420 planes added with `heif_image_add_plane_safe`
@@ -190,13 +188,7 @@ pub struct SequenceDecoder {
     decoder: rusty_h264_decoder::Decoder,
     queue: std::collections::VecDeque<(Vec<u8>, u64)>,
     eof: bool,
-    dts: u32,
-    seq: i32,
-    active_sps: Option<usize>,
-    list: Vec<Buffered>,
-    has_b: bool,
-    last_written_poc: Option<i32>,
-    last_seq: i32,
+    reorder: Reorder,
 }
 
 impl Default for SequenceDecoder {
@@ -206,13 +198,7 @@ impl Default for SequenceDecoder {
             decoder: rusty_h264_decoder::Decoder::new(),
             queue: std::collections::VecDeque::new(),
             eof: false,
-            dts: 0,
-            seq: 0,
-            active_sps: None,
-            list: Vec::new(),
-            has_b: false,
-            last_written_poc: None,
-            last_seq: 0,
+            reorder: Reorder::default(),
         }
     }
 }
@@ -240,38 +226,17 @@ impl SequenceDecoder {
     ) -> Result<Option<(Image, u64)>, ContextError> {
         let output = if let Some((data, user_data)) = self.queue.pop_front() {
             let stream = annex_b(&data)?;
-            self.dts = self.dts.wrapping_add(1);
+            self.reorder.dts = self.reorder.dts.wrapping_add(1);
             let accepted = self.syntax.accept(&stream).map_err(|_| decoder_error())?;
-            let frame = self
-                .decoder
-                .decode_units(accepted.units.iter().map(Vec::as_slice))
-                .map_err(|_| decoder_error())?;
-            let Some(frame) = frame else {
-                if accepted.constructed_early {
-                    return Err(decoder_error());
-                }
-                return Ok(None);
-            };
-            let slice = accepted.last_slice.ok_or_else(decoder_error)?;
-            if slice.idr || self.active_sps != Some(slice.sps_id) {
-                self.seq = self.seq.wrapping_add(1);
-                self.active_sps = Some(slice.sps_id);
-            }
-            // The picture completes in the data call when an SEI or delimiter
-            // ends its access unit; the flush call then clears that output.
-            let out = self.reorder(frame, slice, user_data);
-            if accepted.constructed_early {
-                None
-            } else {
-                out
-            }
+            decode_call(
+                &mut self.reorder,
+                &mut self.decoder,
+                &accepted,
+                user_data,
+                false,
+            )?
         } else if self.eof {
-            // FlushFrame
-            if self.has_b {
-                self.release_reorder(true, None)
-            } else {
-                self.release_no_reorder()
-            }
+            self.reorder.flush_frame()
         } else {
             return Ok(None);
         };
@@ -283,9 +248,101 @@ impl SequenceDecoder {
             None => Ok(None),
         }
     }
+}
 
-    /// `ReorderPicturesInDisplay` for a completed picture.
-    fn reorder(
+/// One `DecodeFrameNoDelay` call over a packet's accepted units. Its data half
+/// decodes every unit but the stream's final NAL, which waits for the flush
+/// half. `ReorderPicturesInDisplay` runs once per half, with the last picture
+/// completed in it and the slice header decoded last (a later picture's, when
+/// that picture's first slices were decoded already); earlier pictures never
+/// reach the output list. The final picture completes in the flush half, which
+/// resets the output first, unless an SEI or delimiter ended its access unit
+/// in the data half; then the flush half outputs nothing.
+fn decode_call(
+    reorder: &mut Reorder,
+    decoder: &mut rusty_h264_decoder::Decoder,
+    accepted: &crate::avc_openh264::Accepted,
+    user_data: u64,
+    still: bool,
+) -> Result<Option<Buffered>, ContextError> {
+    let units = accepted.units.iter().map(Vec::as_slice).collect::<Vec<_>>();
+    let frames = decoder
+        .decode_units_all(&units, still)
+        .map_err(|_| decoder_error())?;
+    if frames.is_empty() {
+        if accepted.constructed_early {
+            return Err(decoder_error());
+        }
+        return Ok(None);
+    }
+    let info = |index: usize| accepted.slices.get(index).copied().flatten();
+    let last_slice = accepted.slices.iter().rposition(Option::is_some);
+    let mut frames = frames;
+    let final_frame = match frames.last() {
+        Some((index, _)) if !accepted.constructed_early && Some(*index) == last_slice => {
+            frames.pop()
+        }
+        _ => None,
+    };
+    // Data half: picture starts advance the sequence number.
+    let mut decoded = None;
+    for (index, slice) in accepted.slices.iter().enumerate() {
+        if let Some(slice) = slice
+            && Some(index) != accepted.held
+        {
+            if slice.first_mb == 0 {
+                reorder.start(slice);
+            }
+            decoded = Some(*slice);
+        }
+    }
+    if let Some((_, frame)) = frames.pop() {
+        // Its output (a baseline picture) is reset by the flush half.
+        let _ = reorder.picture(frame, decoded.ok_or_else(decoder_error)?, user_data);
+    }
+    // Flush half.
+    if let Some(slice) = accepted.held.and_then(info)
+        && slice.first_mb == 0
+    {
+        reorder.start(&slice);
+    }
+    let out = match final_frame {
+        Some((index, frame)) => {
+            reorder.picture(frame, info(index).ok_or_else(decoder_error)?, user_data)
+        }
+        None => None,
+    };
+    Ok(if accepted.constructed_early {
+        None
+    } else {
+        out
+    })
+}
+
+/// OpenH264's single-threaded output list (`ReorderPicturesInDisplay`).
+#[derive(Default)]
+struct Reorder {
+    dts: u32,
+    seq: i32,
+    active_sps: Option<usize>,
+    list: Vec<Buffered>,
+    has_b: bool,
+    last_written_poc: Option<i32>,
+    last_seq: i32,
+}
+
+impl Reorder {
+    /// A picture starts decoding: an IDR or another SPS begins a new sequence.
+    fn start(&mut self, slice: &crate::avc_openh264::SliceInfo) {
+        if slice.idr || self.active_sps != Some(slice.sps_id) {
+            self.seq = self.seq.wrapping_add(1);
+            self.active_sps = Some(slice.sps_id);
+        }
+    }
+
+    /// A completed picture, recorded with the current slice header; returns
+    /// the picture released for output, if any.
+    fn picture(
         &mut self,
         frame: rusty_h264_decoder::YuvFrame,
         slice: crate::avc_openh264::SliceInfo,
@@ -313,6 +370,15 @@ impl SequenceDecoder {
             self.release_no_reorder()
         } else {
             self.release_reorder(false, Some((slice.poc_lsb, self.seq)))
+        }
+    }
+
+    /// `FlushFrame`: one picture per call.
+    fn flush_frame(&mut self) -> Option<Buffered> {
+        if self.has_b {
+            self.release_reorder(true, None)
+        } else {
+            self.release_no_reorder()
         }
     }
 

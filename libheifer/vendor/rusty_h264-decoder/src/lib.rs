@@ -1133,6 +1133,18 @@ impl Decoder {
     /// afterwards (a still image). No slice follows the last slice unit, so the
     /// picture it completes is not kept as a reference.
     pub fn decode_units_still(&mut self, units: &[&[u8]]) -> Result<Option<YuvFrame>, DecodeError> {
+        Ok(self.decode_units_all(units, true)?.pop().map(|(_, f)| f))
+    }
+
+    /// libheifer: every picture completed by `units`, with the index of the
+    /// unit that completed it (a caller reorders them for output). With
+    /// `still`, the picture completed by the final slice unit is not kept as a
+    /// reference, as in [`Decoder::decode_units_still`].
+    pub fn decode_units_all(
+        &mut self,
+        units: &[&[u8]],
+        still: bool,
+    ) -> Result<Vec<(usize, YuvFrame)>, DecodeError> {
         let is_slice = |u: &[u8]| {
             !u.is_empty()
                 && matches!(
@@ -1140,8 +1152,8 @@ impl Decoder {
                     NalUnitType::IdrSlice | NalUnitType::NonIdrSlice
                 )
         };
-        let last = units.iter().rposition(|u| is_slice(u));
-        let mut frame = None;
+        let last = units.iter().rposition(|u| is_slice(u)).filter(|_| still);
+        let mut frames = Vec::new();
         for (i, unit) in units.iter().enumerate() {
             if unit.is_empty() {
                 continue;
@@ -1150,10 +1162,10 @@ impl Decoder {
             let result = self.decode_rbsp(unit[0], &unit[1..]);
             self.last_slice_of_still = false;
             if let Some(f) = result? {
-                frame = Some(f);
+                frames.push((i, f));
             }
         }
-        Ok(frame)
+        Ok(frames)
     }
 
     fn decode_rbsp(&mut self, header: u8, rbsp: &[u8]) -> Result<Option<YuvFrame>, DecodeError> {

@@ -734,6 +734,7 @@ fn parse_slice_header(
         }
     }
     Ok(SliceInfo {
+        first_mb,
         slice_type,
         poc_lsb,
         profile: sps.profile,
@@ -745,6 +746,7 @@ fn parse_slice_header(
 /// What OpenH264's output reordering needs to know about a coded slice.
 #[derive(Clone, Copy, Debug)]
 pub struct SliceInfo {
+    pub first_mb: u32,
     /// 0 P, 1 B, 2 I.
     pub slice_type: u32,
     /// `pic_order_cnt_lsb` (0 unless `pic_order_cnt_type` is 0).
@@ -898,8 +900,11 @@ pub struct Accepted {
     /// error; otherwise it is decoded by the flush call, where an incomplete
     /// picture yields no image and no error.
     pub constructed_early: bool,
-    /// The last accepted slice header.
-    pub last_slice: Option<SliceInfo>,
+    /// The slice header of every accepted unit that is a slice.
+    pub slices: Vec<Option<SliceInfo>>,
+    /// The index of the stream's final NAL unit when it was accepted: OpenH264
+    /// holds it back until the flush half of `DecodeFrameNoDelay`.
+    pub held: Option<usize>,
 }
 
 /// OpenH264's parameter-set state, which persists across decode calls.
@@ -936,8 +941,10 @@ impl Syntax {
         let mut accepted = Vec::new();
         let mut pending_slices = false;
         let mut constructed_early = false;
-        let mut last_slice = None;
+        let mut slices = Vec::new();
+        let mut held = None;
         for mut unit in split(stream)? {
+            held = None;
             // ParseNalHeader: trailing zero bytes are not part of the unit.
             while unit.last() == Some(&0) {
                 unit.pop();
@@ -965,15 +972,12 @@ impl Syntax {
             match kind {
                 1 | 5 => {
                     let mut r = Bits::new(payload, bit_size(payload))?;
-                    last_slice = Some(parse_slice_header(
-                        &mut r,
-                        kind == 5,
-                        nal_ref_idc,
-                        &self.sps,
-                        &self.pps,
-                    )?);
+                    let slice =
+                        parse_slice_header(&mut r, kind == 5, nal_ref_idc, &self.sps, &self.pps)?;
                     pending_slices = true;
                     accepted.push(unit);
+                    slices.push(Some(slice));
+                    held = Some(accepted.len() - 1);
                 }
                 14 | 20 => {
                     // Prefix NAL / coded slice extension header (SVC).
@@ -1010,6 +1014,8 @@ impl Syntax {
                             }
                             if kind == 7 {
                                 accepted.push(unit);
+                                slices.push(None);
+                                held = Some(accepted.len() - 1);
                             }
                         }
                         SpsResult::Ignored => {}
@@ -1021,6 +1027,8 @@ impl Syntax {
                     self.pps[id] = Some(parsed);
                     self.pps_exist = true;
                     accepted.push(unit);
+                    slices.push(None);
+                    held = Some(accepted.len() - 1);
                 }
                 6 | 9 if pending_slices => {
                     constructed_early = true;
@@ -1032,7 +1040,8 @@ impl Syntax {
         Ok(Accepted {
             units: accepted,
             constructed_early,
-            last_slice,
+            slices,
+            held,
         })
     }
 }

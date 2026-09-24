@@ -368,6 +368,8 @@ MUTATIONS = [
     ("plugin_sequence_flush_without_instance", "crates/capi/src/plugin_decoding.rs", "            let state = self.instance.as_ref().map_or(ptr::null_mut(), |i| i.state);\n            let err = unsafe { f(state) };", "            let Some(instance) = &self.instance else {\n                return Ok(());\n            };\n            let err = unsafe { f(instance.state) };", "plugin_sequences"),
     ("plugin_sequence_user_data", "src/sequences.rs", "stream.push(&data, sample_idx as u64, &options)?", "stream.push(&data, 0, &options)?", "plugin_sequences"),
     ("sequence_frame_size", "src/decoding.rs", "    if !sequence_frame\n        && expected.0 != 0", "    if expected.0 != 0", "plugin_sequences"),
+    ("avc_reorder_per_half", "src/avc.rs", "    if let Some((_, frame)) = frames.pop() {", "    for (_, frame) in frames {", "avc"),
+    ("avc_held_slice_header", "src/avc.rs", "            && Some(index) != accepted.held\n", "            && Some(index) != None\n", "avc"),
     ("avc_cavlc_p_skip_run", "vendor/rusty_h264-decoder/src/mb16.rs", "if self.is_b && skip_run > total - addr {", "if skip_run > total - addr {", "avc_sequences"),
     ("error_field_order", "crates/capi/src/lib.rs", "pub code: c_int,\n    pub subcode: c_int,", "pub subcode: c_int,\n    pub code: c_int,", "abi"),
 ]

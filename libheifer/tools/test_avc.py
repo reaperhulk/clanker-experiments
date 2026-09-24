@@ -111,6 +111,16 @@ def fixtures(directory):
         path = directory / (entry['name'] + '-sei.heif')
         path.write_bytes(item(entry, keep=(1, 5, 6, 9, 12)))
         paths.append(str(path))
+    # Several access units (P/B pictures, multiple slices) in one item payload.
+    for stream in json.loads(Path('tests/fixtures/avc-sequences.json').read_text())['streams']:
+        units = nals(bytes.fromhex(stream['hex']))
+        slices = [i for i, u in enumerate(units) if u[0] & 31 in (1, 5)]
+        starts = [i for i in slices if units[i][1] & 0x80]
+        for label, end in [('multi', len(units)), ('multi2', starts[2] if len(starts) > 2 else len(units))]:
+            entry = dict(stream, hex=b''.join(b'\0\0\0\1' + u for u in units[:end]).hex())
+            path = directory / f"{stream['name']}-{label}.heif"
+            path.write_bytes(item(entry))
+            paths.append(str(path))
     return paths
 
 
