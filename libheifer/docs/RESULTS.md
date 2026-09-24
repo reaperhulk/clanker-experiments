@@ -1563,3 +1563,57 @@ replacements on streams with restarts now detect it (675 mismatches). The
 first `jpeg_dac_index` mutant was equivalent: the decoder's own DAC parser
 reports the same error. Disabling the header model's DAC handling is detected
 (84). Both reports are retained. 342 mutations total.
+
+### Built-in JPEG encoding
+
+libheif's JPEG encoder plugin feeds libjpeg-turbo interleaved scanlines, with
+the 4:2:0 chroma replicated to full resolution. libjpeg then downsamples it
+back (h2v2), runs the islow forward DCT and quantizes by reciprocal
+multiplication with the quality-scaled standard tables (forced baseline). It
+codes with the standard Huffman tables and writes JFIF 1.01 with the pixel
+aspect ratio as density. `src/jpeg_encoder.rs` reproduces that pipeline in
+Rust:
+
+- the scalar libjpeg-turbo arithmetic (int DCTELEM, `compute_reciprocal`);
+- edge replication to whole blocks and MCU rows;
+- dummy blocks carrying the previous DC;
+- one-bit padding and byte stuffing;
+- the plugin's marker order (APP0, DQT 0/1, SOF0, four DHT, SOS, EOI).
+
+On 270 randomized images (1x1 to 100x3, quality 0-100, noise/gradient/flat,
+non-square density) it is byte-identical to a harness making libheif's libjpeg
+calls.
+
+`crates/capi/src/builtin_jpeg_encoder.rs` registers it as a static
+encoder-plugin record (version 4, priority 100), so the existing plugin paths
+handle input conversion, alpha, thumbnails and sequences. The record carries
+the plugin's semantics:
+
+- quality 0-100, default 50;
+- lossless means quality 100;
+- the parameter list and unsupported-parameter errors;
+- the YCbCr/8-bit input checks;
+- density for normal and thumbnail images only.
+
+The id and name are libheifer's own (`libheifer-jpeg`), as with the other
+built-in codecs. The JPEG oracle is now built with libheif's JPEG encoder.
+
+`tools/test_jpeg_encoding.py` covers:
+
+- 200 cases of seven sizes and six input colorspaces/chroma formats;
+- twelve qualities and the lossless flag;
+- bit-depth errors;
+- metadata and pixel-aspect-ratio flags, orientations and thumbnails;
+- overlays, repeated encodes and alpha planes.
+
+It compares exact files, handles and decoded read-back pixels in normal,
+sanitizer-client and codec-free builds. It matched on the first run.
+
+With a JPEG encoder always present, `test_encoding` format-0 cases (highest
+priority encoder) and `test_other_encoding` cases whose test plugin is
+rejected now use it, as libheif with its JPEG encoder does. Those suites now
+compare against the JPEG oracle (1,292 and 2,382 cases, 0 mismatches). Six
+mutations are detected. The first reciprocal-rounding and thumbnail-density
+mutants were equivalent and were replaced. Divisors are multiples of 8, so the
+remainder never equals half the divisor, and libheif's thumbnail image carries
+no aspect ratio. Both reports are retained. 348 mutations total.

@@ -17,7 +17,8 @@ Initial source audit (2026-09-18):
 | VVC | [gamut-vvc](https://github.com/justin13888/gamut/tree/main/crates/gamut-vvc) | Pure Rust intra-image codec candidate; workspace also contains an unrelated native JXL crate which must not enter our graph. Requires newer Rust and independent coverage validation. |
 | Raw mask decode | In-tree Rust | 8/16-bit mask samples and generated malformed input/conversion cases compared independently; mask encoding is implemented and has independent exact-byte/roundtrip coverage. |
 | Registered encoder hooks | In-tree Rust | HEVC/AV1/AVC/VVC/JPEG/JPEG2000/HTJ2K packet configuration, callback lifetimes, alpha/thumbnail conversion, ordinary and compact writing have independent oracle and mutation evidence. These optional caller-provided hooks are separate from the still-open built-in codec encoders. |
-| Remaining codecs/encoders | Open | JPEG encoding, built-in AVC encoding, HEVC encoding, JPEG2000 encoding/HTJ2K, full VVC and uncompressed formats require further implementation/audit. |
+| JPEG encode | In-tree Rust (`src/jpeg_encoder.rs`) | Baseline 4:2:0 encoder byte-identical to libheif's libjpeg-turbo 3.1.1 plugin (scalar islow FDCT, reciprocal quantization, standard tables, JFIF density), registered as a static encoder-plugin record with the plugin's parameters; compared on encoded files, handles and pixels. |
+| Remaining codecs/encoders | Open | Built-in AVC encoding, HEVC encoding, JPEG2000 encoding/HTJ2K, full VVC and uncompressed formats require further implementation/audit. |
 
 Repository descriptions and upstream conformance claims are leads, not our test
 results. A decoder successfully handling the example image is not complete codec

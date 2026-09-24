@@ -47,6 +47,8 @@ Rust port of libjpeg-turbo's jdarith.c, including DAC conditioning and restart
 resynchronization; arithmetic lossless is rejected as libjpeg-turbo does.
 
 This is finite compatibility evidence, not complete JPEG or libheif conformance.
-Built-in JPEG encoding, broader Huffman restart/corruption and sequence
+Built-in JPEG encoding uses the in-tree `src/jpeg_encoder.rs` (no dependency),
+matched byte for byte against libheif's JPEG encoder plugin; the JPEG oracle is
+built with that encoder. Broader Huffman restart/corruption and sequence
 behavior, cross-platform C clients and downstream/performance gates remain open.
 Strict project completion remains false.

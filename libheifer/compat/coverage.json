@@ -285,7 +285,7 @@
     ]
   },
   "heif_context_encode_image": {
-    "notes": "Independent original-header mask and uncompressed encoding, exact file bytes and all active decoded plane bytes, orientations, versioned options, ICC/NCLX/HDR/GIMI metadata, primary flags, overlays, thumbnail scaling/assignment/output sentinels, and repeated region/text writes. Native freshly encoded uncompressed alpha queries and encoded timestamp ownership fail in isolated ASan probes and are excluded from parity counts; candidate safety probes pass. External codec-plugin integration, other encoders/codecs, custom/sensor configurations, large/resource-failure cases and non-Linux behavior remain open. Registered AV1 callbacks/alpha/thumbnail and compact output: 441-case independent oracle suites, sanitizer, codec-free and mutation evidence. Other codec and exhaustive behavior gaps remain. Registered HEVC encoding and compact writing have 762-case normal/sanitizer/codec-free independent comparisons; SPS configuration, alpha, duplicate NALs, profile brands and callback errors. Broader codec/packet behavior remains partial. Registered JPEG/JPEG2000/HTJ2K callbacks, forced JPEG color profile, channel definitions and writer brands: 2,382 independent cases with sanitizer/codec-free and mutation evidence. Built-in codec encoding and complete behavior remain open. Registered AVC encoding: 1,344 original-header cases; expanded HEVC ordinary/compact: 789 each. Partial SPS updates and partial configuration-box output are covered with sanitizer, codec-free and mutation evidence. Built-in AVC encoding and other plan gates remain open. Registered VVC encoder configuration, SPS partial records, parameter-set multiplicity and writer overflow boundaries now have independent callback/file, sanitizer, codec-free and mutation coverage; built-in VVC coding and remaining requirements stay open.",
+    "notes": "Independent original-header mask and uncompressed encoding, exact file bytes and all active decoded plane bytes, orientations, versioned options, ICC/NCLX/HDR/GIMI metadata, primary flags, overlays, thumbnail scaling/assignment/output sentinels, and repeated region/text writes. Native freshly encoded uncompressed alpha queries and encoded timestamp ownership fail in isolated ASan probes and are excluded from parity counts; candidate safety probes pass. External codec-plugin integration, other encoders/codecs, custom/sensor configurations, large/resource-failure cases and non-Linux behavior remain open. Registered AV1 callbacks/alpha/thumbnail and compact output: 441-case independent oracle suites, sanitizer, codec-free and mutation evidence. Other codec and exhaustive behavior gaps remain. Registered HEVC encoding and compact writing have 762-case normal/sanitizer/codec-free independent comparisons; SPS configuration, alpha, duplicate NALs, profile brands and callback errors. Broader codec/packet behavior remains partial. Registered JPEG/JPEG2000/HTJ2K callbacks, forced JPEG color profile, channel definitions and writer brands: 2,382 independent cases with sanitizer/codec-free and mutation evidence. Built-in codec encoding and complete behavior remain open. Registered AVC encoding: 1,344 original-header cases; expanded HEVC ordinary/compact: 789 each. Partial SPS updates and partial configuration-box output are covered with sanitizer, codec-free and mutation evidence. Built-in AVC encoding and other plan gates remain open. Registered VVC encoder configuration, SPS partial records, parameter-set multiplicity and writer overflow boundaries now have independent callback/file, sanitizer, codec-free and mutation coverage; built-in VVC coding and remaining requirements stay open. Built-in pure Rust JPEG encoding is byte-identical to libheif's libjpeg-turbo plugin (tools/test_jpeg_encoding.py, normal/sanitizer/codec-free, mutation evidence).",
     "status": "partial",
     "tests": [
       "tests/encoding.c",
@@ -298,7 +298,8 @@
       "tools/test_hevc_mini_encoding.py",
       "tools/test_other_encoding.py",
       "tools/test_avc_encoding.py",
-      "tools/test_vvc_encoding.py"
+      "tools/test_vvc_encoding.py",
+      "tools/test_jpeg_encoding.py"
     ]
   },
   "heif_context_encode_thumbnail": {
@@ -346,12 +347,13 @@
     ]
   },
   "heif_context_get_encoder_for_format": {
-    "notes": "Independent original-header external-plugin callback traces: historical record prefixes, priority/filter/capacity behavior, registration multiplicity, init/deinit and reentrant discovery, allocation errors and cleanup, duplicate parameter validation, forwarding and generic conversion. Normal, codec-free and C sanitizer checks. Actual registered-plugin image encoding/decoding, dynamic loading, resource failures and cross-platform C execution remain open; HEVC discovery honestly identifies the Rust implementation.",
+    "notes": "Independent original-header external-plugin callback traces: historical record prefixes, priority/filter/capacity behavior, registration multiplicity, init/deinit and reentrant discovery, allocation errors and cleanup, duplicate parameter validation, forwarding and generic conversion. Normal, codec-free and C sanitizer checks. Actual registered-plugin image encoding/decoding, dynamic loading, resource failures and cross-platform C execution remain open; HEVC discovery honestly identifies the Rust implementation. Built-in pure Rust JPEG encoding is byte-identical to libheif's libjpeg-turbo plugin (tools/test_jpeg_encoding.py, normal/sanitizer/codec-free, mutation evidence).",
     "status": "partial",
     "tests": [
       "tests/plugins.c",
       "tools/test_plugins.py",
-      "crates/capi/tests/abi.rs"
+      "crates/capi/tests/abi.rs",
+      "tools/test_jpeg_encoding.py"
     ]
   },
   "heif_context_get_entity_groups": {
@@ -1250,12 +1252,13 @@
     ]
   },
   "heif_get_encoder_descriptors": {
-    "notes": "Independent original-header external-plugin callback traces: historical record prefixes, priority/filter/capacity behavior, registration multiplicity, init/deinit and reentrant discovery, allocation errors and cleanup, duplicate parameter validation, forwarding and generic conversion. Normal, codec-free and C sanitizer checks. Actual registered-plugin image encoding/decoding, dynamic loading, resource failures and cross-platform C execution remain open; HEVC discovery honestly identifies the Rust implementation.",
+    "notes": "Independent original-header external-plugin callback traces: historical record prefixes, priority/filter/capacity behavior, registration multiplicity, init/deinit and reentrant discovery, allocation errors and cleanup, duplicate parameter validation, forwarding and generic conversion. Normal, codec-free and C sanitizer checks. Actual registered-plugin image encoding/decoding, dynamic loading, resource failures and cross-platform C execution remain open; HEVC discovery honestly identifies the Rust implementation. Built-in pure Rust JPEG encoding is byte-identical to libheif's libjpeg-turbo plugin (tools/test_jpeg_encoding.py, normal/sanitizer/codec-free, mutation evidence).",
     "status": "partial",
     "tests": [
       "tests/plugins.c",
       "tools/test_plugins.py",
-      "crates/capi/tests/abi.rs"
+      "crates/capi/tests/abi.rs",
+      "tools/test_jpeg_encoding.py"
     ]
   },
   "heif_get_file_mime_type": {
@@ -1357,12 +1360,13 @@
     ]
   },
   "heif_have_encoder_for_format": {
-    "notes": "Independent original-header external-plugin callback traces: historical record prefixes, priority/filter/capacity behavior, registration multiplicity, init/deinit and reentrant discovery, allocation errors and cleanup, duplicate parameter validation, forwarding and generic conversion. Normal, codec-free and C sanitizer checks. Actual registered-plugin image encoding/decoding, dynamic loading, resource failures and cross-platform C execution remain open; HEVC discovery honestly identifies the Rust implementation.",
+    "notes": "Independent original-header external-plugin callback traces: historical record prefixes, priority/filter/capacity behavior, registration multiplicity, init/deinit and reentrant discovery, allocation errors and cleanup, duplicate parameter validation, forwarding and generic conversion. Normal, codec-free and C sanitizer checks. Actual registered-plugin image encoding/decoding, dynamic loading, resource failures and cross-platform C execution remain open; HEVC discovery honestly identifies the Rust implementation. Built-in pure Rust JPEG encoding is byte-identical to libheif's libjpeg-turbo plugin (tools/test_jpeg_encoding.py, normal/sanitizer/codec-free, mutation evidence).",
     "status": "partial",
     "tests": [
       "tests/plugins.c",
       "tools/test_plugins.py",
-      "crates/capi/tests/abi.rs"
+      "crates/capi/tests/abi.rs",
+      "tools/test_jpeg_encoding.py"
     ]
   },
   "heif_image_add_bayer_component": {

@@ -734,5 +734,9 @@ OpenH264 plugin (13,225 still-image cases).
 Arithmetic-coded JPEG (SOF9/SOF10, DAC, restart resynchronization) now
 decodes as libjpeg-turbo does (11,225 decode and 24,108 error cases).
 
+A built-in pure Rust JPEG encoder produces files byte-identical to libheif's
+libjpeg-turbo plugin (200 encoding cases; 3,674 other encoding cases now
+compared against the JPEG oracle).
+
 Next: remaining plan gates. All 465 functions remain partial; strict completion
 remains false.

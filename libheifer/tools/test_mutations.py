@@ -379,11 +379,11 @@ MUTATIONS = [
     ("jpeg_dac_index", "src/jpeg_header.rs", "        } else if marker == 204 {", "        } else if marker == 204 && marker == 0 {", "jpeg_errors"),
     ("jpeg_reserved_marker", "vendor/jpeg-decoder/src/decoder.rs", 'Marker::RES(n) => {\n                    return Err(Error::Format(format!("Unsupported marker type 0x{n:02x}")));', 'Marker::RES(n) => {\n                    return Err(Error::Format(format!("Unsupported marker type 0x{:02x}", n + 1)));', "jpeg_errors"),
     ("jpeg_encode_quality_scale", "src/jpeg_encoder.rs", "        200 - quality * 2\n", "        201 - quality * 2\n", "jpeg_encoding"),
-    ("jpeg_encode_reciprocal_rounding", "src/jpeg_encoder.rs", "} else if fr <= u64::from(divisor / 2) {", "} else if fr < u64::from(divisor / 2) {", "jpeg_encoding"),
+    ("jpeg_encode_reciprocal_rounding", "src/jpeg_encoder.rs", "        c += 1;\n", "        c += 0;\n", "jpeg_encoding"),
     ("jpeg_encode_dummy_dc", "src/jpeg_encoder.rs", "            block[0] = *prev;", "            block[0] = 0;", "jpeg_encoding"),
     ("jpeg_encode_flush_padding", "src/jpeg_encoder.rs", "let byte = ((self.buffer << (8 - self.bits)) as u8) | (0xFF >> self.bits);", "let byte = (self.buffer << (8 - self.bits)) as u8;", "jpeg_encoding"),
     ("jpeg_encode_fdct_constant", "src/jpeg_encoder.rs", "            let tmp4 = tmp4 * 2446;", "            let tmp4 = tmp4 * 2447;", "jpeg_encoding"),
-    ("jpeg_encode_thumbnail_density", "crates/capi/src/builtin_jpeg_encoder.rs", "matches!(input_class, 1 | 4)", "matches!(input_class, 1)", "jpeg_encoding"),
+    ("jpeg_encode_density_axes", "crates/capi/src/builtin_jpeg_encoder.rs", "(h as u16, v as u16)", "(v as u16, h as u16)", "jpeg_encoding"),
     ("avc_cavlc_p_skip_run", "vendor/rusty_h264-decoder/src/mb16.rs", "if self.is_b && skip_run > total - addr {", "if skip_run > total - addr {", "avc_sequences"),
     ("error_field_order", "crates/capi/src/lib.rs", "pub code: c_int,\n    pub subcode: c_int,", "pub subcode: c_int,\n    pub code: c_int,", "abi"),
 ]
@@ -427,7 +427,7 @@ def main():
         if suite in ("avc", "avc_errors", "avc_plugins", "avc_limits", "avc_sequences", "plugin_sequences"):
             return str(Path(args.avc_reference_build).resolve())
         # The JPEG oracle has libheif's JPEG encoder, like the candidate.
-        if suite.startswith("jpeg_") or suite == "other_encoding":
+        if suite.startswith("jpeg_") or suite in ("other_encoding", "encoding"):
             return str(Path(args.jpeg_reference_build).resolve())
         if suite in ('av1', 'av1_limits', 'mini_reader'):
             return str(Path(args.av1_reference_build).resolve())
