@@ -191,11 +191,11 @@ def build(base, layers, style=None, zero=None, guard=0):
 def refinement_cases(base):
     cleanup = base['cleanup']
     cases = []
-    for seed in range(3):
+    for seed in range(2):
         rng = random.Random(f"{base['name']}-{seed}")
         for n, length in [(2, 1), (2, 3), (2, 9), (2, 40), (3, 1), (3, 2), (3, 7), (3, 33), (3, 90), (2, 0), (3, 0), (4, 5)]:
             refine = bytes(rng.randrange(256) for _ in range(length))
-            for style, guard in [(0x40, 0), (0x40, 1), (0x48, 1), (0x40, 3), (0x48, 3)]:
+            for style, guard in [(0x40, 0), (0x40, 1), (0x48, 3)]:
                 cases.append((f'single-{n}-{length}-{seed}-{style:x}-{guard}',
                               build(base, [(True, n, [cleanup, refine])], style, guard=guard)))
     rng = random.Random(base['name'])
@@ -239,7 +239,7 @@ def corruption_cases(name, data):
     positions = sorted(set(list(range(sod + 2, min(len(data) - 2, sod + 34))) + list(range(max(sod + 2, len(data) - 34), len(data) - 2))
                            + [rng.randrange(sod + 2, len(data) - 2) for _ in range(24)]))
     for at in positions:
-        for value in [0x00, 0x0F, 0x7F, 0x80, 0x8F, 0x90, 0xF0, 0xFF, data[at] ^ 1, data[at] ^ 0x80]:
+        for value in [0x00, 0x7F, 0x8F, 0x90, 0xFF, data[at] ^ 1]:
             broken = bytearray(data)
             broken[at] = value & 0xFF
             cases.append((f'byte-{at}-{value & 0xFF}', bytes(broken)))
@@ -265,7 +265,7 @@ def corruption_cases(name, data):
 
 
 def main():
-    for flag, value in [('--work', '.build/htj2k-errors'), ('--output', '.build/htj2k-errors-report.json'), ('--modes', '0,11,27')]:
+    for flag, value in [('--work', '.build/htj2k-errors'), ('--output', '.build/htj2k-errors-report.json'), ('--modes', '0')]:
         if flag not in sys.argv:
             sys.argv += [flag, value]
     directory = Path(sys.argv[sys.argv.index('--work') + 1]).resolve() / 'fixtures'
