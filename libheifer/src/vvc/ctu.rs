@@ -1021,6 +1021,7 @@ impl<'a, 's, 'b> CtuDecoder<'a, 's, 'b> {
             is_qt = self.bin(ctx::SPLIT_QT_FLAG + c) != 0;
         }
         if is_qt {
+            vtrace!("split_cu_mode() mode={}", Split::Quad.code());
             return Ok(Split::Quad);
         }
         let can_hor = num_hor != 0;
@@ -1052,12 +1053,14 @@ impl<'a, 's, 'b> CtuDecoder<'a, 's, 'b> {
             let c = usize::from(part.mt_depth <= 1) + (usize::from(is_ver) << 1);
             is12 = self.bin(ctx::SPLIT12_FLAG + c) != 0;
         }
-        Ok(match (is_ver, is12) {
+        let split = match (is_ver, is12) {
             (true, true) => Split::Vert,
             (true, false) => Split::TriV,
             (false, true) => Split::Horz,
             (false, false) => Split::TriH,
-        })
+        };
+        vtrace!("split_cu_mode() mode={}", split.code());
+        Ok(split)
     }
 
     fn cu(&self, id: u32) -> &Cu {
@@ -1268,7 +1271,7 @@ impl<'a, 's, 'b> CtuDecoder<'a, 's, 'b> {
             if c.ly() & mask != 0 {
                 let mut mrl = if self.bin(ctx::MULTI_REF_LINE_IDX) == 1 { 1 } else { 0 };
                 if mrl != 0 {
-                    mrl = if self.bin(ctx::MULTI_REF_LINE_IDX + 1) == 1 { 3 } else { 1 };
+                    mrl = if self.bin(ctx::MULTI_REF_LINE_IDX + 1) == 1 { 2 } else { 1 };
                 }
                 self.cu_mut(cu_id).mrl = mrl;
             }
@@ -1309,6 +1312,8 @@ impl<'a, 's, 'b> CtuDecoder<'a, 's, 'b> {
             }
             self.cu_mut(cu_id).intra_dir[0] = mode as u8;
         }
+        let c = self.cu(cu_id);
+        vtrace!("intra_luma_pred_modes() idx=0 pos=({},{}) mode={}", c.lx(), c.ly(), c.intra_dir[0]);
         Ok(())
     }
 
@@ -1690,6 +1695,8 @@ impl<'a, 's, 'b> CtuDecoder<'a, 's, 'b> {
     fn residual_coding(&mut self, tu_id: u32, comp: usize, cu_ctx: &mut CuCtx) -> Result<(), Error> {
         let t = self.pic.tus[tu_id as usize].clone();
         let c = self.cu(t.cu).clone();
+        let b = t.blk[comp];
+        vtrace!("residual_coding() etype={} pos=({},{}) size={}x{}", comp, b.x, b.y, b.w, b.h);
         if comp == 2 && t.joint == 3 {
             return Ok(());
         }
@@ -2116,6 +2123,7 @@ impl<'a, 's, 'b> CtuDecoder<'a, 's, 'b> {
             idx += self.bin(ctx::LFNST_IDX + 2);
         }
         self.cu_mut(cu_id).lfnst = idx as u8;
+        vtrace!("residual_lfnst_mode() etype=0 pos=({},{}) mode={}", c.lx(), c.ly(), idx);
     }
 
     fn mts_idx(&mut self, cu_id: u32, cu_ctx: &CuCtx) {
@@ -2142,6 +2150,7 @@ impl<'a, 's, 'b> CtuDecoder<'a, 's, 'b> {
             }
         }
         self.pic.tus[tu0].mts[0] = mts;
+        vtrace!("mts_idx() etype=0 pos=({},{}) mtsIdx={}", c.lx(), c.ly(), mts);
     }
 }
 

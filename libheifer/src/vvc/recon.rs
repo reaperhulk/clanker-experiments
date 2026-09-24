@@ -810,6 +810,16 @@ pub fn reconstruct_cu(pic: &mut Picture, si: &SliceInfo, cu_id: u32) -> Result<(
         lm_stride: 0,
     };
     let num_comp = ctx.pic.fmt.num_comp();
+    if num_comp > 1 {
+        for t in cu.first_tu..cu.first_tu + cu.num_tu {
+            let tu = ctx.pic.tus[t as usize].clone();
+            for c in 1..3 {
+                if tu.blk[c].valid() {
+                    ctx.pic.tus[t as usize].cqp[c - 1] = qp_param(&ctx, &tu, c, false).0;
+                }
+            }
+        }
+    }
     let bd = ctx.pic.bit_depth;
     let max = (1i32 << bd) - 1;
     for t in cu.first_tu..cu.first_tu + cu.num_tu {
@@ -1162,7 +1172,13 @@ fn pred_lm(ctx: &mut Ctx, comp: usize, tu_id: u32, area: Area, mode: u8, dst: &m
     let lx = area.x << sx;
     let ly = area.y << sy;
     let plane = &ctx.pic.planes[0];
-    let rec = |x: i32, y: i32| i32::from(plane.at(lx + x, ly + y));
+    // vvdec fetches the full MDLM template length from its padded picture
+    // buffer; samples outside the picture are never used for the model.
+    let (pw, ph) = (ctx.pic.width, ctx.pic.height);
+    let rec = |x: i32, y: i32| {
+        let (x, y) = (lx + x, ly + y);
+        if x < 0 || y < 0 || x >= pw || y >= ph { 0 } else { i32::from(plane.at(x, y)) }
+    };
     let base_unit = 4;
     let unit_w = base_unit >> sx;
     let unit_h = base_unit >> sy;

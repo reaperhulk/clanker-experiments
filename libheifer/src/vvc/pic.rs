@@ -173,6 +173,8 @@ pub struct Tu {
     pub idx: u32,
     pub cu: u32,
     pub coeff: [Vec<i32>; 3],
+    /// Chroma QPs (Qp'Cb, Qp'Cr) used by the deblocking filter.
+    pub cqp: [i32; 2],
 }
 
 impl Tu {

@@ -2,10 +2,26 @@
 //! Pure Rust VVC (H.266) still-picture decoder, written to reproduce the
 //! output of vvdec 3.2.0 as used by libheif's vvdec plugin. Intra pictures
 //! only; inter prediction reports [`Error::Unsupported`].
+/// Emits vvdec-style `D_SYNTAX` lines on stderr when `VVC_TRACE` is set;
+/// a development aid for diffing against vvdec's tracing build.
+macro_rules! vtrace {
+    ($($a:tt)*) => {
+        if $crate::vvc::trace_enabled() {
+            eprintln!($($a)*);
+        }
+    };
+}
+
+pub(crate) fn trace_enabled() -> bool {
+    static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+    *ON.get_or_init(|| std::env::var_os("VVC_TRACE").is_some())
+}
+
 mod bits;
 mod cabac;
 mod ctu;
 mod ctx;
+mod deblock;
 mod filter;
 mod pic;
 pub mod ps;

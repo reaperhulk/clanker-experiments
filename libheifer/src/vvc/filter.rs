@@ -8,8 +8,8 @@ use super::recon::Lmcs;
 pub fn loop_filter(
     pic: &mut Picture,
     sps: &Sps,
-    _pps: &Pps,
-    _ph: &PicHeader,
+    pps: &Pps,
+    ph: &PicHeader,
     slices: &[SliceHeader],
     lmcs: Option<&Lmcs>,
     _alf: &[Option<AlfParam>; 8],
@@ -33,6 +33,9 @@ pub fn loop_filter(
                 }
             }
         }
+    }
+    if std::env::var_os("VVC_NO_DEBLOCK").is_none() {
+        super::deblock::deblock(pic, sps, pps, ph, slices);
     }
     Ok(())
 }
