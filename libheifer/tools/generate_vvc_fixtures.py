@@ -47,6 +47,11 @@ def picture(w, h, chroma, depth, pattern):
                     v = 230 if ((x >> 2) + (y >> 3) + c) & 1 else 20
                 elif pattern == 3:
                     v = (x * x + y * 7 * (c + 1) + (noise() & 15)) & 255
+                elif pattern == 6:
+                    # Luma detail repeated in chroma at its own scale, so
+                    # cross-component ALF has correlated luma to borrow from.
+                    lx, ly = (x, y) if c == 0 else (x << CHROMA[chroma][0], y << CHROMA[chroma][1])
+                    v = 128 + (((lx * 7 + ly * 3) % 23) - 11) * 6 + (40 if ((lx >> 3) ^ (ly >> 4)) & 1 else -40) + (noise() & 7)
                 elif pattern == 5:
                     # Screen-content-like: sharp text strokes on a flat background.
                     v = 16 + 200 * (((x * 5 + y * 3) % 11) < 2) + c * 30 if (x // 8 + y // 8) & 1 else 128 + c * 20
@@ -134,6 +139,14 @@ def main():
         pattern = 5 if extra in (['IBC=1'], ['TransformSkip=1', 'BDPCM=1']) else 4
         w, h = (160, 96) if 'Tiles' in label else (64, 48)
         add(f'tool-{label}-{chroma}-{depth}', w, h, 'medium', 27, extra, chroma=chroma, depth=depth, pattern=pattern)
+    # Cross-component ALF on correlated content with coarser chroma.
+    for qp, preset in [(32, 'medium'), (37, 'slow'), (42, 'slower')]:
+        add(f'ccalf-{preset}-{qp}', 128, 96, preset, qp, ['ALF=1', 'CCALF=1', 'CbQpOffset=6', 'CrQpOffset=6'], pattern=6)
+    # LMCS with the all-intra model update and forced adaptation.
+    for extra, depth, qp in [(['LMCSUpdateCtrl=1', 'LMCSAdpOption=1'], 10, 22), (['LMCSUpdateCtrl=1', 'LMCSAdpOption=2'], 10, 32),
+                             (['LMCSUpdateCtrl=1', 'LMCSAdpOption=2'], 8, 37), (['LMCSSignalType=1', 'LMCSUpdateCtrl=1'], 10, 32)]:
+        label = '_'.join(e.replace('=', '') for e in extra)
+        add(f'lmcs-{label}-{depth}-{qp}', 128, 96, 'medium', qp, ['LMCSEnable=1', *extra], depth=depth, pattern=6)
     # Formats and sizes vvenc refuses: retained as encoder failures.
     for chroma, depth in itertools.product([422, 444], [8, 10]):
         add(f'format-{chroma}-{depth}', 32, 32, 'medium', 32, chroma=chroma, depth=depth)

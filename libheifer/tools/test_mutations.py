@@ -429,7 +429,7 @@ MUTATIONS = [
     ('vvc_deblock_ctb_long_filter', 'src/vvc/deblock.rs', 'p_large = false;', 'p_large = true;', 'vvc'),
     ('vvc_sao_band_position', 'src/vvc/sao.rs', 'offs[(p.band_pos as usize + i) % 32]', 'offs[(p.band_pos as usize + i + 1) % 32]', 'vvc'),
     ('vvc_alf_boundary_rounding', 'src/vvc/alf.rs', '(sum + (1 << 9)) >> 10', '(sum + (1 << 6)) >> 7', 'vvc'),
-    ('vvc_ccalf_rounding', 'src/vvc/alf.rs', 'sum = (sum + 64) >> 7;', 'sum = (sum + 63) >> 7;', 'vvc'),
+    ('vvc_ccalf_tap', 'src/vvc/alf.rs', 'sum += c(1) * (luma.g(lx - 1, ly) - cur);', 'sum += c(1) * (luma.g(lx + 1, ly) - cur);', 'vvc'),
     ('vvc_alf_transpose', 'src/vvc/alf.rs', 'const TRANSPOSE_TABLE: [usize; 8] = [0, 1, 0, 2, 2, 3, 1, 3];', 'const TRANSPOSE_TABLE: [usize; 8] = [0, 1, 0, 2, 2, 3, 1, 2];', 'vvc'),
     ('vvc_mrl_line', 'src/vvc/ctu.rs', 'mrl = if self.bin(ctx::MULTI_REF_LINE_IDX + 1) == 1 {\n                        2', 'mrl = if self.bin(ctx::MULTI_REF_LINE_IDX + 1) == 1 {\n                        3', 'vvc'),
     ('vvc_lmcs_chroma_rounding', 'src/vvc/recon.rs', '((abs * scale + (1 << 10)) >> 11)', '((abs * scale + (1 << 9)) >> 11)', 'vvc'),
