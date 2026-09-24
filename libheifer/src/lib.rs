@@ -70,6 +70,8 @@ pub mod debug;
 
 #[cfg(feature = "jpeg")]
 pub mod jpeg;
+#[cfg(feature = "jpeg")]
+pub mod jpeg_encoder;
 
 #[cfg(feature = "jpeg")]
 mod jpeg_header;

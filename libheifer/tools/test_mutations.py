@@ -378,6 +378,12 @@ MUTATIONS = [
     ("jpeg_arith_code_error", "vendor/jpeg-decoder/src/arithmetic.rs", "    fn fail(&mut self) {\n        // JWRN_ARITH_BAD_CODE\n        self.ct = -1;", "    fn fail(&mut self) {\n        // JWRN_ARITH_BAD_CODE\n        self.ct = 0;", "jpeg_errors"),
     ("jpeg_dac_index", "src/jpeg_header.rs", "        } else if marker == 204 {", "        } else if marker == 204 && marker == 0 {", "jpeg_errors"),
     ("jpeg_reserved_marker", "vendor/jpeg-decoder/src/decoder.rs", 'Marker::RES(n) => {\n                    return Err(Error::Format(format!("Unsupported marker type 0x{n:02x}")));', 'Marker::RES(n) => {\n                    return Err(Error::Format(format!("Unsupported marker type 0x{:02x}", n + 1)));', "jpeg_errors"),
+    ("jpeg_encode_quality_scale", "src/jpeg_encoder.rs", "if quality < 50 { 5000 / quality } else { 200 - quality * 2 }", "if quality < 50 { 5000 / quality } else { 201 - quality * 2 }", "jpeg_encoding"),
+    ("jpeg_encode_reciprocal_rounding", "src/jpeg_encoder.rs", "} else if fr <= u64::from(divisor / 2) {", "} else if fr < u64::from(divisor / 2) {", "jpeg_encoding"),
+    ("jpeg_encode_dummy_dc", "src/jpeg_encoder.rs", "            block[0] = *prev;", "            block[0] = 0;", "jpeg_encoding"),
+    ("jpeg_encode_flush_padding", "src/jpeg_encoder.rs", "let byte = ((self.buffer << (8 - self.bits)) as u8) | (0xFF >> self.bits);", "let byte = (self.buffer << (8 - self.bits)) as u8;", "jpeg_encoding"),
+    ("jpeg_encode_fdct_constant", "src/jpeg_encoder.rs", "            let tmp4 = tmp4 * 2446;", "            let tmp4 = tmp4 * 2447;", "jpeg_encoding"),
+    ("jpeg_encode_thumbnail_density", "crates/capi/src/builtin_jpeg_encoder.rs", "matches!(input_class, 1 | 4)", "matches!(input_class, 1)", "jpeg_encoding"),
     ("avc_cavlc_p_skip_run", "vendor/rusty_h264-decoder/src/mb16.rs", "if self.is_b && skip_run > total - addr {", "if skip_run > total - addr {", "avc_sequences"),
     ("error_field_order", "crates/capi/src/lib.rs", "pub code: c_int,\n    pub subcode: c_int,", "pub subcode: c_int,\n    pub code: c_int,", "abi"),
 ]

@@ -12,6 +12,8 @@ use std::ffi::{c_char, c_int};
 use std::ptr;
 
 mod auxiliary;
+#[cfg(feature = "jpeg")]
+mod builtin_jpeg_encoder;
 pub use auxiliary::DepthRepresentationInfo;
 mod camera;
 mod color;

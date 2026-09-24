@@ -53,6 +53,10 @@ impl Registry {
                 source: EncoderSource::Builtin(format),
             }));
         }
+        #[cfg(feature = "jpeg")]
+        self.encoders.push(Arc::new(EncoderDescriptor {
+            source: EncoderSource::External(&crate::builtin_jpeg_encoder::JPEG_ENCODER.0),
+        }));
         self.decoders.push(Arc::new(DecoderRecord {
             source: DecoderSource::Builtin(8),
         }));

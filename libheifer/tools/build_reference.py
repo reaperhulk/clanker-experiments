@@ -127,7 +127,7 @@ def main():
             "-DCMAKE_INSTALL_LIBDIR=lib", "-DWITH_SIMD=OFF", "-DWITH_TURBOJPEG=OFF", "-DENABLE_SHARED=ON", "-DENABLE_STATIC=OFF")
         run(cmake, "--build", dbuild, "-j", a.j)
         run(cmake, "--install", dbuild)
-        flags += ["-DWITH_JPEG_DECODER=ON", "-DWITH_JPEG_DECODER_PLUGIN=OFF", "-DWITH_JPEG_ENCODER=OFF",
+        flags += ["-DWITH_JPEG_DECODER=ON", "-DWITH_JPEG_DECODER_PLUGIN=OFF", "-DWITH_JPEG_ENCODER=ON",
                   f"-DJPEG_INCLUDE_DIR={install / 'include'}", f"-DJPEG_LIBRARY_RELEASE={install / 'lib/libjpeg.so'}"]
     run(cmake, "-S", source, "-B", build, "-DCMAKE_BUILD_TYPE=Release", "-DBUILD_TESTING=OFF", "-DBUILD_DOCUMENTATION=OFF", "-DWITH_EXAMPLES=OFF", "-DWITH_GDK_PIXBUF=OFF", f"-DENABLE_PLUGIN_LOADING={'ON' if a.plugins else 'OFF'}", *(["-DPLUGIN_DIRECTORY="] if a.plugins else []), f"-DWITH_LIBDE265={'ON' if a.hevc else 'OFF'}", "-DWITH_X265=OFF", "-DWITH_X264=OFF", *([] if a.avc else ["-DWITH_OpenH264_DECODER=OFF"]), f"-DWITH_DAV1D={'ON' if a.av1 else 'OFF'}", "-DWITH_DAV1D_PLUGIN=OFF", "-DWITH_AOM_DECODER=OFF", "-DWITH_AOM_ENCODER=OFF", "-DWITH_LIBSHARPYUV=OFF", "-DWITH_UNCOMPRESSED_CODEC=ON", *flags)
     run(cmake, "--build", build, "-j", a.j)
