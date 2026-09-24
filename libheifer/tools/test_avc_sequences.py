@@ -26,6 +26,8 @@ STREAMS = {
     'ibbp-noweightb': ['--profile', 'main', '--keyint', '30', '--bframes', '2', '--b-pyramid', 'none', '--no-weightb'],
     'ibbp-temporal': ['--profile', 'main', '--keyint', '30', '--bframes', '2', '--b-pyramid', 'none', '--no-weightb', '--direct', 'temporal'],
     'ibbp-cavlc': ['--profile', 'high', '--no-cabac', '--keyint', '30', '--bframes', '2', '--b-pyramid', 'none', '--no-weightb'],
+    'slices-main': ['--profile', 'main', '--keyint', '30', '--bframes', '2', '--b-pyramid', 'none', '--slices', '3'],
+    'slices-cavlc': ['--profile', 'high', '--no-cabac', '--keyint', '30', '--bframes', '0', '--slices', '2'],
     # Unchanging frames: every P slice is one skip run over the whole picture.
     'static-baseline': ['--profile', 'baseline', '--keyint', '30'],
 }
@@ -118,11 +120,14 @@ def track_file(w, h, kind, config, samples, delta=40, repeat=None, per_chunk=Non
 
 
 def access_units(units):
-    """Slice NAL units grouped per picture (x264 writes one slice per picture here)."""
+    """Slice NAL units grouped per picture: a slice with first_mb_in_slice 0 starts one."""
     out = []
     for u in units:
         if u[0] & 31 in (1, 5):
-            out.append([u])
+            if u[1] & 0x80 or not out:
+                out.append([u])
+            else:
+                out[-1].append(u)
     return out
 
 
@@ -188,7 +193,7 @@ def corpus():
         cases.append((name, sequence(w, h, units, aus)))
         # Truncated tracks: fewer samples than frames, and a missing last slice byte.
         cases.append((f'{name}-short', sequence(w, h, units, aus[:3])))
-        broken = aus[:-1] + [[aus[-1][0][:-1]]]
+        broken = aus[:-1] + [aus[-1][:-1] + [aus[-1][-1][:-1]]]
         cases.append((f'{name}-cut', sequence(w, h, units, broken)))
         # A repeating edit list (2.5 track durations) and two samples per chunk
         # (libheif keeps one decoder per chunk and sends parameter sets with

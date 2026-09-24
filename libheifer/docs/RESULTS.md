@@ -1431,11 +1431,11 @@ built-in decoder, including the "Did not decode all frames" error and
 per-sample durations. Tracks whose AVC decoder is not built in fail decoder
 selection as libheif's do.
 
-`tools/test_avc_sequences.py` builds 170 sequence tracks from committed x264
+`tools/test_avc_sequences.py` builds 194 sequence tracks from committed x264
 streams (`tests/fixtures/avc-sequences.json`, 5 frames each at 64x48 and
 50x36). They cover intra-only, IPPP (baseline, main, high, CAVLC, 3 refs,
 weighted P), IBBP (main, pyramid, no weighted B, temporal direct, CAVLC) and
-IDR every 2 frames. Each stream also appears truncated to 3 samples and with
+IDR every 2 frames, and pictures of 2 (CAVLC) or 3 (CABAC IBBP) slices. Each stream also appears truncated to 3 samples and with
 its last slice byte cut, repeated by a 2.5-duration edit list, split into
 two-sample chunks, and with those chunks alternating between two sample
 descriptions. A static baseline stream has its P skip runs extended past the
@@ -1453,15 +1453,14 @@ decoder:
   the next macroblock's area, which that macroblock rewrites. The upstream
   crate had removed this replication.
 
-All 170 cases match in normal, sanitizer-client and codec-free builds.
+All 194 cases match in normal, sanitizer-client and codec-free builds.
 Seven new mutations cover the reorder rules, parameter sets with sample 0,
 decoder sharing across chunks, the Bi partitions and the P skip run. The first run of `avc_cavlc_p_skip_run`
 survived because no stream ran past the picture end. The static overrun
 tracks now detect it (2 mismatches). Both reports are retained
 (`results/avc-sequences-mutations-initial-report.json`,
 `results/avc-sequences-skip-run-mutation-report.json`); 327 mutations total.
-Only one slice per picture is covered. Registered plugins decoding sequences
-are covered below.
+Registered plugins decoding sequences are covered below.
 
 ### Registered decoder plugins in image sequences
 
