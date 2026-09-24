@@ -68,6 +68,8 @@ pub struct EncoderConfiguration {
     pps: Vec<Vec<u8>>,
     extensions: Vec<Vec<u8>>,
     pub size: (u32, u32),
+    /// Coded (uncropped) dimensions from the last parsed SPS.
+    pub coded: (u32, u32),
 }
 impl EncoderConfiguration {
     pub fn update(&mut self, nal: &[u8]) -> Result<bool, ContextError> {
@@ -154,6 +156,7 @@ impl EncoderConfiguration {
         }
         let (mut w, mut h) = (w as u32, h as u32);
         self.size = (w, h);
+        self.coded = (w, h);
         if b.get(1) != 0 {
             let left = u64::from(b.ue()?);
             let right = u64::from(b.ue()?);
@@ -225,4 +228,151 @@ fn write_nals(out: &mut Vec<u8>, nals: &[Vec<u8>], kind: &str) -> Result<(), Con
         out.extend_from_slice(nal);
     }
     Ok(())
+}
+
+/// The parts of an `avcC` box that libheif's `Box_avcC::parse` retains.
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
+pub struct AvcConfig {
+    pub profile: u8,
+    pub chroma_format: u8,
+    pub bit_depth_luma: u8,
+    pub bit_depth_chroma: u8,
+    pub sps: Vec<Vec<u8>>,
+    pub pps: Vec<Vec<u8>>,
+    pub sps_ext: Vec<Vec<u8>>,
+}
+
+struct Range<'a> {
+    data: &'a [u8],
+    at: usize,
+    error: bool,
+}
+
+impl Range<'_> {
+    fn remaining(&self) -> usize {
+        self.data.len() - self.at
+    }
+    fn read(&mut self, n: usize) -> &[u8] {
+        if self.error || self.remaining() < n {
+            self.error = true;
+            self.at = self.data.len();
+            return &[];
+        }
+        self.at += n;
+        &self.data[self.at - n..self.at]
+    }
+    fn read8(&mut self) -> u8 {
+        self.read(1).first().copied().unwrap_or(0)
+    }
+    fn read16(&mut self) -> u16 {
+        let bytes = self.read(2);
+        if bytes.len() == 2 {
+            u16::from_be_bytes([bytes[0], bytes[1]])
+        } else {
+            0
+        }
+    }
+    fn sets(&mut self, count: usize) -> Vec<Vec<u8>> {
+        let mut sets = Vec::new();
+        for _ in 0..count {
+            let size = usize::from(self.read16());
+            let data = self.read(size).to_vec();
+            if self.error {
+                break;
+            }
+            sets.push(data);
+        }
+        sets
+    }
+}
+
+/// `Decoder_AVC::get_coded_image_size_from_config`: the coded size of the first
+/// non-empty SPS, or its parse error.
+pub fn coded_size(config: &AvcConfig) -> Result<Option<(u32, u32)>, ContextError> {
+    let Some(sps) = config.sps.iter().find(|s| !s.is_empty()) else {
+        return Ok(None);
+    };
+    let mut parsed = EncoderConfiguration::default();
+    parsed.parse(sps).map_err(|e| {
+        // The decoder reports libheif's full "<code>: <subcode>: <message>" text.
+        let message = e
+            .message
+            .strip_prefix("Invalid input: ")
+            .unwrap_or(&e.message);
+        ContextError::new(
+            e.code,
+            e.subcode,
+            format!(
+                "Invalid input: {}: {message}",
+                crate::error_text::subcode_text(e.subcode)
+            ),
+        )
+    })?;
+    Ok(Some(parsed.coded))
+}
+
+/// Parse an `avcC` payload as libheif's `Box_avcC::parse` does; `None` when truncated.
+pub fn parse_configuration(data: &[u8]) -> Option<AvcConfig> {
+    AvcConfig::parse(data)
+}
+
+impl AvcConfig {
+    fn parse(data: &[u8]) -> Option<Self> {
+        let mut r = Range {
+            data,
+            at: 0,
+            error: false,
+        };
+        let mut config = AvcConfig {
+            chroma_format: 1,
+            bit_depth_luma: 8,
+            bit_depth_chroma: 8,
+            ..Default::default()
+        };
+        r.read8();
+        config.profile = r.read8();
+        r.read8();
+        r.read8();
+        r.read8();
+        let count = usize::from(r.read8() & 31);
+        config.sps = r.sets(count);
+        let count = usize::from(r.read8());
+        config.pps = r.sets(count);
+        if r.remaining() > 0 && !matches!(config.profile, 66 | 77 | 88) {
+            config.chroma_format = r.read8() & 3;
+            config.bit_depth_luma = 8 + (r.read8() & 7);
+            config.bit_depth_chroma = 8 + (r.read8() & 7);
+            let count = usize::from(r.read8());
+            config.sps_ext = r.sets(count);
+        }
+        (!r.error).then_some(config)
+    }
+
+    /// `Box_avcC::get_header_nals`: SPS, SPS extensions, then PPS, each with a
+    /// four-byte big-endian length.
+    pub fn header_nals(&self) -> Vec<u8> {
+        let mut data = Vec::new();
+        for nal in self.sps.iter().chain(&self.sps_ext).chain(&self.pps) {
+            data.extend_from_slice(&(nal.len() as u32).to_be_bytes());
+            data.extend_from_slice(nal);
+        }
+        data
+    }
+}
+
+#[cfg(test)]
+mod configuration_tests {
+    use super::*;
+
+    #[test]
+    fn avcc_extension_only_for_high_profiles() {
+        let mut data = vec![1, 100, 0, 30, 0xFF, 0xE0, 0];
+        data.extend_from_slice(&[0xFC, 0xF9, 0xF8, 0]);
+        let config = parse_configuration(&data).unwrap();
+        assert_eq!((config.chroma_format, config.bit_depth_luma), (0, 9));
+        data[1] = 66;
+        let config = parse_configuration(&data).unwrap();
+        assert_eq!((config.chroma_format, config.bit_depth_luma), (1, 8));
+        assert!(parse_configuration(&[1, 100, 0, 30, 0xFF, 0xE1, 0, 5]).is_none());
+    }
 }

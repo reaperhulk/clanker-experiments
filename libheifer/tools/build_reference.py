@@ -10,6 +10,7 @@ DE265 = "7ba65889d3d6d8a0d99b5360b028243ba843be3a"
 OPENJPEG = "6c4a29b00211eb0430fa0e5e890f1ce5c80f409f"
 JPEG = "7723f50f3f66b9da74376e6d8badb6162464212c"
 DAV1D = "42b2b24fb8819f1ed3643aa9cf2a62f03868e3aa"
+OPENH264 = "652bdb7719f30b52b08e506645a7322ff1b2cc6f"  # v2.6.0
 
 
 def run(*args):
@@ -24,6 +25,7 @@ def main():
     p.add_argument("--av1", action="store_true")
     p.add_argument("--jpeg", action="store_true")
     p.add_argument("--jpeg2000", action="store_true")
+    p.add_argument("--avc", action="store_true", help="enable the native OpenH264 decoder oracle (scalar, no assembly)")
     p.add_argument("--plugins", action="store_true", help="enable native dynamic-plugin oracle with an empty default search path")
     p.add_argument("-j", default="4")
     a = p.parse_args()
@@ -93,6 +95,20 @@ def main():
         run(cmake, "--build", dbuild, "-j", a.j)
         run(cmake, "--install", dbuild)
         flags += [f"-DOpenJPEG_DIR={install / 'lib/cmake/openjpeg-2.5'}"]
+    if a.avc:
+        decoder = build.parent / "openh264-source"
+        install = build.parent / "openh264-install"
+        if not decoder.exists():
+            run("git", "init", decoder)
+            run("git", "-C", decoder, "remote", "add", "origin", "https://github.com/cisco/openh264.git")
+            run("git", "-C", decoder, "fetch", "--depth=1", "origin", OPENH264)
+            run("git", "-C", decoder, "checkout", "--detach", "FETCH_HEAD")
+        revision = subprocess.check_output(["git", "-C", str(decoder), "rev-parse", "HEAD"], text=True).strip()
+        if revision != OPENH264:
+            raise SystemExit("Wrong OpenH264 reference revision")
+        run("make", "-C", decoder, "-j", a.j, "USE_ASM=No", "BUILDTYPE=Release", f"PREFIX={install}", "install-shared")
+        flags += ["-DWITH_OpenH264_DECODER=ON", f"-DOpenH264_INCLUDE_DIR={install / 'include'}",
+                  f"-DOpenH264_LIBRARY={install / 'lib/libopenh264.so'}"]
     if a.jpeg:
         decoder = build.parent / "libjpeg-turbo-source"
         install = build.parent / "libjpeg-turbo-install"
@@ -111,7 +127,7 @@ def main():
         run(cmake, "--install", dbuild)
         flags += ["-DWITH_JPEG_DECODER=ON", "-DWITH_JPEG_DECODER_PLUGIN=OFF", "-DWITH_JPEG_ENCODER=OFF",
                   f"-DJPEG_INCLUDE_DIR={install / 'include'}", f"-DJPEG_LIBRARY_RELEASE={install / 'lib/libjpeg.so'}"]
-    run(cmake, "-S", source, "-B", build, "-DCMAKE_BUILD_TYPE=Release", "-DBUILD_TESTING=OFF", "-DBUILD_DOCUMENTATION=OFF", "-DWITH_EXAMPLES=OFF", "-DWITH_GDK_PIXBUF=OFF", f"-DENABLE_PLUGIN_LOADING={'ON' if a.plugins else 'OFF'}", *(["-DPLUGIN_DIRECTORY="] if a.plugins else []), f"-DWITH_LIBDE265={'ON' if a.hevc else 'OFF'}", "-DWITH_X265=OFF", "-DWITH_X264=OFF", "-DWITH_OpenH264_DECODER=OFF", f"-DWITH_DAV1D={'ON' if a.av1 else 'OFF'}", "-DWITH_DAV1D_PLUGIN=OFF", "-DWITH_AOM_DECODER=OFF", "-DWITH_AOM_ENCODER=OFF", "-DWITH_LIBSHARPYUV=OFF", "-DWITH_UNCOMPRESSED_CODEC=ON", *flags)
+    run(cmake, "-S", source, "-B", build, "-DCMAKE_BUILD_TYPE=Release", "-DBUILD_TESTING=OFF", "-DBUILD_DOCUMENTATION=OFF", "-DWITH_EXAMPLES=OFF", "-DWITH_GDK_PIXBUF=OFF", f"-DENABLE_PLUGIN_LOADING={'ON' if a.plugins else 'OFF'}", *(["-DPLUGIN_DIRECTORY="] if a.plugins else []), f"-DWITH_LIBDE265={'ON' if a.hevc else 'OFF'}", "-DWITH_X265=OFF", "-DWITH_X264=OFF", *([] if a.avc else ["-DWITH_OpenH264_DECODER=OFF"]), f"-DWITH_DAV1D={'ON' if a.av1 else 'OFF'}", "-DWITH_DAV1D_PLUGIN=OFF", "-DWITH_AOM_DECODER=OFF", "-DWITH_AOM_ENCODER=OFF", "-DWITH_LIBSHARPYUV=OFF", "-DWITH_UNCOMPRESSED_CODEC=ON", *flags)
     run(cmake, "--build", build, "-j", a.j)
 
 

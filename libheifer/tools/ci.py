@@ -25,6 +25,7 @@ BUILDS = {
 
 SUITES = {
     'normal': [
+        'tools/test_avc.py --reference-build .build/reference-avc',
         'tools/test_brands.py --reference-build .build/reference',
         'tools/test_brand_boxes.py --reference-build .build/reference',
         'tools/test_images.py --reference-build .build/reference',
@@ -113,6 +114,7 @@ SUITES = {
         'tools/test_hevc.py --reference-build .build/reference --require-default-output',
     ],
     'sanitized': [
+        'tools/test_avc.py --reference-build .build/reference-avc --sanitize --work .build/avc-sanitized --output .build/avc-sanitized-report.json',
         'tools/test_brand_boxes.py --reference-build .build/reference --sanitize --output .build/brand-boxes-sanitized-report.json',
         'tools/test_jpeg2000_tiles.py --reference-build .build/reference-jpeg2000 --sanitize --work .build/jpeg2000-tiles-san --output .build/jpeg2000-tiles-san-report.json',
         'tools/test_jpeg2000_sampling.py --reference-build .build/reference-jpeg2000 --sanitize --work .build/jpeg2000-sampling-san --output .build/jpeg2000-sampling-san-report.json',
@@ -182,11 +184,17 @@ SUITES = {
         'tools/test_context.py --reference-build .build/reference --sanitize --output .build/context-sanitized-report.json',
         'tools/test_decoding_options.py --reference-build .build/reference --sanitize --output .build/decoding-options-sanitized-report.json',
         'tools/test_error_lifetimes.py --reference-build .build/reference --sanitize --output .build/error-lifetimes-sanitized-report.json',
+        # Fixture manifests and inputs for the derived-handle and security corpora.
+        'tools/test_decode_derived.py --reference-build .build/reference',
+        'tools/test_decode_overlay.py --reference-build .build/reference',
+        'tools/test_decode_mask.py --reference-build .build/reference',
+        'tools/test_decode_graphs.py --reference-build .build/reference',
         'tools/test_derived_handles.py --reference-build .build/reference --sanitize --output .build/derived-handles-sanitized-report.json',
         'tools/test_security.py --reference-build .build/reference --sanitize --output .build/security-sanitized-report.json',
         'tools/test_warnings.py --reference-build .build/reference --sanitize --output .build/warnings-sanitized-report.json',
     ],
     'no-codecs': [
+        'tools/test_avc.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --work .build/avc-no-codecs --output .build/avc-no-codecs-report.json',
         'tools/test_jpeg2000_tiles.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --work .build/jpeg2000-tiles-no-codecs --output .build/jpeg2000-tiles-no-codecs-report.json',
         'tools/test_jpeg2000_sampling.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --work .build/jpeg2000-sampling-no-codecs --output .build/jpeg2000-sampling-no-codecs-report.json',
         'tools/test_jpeg2000_properties.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --output .build/jpeg2000-properties-no-codecs-report.json',

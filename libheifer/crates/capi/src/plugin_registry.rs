@@ -64,6 +64,10 @@ impl Registry {
         self.decoders.push(Arc::new(DecoderRecord {
             source: DecoderSource::Builtin(3),
         }));
+        #[cfg(feature = "avc")]
+        self.decoders.push(Arc::new(DecoderRecord {
+            source: DecoderSource::Builtin(2),
+        }));
         #[cfg(feature = "av1")]
         self.decoders.push(Arc::new(DecoderRecord {
             source: DecoderSource::Builtin(4),
@@ -337,6 +341,14 @@ supports!(
 impl DecoderSource {
     fn priority(self, format: c_int) -> c_int {
         match self {
+            // libheif's OpenH264 plugin reports priority 70 for AVC.
+            Self::Builtin(2) => {
+                if format == 2 {
+                    70
+                } else {
+                    0
+                }
+            }
             Self::Builtin(v) => {
                 if v == format {
                     100
@@ -351,6 +363,7 @@ impl DecoderSource {
         match self {
             Self::Builtin(8) => c"builtin".as_ptr(),
             Self::Builtin(7) => c"hayro-jpeg2000".as_ptr(),
+            Self::Builtin(2) => c"rusty_h264".as_ptr(),
             Self::Builtin(3) => c"jpeg-decoder".as_ptr(),
             Self::Builtin(4) => c"rav1d".as_ptr(),
             Self::Builtin(_) => c"rusty_h265".as_ptr(),
@@ -361,6 +374,7 @@ impl DecoderSource {
         match self {
             Self::Builtin(8) => c"uncompressed".as_ptr(),
             Self::Builtin(7) => c"hayro-jpeg2000".as_ptr(),
+            Self::Builtin(2) => c"rusty_h264".as_ptr(),
             Self::Builtin(3) => c"jpeg-decoder".as_ptr(),
             Self::Builtin(4) => c"rav1d".as_ptr(),
             Self::Builtin(_) => c"rusty_h265".as_ptr(),

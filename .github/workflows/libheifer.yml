@@ -84,6 +84,7 @@ jobs:
           python tools/build_reference.py --jpeg --build .build/reference-jpeg
           python tools/build_reference.py --jpeg2000 --build .build/reference-jpeg2000
           python tools/build_reference.py --plugins --build .build/reference-plugins
+          python tools/build_reference.py --avc --build .build/reference-avc
 
   differential:
     name: Independent C clients (${{ matrix.group }})

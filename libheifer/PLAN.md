@@ -639,3 +639,35 @@ Tile-part progression changes, wider precision, HTJ2K, built-in encoders, comple
 sequence behavior and the remaining platform/downstream/performance gates stay
 open. All 465 functions remain partial; strict completion remains false. The next
 implementation is pure Rust AVC decoding with a pinned OpenH264 test oracle.
+
+
+### Built-in scalar Rust AVC decoding
+
+The optional `avc` feature (default in the C adapter) decodes `avc1` items with
+vendored rusty_h264 0.16.0, built `no_std` without accel kernels, a global
+allocator, environment knobs or threads. Reviewed patches follow libheif's only
+AVC decoder, OpenH264: monochrome syntax with flat chroma, four-sided two-sample
+cropping, the CAVLC `level_prefix` limit and CABAC end-of-data failures. The
+adapter reproduces the OpenH264 plugin's length-prefixed conversion (including
+its start-code emulation handling), silent rejection of unsupported SPS profiles,
+I420 output, error texts, priority 70, libheif's ispe+16 pixel limit, SPS
+coded-size checks and missing-avcC handle errors.
+
+A pinned test-only x264 generates 371 owned streams covering profiles, sizes and
+cropping, QP sweeps, scaling matrices, deblocking, slices, presets, encoder
+options, monochrome and formats OpenH264 rejects. All 9,475 cases (25 modes) match
+a pinned OpenH264 2.6.0/libheif 1.23.4 oracle in normal, ASan/UBSan-client and
+codec-free builds. The 86-suite normal group and AVC-oracle plugin regressions
+pass. Five new mutations are detected (303 default); an initial CBP-table
+mutation survived because the corpus had one monochrome stream, and is retained
+with its replacement after adding 72 monochrome fixtures.
+
+Malformed-stream parity is not complete: the 35,895-case truncation/corruption
+corpus records 975 differences (first run: 17,679), mostly where OpenH264's own
+NAL splitting and SPS/VUI/PPS/slice-header validation reject streams the Rust
+decoder accepts. It is excluded from CI and from parity counts until it matches.
+CI now builds and caches the OpenH264 oracle and runs the AVC suites.
+
+Next: an exact port of OpenH264's syntax layer ahead of reconstruction, then
+CABAC I_PCM, registered-plugin priority cases, limits and AVC sequences. All 465
+functions remain partial; strict completion remains false.

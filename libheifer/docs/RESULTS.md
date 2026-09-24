@@ -1283,3 +1283,23 @@ Tile-part progression changes, wider precision, HTJ2K, built-in encoders, comple
 sequence behavior and the remaining platform/downstream/performance gates stay
 open. All 465 functions remain partial; strict completion remains false. The next
 implementation is pure Rust AVC decoding with a pinned OpenH264 test oracle.
+
+## Built-in scalar Rust AVC decoding
+
+Oracle: libheif 1.23.4 with its OpenH264 plugin and OpenH264 v2.6.0 (scalar).
+Fixtures: 371 x264 (b35605ac, no assembly) streams in `tests/fixtures/avc-generated.json`.
+
+| Suite | Cases | Mismatches | Report |
+|---|---|---|---|
+| test_avc (normal) | 9,475 | 0 | results/avc-decode-normal-report.json |
+| test_avc (ASan/UBSan client, local leak check off under ptrace) | 9,475 | 0 | results/avc-decode-sanitized-report.json |
+| test_avc (codec-free candidate vs HEVC-only oracle) | 9,475 | 0 | results/avc-decode-no-codecs-report.json |
+| test_plugin_decoding vs AVC oracle | 616 | 0 | results/avc-decode-regression-plugin-decoding-report.json |
+| test_plugins vs AVC oracle | 224 | 0 | results/avc-decode-regression-plugins-report.json |
+| test_avc_errors (known differences, not a parity claim) | 35,895 | 975 | results/avc-decode-errors-known-differences-report.json |
+
+Mutations: avc_mono_chroma (23), avc_level_prefix_limit (48), avc_profile_gate (24),
+avc_decoder_error_text (192) and the replacement avc_mono_intra_cbp (70) are
+detected by semantic differences without process failures. The initial
+avc_mono_intra_cbp (codes 14/15) survived with a single monochrome fixture; both
+reports are retained. The complete normal differential group passes unchanged.

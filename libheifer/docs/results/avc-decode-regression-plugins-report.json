@@ -1,0 +1,12 @@
+{
+  "scope": "Original-header external plugin registration, discovery, lifecycle, historical prefixes and encoder parameter callback traces.",
+  "cases": 224,
+  "mismatches": 0,
+  "client_sanitizers": false,
+  "leak_check": false,
+  "client_sha256": "5b38ca7b3e252da5567eb105456f0e46878425f87dcc7827ef7869c80d03914b",
+  "corpus_sha256": "ec9b7e29a89edab90800ffecc83bf7d38334df51b10cb4bd5c6922cd760ae056",
+  "differences": [],
+  "reference_sha256": "1678e871daafebd624c78b12494a87b7f17709e1be2ee2dd7d622720b814e764",
+  "candidate_sha256": "68291ea22c32e1a827201da0876598a7911415dbbdf80769701281ec3ff89e36"
+}

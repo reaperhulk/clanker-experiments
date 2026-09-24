@@ -470,6 +470,8 @@ fn decode_native_mode(
                 }
                 decode_native(document, child, options, visiting)?
             }
+            #[cfg(feature = "avc")]
+            b"avc1" => crate::avc::decode(document, id, options)?,
             #[cfg(feature = "jpeg2000")]
             b"j2k1" => crate::jpeg2000::decode(document, id, options)?,
             #[cfg(feature = "jpeg")]

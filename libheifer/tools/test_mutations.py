@@ -335,6 +335,11 @@ MUTATIONS = [
     ("component_alpha_depth", "src/components.rs", "if depth > 0 { depth as u16 } else { 8 }", "if false { depth as u16 } else { 8 }", "component_handles"),
     ("jpeg_sof_boundary", "src/jpeg_config.rs", "11 + 3 * count >= data.len()", "11 + 3 * count > data.len()", "component_handles"),
     ("coded_size_limit", "src/decoding.rs", ".max(65536)", ".max(65535)", "hevc_limits"),
+    ("avc_mono_chroma", "vendor/rusty_h264-decoder/src/mb16.rs", "let mut u = vec![128u8; cdw * cdh];", "let mut u = vec![127u8; cdw * cdh];", "avc"),
+    ("avc_level_prefix_limit", "vendor/rusty_h264-common/src/cavlc.rs", "if level_prefix > 15 {", "if level_prefix > 16 {", "avc"),
+    ("avc_profile_gate", "src/avc.rs", "!matches!(profile, 66 | 77 | 83 | 86 | 88 | 100)", "!matches!(profile, 66 | 77 | 83 | 86 | 88 | 100 | 244)", "avc"),
+    ("avc_mono_intra_cbp", "vendor/rusty_h264-decoder/src/mb16.rs", "const T: [u8; 16] = [15, 0, 7, 11, 13, 14, 3, 5, 10, 12, 1, 2, 4, 8, 6, 9];", "const T: [u8; 16] = [15, 7, 0, 11, 13, 14, 3, 5, 10, 12, 1, 2, 4, 8, 6, 9];", "avc"),
+    ("avc_decoder_error_text", "src/avc.rs", 'plugin_error(0, "OpenH264 decoder error")', 'plugin_error(0, "OpenH264 decoding error")', "avc"),
     ("error_field_order", "crates/capi/src/lib.rs", "pub code: c_int,\n    pub subcode: c_int,", "pub subcode: c_int,\n    pub code: c_int,", "abi"),
 ]
 
@@ -352,6 +357,7 @@ def main():
     parser.add_argument("--av1-reference-build", default=".build/reference-av1")
     parser.add_argument("--jpeg2000-reference-build", default=".build/reference-jpeg2000")
     parser.add_argument("--jpeg-reference-build", default=".build/reference-jpeg")
+    parser.add_argument("--avc-reference-build", default=".build/reference-avc")
     parser.add_argument("--candidate", default="target/release/libheifer.so")
     parser.add_argument("--output", default=".build/mutations-report.json")
     parser.add_argument("--only", choices=[m[0] for m in MUTATIONS], action="append", help="Run selected defects; default runs the complete mutation set")
@@ -373,6 +379,8 @@ def main():
     def oracle(suite):
         if suite.startswith("jpeg2000_"):
             return str(Path(args.jpeg2000_reference_build).resolve())
+        if suite == "avc" or suite.startswith("avc_"):
+            return str(Path(args.avc_reference_build).resolve())
         if suite.startswith("jpeg_"):
             return str(Path(args.jpeg_reference_build).resolve())
         if suite in ('av1', 'av1_limits', 'mini_reader'):

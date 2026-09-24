@@ -860,6 +860,18 @@ impl Document {
                 } else {
                     image.error = Some(ContextError::invalid(131, "No 'av1C' box"));
                 }
+            } else if item.kind == *b"avc1" {
+                // libheif reports a missing avcC with the AV1 configuration suberror.
+                if let Ok(config) = container.property(item.id, *b"avcC") {
+                    let config = crate::avc_config::parse_configuration(config)
+                        .ok_or_else(ContextError::truncated)?;
+                    image.luma_bits = i32::from(config.bit_depth_luma);
+                    image.chroma_bits = i32::from(config.bit_depth_chroma);
+                    image.chroma = i32::from(config.chroma_format);
+                    image.colorspace = if image.chroma == 0 { 2 } else { 0 };
+                } else {
+                    image.error = Some(ContextError::invalid(131, "No 'av1C' box"));
+                }
             } else if item.kind == *b"j2k1" {
                 if container.property(item.id, *b"j2kH").is_err() {
                     image.error = Some(ContextError::invalid(0, "Unspecified: No j2kH box found."));
