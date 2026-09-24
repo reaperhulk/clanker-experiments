@@ -142,6 +142,10 @@ pub struct Cu {
     pub root_cbf: bool,
     /// IBC block vector in 1/16 luma samples.
     pub bv: (i32, i32),
+    pub merge: bool,
+    pub merge_idx: u8,
+    pub mvp_idx: u8,
+    pub imv: u8,
 }
 
 impl Cu {
@@ -253,6 +257,8 @@ pub struct Picture {
     pub map_w: usize,
     pub map_h: usize,
     pub ctus: Vec<CtuData>,
+    /// IBC history-based block vector candidates (vvdec's `motionLutIbc`).
+    pub ibc_hist: Vec<(i32, i32)>,
 }
 
 pub const NONE: u32 = u32::MAX;
@@ -290,6 +296,7 @@ impl Picture {
                 CtuData { slice: None, tile: 0, sao: [SaoParam::default(); 3], alf: AlfCtu::default(), num_cus: 0, num_tus: 0 };
                 n
             ],
+            ibc_hist: Vec::new(),
         }
     }
 

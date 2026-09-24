@@ -325,6 +325,9 @@ fn decode_slice_data<'d>(pic: &mut Picture, si: &ctu::SliceInfo, data: &'d [u8])
                 dec.cabac.restart_here();
             }
         };
+        if cx == tx {
+            dec.pic.ibc_hist.clear();
+        }
         if cx == tx && cy == ty {
             if i != 0 {
                 restart(&mut dec, sub_id, &mut cur_sub);

@@ -897,6 +897,8 @@ impl<'a, 's, 'b> CtuDecoder<'a, 's, 'b> {
             left: part.cu_left(),
             above: part.cu_above(),
             first_tu: self.pic.tus.len() as u32,
+            // vvdec's CodingUnit::minInit
+            intra_dir: [DC, 0],
             ..Default::default()
         };
         let cu_id = self.pic.cus.len() as u32;
@@ -1151,9 +1153,134 @@ impl<'a, 's, 'b> CtuDecoder<'a, 's, 'b> {
         self.cu_mut(cu_id).act = v;
     }
 
+    /// vvdec's `prediction_unit` for IBC coding units, followed by the
+    /// block vector derivation of `DecCu::xDeriveCUMV`.
     fn prediction_unit(&mut self, cu_id: u32) -> Result<(), Error> {
-        let _ = cu_id;
-        Err(Error::Unsupported("intra block copy"))
+        if self.cu(cu_id).pred != Pred::Ibc {
+            return Err(Error::Unsupported("inter prediction"));
+        }
+        let merge = if self.cu(cu_id).skip { true } else { self.bin(ctx::MERGE_FLAG) != 0 };
+        self.cu_mut(cu_id).merge = merge;
+        let max_cand = self.si.sps.max_num_ibc_merge_cand;
+        let mut mvd = (0i32, 0i32);
+        if merge {
+            let mut idx = 0u32;
+            if max_cand > 1 && self.bin(ctx::MERGE_IDX) != 0 {
+                idx = 1;
+                while idx < max_cand - 1 && self.ep() != 0 {
+                    idx += 1;
+                }
+            }
+            self.cu_mut(cu_id).merge_idx = idx as u8;
+        } else {
+            mvd = self.mvd_coding();
+            let mvp = if max_cand == 1 { 0 } else { self.bin(ctx::MVP_IDX) as u8 };
+            self.cu_mut(cu_id).mvp_idx = mvp;
+            // amvr_mode: IBC always uses integer or four-sample precision
+            let mut imv = 0u8;
+            if self.si.sps.amvr && (mvd.0 != 0 || mvd.1 != 0) {
+                imv = 1 + self.bin(ctx::IMV_FLAG + 1) as u8;
+            }
+            self.cu_mut(cu_id).imv = imv;
+        }
+        self.derive_bv(cu_id, merge, mvd);
+        Ok(())
+    }
+
+    fn mvd_coding(&mut self) -> (i32, i32) {
+        let mut hor = self.bin(ctx::MVD) as i32;
+        let mut ver = self.bin(ctx::MVD) as i32;
+        if hor != 0 {
+            hor += self.bin(ctx::MVD + 1) as i32;
+        }
+        if ver != 0 {
+            ver += self.bin(ctx::MVD + 1) as i32;
+        }
+        for v in [&mut hor, &mut ver] {
+            if *v != 0 {
+                if *v > 1 {
+                    *v += self.cabac.decode_rem_abs(1, 0, 18 - 1) as i32;
+                }
+                if self.ep() != 0 {
+                    *v = -*v;
+                }
+            }
+        }
+        (hor, ver)
+    }
+
+    /// vvdec's `PU::getIBCMergeCandidates` (full list).
+    fn ibc_candidates(&self, cu_id: u32, max: usize) -> Vec<(i32, i32)> {
+        let c = self.cu(cu_id);
+        let (x, y, w, h) = (c.lx(), c.ly(), c.lw(), c.lh());
+        let gt4x4 = w * h > 16;
+        let mut list: Vec<(i32, i32)> = Vec::new();
+        let left = self.pic.get_cu_restricted(x - 1, y + h - 1, cu_id, 0, c.left, self.wpp).filter(|&l| self.cu(l).pred == Pred::Ibc);
+        if gt4x4 && let Some(l) = left {
+            list.push(self.cu(l).bv);
+        }
+        if list.len() < max {
+            let above = self.pic.get_cu_restricted(x + w - 1, y - 1, cu_id, 0, c.above, self.wpp).filter(|&a| self.cu(a).pred == Pred::Ibc);
+            if gt4x4 && let Some(a) = above {
+                let ab = self.cu(a).bv;
+                let same = left.is_some_and(|l| self.cu(l).slice == self.cu(a).slice && self.cu(l).bv == ab);
+                if !same {
+                    list.push(ab);
+                }
+            }
+        }
+        let spatial = list.len();
+        if list.len() < max {
+            let n = self.pic.ibc_hist.len();
+            for k in 1..=n {
+                let cand = self.pic.ibc_hist[n - k];
+                let pruned = !(k > 1 || !gt4x4) && list[..spatial].contains(&cand);
+                if !pruned {
+                    list.push(cand);
+                    if list.len() == max {
+                        break;
+                    }
+                }
+            }
+        }
+        while list.len() < max.max(2) {
+            list.push((0, 0));
+        }
+        list
+    }
+
+    fn derive_bv(&mut self, cu_id: u32, merge: bool, mvd: (i32, i32)) {
+        let bv = if merge {
+            let max = self.si.sps.max_num_ibc_merge_cand as usize;
+            self.ibc_candidates(cu_id, max)[self.cu(cu_id).merge_idx as usize]
+        } else {
+            let c = self.cu(cu_id);
+            // fillIBCMvpCand: two candidates rounded to the signalled precision
+            let cands = self.ibc_candidates(cu_id, self.si.sps.max_num_ibc_merge_cand as usize);
+            let shift = if c.imv == 2 { 6 } else { 4 };
+            let round = |v: i32| {
+                let off = 1 << (shift - 1);
+                ((v + off - i32::from(v >= 0)) >> shift) << shift
+            };
+            let p = cands[c.mvp_idx as usize];
+            let wrap = |v: i32| {
+                let v = (v + (1 << 18)) & ((1 << 18) - 1);
+                if v >= 1 << 17 { v - (1 << 18) } else { v }
+            };
+            (wrap(round(p.0) + (mvd.0 << shift)), wrap(round(p.1) + (mvd.1 << shift)))
+        };
+        self.cu_mut(cu_id).bv = bv;
+        let c = self.cu(cu_id);
+        vtrace!("ibc pos=({},{}) size={}x{} merge={} bv=({},{})", c.lx(), c.ly(), c.lw(), c.lh(), i32::from(merge), bv.0, bv.1);
+        if c.lw() * c.lh() > 16 {
+            let h = &mut self.pic.ibc_hist;
+            if let Some(i) = h.iter().position(|&v| v == bv) {
+                h.remove(i);
+            } else if h.len() == 5 {
+                h.remove(0);
+            }
+            h.push(bv);
+        }
     }
 
     fn add_empty_tus(&mut self, cu_id: u32, part: &mut Partitioner) {
@@ -1210,7 +1337,7 @@ impl<'a, 's, 'b> CtuDecoder<'a, 's, 'b> {
         }
         if !self.cu(cu_id).blk[0].valid() {
             self.cu_mut(cu_id).pred = Pred::Ibc;
-            return Err(Error::Unsupported("intra block copy"));
+            return Err(Error::Unsupported("chroma intra block copy"));
         }
         self.prediction_unit(cu_id)
     }
@@ -1473,7 +1600,13 @@ impl<'a, 's, 'b> CtuDecoder<'a, 's, 'b> {
 
     fn cu_residual(&mut self, cu_id: u32, part: &mut Partitioner, cu_ctx: &mut CuCtx) -> Result<(), Error> {
         if self.cu(cu_id).pred != Pred::Intra {
-            return Err(Error::Unsupported("intra block copy"));
+            let root = if self.cu(cu_id).merge { true } else { self.bin(ctx::QT_ROOT_CBF) != 0 };
+            self.cu_mut(cu_id).root_cbf = root;
+            if !root {
+                self.add_empty_tus(cu_id, part);
+                return Ok(());
+            }
+            self.adaptive_color_transform(cu_id);
         }
         self.cu_mut(cu_id).root_cbf = true;
         cu_ctx.violates_lfnst = [false; 2];
@@ -1576,6 +1709,8 @@ impl<'a, 's, 'b> CtuDecoder<'a, 's, 'b> {
                 } else {
                     true
                 }
+            } else if c.pred != Pred::Intra && tr_depth == 0 && !sig_chroma {
+                true
             } else {
                 self.cbf_comp(cu_id, 0, false, false)
             };
@@ -2133,7 +2268,7 @@ impl<'a, 's, 'b> CtuDecoder<'a, 's, 'b> {
         let sps = self.si.sps;
         let ts_max = 1 << sps.log2_max_ts_size;
         let mut allowed = c.ch_type == 0;
-        allowed &= sps.explicit_mts_intra;
+        allowed &= sps.explicit_mts_intra && c.pred == Pred::Intra;
         allowed &= c.lw() <= 32 && c.lh() <= 32;
         allowed &= c.isp == NOT_ISP;
         allowed &= !(c.bdpcm[0] != 0 && c.lw() <= ts_max && c.lh() <= ts_max);

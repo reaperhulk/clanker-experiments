@@ -892,9 +892,35 @@ fn pred_dc(src: &RefBuf, w: i32, h: i32, mrl: i32) -> i32 {
 
 pub fn reconstruct_cu(pic: &mut Picture, si: &SliceInfo, cu_id: u32) -> Result<(), Error> {
     let cu = pic.cus[cu_id as usize].clone();
-    if cu.pred != Pred::Intra {
-        return Err(Error::Unsupported("intra block copy"));
+    if cu.pred == Pred::Inter {
+        return Err(Error::Unsupported("inter prediction"));
     }
+    // vvdec's xIntraBlockCopy: integer block vector, chroma vectors floored.
+    let ibc_pred: Vec<Vec<i32>> = if cu.pred == Pred::Ibc {
+        let r = |v: i32| if v >= 0 { (v + 7) >> 4 } else { (v + 8) >> 4 };
+        let (bx, by) = (r(cu.bv.0), r(cu.bv.1));
+        (0..pic.fmt.num_comp())
+            .map(|comp| {
+                let b = cu.blk[comp];
+                if !b.valid() {
+                    return Vec::new();
+                }
+                let (sx, sy) = pic.fmt.scale(comp);
+                let (rx, ry) = (b.x + (bx >> sx), b.y + (by >> sy));
+                let p = &pic.planes[comp];
+                let mut out = Vec::with_capacity((b.w * b.h) as usize);
+                for y in 0..b.h {
+                    for x in 0..b.w {
+                        let (px, py) = ((rx + x).clamp(0, p.width as i32 - 1), (ry + y).clamp(0, p.height as i32 - 1));
+                        out.push(i32::from(p.at(px, py)));
+                    }
+                }
+                out
+            })
+            .collect()
+    } else {
+        Vec::new()
+    };
     let lw = cu.blk[0].w.max(1) as usize;
     let lh = cu.blk[0].h.max(1) as usize;
     let mut ctx = Ctx {
@@ -945,13 +971,19 @@ pub fn reconstruct_cu(pic: &mut Picture, si: &SliceInfo, cu_id: u32) -> Result<(
             let (w, h) = (area.w, area.h);
             let n = (w * h) as usize;
             let mut pred = vec![0i32; n];
-            let final_mode = final_intra_mode(ctx.pic, si, &cu, cu_id, ch);
-            let is_mip = if ch == 0 { cu.mip } else { is_dm_chroma_mip(ctx.pic, si, cu_id) && cu.intra_dir[1] == DM_CHROMA };
             let mut use_region_pred = false;
-            if is_mip {
+            if cu.pred == Pred::Ibc {
+                let b = cu.blk[comp];
+                let src = &ibc_pred[comp];
+                for y in 0..h {
+                    for x in 0..w {
+                        pred[(y * w + x) as usize] = src[((area.y - b.y + y) * b.w + area.x - b.x + x) as usize];
+                    }
+                }
+            } else if if ch == 0 { cu.mip } else { is_dm_chroma_mip(ctx.pic, si, cu_id) && cu.intra_dir[1] == DM_CHROMA } {
                 ctx.init_pattern(t, comp, area, false);
                 pred_mip(&ctx, comp, &mut pred, w, h, bd)?;
-            } else if comp != 0 && (LM_CHROMA..=MDLM_T).contains(&final_mode) {
+            } else if comp != 0 && (LM_CHROMA..=MDLM_T).contains(&final_intra_mode(ctx.pic, si, &cu, cu_id, ch)) {
                 ctx.init_pattern(t, comp, area, false);
                 pred_lm(&mut ctx, comp, t, area, cu.intra_dir[1], &mut pred)?;
             } else {
@@ -1612,6 +1644,9 @@ fn tr_types(ctx: &Ctx, tu: &Tu, comp: usize) -> (u8, u8) {
     let sps = ctx.si.sps;
     let cu = &ctx.cu;
     let luma = comp == 0;
+    if cu.pred != Pred::Intra {
+        return (0, 0);
+    }
     let implicit = luma && sps.mts && !sps.explicit_mts_intra && cu.lfnst == 0 && !cu.mip;
     let isp = luma && cu.isp != NOT_ISP;
     if isp && cu.lfnst != 0 {
@@ -1848,7 +1883,7 @@ fn dequant(ctx: &Ctx, tu: &Tu, comp: usize, act: bool) -> Result<Vec<i32>, Error
     let lfnst_applied = cu.lfnst > 0 && (if cu.is_sep_tree(ctx.si.dual_tree()) { true } else { comp == 0 });
     let disable_act = sps.scaling_matrix_for_alt_colour_space_disabled && sps.scaling_matrix_designated_colour_space == cu.act;
     let enable_sl = scaling_used && !is_ts && (!lfnst_applied || !disable_lfnst) && !disable_act;
-    let list_type = comp; // intra
+    let list_type = if cu.pred == Pred::Intra { comp } else { 3 + comp };
     let bd = ctx.pic.bit_depth as i32;
     let bdpcm = (cu.bdpcm[0] != 0 && comp == 0) || (cu.bdpcm[1] != 0 && comp != 0);
     let (max_x, max_y);
