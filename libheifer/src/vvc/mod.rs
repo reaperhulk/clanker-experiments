@@ -17,6 +17,7 @@ pub(crate) fn trace_enabled() -> bool {
     *ON.get_or_init(|| std::env::var_os("VVC_TRACE").is_some())
 }
 
+mod alf;
 mod bits;
 mod cabac;
 mod ctu;

@@ -12,7 +12,7 @@ pub fn loop_filter(
     ph: &PicHeader,
     slices: &[SliceHeader],
     lmcs: Option<&Lmcs>,
-    _alf: &[Option<AlfParam>; 8],
+    alf: &[Option<AlfParam>; 8],
 ) -> Result<(), Error> {
     if let Some(l) = lmcs
         && sps.lmcs
@@ -39,6 +39,9 @@ pub fn loop_filter(
     }
     if std::env::var_os("VVC_NO_SAO").is_none() {
         super::sao::sao(pic, sps, pps, ph);
+    }
+    if std::env::var_os("VVC_NO_ALF").is_none() {
+        super::alf::alf(pic, sps, pps, ph, slices, alf);
     }
     Ok(())
 }
