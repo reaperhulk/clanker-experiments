@@ -2220,7 +2220,8 @@ fn inv_transform(ctx: &Ctx, tu: &Tu, comp: usize, act: bool) -> Result<Vec<i32>,
             for k in 0..n {
                 acc += i64::from(coeff[k]) * i64::from(m[k * n + j]);
             }
-            out[j] = ((acc + (1 << (s - 1))) >> s).clamp(i64::from(clip_min), i64::from(clip_max)) as i32;
+            out[j] = ((acc + (1 << (s - 1))) >> s).clamp(i64::from(clip_min), i64::from(clip_max))
+                as i32;
         }
     }
     Ok(out)
