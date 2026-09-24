@@ -70,30 +70,20 @@ fn annex_b(input: &[u8]) -> Result<Vec<u8>, ContextError> {
     Ok(out)
 }
 
-/// OpenH264 `ParseSps` returns success without storing a parameter set whose
-/// profile it does not decode; slices referring to it then fail. Remove such
-/// units before decoding so the Rust decoder observes the same state.
-fn openh264_units(stream: &[u8]) -> Vec<u8> {
-    let mut out = Vec::with_capacity(stream.len());
-    let mut units = Vec::new();
-    let mut at = 0;
-    while at + 3 <= stream.len() {
-        if stream[at..at + 3] == [0, 0, 1] {
-            units.push(at);
-            at += 3;
-        } else {
-            at += 1;
-        }
-    }
-    for (n, &start) in units.iter().enumerate() {
-        let end = units.get(n + 1).copied().unwrap_or(stream.len());
-        let unit = &stream[start..end];
-        let ignored = unit.get(3).is_some_and(|h| h & 31 == 7)
-            && unit
-                .get(4)
-                .is_some_and(|profile| !matches!(profile, 66 | 77 | 83 | 86 | 88 | 100));
-        if !ignored {
-            out.extend_from_slice(unit);
+/// Annex B stream of the NAL units OpenH264 accepted, re-escaped canonically so
+/// the Rust decoder reads exactly OpenH264's RBSP bytes.
+fn canonical(units: &[Vec<u8>]) -> Vec<u8> {
+    let mut out = Vec::new();
+    for unit in units {
+        out.extend_from_slice(&[0, 0, 1]);
+        let mut zeros = 0;
+        for (i, &b) in unit.iter().enumerate() {
+            if i > 0 && zeros >= 2 && b <= 3 {
+                out.push(3);
+                zeros = 0;
+            }
+            out.push(b);
+            zeros = if b == 0 { zeros + 1 } else { 0 };
         }
     }
     out
@@ -144,16 +134,23 @@ pub fn decode(
     if data.len() < 4 {
         return Err(plugin_error(2006, "Invalid input data"));
     }
-    let stream = openh264_units(&annex_b(&data)?);
+    let accepted = crate::avc_openh264::accept(&annex_b(&data)?).map_err(|_| decoder_error())?;
+    let stream = canonical(&accepted.units);
     let mut decoder = rusty_h264_decoder::Decoder::new();
     let frame = decoder
         .decode(&stream)
         .map_err(|_| decoder_error())?
         .ok_or_else(|| {
-            plugin_error(
-                0,
-                "Decoding the input data did not give a decompressed image.",
-            )
+            // With error concealment disabled, an incomplete picture decoded
+            // in OpenH264's data call is an error; in its flush call it is not.
+            if accepted.constructed_early {
+                decoder_error()
+            } else {
+                plugin_error(
+                    0,
+                    "Decoding the input data did not give a decompressed image.",
+                )
+            }
         })?;
     let (width, height) = (frame.width as u32, frame.height as u32);
     // heif_image_add_plane_safe with the tightened limits; the luma plane is first.

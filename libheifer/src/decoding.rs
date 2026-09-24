@@ -358,7 +358,8 @@ fn decode_native_mode(
         b"j2k1" => 7,
         _ => 0,
     };
-    let external = if format != 0 && options.decoder_provider.is_some() {
+    let provider = options.decoder_provider.filter(|_| format != 0);
+    let external = if let Some(provider) = provider {
         let cached = info
             .item_decoder
             .lock()
@@ -367,10 +368,7 @@ fn decode_native_mode(
         if let Some(cached) = cached {
             Some(cached)
         } else {
-            let decoder = options
-                .decoder_provider
-                .unwrap()
-                .select(format, options.decoder_id)?;
+            let decoder = provider.select(format, options.decoder_id)?;
             if let Some(decoder) = &decoder {
                 *info
                     .item_decoder

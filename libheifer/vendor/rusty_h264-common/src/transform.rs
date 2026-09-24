@@ -496,14 +496,15 @@ pub fn dequantize_dc4(level: i32, qp: u8, weight0: Option<i32>) -> i32 {
     let m = (qp % 6) as usize;
     let shift = (qp / 6) as i32;
     let ls0 = match weight0 {
-        Some(w) => w * NORM_ADJUST[m][POS_GROUP_FLAT[0]],
+        // libheifer: openh264's scaling-list factor and rounding.
+        Some(w) => return wrap16(level.wrapping_mul(openh264_dq4(qp, w, 0)).wrapping_add(8) >> 4),
         None => LEVEL_SCALE_FLAT[m][0],
     };
-    if qp >= 24 {
-        (level * ls0) << (shift - 4)
+    wrap16(if qp >= 24 {
+        level.wrapping_mul(ls0) << (shift - 4)
     } else {
-        (level * ls0 + (1 << (3 - shift))) >> (4 - shift)
-    }
+        (level.wrapping_mul(ls0) + (1 << (3 - shift))) >> (4 - shift)
+    })
 }
 
 /// Dequantizes with a per-position weight scale (`weightScale4x4` in raster order,
@@ -572,36 +573,37 @@ impl DequantQp {
         }
     }
 
-    /// Scaling-list constants: `weight[idx] * NORM_ADJUST[m][group(idx)]`, then the
-    /// same shift folding as [`Self::flat`]. Bit-exact with [`dequantize_weighted`].
+    /// Scaling-list constants as openh264 applies them (libheifer):
+    /// `(level * dq + 8) >> 4` with [`openh264_dq4`] factors. Identical to the
+    /// spec's `LevelScale4x4` rounding whenever the factor does not wrap.
     pub fn weighted(qp: u8, weight: &[i32; 16]) -> Self {
-        let m = (qp % 6) as usize;
-        let shift = (qp / 6) as i32;
-        let ls: [i32; 16] = core::array::from_fn(|idx| {
-            let w = weight[idx] * NORM_ADJUST[m][POS_GROUP_FLAT[idx]];
-            if qp >= 24 {
-                w << (shift - 4)
-            } else {
-                w
-            }
-        });
-        if qp >= 24 {
-            Self { ls, add: 0, sr: 0 }
-        } else {
-            Self {
-                ls,
-                add: 1 << (3 - shift),
-                sr: 4 - shift,
-            }
-        }
+        let ls: [i32; 16] = core::array::from_fn(|idx| openh264_dq4(qp, weight[idx], idx));
+        Self { ls, add: 8, sr: 4 }
     }
 
     /// Dense dequant of a RASTER-order block with these constants (scalar oracle).
     pub fn apply(&self, raster: &[i32; 16]) -> [i32; 16] {
         core::array::from_fn(|i| {
-            (raster[i].wrapping_mul(self.ls[i]).wrapping_add(self.add)) >> self.sr
+            wrap16((raster[i].wrapping_mul(self.ls[i]).wrapping_add(self.add)) >> self.sr)
         })
     }
+}
+
+/// libheifer: openh264 keeps coefficients in `int16_t`; every store wraps.
+#[inline(always)]
+pub fn wrap16(v: i32) -> i32 {
+    v as i16 as i32
+}
+
+/// libheifer: openh264's scaling-list 4x4 dequant factor for raster position
+/// `idx`: `weight * normAdjust << (qp / 6)` stored as `uint16_t` (so it wraps),
+/// and zero at QP 51, whose table row openh264 never initializes.
+pub fn openh264_dq4(qp: u8, weight: i32, idx: usize) -> i32 {
+    if qp >= 51 {
+        return 0;
+    }
+    let m = (qp % 6) as usize;
+    (((weight * NORM_ADJUST[m][POS_GROUP_FLAT[idx]]) << (qp / 6)) as u16) as i32
 }
 
 /// Flat dequant constants for every qp (52 x 72 bytes).
@@ -633,15 +635,22 @@ mod dq_tests {
             }
             assert_eq!(
                 DQ_FLAT[qp as usize].apply(&lv),
-                dequantize(&lv, qp),
+                dequantize(&lv, qp).map(wrap16),
                 "qp {qp}"
             );
             let w: [i32; 16] = core::array::from_fn(|i| 6 + (i as i32 * 7) % 25);
-            assert_eq!(
-                DequantQp::weighted(qp, &w).apply(&lv),
-                dequantize_weighted(&lv, qp, &w),
-                "weighted qp {qp}"
-            );
+            // libheifer: openh264's scaling-list factors wrap as uint16, QP 51
+            // has none, and results are int16; compare where none of that applies.
+            let spec = dequantize_weighted(&lv, qp, &w);
+            let fits = qp < 51
+                && (0..16).all(|i| {
+                    let m = (qp % 6) as usize;
+                    ((w[i] * NORM_ADJUST[m][POS_GROUP_FLAT[i]]) << (qp / 6)) < 65536
+                })
+                && spec.iter().all(|&v| i16::try_from(v).is_ok());
+            if fits {
+                assert_eq!(DequantQp::weighted(qp, &w).apply(&lv), spec, "weighted qp {qp}");
+            }
         }
     }
 }
@@ -657,10 +666,11 @@ pub fn inverse_core(coeffs: &[i32; 16]) -> [i32; 16] {
     // asymmetric blocks, which only surfaces at low QP / high-frequency content.)
     for r in 0..4 {
         let (a, b, c, d) = inv_1d(m[r * 4], m[r * 4 + 1], m[r * 4 + 2], m[r * 4 + 3]);
-        m[r * 4] = a;
-        m[r * 4 + 1] = b;
-        m[r * 4 + 2] = c;
-        m[r * 4 + 3] = d;
+        // libheifer: openh264 `IdctResAddPred_c` stores the row pass in int16.
+        m[r * 4] = wrap16(a);
+        m[r * 4 + 1] = wrap16(b);
+        m[r * 4 + 2] = wrap16(c);
+        m[r * 4 + 3] = wrap16(d);
     }
     for c in 0..4 {
         let (a, b, cc, d) = inv_1d(m[c], m[4 + c], m[8 + c], m[12 + c]);
@@ -734,37 +744,6 @@ const POS_GROUP_8X8_FLAT: [usize; 64] = {
     out
 };
 
-/// One-dimensional inverse 8×8 transform (spec §8.5.13.2 butterfly).
-#[inline]
-fn inv_1d_8x8(d: &[i32; 8]) -> [i32; 8] {
-    let a0 = d[0] + d[4];
-    let a4 = d[0] - d[4];
-    let a2 = (d[2] >> 1) - d[6];
-    let a6 = d[2] + (d[6] >> 1);
-    let b0 = a0 + a6;
-    let b2 = a4 + a2;
-    let b4 = a4 - a2;
-    let b6 = a0 - a6;
-    let a1 = -d[3] + d[5] - d[7] - (d[7] >> 1);
-    let a3 = d[1] + d[7] - d[3] - (d[3] >> 1);
-    let a5 = -d[1] + d[7] + d[5] + (d[5] >> 1);
-    let a7 = d[3] + d[5] + d[1] + (d[1] >> 1);
-    let b1 = a1 + (a7 >> 2);
-    let b7 = a7 - (a1 >> 2);
-    let b3 = a3 + (a5 >> 2);
-    let b5 = (a3 >> 2) - a5;
-    [
-        b0 + b7,
-        b2 + b5,
-        b4 + b3,
-        b6 + b1,
-        b6 - b1,
-        b4 - b3,
-        b2 - b5,
-        b0 - b7,
-    ]
-}
-
 /// One-dimensional forward 8×8 transform — the matched pair of [`inv_1d_8x8`]
 /// (the ENCODER's forward transform for the High-profile 8×8 residual).
 #[inline]
@@ -798,19 +777,52 @@ fn fwd_1d_8x8(s: &[i32; 8]) -> [i32; 8] {
 
 /// Inverse 8×8 core transform + normalization (`(x + 32) >> 6`), rows then
 /// columns (non-separable, like the 4×4 — the order is fixed by the spec).
+/// libheifer: one pass of openh264 `IdctResAddPred8x8_c`, whose temporaries
+/// and outputs are all `int16_t` (each assignment wraps). Identical to
+/// [`inv_1d_8x8`] whenever nothing leaves the 16-bit range.
+fn inv_1d_8x8_openh264(p: &[i32; 8]) -> [i32; 8] {
+    let w = wrap16;
+    let a0 = w(p[0] + p[4]);
+    let a1 = w(p[0] - p[4]);
+    let a2 = w(p[6] - (p[2] >> 1));
+    let a3 = w(p[2] + (p[6] >> 1));
+    let b0 = w(a0 + a3);
+    let b2 = w(a1 - a2);
+    let b4 = w(a1 + a2);
+    let b6 = w(a0 - a3);
+    let a0 = w(-p[3] + p[5] - p[7] - (p[7] >> 1));
+    let a1 = w(p[1] + p[7] - p[3] - (p[3] >> 1));
+    let a2 = w(-p[1] + p[7] + p[5] + (p[5] >> 1));
+    let a3 = w(p[3] + p[5] + p[1] + (p[1] >> 1));
+    let b1 = w(a0 + (a3 >> 2));
+    let b3 = w(a1 + (a2 >> 2));
+    let b5 = w(a2 - (a1 >> 2));
+    let b7 = w(a3 - (a0 >> 2));
+    [
+        w(b0 + b7),
+        w(b2 - b5),
+        w(b4 + b3),
+        w(b6 + b1),
+        w(b6 - b1),
+        w(b4 - b3),
+        w(b2 + b5),
+        w(b0 - b7),
+    ]
+}
+
 pub fn inverse_core_8x8(coeffs: &[i32; 64]) -> [i32; 64] {
     let _g = crate::prof::scope(crate::prof::Stage::Reconstruct);
-    let mut m = *coeffs;
+    let mut m = coeffs.map(wrap16);
     for r in 0..8 {
         let row: [i32; 8] = core::array::from_fn(|k| m[r * 8 + k]);
-        let o = inv_1d_8x8(&row);
+        let o = inv_1d_8x8_openh264(&row);
         for k in 0..8 {
             m[r * 8 + k] = o[k];
         }
     }
     for c in 0..8 {
         let col: [i32; 8] = core::array::from_fn(|k| m[k * 8 + c]);
-        let o = inv_1d_8x8(&col);
+        let o = inv_1d_8x8_openh264(&col);
         for k in 0..8 {
             m[k * 8 + c] = o[k];
         }
@@ -908,6 +920,17 @@ impl Dequant8Qp {
     }
 }
 
+impl Dequant8Qp {
+    /// libheifer: scaling-list 8x8 constants as openh264 builds them; its table
+    /// row for QP 51 is never initialized, so every factor there is zero.
+    pub fn weighted(qp: u8, weight: &[i32; 64]) -> Self {
+        if qp >= 51 {
+            return Self { ls: [0; 64], add: 0, sr: 0 };
+        }
+        Self::build(qp, weight)
+    }
+}
+
 /// Flat-weight 8x8 constants for every qp.
 pub const DQ8_FLAT: [Dequant8Qp; 52] = {
     let mut t = [Dequant8Qp {
@@ -927,7 +950,7 @@ pub const DQ8_FLAT: [Dequant8Qp; 52] = {
 #[inline]
 pub fn dequantize_8x8_dq(levels: &[i32; 64], q: &Dequant8Qp) -> [i32; 64] {
     let _g = crate::prof::scope(crate::prof::Stage::Dequant);
-    core::array::from_fn(|i| (levels[i].wrapping_mul(q.ls[i]).wrapping_add(q.add)) >> q.sr)
+    core::array::from_fn(|i| wrap16((levels[i].wrapping_mul(q.ls[i]).wrapping_add(q.add)) >> q.sr))
 }
 
 /// [`inverse_quant_8x8`] with prebuilt constants.
@@ -948,15 +971,16 @@ mod dq8_tests {
                 seed = seed.wrapping_mul(1664525).wrapping_add(1013904223);
                 *v = ((seed >> 8) as i32 % 2001) - 1000;
             }
+            // libheifer: results are stored as int16, as in openh264.
             assert_eq!(
                 dequantize_8x8_dq(&lv, &DQ8_FLAT[qp as usize]),
-                dequantize_8x8(&lv, qp, &[16i32; 64]),
+                dequantize_8x8(&lv, qp, &[16i32; 64]).map(wrap16),
                 "flat qp {qp}"
             );
             let w: [i32; 64] = core::array::from_fn(|i| 8 + (i as i32 * 5) % 40);
             assert_eq!(
                 dequantize_8x8_dq(&lv, &Dequant8Qp::build(qp, &w)),
-                dequantize_8x8(&lv, qp, &w),
+                dequantize_8x8(&lv, qp, &w).map(wrap16),
                 "weighted qp {qp}"
             );
         }
@@ -1392,17 +1416,14 @@ pub fn forward_quant_luma_dc(dc: &[i32; 16], qp: u8, intra: bool) -> [i32; 16] {
 /// reconstructed DC values to scatter into each 4×4 luma block (spec §8.5.10).
 pub fn inverse_quant_luma_dc(levels: &[i32; 16], qp: u8) -> [i32; 16] {
     let _g = crate::prof::scope(crate::prof::Stage::Dequant);
-    let g = hadamard_4x4(levels);
+    // libheifer: openh264 `WelsLumaDcDequantIdct` (int16 levels and results).
+    let g = hadamard_4x4(&levels.map(wrap16));
     let m = (qp % 6) as usize;
     let shift = (qp / 6) as i32;
     let level_scale = 16 * NORM_ADJUST[m][0];
     let mut out = [0i32; 16];
     for (o, &gv) in out.iter_mut().zip(g.iter()) {
-        *o = if qp >= 36 {
-            (gv * level_scale) << (shift - 6)
-        } else {
-            (gv * level_scale + (1 << (5 - shift))) >> (6 - shift)
-        };
+        *o = wrap16(gv.wrapping_mul(level_scale << shift).wrapping_add(32) >> 6);
     }
     out
 }
@@ -1410,19 +1431,11 @@ pub fn inverse_quant_luma_dc(levels: &[i32; 16], qp: u8) -> [i32; 16] {
 /// `inverse_quant_luma_dc` with the scaling matrix's DC weight (`w00`, the
 /// raster (0,0) entry; `16` = flat).
 pub fn inverse_quant_luma_dc_weighted(levels: &[i32; 16], qp: u8, w00: i32) -> [i32; 16] {
-    let g = hadamard_4x4(levels);
-    let m = (qp % 6) as usize;
-    let shift = (qp / 6) as i32;
-    let level_scale = w00 * NORM_ADJUST[m][0];
-    let mut out = [0i32; 16];
-    for (o, &gv) in out.iter_mut().zip(g.iter()) {
-        *o = if qp >= 36 {
-            (gv * level_scale) << (shift - 6)
-        } else {
-            (gv * level_scale + (1 << (5 - shift))) >> (6 - shift)
-        };
-    }
-    out
+    // libheifer: openh264 `WelsLumaDcDequantIdct` with a scaling list:
+    // `(g * dq + 32) >> 6` using the (wrapping, QP 51 = 0) 4x4 DC factor.
+    let g = hadamard_4x4(&levels.map(wrap16));
+    let dq = openh264_dq4(qp, w00, 0);
+    core::array::from_fn(|i| wrap16(g[i].wrapping_mul(dq).wrapping_add(32) >> 6))
 }
 
 /// FUSED I16 luma DC from the SCAN-order DC block (dense-over-scatter round):
@@ -1484,15 +1497,11 @@ mod dc_scan_tests {
 
 /// `inverse_quant_chroma_dc` with the scaling matrix's DC weight.
 pub fn inverse_quant_chroma_dc_weighted(levels: &[i32; 4], qp: u8, w00: i32) -> [i32; 4] {
-    let g = hadamard_2x2(levels);
-    let m = (qp % 6) as usize;
-    let shift = (qp / 6) as i32;
-    let level_scale = w00 * NORM_ADJUST[m][0];
-    let mut out = [0i32; 4];
-    for (o, &gv) in out.iter_mut().zip(g.iter()) {
-        *o = ((gv * level_scale) << shift) >> 5;
-    }
-    out
+    // libheifer: openh264 with a scaling list: `(g * dq) >> 5` (64-bit product,
+    // stored as int16) using the wrapping, QP 51 = 0, 4x4 DC factor.
+    let g = hadamard_2x2(&levels.map(wrap16)).map(wrap16);
+    let dq = i64::from(openh264_dq4(qp, w00, 0));
+    core::array::from_fn(|i| ((i64::from(g[i]) * dq) >> 5) as i16 as i32)
 }
 
 /// 2×2 Hadamard for a chroma DC block (its own inverse up to scale).
@@ -1523,13 +1532,13 @@ pub fn forward_quant_chroma_dc(dc: &[i32; 4], qp: u8, intra: bool) -> [i32; 4] {
 /// Inverse quantization + transform of a chroma DC block (spec §8.5.11.2).
 pub fn inverse_quant_chroma_dc(levels: &[i32; 4], qp: u8) -> [i32; 4] {
     let _g = crate::prof::scope(crate::prof::Stage::Dequant);
-    let g = hadamard_2x2(levels);
+    // libheifer: openh264 `WelsChromaDcIdct` + `(c * dq) >> 1` in int16 storage.
+    let g = hadamard_2x2(&levels.map(wrap16)).map(wrap16);
     let m = (qp % 6) as usize;
-    let shift = (qp / 6) as i32;
-    let level_scale = 16 * NORM_ADJUST[m][0];
+    let dq = NORM_ADJUST[m][0] << (qp / 6);
     let mut out = [0i32; 4];
     for (o, &gv) in out.iter_mut().zip(g.iter()) {
-        *o = ((gv * level_scale) << shift) >> 5;
+        *o = wrap16(gv.wrapping_mul(dq) >> 1);
     }
     out
 }

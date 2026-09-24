@@ -699,7 +699,15 @@ pub fn decode_residual_block_into<const MAX: usize, const N: usize>(
         .unwrap_or(0);
     let len = (packed & 0x1F) as u32;
     if len == 0 {
-        return Err(OutOfData); // peeked bits matched no codeword -> corrupt
+        if MAX == 4 {
+            return Err(OutOfData); // peeked bits matched no codeword -> corrupt
+        }
+        // libheifer: openh264's coeff_token tables map every invalid luma/AC
+        // pattern to TotalCoeff 0, consuming 8 bits (nC < 8) or the 6-bit FLC
+        // (nC >= 8), instead of failing.
+        c.skip(if NC_TABLE[(nc as usize).min(16)] == 3 { 6 } else { 8 })?;
+        r.commit(c);
+        return Ok(0);
     }
     let idx = (packed >> 5) as usize;
     let (total_coeff, trailing_ones) = (idx >> 2, idx & 3);
@@ -933,24 +941,23 @@ mod tests {
 
     #[test]
     fn extreme_levels_use_extended_escape() {
-        // Levels far beyond the 12-bit suffix range force level_prefix ≥ 16;
-        // these occur at very low QP and previously truncated. Cover both
-        // suffix_length==0 (single big DC) and grown-suffix_length (a run of
-        // large levels) paths, and signs.
-        roundtrip(&[5000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 16, 0);
-        roundtrip(&[-7000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 16, 0);
-        roundtrip(
-            &[30000, -25000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            16,
-            0,
-        );
-        let big = [
-            9000, -9000, 8000, -8000, 7000, -7000, 6000, -6000, 5000, -5000, 4500, -4500, 4200,
-            -4200, 4096, -4096,
+        // libheifer: levels beyond the 12-bit suffix range need level_prefix >= 16,
+        // which openh264 (MAX_LEVEL_PREFIX) rejects; this decoder follows it.
+        let blocks: [(&[i32], usize, i32); 3] = [
+            (&[5000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 16, 0),
+            (&[-7000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 16, 0),
+            (&[6000, -6000, 5000, -5000], 4, -1),
         ];
-        roundtrip(&big, 16, 0);
-        // chroma DC and AC blocks with extreme levels too
-        roundtrip(&[6000, -6000, 5000, -5000], 4, -1);
+        for (block, max_coeff, nc) in blocks {
+            let mut w = BitWriter::new();
+            encode_residual_block(&mut w, block, max_coeff, nc);
+            w.align_zero();
+            let bytes = w.into_bytes();
+            let mut r = BitReader::new(&bytes);
+            assert!(decode_residual_block(&mut r, max_coeff, nc).is_err());
+        }
+        // Levels that stay within the prefix-15 escape still round-trip.
+        roundtrip(&[2000, -2000, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 16, 0);
     }
 
     #[test]
@@ -980,3 +987,4 @@ mod tests {
         }
     }
 }
+

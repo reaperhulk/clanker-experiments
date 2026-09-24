@@ -56,6 +56,12 @@ impl<'a> BitReader<'a> {
         self.pos
     }
 
+    /// libheifer: position of the RBSP stop bit (the last 1 bit), openh264's
+    /// `iBits - 1` for a unit without trailing zero bytes.
+    pub fn stop_pos(&self) -> usize {
+        self.stop_pos
+    }
+
     /// Total number of bits in the buffer.
     pub fn bit_len(&self) -> usize {
         self.data.len() * 8

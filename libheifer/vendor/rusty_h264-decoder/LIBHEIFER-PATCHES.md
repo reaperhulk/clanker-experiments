@@ -34,5 +34,28 @@ OpenH264 (the pinned test oracle) where it differs from the unmodified crate:
   when they pass the end of the slice data, as OpenH264's engine does
   (`ERR_CABAC_NO_BS_TO_READ`), including its five-byte initialization window and
   two-byte minimum. The unmodified crate zero-fills past the end and decodes.
+- CAVLC I slices end exactly at the RBSP stop bit and fail when a macroblock
+  reads past it (`WelsDecodeMbCavlcISlice`), instead of `more_rbsp_data()`.
+- Invalid `coeff_token` patterns decode as TotalCoeff 0 consuming 8 bits
+  (nC < 8) or 6 bits (nC >= 8), as OpenH264's VLC tables map them, rather than
+  failing. The mapping was extracted from OpenH264's own tables for every 16-bit
+  pattern; chroma DC tokens already agreed.
+- Intra 4x4/8x8, 16x16 and chroma prediction modes that need an unavailable
+  left, top or top-left neighbour (and chroma modes above 3) fail the slice
+  (`CheckIntra{NxN,16x16,Chroma}PredMode`). Top-left availability is derived
+  from slice membership rather than assumed from top and left.
+- Separate Cb and Cr chroma QP offsets (`second_chroma_qp_index_offset`) in
+  reconstruction and deblocking; the upstream crate applied the Cb offset to
+  both planes. The (unbuilt) accel deblock arm keeps the Cb offset.
+- A slice may start a picture at any `first_mb_in_slice`, and a picture is
+  complete only when the macroblocks decoded across its slices equal the
+  picture size (`iTotalNumMbRec`).
+- Scaling-list dequantization uses OpenH264's factors: the 4x4 factor
+  `weight * normAdjust << qp/6` is stored as `uint16_t` (wrapping), and QP 51,
+  whose table row OpenH264 never initializes, has zero factors for 4x4 and 8x8.
+  Coefficients are stored as `int16_t` after dequantization, in the luma/chroma
+  DC transforms, the 4x4 inverse transform's row pass and every 8x8 inverse
+  transform temporary, as in OpenH264's C implementation.
 
-These changes preserve reconstruction arithmetic for accepted streams.
+For streams whose intermediate values stay in the 16-bit range and whose
+factors do not wrap, these changes preserve the standard reconstruction.

@@ -213,6 +213,8 @@ pub struct FrameDecoder {
     cur_qp: u8,
     /// `chroma_qp_index_offset` from the active PPS (§8.5.8).
     chroma_qp_offset: i32,
+    /// libheifer: `second_chroma_qp_index_offset` (the Cr offset).
+    chroma_qp_offset_cr: i32,
     cw: usize,
     ch: usize,
     ccw: usize,
@@ -250,6 +252,9 @@ pub struct FrameDecoder {
     /// libheifer: `chroma_format_idc == 0`. Chroma syntax is absent and chroma is
     /// reconstructed as DC prediction without residual (flat 128), as openh264 does.
     mono: bool,
+    /// libheifer: sticky openh264 intra prediction mode validity failure
+    /// (a mode needing an unavailable neighbour, or a chroma mode above 3).
+    intra_invalid: bool,
     direct_spatial: bool,
     nnz_l_cache: [u8; 25],
     nnz_c_cache: [[u8; 9]; 2],
@@ -675,6 +680,7 @@ impl FrameDecoder {
             qp,
             cur_qp: qp,
             chroma_qp_offset,
+            chroma_qp_offset_cr: chroma_qp_offset,
             cw,
             ch,
             ccw,
@@ -711,6 +717,7 @@ impl FrameDecoder {
             transform_8x8_mode,
             transform_bypass: false,
             mono: false,
+            intra_invalid: false,
             route_skip_mbs: 0,
             route_coded_mbs: 0,
             slice_bounds: Vec::new(),
@@ -923,6 +930,56 @@ impl FrameDecoder {
         self.transform_bypass = on;
     }
 
+    /// libheifer: whether an intra mode failed openh264's availability checks
+    /// since the last call (`CheckIntra{NxN,16x16,Chroma}PredMode`).
+    pub fn take_intra_invalid(&mut self) -> bool {
+        core::mem::take(&mut self.intra_invalid)
+    }
+
+    /// libheifer: availability of the macroblock above-left of `(mbx, mby)` in
+    /// the current slice (openh264's `iLeftTopAvail`).
+    fn top_left_mb_ok(&self, mbx: usize, mby: usize) -> bool {
+        mbx > 0 && mby > 0 && self.nbr_in_slice(mbx - 1, mby - 1) && self.intra_nbr_ok(mbx * 4 - 1, mby * 4 - 1)
+    }
+
+    /// libheifer: availability of the sample above-left of the block at 4x4
+    /// coordinates `(bx, by)`, given the block's top/left availability.
+    fn block_corner_ok(&self, bx: usize, by: usize, top: bool, left: bool) -> bool {
+        match (bx % 4 > 0, by % 4 > 0) {
+            (true, true) => self.intra_nbr_ok(bx - 1, by - 1),
+            (false, false) => self.top_left_mb_ok(bx / 4, by / 4),
+            (false, true) => left && self.intra_nbr_ok(bx - 1, by - 1),
+            (true, false) => top && self.intra_nbr_ok(bx - 1, by - 1),
+        }
+    }
+
+    /// libheifer: openh264's NxN mode availability rule (`CHECK_I4_MODE`).
+    fn check_nxn_mode(&mut self, bx: usize, by: usize, mode: u8, top: bool, left: bool) {
+        let ok = match mode {
+            0 | 3 | 7 => top,
+            1 | 8 => left,
+            2 => true,
+            4..=6 => top && left && self.block_corner_ok(bx, by, top, left),
+            _ => false,
+        };
+        self.intra_invalid |= !ok;
+    }
+
+    /// libheifer: openh264's 16x16 / chroma mode rule (`CHECK_I16_MODE`,
+    /// `CHECK_CHROMA_MODE`); `horizontal` and `vertical` are the mode numbers.
+    fn check_mb_mode(&mut self, mbx: usize, mby: usize, mode: u8, horizontal: u8, vertical: u8, top: bool, left: bool) {
+        let ok = if mode == horizontal {
+            left
+        } else if mode == vertical {
+            top
+        } else if mode == 3 {
+            top && left && self.top_left_mb_ok(mbx, mby)
+        } else {
+            mode < 3
+        };
+        self.intra_invalid |= !ok;
+    }
+
     /// libheifer: monochrome (`chroma_format_idc == 0`) syntax.
     pub fn set_monochrome(&mut self, on: bool) {
         self.mono = on;
@@ -1036,6 +1093,17 @@ impl FrameDecoder {
     fn chroma_qp_for(&self, qp_y: u8) -> u8 {
         let qpi = (qp_y as i32 + self.chroma_qp_offset).clamp(0, 51) as u8;
         chroma_qp(qpi)
+    }
+
+    /// libheifer: `[QPcb, QPcr]` for a luma QP.
+    fn chroma_qps_for(&self, qp_y: u8) -> [u8; 2] {
+        let qpi = (qp_y as i32 + self.chroma_qp_offset_cr).clamp(0, 51) as u8;
+        [self.chroma_qp_for(qp_y), chroma_qp(qpi)]
+    }
+
+    /// libheifer: the PPS Cr offset (`second_chroma_qp_index_offset`).
+    pub fn set_chroma_qp_offset_cr(&mut self, offset: i32) {
+        self.chroma_qp_offset_cr = offset;
     }
 
     /// Resets per-slice state before decoding a continuation slice of the same
@@ -1583,7 +1651,7 @@ impl FrameDecoder {
             self.mb_h,
             r..r + 1,
             &self.mb_qp,
-            self.chroma_qp_offset,
+            [self.chroma_qp_offset, self.chroma_qp_offset_cr],
             self.db_oa,
             self.db_ob,
             &info,
@@ -4133,7 +4201,7 @@ impl FrameDecoder {
         let cac = cac.unwrap_or(&ZERO_CAC);
         let _g = rusty_h264_common::prof::scope(rusty_h264_common::prof::Stage::DecResidAdd);
         let qp = self.cur_qp;
-        let qpc = self.chroma_qp_for(qp);
+        let qpc = self.chroma_qps_for(qp);
         let (w4r, w2r) = (self.mb_w * 4, self.mb_w * 2);
         if let Some(l8) = luma8 {
             // INTER 8x8 luma: same primitives the I_8x8 and CAVLC paths use.
@@ -4264,10 +4332,10 @@ impl FrameDecoder {
         let mut c_dc = [[0i32; 4]; 2];
         if cbp_chroma != 0 {
             for c in 0..2 {
-                c_dc[c] = self.dequant_chroma_dc(&cdc[c], qpc, 4 + c);
+                c_dc[c] = self.dequant_chroma_dc(&cdc[c], qpc[c], 4 + c);
             }
         }
-        let dqc = [self.dq_const(qpc, 4), self.dq_const(qpc, 5)];
+        let dqc = [self.dq_const(qpc[0], 4), self.dq_const(qpc[1], 5)];
         let ccw = self.ccw;
         for c in 0..2 {
             for &(bx, by) in &CHROMA_4X4_SCAN_XY {
@@ -4376,6 +4444,7 @@ impl FrameDecoder {
         dq: &DequantQp,
     ) {
         let (px, py) = (bx * 4, by * 4);
+        self.check_nxn_mode(bx, by, mode, at, al);
         let (t, l, corner) = self.gather_i4(px, py, at, al, bx, by);
         let pred = intra4x4_pred(mode, at, al, &t, &l, corner);
         let r_off = py * self.cw + px;
@@ -4417,6 +4486,7 @@ impl FrameDecoder {
         qp: u8,
     ) {
         let (px, py) = (bx * 4, by * 4);
+        self.check_nxn_mode(bx, by, mode, avail_top, avail_left);
         let (t, l, corner, avail_corner) = self.gather_i8(px, py, avail_top, avail_left, bx, by);
         let pred = intra8x8_pred(mode, avail_top, avail_left, avail_corner, &t, &l, corner);
         match coeffs {
@@ -4475,6 +4545,7 @@ impl FrameDecoder {
         // no AC was parsed, so the shared zero plane is read-equivalent to the
         // 1 KB of stack this used to zero per macroblock.
         let q_blocks = q_blocks.unwrap_or(&ZERO_LUMA_SCAN);
+        self.check_mb_mode(mbx, mby, pred_mode as u8, 1, 0, top_ok, left_ok);
         let w4 = self.mb_w * 4;
         let (lx, ly) = (mbx * 16, mby * 16);
         let mut t16 = [0u8; 16];
@@ -4557,10 +4628,13 @@ impl FrameDecoder {
         qac: &[[[i32; 16]; 4]; 2],
         coded: [u8; 2],
         dc: &[[i32; 4]; 2],
-        qpc: u8,
+        qpc: [u8; 2],
     ) {
         let (cx, cy) = (mb_x * 8, mb_y * 8);
-        let dqc = [self.dq_const(qpc, 1), self.dq_const(qpc, 2)];
+        if !self.mono {
+            self.check_mb_mode(mb_x, mb_y, chroma_mode, 1, 2, avail_top, avail_left);
+        }
+        let dqc = [self.dq_const(qpc[0], 1), self.dq_const(qpc[1], 2)];
         for c in 0..2 {
             let mut ctop = [0u8; 8];
             let mut cleft = [0u8; 8];
@@ -4644,11 +4718,11 @@ impl FrameDecoder {
         // `None` = no chroma AC was parsed; every read below is already gated
         // on cbp_chroma == 2, so the shared zero plane is read-equivalent.
         let cac = cac.unwrap_or(&ZERO_CAC);
-        let qpc = self.chroma_qp_for(self.cur_qp);
+        let qpc = self.chroma_qps_for(self.cur_qp);
         let mut c_dc = [[0i32; 4]; 2];
         if cbp_chroma != 0 {
             for c in 0..2 {
-                c_dc[c] = self.dequant_chroma_dc(&cdc[c], qpc, 1 + c);
+                c_dc[c] = self.dequant_chroma_dc(&cdc[c], qpc[c], 1 + c);
             }
         }
         // ENTROPY-SIDE half: un-scan the AC into raster + commit nnz_c; the
@@ -4882,6 +4956,19 @@ impl FrameDecoder {
             }
             addr += 1;
             mbx += 1;
+            if !is_p && !self.is_b {
+                // libheifer: openh264's I-slice rule (WelsDecodeMbCavlcISlice):
+                // the slice ends exactly at the stop bit, and reading past it
+                // is an incomplete bitstream.
+                let used = r.bit_pos();
+                if used == r.stop_pos() {
+                    break;
+                }
+                if used > r.stop_pos() {
+                    return Err(MbError::Truncated);
+                }
+                continue;
+            }
             // CAVLC slice end: no more data after this macroblock.
             if !r.more_rbsp_data() {
                 break;
@@ -7802,6 +7889,7 @@ impl FrameDecoder {
             mb_w: self.mb_w,
             mb_h: self.mb_h,
             chroma_qp_offset: self.chroma_qp_offset,
+            chroma_qp_offset_cr: self.chroma_qp_offset_cr,
             flt_rows: self.flt_rows,
             db_ena: self.db_ena,
             db_oa: self.db_oa,
@@ -9372,7 +9460,7 @@ impl FrameDecoder {
         // 64-entry build per macroblock for scaling lists (was 64 x two lookups +
         // a multiply per coefficient on every block).
         match &self.scaling8 {
-            Some(s) => inverse_quant_8x8_dq(raster, &Dequant8Qp::build(qp, &s[list])),
+            Some(s) => inverse_quant_8x8_dq(raster, &Dequant8Qp::weighted(qp, &s[list])),
             None => inverse_quant_8x8_dq(raster, &DQ8_FLAT[(qp as usize).min(51)]),
         }
     }
@@ -9522,7 +9610,7 @@ impl FrameDecoder {
         cbp_chroma: u32,
         chroma_mode: u8,
     ) -> Result<(), MbError> {
-        let qpc = self.chroma_qp_for(self.cur_qp);
+        let qpc = self.chroma_qps_for(self.cur_qp);
         let avail_top = mb_y > 0
             && self.nbr_in_slice(mb_x, mb_y - 1)
             && self.intra_nbr_ok(mb_x * 4, mb_y * 4 - 1);
@@ -9535,7 +9623,7 @@ impl FrameDecoder {
             for (c, slot) in c_recon_dc.iter_mut().enumerate() {
                 let mut dc = [0i32; 4];
                 decode_residual_block_into::<4, 4>(r, -1, &mut dc)?;
-                *slot = self.dequant_chroma_dc(&dc, qpc, 1 + c);
+                *slot = self.dequant_chroma_dc(&dc, qpc[c], 1 + c);
             }
         }
         let mut c_q_blocks = [[[0i32; 16]; 4]; 2];
@@ -9733,7 +9821,7 @@ impl FrameDecoder {
             self.mb_h,
             first_row..self.mb_h,
             &self.mb_qp,
-            self.chroma_qp_offset,
+            [self.chroma_qp_offset, self.chroma_qp_offset_cr],
             offset_a,
             offset_b,
             &info,
@@ -10450,6 +10538,7 @@ pub(crate) struct PixelCtx {
     mb_w: usize,
     mb_h: usize,
     chroma_qp_offset: i32,
+    chroma_qp_offset_cr: i32,
     flt_rows: usize,
     db_ena: bool,
     db_oa: i32,
@@ -10489,6 +10578,16 @@ impl PixelCtx {
         )
     }
 
+    /// libheifer: `[QPcb, QPcr]` for a luma QP (worker twin).
+    fn chroma_qps_for(&self, qp: u8) -> [u8; 2] {
+        [
+            self.chroma_qp_for(qp),
+            rusty_h264_common::predict::chroma_qp(
+                ((qp as i32 + self.chroma_qp_offset_cr).clamp(0, 51)) as u8,
+            ),
+        ]
+    }
+
     /// Per-(qp, list) dequant constants for the fused scan-order kernel (worker twin).
     #[inline]
     fn dq_const(&self, qp: u8, list: usize) -> DequantQp {
@@ -10511,7 +10610,7 @@ impl PixelCtx {
         // 64-entry build per macroblock for scaling lists (was 64 x two lookups +
         // a multiply per coefficient on every block).
         match &self.scaling8 {
-            Some(s) => inverse_quant_8x8_dq(raster, &Dequant8Qp::build(qp, &s[list])),
+            Some(s) => inverse_quant_8x8_dq(raster, &Dequant8Qp::weighted(qp, &s[list])),
             None => inverse_quant_8x8_dq(raster, &DQ8_FLAT[(qp as usize).min(51)]),
         }
     }
@@ -10963,7 +11062,7 @@ impl PixelCtx {
         let cac = cac.unwrap_or(&ZERO_CAC);
         let _g = rusty_h264_common::prof::scope(rusty_h264_common::prof::Stage::DecResidAdd);
         let qp = self.cur_qp;
-        let qpc = self.chroma_qp_for(qp);
+        let qpc = self.chroma_qps_for(qp);
         if let Some(l8) = luma8 {
             // INTER 8x8 luma: same primitives the I_8x8 and CAVLC paths use.
             for b8 in 0..4usize {
@@ -11068,10 +11167,10 @@ impl PixelCtx {
         let mut c_dc = [[0i32; 4]; 2];
         if cbp_chroma != 0 {
             for c in 0..2 {
-                c_dc[c] = self.dequant_chroma_dc(&cdc[c], qpc, 4 + c);
+                c_dc[c] = self.dequant_chroma_dc(&cdc[c], qpc[c], 4 + c);
             }
         }
-        let dqc = [self.dq_const(qpc, 4), self.dq_const(qpc, 5)];
+        let dqc = [self.dq_const(qpc[0], 4), self.dq_const(qpc[1], 5)];
         let ccw = self.ccw;
         for c in 0..2 {
             for &(bx, by) in &CHROMA_4X4_SCAN_XY {
@@ -11153,7 +11252,7 @@ impl PixelCtx {
             self.mb_h,
             r..r + 1,
             &self.qp_grid,
-            self.chroma_qp_offset,
+            [self.chroma_qp_offset, self.chroma_qp_offset_cr],
             self.db_oa,
             self.db_ob,
             &info,

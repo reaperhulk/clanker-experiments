@@ -862,6 +862,10 @@ struct PendingPic {
     poc: i32,
     next_mb: usize,
     total_mb: usize,
+    /// libheifer: macroblocks decoded so far across the picture's slices
+    /// (openh264's `iTotalNumMbRec`); the picture completes only when this
+    /// equals `total_mb`.
+    mb_count: usize,
     slice_count: u16,
     deblock: bool,
     filter_offset_a: i32,
@@ -1215,9 +1219,13 @@ impl Decoder {
                 let _delta_pic_order_cnt_1 = r.read_se()?;
             }
         }
+        // libheifer: as in openh264, a slice starts a new picture when none is in
+        // flight even if it does not begin at macroblock 0 (the picture is then
+        // incomplete unless later slices fill it).
+        let starts_picture = first_mb_in_slice == 0 || self.cur.is_none();
         // PicOrderCnt is determined by the first slice of the picture; later
         // slices share it (and must not re-advance the POC state).
-        let pic_poc = if first_mb_in_slice == 0 {
+        let pic_poc = if starts_picture {
             self.compute_poc(
                 sps,
                 is_idr,
@@ -1351,7 +1359,7 @@ impl Decoder {
 
         // Synthesize placeholder short-term references for any gap in frame_num
         // (spec §8.2.5.2) so the DPB / PicNum mapping stays correct.
-        if first_mb_in_slice == 0 && !is_idr && sps.gaps_in_frame_num_allowed {
+        if starts_picture && !is_idr && sps.gaps_in_frame_num_allowed {
             self.insert_frame_num_gaps(
                 frame_num,
                 1u32 << sps.log2_max_frame_num,
@@ -1389,7 +1397,7 @@ impl Decoder {
         // --- picture assembly ---
         // first_mb_in_slice == 0 starts a new picture; otherwise this slice
         // continues the one in flight. An IDR clears the DPB at its first slice.
-        if first_mb_in_slice == 0 {
+        if starts_picture {
             if is_idr {
                 self.refs.clear();
             }
@@ -1439,6 +1447,7 @@ impl Decoder {
             }
             fd.set_transform_bypass(sps.transform_bypass);
             fd.set_monochrome(sps.chroma_format_idc == 0);
+            fd.set_chroma_qp_offset_cr(pps.second_chroma_qp_index_offset);
             if let Some(w) = weights {
                 fd.set_weights(w);
             }
@@ -1453,7 +1462,7 @@ impl Decoder {
             // truncated" from a reference-list modification asking for it. Refuse
             // to swallow it -- an incomplete picture must announce itself.
             if let Some(prev) = self.cur.take() {
-                if prev.next_mb < prev.total_mb {
+                if prev.mb_count != prev.total_mb {
                     return Err(DecodeError::Truncated);
                 }
             }
@@ -1462,6 +1471,7 @@ impl Decoder {
                 frame_num,
                 poc: pic_poc,
                 next_mb: 0,
+                mb_count: 0,
                 route_bits: 0,
                 route_cabac: pps.entropy_coding_mode_flag,
                 route_t8x8: pps.transform_8x8_mode_flag,
@@ -1541,7 +1551,11 @@ impl Decoder {
             mb16::MbError::Truncated => DecodeError::Truncated,
             mb16::MbError::Unsupported(s) => DecodeError::Unsupported(s),
         })?;
+        if pic.fd.take_intra_invalid() {
+            return Err(DecodeError::Truncated);
+        }
         pic.next_mb = next;
+        pic.mb_count += next.saturating_sub(first);
         pic.slice_count += 1;
         if crate::mb16::dump_mb_on() {
             eprintln!(
@@ -1556,7 +1570,7 @@ impl Decoder {
             );
         }
 
-        if pic.next_mb < pic.total_mb {
+        if pic.mb_count != pic.total_mb {
             return Ok(None); // picture not yet complete
         }
 

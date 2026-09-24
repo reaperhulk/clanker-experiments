@@ -26,6 +26,7 @@ BUILDS = {
 SUITES = {
     'normal': [
         'tools/test_avc.py --reference-build .build/reference-avc',
+        'tools/test_avc_errors.py --reference-build .build/reference-avc',
         'tools/test_brands.py --reference-build .build/reference',
         'tools/test_brand_boxes.py --reference-build .build/reference',
         'tools/test_images.py --reference-build .build/reference',
@@ -115,6 +116,7 @@ SUITES = {
     ],
     'sanitized': [
         'tools/test_avc.py --reference-build .build/reference-avc --sanitize --work .build/avc-sanitized --output .build/avc-sanitized-report.json',
+        'tools/test_avc_errors.py --reference-build .build/reference-avc --sanitize --work .build/avc-errors-sanitized --output .build/avc-errors-sanitized-report.json',
         'tools/test_brand_boxes.py --reference-build .build/reference --sanitize --output .build/brand-boxes-sanitized-report.json',
         'tools/test_jpeg2000_tiles.py --reference-build .build/reference-jpeg2000 --sanitize --work .build/jpeg2000-tiles-san --output .build/jpeg2000-tiles-san-report.json',
         'tools/test_jpeg2000_sampling.py --reference-build .build/reference-jpeg2000 --sanitize --work .build/jpeg2000-sampling-san --output .build/jpeg2000-sampling-san-report.json',
@@ -195,6 +197,7 @@ SUITES = {
     ],
     'no-codecs': [
         'tools/test_avc.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --work .build/avc-no-codecs --output .build/avc-no-codecs-report.json',
+        'tools/test_avc_errors.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --work .build/avc-errors-no-codecs --output .build/avc-errors-no-codecs-report.json',
         'tools/test_jpeg2000_tiles.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --work .build/jpeg2000-tiles-no-codecs --output .build/jpeg2000-tiles-no-codecs-report.json',
         'tools/test_jpeg2000_sampling.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --work .build/jpeg2000-sampling-no-codecs --output .build/jpeg2000-sampling-no-codecs-report.json',
         'tools/test_jpeg2000_properties.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --output .build/jpeg2000-properties-no-codecs-report.json',

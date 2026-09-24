@@ -2290,7 +2290,7 @@ pub fn filter_frame(
     mb_w: usize,
     mb_h: usize,
     mb_qp: &[u8],
-    chroma_qp_offset: i32,
+    chroma_qp_offset: [i32; 2],
     offset_a: i32,
     offset_b: i32,
     info: &BlockInfo,
@@ -2521,7 +2521,7 @@ pub fn filter_frame_rows_pre(
     mb_h: usize,
     rows: core::ops::Range<usize>,
     mb_qp: &[u8],
-    chroma_qp_offset: i32,
+    chroma_qp_offset: [i32; 2],
     offset_a: i32,
     offset_b: i32,
     info: &BlockInfo,
@@ -2540,7 +2540,7 @@ pub fn filter_frame_rows(
     mb_h: usize,
     rows: core::ops::Range<usize>,
     mb_qp: &[u8],
-    chroma_qp_offset: i32,
+    chroma_qp_offset: [i32; 2],
     offset_a: i32,
     offset_b: i32,
     info: &BlockInfo,
@@ -2559,7 +2559,7 @@ fn filter_frame_rows_impl<const PRE: bool>(
     mb_h: usize,
     rows: core::ops::Range<usize>,
     mb_qp: &[u8],
-    chroma_qp_offset: i32,
+    chroma_qp_offset: [i32; 2],
     offset_a: i32,
     offset_b: i32,
     info: &BlockInfo,
@@ -2570,9 +2570,13 @@ fn filter_frame_rows_impl<const PRE: bool>(
     // Per-edge QP: deblock strength uses the average of the two adjacent
     // macroblocks' QPy (spec §8.7.2). For an internal edge both sides share the
     // current MB's QP. Chroma averages the two MBs' QPc.
-    let qpc = |qpy_val: i32| {
-        crate::predict::chroma_qp((qpy_val + chroma_qp_offset).clamp(0, 51) as u8) as i32
+    // libheifer: per-plane chroma QP (`[Cb, Cr]` offsets). The accel arm, which
+    // filters both planes together, is not built in this vendored copy.
+    let qpc_plane = |qpy_val: i32, plane: usize| {
+        crate::predict::chroma_qp((qpy_val + chroma_qp_offset[plane]).clamp(0, 51) as u8) as i32
     };
+    #[cfg(accel)]
+    let qpc = |qpy_val: i32| qpc_plane(qpy_val, 0);
     // Arms resolved ONCE per frame, never per macroblock (see `bs_twopass`).
     let fs = filtstat::on();
     let two_pass = bs_twopass();
@@ -3158,21 +3162,25 @@ fn filter_frame_rows_impl<const PRE: bool>(
             }
             #[cfg(not(accel))]
             {
-                // Chroma edge thresholds use the average of the two MBs' QPc.
-                let cur_qpc = qpc(qp_cur);
-                let (alpha_cv, beta_cv, tc0cv) = if mb_x > 0 {
-                    let ql = qp_row[mb_x - 1] as i32;
-                    thresholds((qpc(ql) + cur_qpc + 1) >> 1, offset_a, offset_b)
-                } else {
-                    (0, 0, [0; 3]) // unused (cxe==0 skipped at frame edge)
+                // Chroma edge thresholds use the average of the two MBs' QPc,
+                // per plane (libheifer: Cb and Cr offsets may differ).
+                let chroma_thresholds = |plane: usize| {
+                    let qpc = |q: i32| qpc_plane(q, plane);
+                    let cur_qpc = qpc(qp_cur);
+                    let vertical = if mb_x > 0 {
+                        let ql = qp_row[mb_x - 1] as i32;
+                        thresholds((qpc(ql) + cur_qpc + 1) >> 1, offset_a, offset_b)
+                    } else {
+                        (0, 0, [0; 3]) // unused (cxe==0 skipped at frame edge)
+                    };
+                    let horizontal = if mb_y > 0 {
+                        let qu = qp_up_row.map_or(qp_cur, |r| r[mb_x] as i32);
+                        thresholds((qpc(qu) + cur_qpc + 1) >> 1, offset_a, offset_b)
+                    } else {
+                        (0, 0, [0; 3])
+                    };
+                    (vertical, horizontal, thresholds(cur_qpc, offset_a, offset_b))
                 };
-                let (alpha_ch, beta_ch, tc0ch) = if mb_y > 0 {
-                    let qu = qp_up_row.map_or(qp_cur, |r| r[mb_x] as i32);
-                    thresholds((qpc(qu) + cur_qpc + 1) >> 1, offset_a, offset_b)
-                } else {
-                    (0, 0, [0; 3])
-                };
-                let (alpha_ci, beta_ci, tc0ci) = thresholds(cur_qpc, offset_a, offset_b);
                 let tc0_of = |arr: [i32; 3], bs: i32| {
                     if (1..4).contains(&bs) {
                         arr[bs as usize - 1]
@@ -3227,7 +3235,12 @@ fn filter_frame_rows_impl<const PRE: bool>(
                     }
                     bs4
                 };
-                for plane in [&mut *u, &mut *v] {
+                for (plane_index, plane) in [&mut *u, &mut *v].into_iter().enumerate() {
+                    let (
+                        (alpha_cv, beta_cv, tc0cv),
+                        (alpha_ch, beta_ch, tc0ch),
+                        (alpha_ci, beta_ci, tc0ci),
+                    ) = chroma_thresholds(plane_index);
                     for cxe in [0usize, 4] {
                         if cxe == 0 && mb_x == 0 {
                             continue;
@@ -4156,7 +4169,7 @@ mod blind_arm_tests {
                 poc1: &[],
                 kind: &[], // no kind fast path, so the arm is the blind one
             };
-            filter_frame(&mut y, &mut u, &mut v, mb_w, mb_h, &mb_qp, 0, 0, 0, &info);
+            filter_frame(&mut y, &mut u, &mut v, mb_w, mb_h, &mb_qp, [0, 0], 0, 0, &info);
             (y, u, v)
         };
 

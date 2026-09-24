@@ -337,9 +337,21 @@ MUTATIONS = [
     ("coded_size_limit", "src/decoding.rs", ".max(65536)", ".max(65535)", "hevc_limits"),
     ("avc_mono_chroma", "vendor/rusty_h264-decoder/src/mb16.rs", "let mut u = vec![128u8; cdw * cdh];", "let mut u = vec![127u8; cdw * cdh];", "avc"),
     ("avc_level_prefix_limit", "vendor/rusty_h264-common/src/cavlc.rs", "if level_prefix > 15 {", "if level_prefix > 16 {", "avc"),
-    ("avc_profile_gate", "src/avc.rs", "!matches!(profile, 66 | 77 | 83 | 86 | 88 | 100)", "!matches!(profile, 66 | 77 | 83 | 86 | 88 | 100 | 244)", "avc"),
+    ("avc_profile_gate", "src/avc_openh264.rs", "if !matches!(profile, 66 | 77 | 83 | 86 | 88 | 100) {", "if !matches!(profile, 66 | 77 | 83 | 86 | 88 | 100 | 244) {", "avc"),
     ("avc_mono_intra_cbp", "vendor/rusty_h264-decoder/src/mb16.rs", "const T: [u8; 16] = [15, 0, 7, 11, 13, 14, 3, 5, 10, 12, 1, 2, 4, 8, 6, 9];", "const T: [u8; 16] = [15, 7, 0, 11, 13, 14, 3, 5, 10, 12, 1, 2, 4, 8, 6, 9];", "avc"),
     ("avc_decoder_error_text", "src/avc.rs", 'plugin_error(0, "OpenH264 decoder error")', 'plugin_error(0, "OpenH264 decoding error")', "avc"),
+    ("avc_cabac_end_of_data", "vendor/rusty_h264-decoder/src/cabac.rs", "self.over |= consumed > self.end_bits;", "self.over |= consumed > self.end_bits + 8;", "avc_errors"),
+    ("avc_intra_mode_validity", "vendor/rusty_h264-decoder/src/mb16.rs", "            4..=6 => top && left && self.block_corner_ok(bx, by, top, left),\n            _ => false,\n        };\n        self.intra_invalid |= !ok;", "            4..=6 => top && left && self.block_corner_ok(bx, by, top, left),\n            _ => false,\n        };\n        let _ = ok;", "avc_errors"),
+    ("avc_cavlc_end_of_slice", "vendor/rusty_h264-decoder/src/mb16.rs", "                if used > r.stop_pos() {", "                if used > r.stop_pos() + 8 {", "avc_errors"),
+    ("avc_coeff_token_fallback", "vendor/rusty_h264-common/src/cavlc.rs", "c.skip(if NC_TABLE[(nc as usize).min(16)] == 3 { 6 } else { 8 })?;", "c.skip(if NC_TABLE[(nc as usize).min(16)] == 3 { 6 } else { 7 })?;", "avc_errors"),
+    ("avc_level_gate", "src/avc_openh264.rs", "let (max_fs, max_dpb) = level_limits(level, constraint[3]).ok_or(Rejected)?;", "let (max_fs, max_dpb) = level_limits(level, constraint[3]).unwrap_or((36864, 184320));", "avc_errors"),
+    ("avc_hrd_return_code", "src/avc_openh264.rs", "        Err(ReadError(code)) => code,", "        Err(ReadError(_)) => 0,", "avc_errors"),
+    ("avc_scaling_factor_wrap", "vendor/rusty_h264-common/src/transform.rs", "(((weight * NORM_ADJUST[m][POS_GROUP_FLAT[idx]]) << (qp / 6)) as u16) as i32", "(weight * NORM_ADJUST[m][POS_GROUP_FLAT[idx]]) << (qp / 6)", "avc"),
+    ("avc_scaling_qp51", "vendor/rusty_h264-common/src/transform.rs", "    if qp >= 51 {\n        return 0;\n    }", "    if qp >= 52 {\n        return 0;\n    }", "avc"),
+    ("avc_coefficient_wrap", "vendor/rusty_h264-common/src/transform.rs", "            wrap16((raster[i].wrapping_mul(self.ls[i]).wrapping_add(self.add)) >> self.sr)", "            (raster[i].wrapping_mul(self.ls[i]).wrapping_add(self.add)) >> self.sr", "avc_errors"),
+    ("avc_early_construction", "src/avc_openh264.rs", "            6 | 9 if pending_slices => {", "            6 if pending_slices => {", "avc_errors"),
+    ("avc_macroblock_count", "vendor/rusty_h264-decoder/src/lib.rs", "        if pic.mb_count != pic.total_mb {\n            return Ok(None); // picture not yet complete", "        if pic.next_mb < pic.total_mb {\n            return Ok(None); // picture not yet complete", "avc_errors"),
+    ("avc_cr_qp_offset", "vendor/rusty_h264-decoder/src/lib.rs", "fd.set_chroma_qp_offset_cr(pps.second_chroma_qp_index_offset);", "fd.set_chroma_qp_offset_cr(pps.chroma_qp_index_offset);", "avc_errors"),
     ("error_field_order", "crates/capi/src/lib.rs", "pub code: c_int,\n    pub subcode: c_int,", "pub subcode: c_int,\n    pub code: c_int,", "abi"),
 ]
 
@@ -379,7 +391,7 @@ def main():
     def oracle(suite):
         if suite.startswith("jpeg2000_"):
             return str(Path(args.jpeg2000_reference_build).resolve())
-        if suite == "avc" or suite.startswith("avc_"):
+        if suite in ("avc", "avc_errors"):
             return str(Path(args.avc_reference_build).resolve())
         if suite.startswith("jpeg_"):
             return str(Path(args.jpeg_reference_build).resolve())

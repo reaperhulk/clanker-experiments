@@ -41,12 +41,23 @@ libheif's ispe-tightened (+16) pixel limit with its SPS coded-size check, and th
 plugin's plane allocation limit. `avc1` handles report `avcC` chroma and bit depths
 and libheif's missing-`avcC` error.
 
+## OpenH264 syntax layer
+
+`src/avc_openh264.rs` models OpenH264's decisions ahead of reconstruction: its
+Annex B splitting and unescaping (`WelsDecodeBs`), its 32-bit-cache bit reader with
+bounded over-reads into zeroed padding, `ParseNalHeader` (trailing-zero stripping,
+forbidden bit, parameter-set existence), SPS parsing with level limits, VUI and the
+HRD parsing quirks of the pinned build, PPS parsing with scaling lists, and slice
+headers with reordering, weighted prediction and reference marking. Only accepted
+units reach the Rust decoder, re-escaped canonically. An incomplete picture is an
+error only when an SEI or delimiter completes its access unit in OpenH264's data
+call; otherwise the flush call yields no image and no error.
+
 ## Known gaps
 
-- Error-path parity on malformed streams is incomplete. `tools/test_avc_errors.py`
-  (truncations, corrupted slice bytes, malformed SPS/PPS, NAL framing, avcC
-  prefixes) still has recorded differences, mostly where OpenH264's own NAL
-  splitting, SPS/VUI/PPS and slice-header validation reject streams the Rust
-  decoder accepts. It is not a CI gate until it reaches parity.
-- CABAC I_PCM, AVC sequences/tracks (P/B slices), registered-plugin priority
-  interaction with the built-in decoder, and resource-limit corpora remain open.
+- Coverage is finite: the truncation/corruption corpus covers six source streams.
+  SVC extension units are rejected as OpenH264's header checks decide, never
+  decoded; multi-access-unit input, FMO slice groups, CABAC I_PCM and
+  constrained-intra P prediction are not yet compared.
+- AVC sequences/tracks (P/B slices), registered-plugin priority interaction with
+  the built-in decoder and resource-limit corpora remain open.

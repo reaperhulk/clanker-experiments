@@ -111,7 +111,7 @@ def main():
         matrices.append(f'{name} =\n' + ','.join(map(str, values)))
     cqm.write_text('\n'.join(matrices) + '\n')
     for (profile, options), matrix, qp in itertools.product(
-            [('high', profiles['high']), ('high-cavlc', profiles['high-cavlc'])], ['flat', 'jvt', 'custom'], [10, 28]):
+            [('high', profiles['high']), ('high-cavlc', profiles['high-cavlc'])], ['flat', 'jvt', 'custom'], [10, 28, 36, 44, 50, 51]):
         extra = ['--cqmfile', str(cqm)] if matrix == 'custom' else ['--cqm', matrix]
         add(f'cqm-{profile}-{matrix}-{qp}', 64, 48, ['--qp', str(qp), *options, *extra], pattern=4)
     for (profile, options), deblock in itertools.product(profiles.items(), ['off', '-6:-6', '6:6', '3:-2', '-2:4']):
