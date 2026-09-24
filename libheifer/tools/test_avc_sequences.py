@@ -101,32 +101,46 @@ def access_units(units):
     return out
 
 
-def corpus():
+FIXTURES = Path('tests/fixtures/avc-sequences.json')
+
+
+def generate():
+    """Encode the streams with the pinned test-only x264 into the committed fixture file."""
     work = Path('.build/avc-sequences-inputs').resolve()
     work.mkdir(parents=True, exist_ok=True)
     source = Path('.build/x264-source').resolve()
     if subprocess.check_output(['git', '-C', str(source), 'rev-parse', 'HEAD'], text=True).strip() != REVISION:
         raise SystemExit('wrong native x264 revision')
     x264 = Path('.build/x264-install/bin/x264').resolve()
-    cases = []
+    streams = []
     for (name, options), (w, h), pattern in [((n, o), size, p) for n, o in STREAMS.items() for size, p in [((64, 48), 4), ((50, 36), 3)]]:
         raw = work / f'{name}-{w}x{h}.yuv'
         out = work / f'{name}-{w}x{h}.264'
         raw.write_bytes(b''.join(frames(w, h, FRAMES, pattern)))
         subprocess.run([str(x264), '--quiet', '--no-progress', '--threads', '1', '--frames', str(FRAMES), '--input-res', f'{w}x{h}',
                         '--input-csp', 'i420', '--qp', '26', *options, '-o', str(out), str(raw)], check=True)
-        units = nals(out.read_bytes())
+        streams.append({'name': f'{name}-{w}x{h}', 'width': w, 'height': h, 'options': options, 'hex': out.read_bytes().hex()})
+    generator = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
+    FIXTURES.write_text(json.dumps({'x264_revision': REVISION, 'generator_sha256': generator, 'streams': streams}, indent=1) + '\n')
+
+
+def corpus():
+    cases = []
+    for stream in json.loads(FIXTURES.read_text())['streams']:
+        name, w, h = stream['name'], stream['width'], stream['height']
+        units = nals(bytes.fromhex(stream['hex']))
         aus = access_units(units)
-        data = sequence(w, h, units, aus)
-        cases.append((f'{name}-{w}x{h}', data))
+        cases.append((name, sequence(w, h, units, aus)))
         # Truncated tracks: fewer samples than frames, and a missing last slice byte.
-        cases.append((f'{name}-{w}x{h}-short', sequence(w, h, units, aus[:3])))
+        cases.append((f'{name}-short', sequence(w, h, units, aus[:3])))
         broken = aus[:-1] + [[aus[-1][0][:-1]]]
-        cases.append((f'{name}-{w}x{h}-cut', sequence(w, h, units, broken)))
+        cases.append((f'{name}-cut', sequence(w, h, units, broken)))
     return cases
 
 
 def main():
+    if '--generate' in sys.argv:
+        return generate()
     for flag, value in [('--work', '.build/avc-sequences'), ('--output', '.build/avc-sequences-report.json'),
                         ('--reference-build', '.build/reference-avc')]:
         if flag not in sys.argv:
