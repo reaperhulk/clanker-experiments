@@ -1287,13 +1287,13 @@ implementation is pure Rust AVC decoding with a pinned OpenH264 test oracle.
 ## Built-in Rust AVC decoding
 
 Oracle: libheif 1.23.4 with its OpenH264 plugin and OpenH264 v2.6.0 (scalar).
-Fixtures: 427 x264 (b35605ac, no assembly) streams in `tests/fixtures/avc-generated.json`.
+Fixtures: 429 x264 (b35605ac, no assembly) streams in `tests/fixtures/avc-generated.json`.
 
 | Suite | Cases | Mismatches | Report |
 |---|---|---|---|
-| test_avc (normal) | 10,875 | 0 | results/avc-decode-normal-report.json |
-| test_avc (ASan/UBSan client, local leak check off under ptrace) | 10,875 | 0 | results/avc-decode-sanitized-report.json |
-| test_avc (codec-free candidate vs HEVC-only oracle) | 10,875 | 0 | results/avc-decode-no-codecs-report.json |
+| test_avc (normal) | 10,925 | 0 | results/avc-decode-normal-report.json |
+| test_avc (ASan/UBSan client, local leak check off under ptrace) | 10,925 | 0 | results/avc-decode-sanitized-report.json |
+| test_avc (codec-free candidate vs HEVC-only oracle) | 10,925 | 0 | results/avc-decode-no-codecs-report.json |
 | test_avc_errors (normal) | 37,047 | 0 | results/avc-decode-errors-normal-report.json |
 | test_avc_errors (ASan/UBSan client) | 37,047 | 0 | results/avc-decode-errors-sanitized-report.json |
 | test_avc_errors (codec-free) | 37,047 | 0 | results/avc-decode-errors-no-codecs-report.json |
@@ -1302,6 +1302,9 @@ Fixtures: 427 x264 (b35605ac, no assembly) streams in `tests/fixtures/avc-genera
 | test_avc_plugins (registered vs built-in AVC decoder) | 480 | 0 | results/avc-decode-plugins-normal-report.json |
 | test_avc_plugins (ASan/UBSan client) | 480 | 0 | results/avc-decode-plugins-sanitized-report.json |
 | test_avc_plugins (codec-free vs HEVC-only oracle) | 480 | 0 | results/avc-decode-plugins-no-codecs-report.json |
+| test_avc_limits (pixel/memory limits at read and decode) | 2,527 | 0 | results/avc-decode-limits-normal-report.json |
+| test_avc_limits (ASan/UBSan client) | 2,527 | 0 | results/avc-decode-limits-sanitized-report.json |
+| test_avc_limits (codec-free vs HEVC-only oracle) | 2,527 | 0 | results/avc-decode-limits-no-codecs-report.json |
 
 Mutations: avc_mono_chroma (23), avc_level_prefix_limit (48), avc_profile_gate (24),
 avc_decoder_error_text (192) and the replacement avc_mono_intra_cbp (70) are
@@ -1378,3 +1381,16 @@ new mutations (`decoder_tie_order`, 48 mismatches; `builtin_decoder_cache`, 48;
 suites) and the AVC-oracle plugin regressions still pass. Built-in AVC and
 JPEG 2000 descriptors now have their own records; both previously fell through
 to the HEVC record's name and id.
+
+### AVC resource limits
+
+`tools/test_avc_limits.py` sets `max_image_size_pixels`, `max_memory_block_size`
+and `max_total_memory` before read or before decode. Values sit around each
+stream's output size, macroblock-aligned coded size, libheif's ispe+16 padded
+size, the 65536-pixel floor, the payload size and the plane sizes. Two new
+272x256/270x250 fixtures exceed the floor. Every field and phase produces both
+decodes and security-limit errors. The first run of the new `avc_ispe_padding`
+mutation survived, because the padded limit only binds when the coded picture
+exceeds the declared ispe. Items whose ispe is just below the coded size now
+detect it (24 mismatches); both mutation reports are retained. All 2,527 cases
+match in normal, sanitizer-client and codec-free builds; 319 mutations total.

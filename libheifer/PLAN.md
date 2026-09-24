@@ -713,6 +713,8 @@ Registered AVC plugins competing with the built-in decoder now match libheif
 built-in selections, and avcC units plus the coded-size check on pushed data.
 See `docs/RESULTS.md`.
 
-Next: CABAC I_PCM, AVC resource-limit corpora and AVC sequences, then remaining
-plan gates. All 465 functions remain partial; strict completion
+AVC pixel and memory limits at read and decode match on 2,527 cases, including
+items whose declared ispe is smaller than the coded picture.
+
+Next: CABAC I_PCM and AVC sequences, then remaining plan gates. All 465 functions remain partial; strict completion
 remains false.

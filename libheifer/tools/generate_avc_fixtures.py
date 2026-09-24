@@ -146,6 +146,9 @@ def main():
             [[], ['--partitions', 'none'], ['--partitions', 'i4x4', '--no-8x8dct']]):
         label = '_'.join(e[2:] if e.startswith('--') else e for e in extra) or 'default'
         add(f'mono-{profile}-{qp}-{pattern}-{label}', 48, 32, ['--qp', str(qp), *options, *extra], csp='i400', pattern=pattern)
+    # Above libheif's 65536-pixel floor for the ispe-padded limit (resource limits).
+    add('limits-272x256-high', 272, 256, ['--qp', '30', *profiles['high']], pattern=4)
+    add('limits-270x250-baseline', 270, 250, ['--qp', '30', *profiles['baseline']], pattern=4)
     # Streams outside OpenH264 still-image support: retained for exact error parity.
     for csp in ['i400', 'i422', 'i444']:
         add(f'format-{csp}-8', 32, 32, ['--qp', '26'], csp=csp)

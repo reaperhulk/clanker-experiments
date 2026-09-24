@@ -1,0 +1,12 @@
+{
+  "scope": "Original-header AVC pixel and memory limit boundaries at read and decode (OpenH264 oracle).",
+  "cases": 2527,
+  "mismatches": 0,
+  "client_sanitizers": false,
+  "leak_check": false,
+  "client_sha256": "9b6cafe33f096a88507a0545fed6de411d22f794c392ef2b2b93de624e6c77e4",
+  "corpus_sha256": "d7b98287809da4aea0e7d0c55cab7cdc2bac19a52186d9b59905763d802c4e4f",
+  "reference_sha256": "44e009fcef37fe6609c0c4ba59715b3285cfef62c79742f20c679cc5f856f000",
+  "candidate_sha256": "bb4ae2da2320d07d2db460bd6728d9681dad9cfff9ab3697671e89a7f133201f",
+  "differences": []
+}
