@@ -1,5 +1,5 @@
 {
-  "generator_sha256": "8dd7001cea2e26efc1a823d0ac9aac5ebcfdc532914514bdff8f5fb26be9f650",
+  "generator_sha256": "332a3abc7eb7bf244642623457270a2c6935d92b6036c560668c6f8095b6cd33",
   "openjph_revision": "8c2826fdaaac3b0334ff5bc2ed2a8ec153c99a35",
   "encoder_sha256": "0076e6b7c4fa11746ed1fc9fc0069c2e485b82273e0f0c9f270ff7f2cdb77386",
   "fixtures": [
@@ -16792,6 +16792,450 @@
       "input_sha256": "51c89dea32e881b083a87b5aaf2ab2c9fff14ddf1aa5984cf4c3a3c7398c4cfd",
       "sha256": "cffffeb170de9a7f0a0d0c268822001417e4a4fc01b23a10955764cd008afb6a",
       "hex": "ff4fff5100294000000000110000000400000000000000000000001100000004000000000000000000010b0101ff500008000200000022ff52000c00020001000004044000ff5c0005224831ff64001700014f70656e4a50482056657220302e33322e302eff90000a00000000006b0001ff93c02f5af3cdc3df3e87f62eaed6657e1d26d5cd8c75441dfcc4b76c77142fbce633e741b59d3af87159dd5156cacf4249fb4273fceb7564efdc6855e2cd3b5315ec4021df81fb070006257eb2e20bc0100da0840d182100c6084031b701ffd9"
+    },
+    {
+      "name": "single-lowamp-64x64-1",
+      "width": 64,
+      "height": 64,
+      "components": 1,
+      "depth": 12,
+      "signed": false,
+      "sampling": [
+        [
+          1,
+          1
+        ]
+      ],
+      "command": [
+        "ojph_compress",
+        "-dims",
+        "{64,64}",
+        "-num_comps",
+        "1",
+        "-signed",
+        "false",
+        "-bit_depth",
+        "12",
+        "-downsamp",
+        "{1,1}",
+        "-reversible",
+        "true",
+        "-num_decomps",
+        "0",
+        "-block_size",
+        "{64,64}"
+      ],
+      "input_sha256": "e9e99ae51562339ec47ca372b24e9e8f3ece97415f31d247e00ace8b924123f8",
+      "sha256": "eb191bcbd77e1d39f7aaac4454d847f1fcd1327eba0bbfa6af901c9e8eb77422",
+      "hex": "ff4fff5100294000000000400000004000000000000000000000004000000040000000000000000000010b0101ff500008000200000003ff52000c00020001000004044001ff5c00042058ff64001700014f70656e4a50482056657220302e33322e302eff90000a00000000041e0001ff93c00bfd02c01ecbd46a0465332240309f3386460fd436942202b0ef65331a6e30d329510885dec3a94a2c364c34120208e0b878ac1418bc262d01b1cb73d50a86b30964b904029d8e735428d26a09924c00c0c1d2294258ec90b2140cf190d5b568c4b211056238e4f9984c6b50462a154430709fc1d6ab70680c143a11867af95271acd9a0684201763b1c4fa930c62411a51200b9ccbc428d374290c881ae93cbf5406d2b99906440e0d88ca643226b2121d07b58541d81b65b24090104eeb14cad463469aa5880603e670a86331a4a1101d8779ca312e206339d12010e379f5395586c9848590a061c178f950283583622911210bbbc0605b30964b904027d065bafa148ab25483218eaf50c4ba70861a109058478c8ea5af4eb5990e49240b6db9249249242db6e49246db6b2db792491b2492c93249205b6dc9249249216db7249236db596dbc9248c9249249924902db6e492492490b6db92491b6dacb6de496404202f9421fc217201c2101fd700000be5107f105c41fc417000bf8508407f5c02002f9441fc4170401c41fc417040be00508407f5c02102f9441fc417080be105105c102f84142101fd701040be5c7f45c202f88140817c20a4ff804202f9401fc017080be20504207f5c405f1028113fae021017ca10fe10b8405f10282103fae20504007f5c04202f9421fc217080be20508407f5c04207f5c04202f9441fc21760be8508407f5c00002f94210275c337ca20fe20b8005f00284203fae010817ca00897ca20fe20b8205f08284203fae010817cb3f804005f2883f882e0817c20a102e021017ca00ff8b84205f2883f882e1017c20aa4feb808405f2803f802f87f97080be20500007f5c04202f9421fc2170801c01fc017080be20504207f5c04202f9421fc21720be205005c202f88141081fd7010a9441fc417000bf850405f10284103fae1497ca20fe20b8205f00284203faf82fc508407f5c00002f9441fc417040be10508407f5c00a1080feb804205f2883f882e0817c20a0a0feb81080feb804205f2dfc417080be2050227f5c04202f94420275c04102f971ff17080be20504007f5c04202f9404202f9401fc017080be20504207f5c21017ca20fe021017ca10fe10b8405f10282103fae083883f882e21017ca10fe10ba17c40a1080feb80225f2883f882e20fe20b8005fc284203fae010017ca20fe20b8200e20fe20b8005f00284203fae010817ca20fe20b8405f082882e0817c20a1080feb804205f2a3fe080be2050205f082850feb808405f2803fe2e1017c40a0840feb880be2050227f5c04202f9421fc017080be20504207f5c40a0000feb808405f2843f842e1017c40a1040feb80840feb808405f2843f842ec17e508407f5c00002f94210275c0282f9441fc417000bf8508407f5c02102f944a7fd100f887f082f807a000017ff3927fd62fffd9"
+    },
+    {
+      "name": "single-lowamp-64x64-0",
+      "width": 64,
+      "height": 64,
+      "components": 1,
+      "depth": 12,
+      "signed": false,
+      "sampling": [
+        [
+          1,
+          1
+        ]
+      ],
+      "command": [
+        "ojph_compress",
+        "-dims",
+        "{64,64}",
+        "-num_comps",
+        "1",
+        "-signed",
+        "false",
+        "-bit_depth",
+        "12",
+        "-downsamp",
+        "{1,1}",
+        "-reversible",
+        "false",
+        "-num_decomps",
+        "0",
+        "-block_size",
+        "{64,64}",
+        "-qstep",
+        "0.002"
+      ],
+      "input_sha256": "e9e99ae51562339ec47ca372b24e9e8f3ece97415f31d247e00ace8b924123f8",
+      "sha256": "85a749147832d1dd50eefc76a0bbbee48b6b1efe57525c4cd84a336294516771",
+      "hex": "ff4fff5100294000000000400000004000000000000000000000004000000040000000000000000000010b0101ff500008000200000022ff52000c00020001000004044000ff5c0005224831ff64001700014f70656e4a50482056657220302e33322e302eff90000a0000000002ac0001ff93c02fea6890210a218430b0081022aaa095213200c81085b05508038b0022aa205a152003880c51045a08038b86061155901915200388218a402b0b6160c99045544104559001841982a095312864088ba8420815640001206865085b214314118510820c204480a095215a193244110d550883200380088256058856860c514486288481080611f5eb5993649205c9259649249216db73648c32485b6de49247888889888a888880924964924924a5b9264988864921249d45c15932492498888980964b6592492485b7973058c32485b6de49a80e4be547f45c527f5c2df2e3fe2f8fe8ba2fc727f5c2af971ff17201f1ff1742fc5727f5c092f9727c5c82fa171720be85e49d7024be53582fe14417d0a0725f2cff5d82fe1497f5f05f42bff0725f2cff2ec17f0a24febe155fd70e4be547f45f17f0a24feb824febb92f951fd1704e4feb85be5249d7058ff8ba17e5727f5c12be50df98ff8b905f8ae4feb8125f28157cb8ff8b905f42e2e0497cb7fc497cb93e2e417d0a68725f2cff2e6b05fc2aff5c392f951fe5d807bfd760bf8525fd70e4be547f45c6165d82fe1449fd7c171fd1745f8c5fc2893fae0b1ff1742fc5727f5c2727f5c2df2e3fe2e417e2b93faf2b93fae095f2e3fe2e417d0ac2e393fae0497ca62ec17d0a7fe0e4be5e49d7024be537305fc2abfae1c97ca1c97cb3fd760bf85127f5dc97ca8fe1c97ca87f9760bf85127f5cc7f45f92f951fd17185527f5c37e63fe2e8fe8ba2fc727f5c2af971ff17201f1ff1742fcae4feb8125f2e4f8b905f42e2e417e2b93fae0497ca305fc2882fa1585c292f96ff982fe155fd7417d0a7fe0e4be59fe5d82fe1449fd7c2abfae1c97ca8fe8be2fe1449fd7097f5c392f951fd1704e4feb85be5249d7305c7f45d17e393fae095f29bf303f9fe2fde9477fce7fd621ffd9"
+    },
+    {
+      "name": "single-lowamp-13x7-1",
+      "width": 13,
+      "height": 7,
+      "components": 1,
+      "depth": 12,
+      "signed": false,
+      "sampling": [
+        [
+          1,
+          1
+        ]
+      ],
+      "command": [
+        "ojph_compress",
+        "-dims",
+        "{13,7}",
+        "-num_comps",
+        "1",
+        "-signed",
+        "false",
+        "-bit_depth",
+        "12",
+        "-downsamp",
+        "{1,1}",
+        "-reversible",
+        "true",
+        "-num_decomps",
+        "0",
+        "-block_size",
+        "{64,64}"
+      ],
+      "input_sha256": "039980b7c672494823ddbb71a78b7a286c09097fbb966a3f9f945af792c3054b",
+      "sha256": "23083b8b63079c0d23dba2c6ca17fa0fcd2825ac7b7d285de16cb73057c366d7",
+      "hex": "ff4fff51002940000000000d0000000700000000000000000000000d00000007000000000000000000010b0101ff500008000200000003ff52000c00020001000004044001ff5c00042058ff64001700014f70656e4a50482056657220302e33322e302eff90000a00000000002a0001ff93c00b641e2b4086520ceb25c087f041700000be500840be53927fd301ffd9"
+    },
+    {
+      "name": "single-lowamp-13x7-0",
+      "width": 13,
+      "height": 7,
+      "components": 1,
+      "depth": 12,
+      "signed": false,
+      "sampling": [
+        [
+          1,
+          1
+        ]
+      ],
+      "command": [
+        "ojph_compress",
+        "-dims",
+        "{13,7}",
+        "-num_comps",
+        "1",
+        "-signed",
+        "false",
+        "-bit_depth",
+        "12",
+        "-downsamp",
+        "{1,1}",
+        "-reversible",
+        "false",
+        "-num_decomps",
+        "0",
+        "-block_size",
+        "{64,64}",
+        "-qstep",
+        "0.002"
+      ],
+      "input_sha256": "039980b7c672494823ddbb71a78b7a286c09097fbb966a3f9f945af792c3054b",
+      "sha256": "b896d50e38139ad0e6d45df7447d3eecbc157ee5c3e6b7ff7bc82a7182af3053",
+      "hex": "ff4fff51002940000000000d0000000700000000000000000000000d00000007000000000000000000010b0101ff500008000200000022ff52000c00020001000004044000ff5c0005224831ff64001700014f70656e4a50482056657220302e33322e302eff90000a0000000000230001ff93c02d209000f8eb25c013f98b85be504af94e7fdf00ffd9"
+    },
+    {
+      "name": "single-lowamp-33x33-1",
+      "width": 33,
+      "height": 33,
+      "components": 1,
+      "depth": 12,
+      "signed": false,
+      "sampling": [
+        [
+          1,
+          1
+        ]
+      ],
+      "command": [
+        "ojph_compress",
+        "-dims",
+        "{33,33}",
+        "-num_comps",
+        "1",
+        "-signed",
+        "false",
+        "-bit_depth",
+        "12",
+        "-downsamp",
+        "{1,1}",
+        "-reversible",
+        "true",
+        "-num_decomps",
+        "0",
+        "-block_size",
+        "{64,64}"
+      ],
+      "input_sha256": "93b37e9fb12c0e2864a868e51ff4b77f6d2187f0315fba12badbffc737903df3",
+      "sha256": "204489291e1ee44ae3c495086d41023f74d23dc491551c0ff1e01f97c88f59ca",
+      "hex": "ff4fff5100294000000000210000002100000000000000000000002100000021000000000000000000010b0101ff500008000200000003ff52000c00020001000004044001ff5c00042058ff64001700014f70656e4a50482056657220302e33322e302eff90000a0000000001280001ff93c00bf4581ecbd46a0182f99c194a1101dc60a65322a72ab1d8001c178f9504c42e6f13c872094491564b90583a45080bc443561788e190e73352a92082a970680c14be541c6b06bb1d8ea79402aeeb596d65d90b6cb7923236dc91c9964909324249bc0107f0401c21fc41fc417040be10508407f5c427105c102f8414141fd70202f8814089fd701080be5080be20504007f5c04202f9420504207f5c21017ca20fe0840feb820e20fe20b84203fae00897ca20fe20b882e010017ca20fe20b8200e010817ca20fe20b8405f08282102f951ff0405f102801ff17080be20504207f5c21fc017080be20504207f5c227085c202f88142081fd7182fca1080feb800005f28005fc284203fae010817ca007a000017ff3927fdc0cffd9"
+    },
+    {
+      "name": "single-lowamp-33x33-0",
+      "width": 33,
+      "height": 33,
+      "components": 1,
+      "depth": 12,
+      "signed": false,
+      "sampling": [
+        [
+          1,
+          1
+        ]
+      ],
+      "command": [
+        "ojph_compress",
+        "-dims",
+        "{33,33}",
+        "-num_comps",
+        "1",
+        "-signed",
+        "false",
+        "-bit_depth",
+        "12",
+        "-downsamp",
+        "{1,1}",
+        "-reversible",
+        "false",
+        "-num_decomps",
+        "0",
+        "-block_size",
+        "{64,64}",
+        "-qstep",
+        "0.002"
+      ],
+      "input_sha256": "93b37e9fb12c0e2864a868e51ff4b77f6d2187f0315fba12badbffc737903df3",
+      "sha256": "8f477f49d87ed9d7043b08c3357c395bb83b6930f2dcbfa3ee7fd7e7ff1211eb",
+      "hex": "ff4fff5100294000000000210000002100000000000000000000002100000021000000000000000000010b0101ff500008000200000022ff52000c00020001000004044000ff5c0005224831ff64001700014f70656e4a50482056657220302e33322e302eff90000a0000000000c80001ff93c02fad809021420880a09521c81055080091560564882284c1201a1520431411c2c0222aaa2033e5eb596d6664a491b799615b6e48f7131110498882499c18fe80ecff8ff8b905f8ae4febe4f8b905f42b0b8c17d0affc1c97cac17f0aafeb8725f2b0a24febb92f951fc49fd731fd17527f5c37e63fe2f8b855f2e3fe2e4038125f2e4f8b905f42892f9460bf855ff305fc2abfaf3fcbb05fc2893fae93a2f8bf85127f5c04e4feb85be545f8e4feb8257ca5e9477fce7fd209ffd9"
+    },
+    {
+      "name": "single-lowamp-64x22-1",
+      "width": 64,
+      "height": 22,
+      "components": 1,
+      "depth": 12,
+      "signed": false,
+      "sampling": [
+        [
+          1,
+          1
+        ]
+      ],
+      "command": [
+        "ojph_compress",
+        "-dims",
+        "{64,22}",
+        "-num_comps",
+        "1",
+        "-signed",
+        "false",
+        "-bit_depth",
+        "12",
+        "-downsamp",
+        "{1,1}",
+        "-reversible",
+        "true",
+        "-num_decomps",
+        "0",
+        "-block_size",
+        "{64,64}"
+      ],
+      "input_sha256": "1896e9bebd2fa8f23d7efc2e56022063c63cbcc14c31521c9b0f80997ac725f8",
+      "sha256": "cf6999a26cb1b50b8bfe51d10f9650349b1fb8d06e8d61d4fd8bbd8fecd827a4",
+      "hex": "ff4fff5100294000000000400000001600000000000000000000004000000016000000000000000000010b0101ff500008000200000003ff52000c00020001000004044001ff5c00042058ff64001700014f70656e4a50482056657220302e33322e302eff90000a0000000001760001ff93c00bf5901ecbd46a0465332240309f3386460fd436942202b0ef65331a6e30d329510885dec3a94a2c364c34120208e0b878ac1418bc262d01b1cb73d50a86b30964b904029d8e735428d26a09924c00c0c1d2294258ec90b2140cf190d5b568c4b211eb5990e49240b6db9249249242db6e49246db6b2db792491b248021017ca10fe10b8405f10282103fae083883f882e21017ca10fe10ba17c40a1080feb80225f2883f882e20fe20b8005fc284203fae010017ca20fe20b8200e20fe20b8005f00284203fae010817ca20fe20b8405f082882e0817c20a1080feb804205f2a3fe080be2050205f082850feb808405f2803fe2e1017c40a0840feb880be2050227f5c04202f9421fc017080be20504207f5c40a0000feb808405f2843f842e1017c40a1040feb80840feb808405f2843f842ec17e508407f5c00002f94210275c0282f9441fc417000bf8508407f5c02102f944a7fd100f887f082f807a000017ff3927fd510ffd9"
+    },
+    {
+      "name": "single-lowamp-64x22-0",
+      "width": 64,
+      "height": 22,
+      "components": 1,
+      "depth": 12,
+      "signed": false,
+      "sampling": [
+        [
+          1,
+          1
+        ]
+      ],
+      "command": [
+        "ojph_compress",
+        "-dims",
+        "{64,22}",
+        "-num_comps",
+        "1",
+        "-signed",
+        "false",
+        "-bit_depth",
+        "12",
+        "-downsamp",
+        "{1,1}",
+        "-reversible",
+        "false",
+        "-num_decomps",
+        "0",
+        "-block_size",
+        "{64,64}",
+        "-qstep",
+        "0.002"
+      ],
+      "input_sha256": "1896e9bebd2fa8f23d7efc2e56022063c63cbcc14c31521c9b0f80997ac725f8",
+      "sha256": "73db58d19bc875458a56b3d999f93b3b645818c0b6e332519e4903e1dbc4a9f9",
+      "hex": "ff4fff5100294000000000400000001600000000000000000000004000000016000000000000000000010b0101ff500008000200000022ff52000c00020001000004044000ff5c0005224831ff64001700014f70656e4a50482056657220302e33322e302eff90000a0000000000f90001ff93c02fb9c090210a218430b0081022aaa095213200c81085b05508038b0022aa205a152003880c51045a08038b8606115590fdeb5993649205c9259649249216db73648c32485b6de49247888801c97ca87f9760bf85127f5cc7f45f92f951fd17185527f5c37e63fe2e8fe8ba2fc727f5c2af971ff17201f1ff1742fcae4feb8125f2e4f8b905f42e2e417e2b93fae0497ca305fc2882fa1585c292f96ff982fe155fd7417d0a7fe0e4be59fe5d82fe1449fd7c2abfae1c97ca8fe8be2fe1449fd7097f5c392f951fd1704e4feb85be5249d7305c7f45d17e393fae095f29bf303f9fe2fde9477fce7fd90bffd9"
+    },
+    {
+      "name": "single-lowamp-21x13-1",
+      "width": 21,
+      "height": 13,
+      "components": 1,
+      "depth": 12,
+      "signed": false,
+      "sampling": [
+        [
+          1,
+          1
+        ]
+      ],
+      "command": [
+        "ojph_compress",
+        "-dims",
+        "{21,13}",
+        "-num_comps",
+        "1",
+        "-signed",
+        "false",
+        "-bit_depth",
+        "12",
+        "-downsamp",
+        "{1,1}",
+        "-reversible",
+        "true",
+        "-num_decomps",
+        "0",
+        "-block_size",
+        "{64,64}"
+      ],
+      "input_sha256": "2a7bbc8588aa921049cbc44f8d8c19860b47f9996cce4bdb418b7189d6df83fc",
+      "sha256": "33e40d8c869d2b8f2e3387a0a704c8d0f9a3735d1101ae1fe09471f19340c8e3",
+      "hex": "ff4fff5100294000000000150000000d0000000000000000000000150000000d000000000000000000010b0101ff500008000200000003ff52000c00020001000004044001ff5c00042058ff64001700014f70656e4a50482056657220302e33322e302eff90000a00000000005a0001ff93c00bd2001ecb142098cf508a083798395589051c170fe4eb6d66c90bca1270801c1017c40a0840feb8405f10282103fae10284103fae04203fae000017ca1080feb804205f2887f3927fd503ffd9"
+    },
+    {
+      "name": "single-lowamp-21x13-0",
+      "width": 21,
+      "height": 13,
+      "components": 1,
+      "depth": 12,
+      "signed": false,
+      "sampling": [
+        [
+          1,
+          1
+        ]
+      ],
+      "command": [
+        "ojph_compress",
+        "-dims",
+        "{21,13}",
+        "-num_comps",
+        "1",
+        "-signed",
+        "false",
+        "-bit_depth",
+        "12",
+        "-downsamp",
+        "{1,1}",
+        "-reversible",
+        "false",
+        "-num_decomps",
+        "0",
+        "-block_size",
+        "{64,64}",
+        "-qstep",
+        "0.002"
+      ],
+      "input_sha256": "2a7bbc8588aa921049cbc44f8d8c19860b47f9996cce4bdb418b7189d6df83fc",
+      "sha256": "338338fa0ff8eb71db2dbef836ceb59c0ce947f1bec80ebda6696bbe905f4833",
+      "hex": "ff4fff5100294000000000150000000d0000000000000000000000150000000d000000000000000000010b0101ff500008000200000022ff52000c00020001000004044000ff5c0005224831ff64001700014f70656e4a50482056657220302e33322e302eff90000a0000000000420001ff93c02ec490092180d00a19aa10fceb6d66c90bcc300e60bf8557f5d82fe1449fd761449fd71c9fd70b7cae4feb8257cb9fce7fd702ffd9"
+    },
+    {
+      "name": "single-lowamp-17x4-1",
+      "width": 17,
+      "height": 4,
+      "components": 1,
+      "depth": 12,
+      "signed": false,
+      "sampling": [
+        [
+          1,
+          1
+        ]
+      ],
+      "command": [
+        "ojph_compress",
+        "-dims",
+        "{17,4}",
+        "-num_comps",
+        "1",
+        "-signed",
+        "false",
+        "-bit_depth",
+        "12",
+        "-downsamp",
+        "{1,1}",
+        "-reversible",
+        "true",
+        "-num_decomps",
+        "0",
+        "-block_size",
+        "{64,64}"
+      ],
+      "input_sha256": "78536bab70d6a325b1fa96a3ce9e5884accae5c30676bc505dd1c8a687f02dcd",
+      "sha256": "3104db0b81510778c9dbd31545f73cacae845b3856508f8742d69d65a23ee88a",
+      "hex": "ff4fff5100294000000000110000000400000000000000000000001100000004000000000000000000010b0101ff500008000200000003ff52000c00020001000004044001ff5c00042058ff64001700014f70656e4a50482056657220302e33322e302eff90000a0000000000210001ff93c00b401e2b40b0eb9041700840be53927fdc00ffd9"
+    },
+    {
+      "name": "single-lowamp-17x4-0",
+      "width": 17,
+      "height": 4,
+      "components": 1,
+      "depth": 12,
+      "signed": false,
+      "sampling": [
+        [
+          1,
+          1
+        ]
+      ],
+      "command": [
+        "ojph_compress",
+        "-dims",
+        "{17,4}",
+        "-num_comps",
+        "1",
+        "-signed",
+        "false",
+        "-bit_depth",
+        "12",
+        "-downsamp",
+        "{1,1}",
+        "-reversible",
+        "false",
+        "-num_decomps",
+        "0",
+        "-block_size",
+        "{64,64}",
+        "-qstep",
+        "0.002"
+      ],
+      "input_sha256": "78536bab70d6a325b1fa96a3ce9e5884accae5c30676bc505dd1c8a687f02dcd",
+      "sha256": "dc1f000d2631d55990965d68e1203fddfb6109ee2f7011ae970e6858e5ecfcd7",
+      "hex": "ff4fff5100294000000000110000000400000000000000000000001100000004000000000000000000010b0101ff500008000200000022ff52000c00020001000004044000ff5c0005224831ff64001700014f70656e4a50482056657220302e33322e302eff90000a00000000001d0001ff93c02b009090eb9031704af94e7fda00ffd9"
     },
     {
       "name": "single-128x32-1-8",

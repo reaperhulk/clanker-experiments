@@ -35,6 +35,8 @@ def main():
                         value = (x * 73 + y * 151 + x * y * 17 + c * 113) % (1 << depth)
                     elif pattern == 1:  # smooth gradient
                         value = ((x + y + c * 5) * ((1 << depth) - 1)) // max(1, w + h + 10)
+                    elif pattern == 3:  # sparse low-amplitude spikes: room for scaled coefficients and SPP candidates
+                        value = (1 << (depth - 1)) + (((x * 5 + y * 3) % (1 << (depth - 5))) if (x * 7 + y * 3 + c) % 11 == 0 else 0)
                     else:  # sparse detail on a flat field
                         value = (1 << (depth - 1)) + ((1 << (depth - 2)) if (x * 7 + y * 3 + c) % 29 == 0 else 0)
                     if signed:
@@ -127,6 +129,11 @@ def main():
         if not reversible:
             extra += ['-qstep', '0.002']
         add(f'single-{w}x{h}-{int(reversible)}-{depth}', w, h, components=1, depth=depth, extra=extra)
+    for (w, h), reversible in itertools.product([(64, 64), (13, 7), (33, 33), (64, 22), (21, 13), (17, 4)], [True, False]):
+        extra = ['-reversible', 'true' if reversible else 'false', '-num_decomps', '0', '-block_size', '{64,64}']
+        if not reversible:
+            extra += ['-qstep', '0.002']
+        add(f'single-lowamp-{w}x{h}-{int(reversible)}', w, h, components=1, depth=12, pattern=3, extra=extra)
     add('single-128x32-1-8', 128, 32, components=1, extra=['-reversible', 'true', '-num_decomps', '0', '-block_size', '{128,32}'])
 
     result = dict(generator_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(), openjph_revision=revision,
