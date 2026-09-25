@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
-//! AV1 sample decoding through rav1d (crates.io, without assembly).
+//! AV1 sample decoding through rav1d (vendored with a safe owned API).
 use crate::{
     color::Nclx,
     context::{ContextError, Document},
@@ -35,7 +35,7 @@ pub fn decode(
     }
     // The pinned native adapter leaves dav1d's strict-compliance setting at its
     // default; strict decoding only controls library warnings outside the codec.
-    let mut decoder = crate::rav1d_api::Decoder::new(
+    let mut decoder = rav1d::api::Decoder::new(
         options.num_codec_threads,
         false,
         u32::try_from(max_pixels).unwrap_or(0),

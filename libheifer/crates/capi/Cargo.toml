@@ -12,9 +12,9 @@ crate-type = ["cdylib", "staticlib", "rlib"]
 
 [dependencies]
 libheifer = { path = "../.." }
-# Pure Rust AV1 encoder; no assembly (the `asm` default feature is off).
+# AV1 encoder with its assembly (`asm`); the binaries and other defaults are off.
 num-traits = { version = "0.2", optional = true }
-rav1e = { version = "=0.8.1", optional = true, default-features = false, features = ["capi", "threading"] }
+rav1e = { version = "=0.8.1", optional = true, default-features = false, features = ["asm", "capi", "threading"] }
 
 [lints.rust]
 unsafe_op_in_unsafe_fn = "deny"

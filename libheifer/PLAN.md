@@ -18,7 +18,8 @@ reference, build configuration, architectures, tested domains and uncovered case
 USER REQUIREMENT: no C or C++ implementation dependencies. All codecs, container
 parsing/writing, image and metadata models, transforms/conversion, resource limits,
 and plugin management must use pure Rust dependencies or code implemented here.
-"Pure Rust" means no C, C++ or assembly linked into the candidate; Rust SIMD is
+"Pure Rust" means no C or C++ linked into the candidate. libheifer's own code is
+Rust; assembly in dependencies is allowed (rav1d's and rav1e's). Rust SIMD is
 allowed. Prefer fearless_simd (safe `core::arch` wrappers with runtime dispatch);
 `unsafe` intrinsics are acceptable only where they give a major measured gain,
 with documented safety contracts and a scalar Rust oracle compared in tests.
@@ -751,7 +752,7 @@ OpenJPH plugin (311 encoding cases; 2,000 fuzzed codestreams). Its read-back
 fixed 9/7 single-sample synthesis and deep-decomposition precincts in the
 decoder.
 
-AV1 encoding uses crates.io rav1e 0.8.1 (assembly off) behind a transliteration of
+AV1 encoding uses crates.io rav1e 0.8.1 (with its assembly) behind a transliteration of
 libheif's rav1e plugin, byte-identical to libheif with the same rav1e (143
 encoding cases).
 

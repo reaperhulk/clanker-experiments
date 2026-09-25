@@ -1836,10 +1836,10 @@ native plugin calls, so configuration parsing, frame filling, padding and
 packet delivery run identical code. It also carries the plugin's input checks
 (no monochrome; 8, 10 or 12 bits) and its sequence-encoding path.
 
-rav1e 0.8.1 is vendored as a Rust-only tree (assembly removed; see
+rav1e 0.8.1 comes from crates.io with its assembly (see
 `AV1_DEPENDENCIES.md`). The oracle builds librav1e with cargo-c from git tag
-v0.8.1, whose `src/` is identical, without assembly and with a lockfile
-aligned to libheifer's. It is built into `.build/reference-av1` and
+v0.8.1, whose `src/` is identical, with the same `asm,capi,threading`
+features and a lockfile aligned to libheifer's. It is built into `.build/reference-av1` and
 `.build/reference-encoders` (with dav1d for read-back).
 
 `tools/test_av1_encoding.py` covers 143 cases:
@@ -2069,14 +2069,28 @@ the VUI are open coverage gaps.
 
 ## Vendoring reduced to decoders with parity patches
 
-rav1d, rav1e, av-scenechange and zlib-rs now come from crates.io unmodified.
-Their vendored copies had no Rust source changes, or only a change that
-libheifer now makes around the public API:
+rav1e, av-scenechange and zlib-rs come from crates.io unmodified:
 
-- rav1d is driven through its dav1d-compatible C API from
-  `src/rav1d_api.rs`;
-- rav1e and av-scenechange build with `asm` off;
+- rav1e builds with its assembly, and so does the native rav1e it is
+  compared against (`asm,capi,threading`);
+- av-scenechange uses the configuration rav1e itself requests;
 - the zlib-rs diagnostic is recovered by a slow-path replay.
+
+Dependency assembly is allowed. rav1d is vendored from its crates.io package
+with default features, including its assembly. Its only changes are an added
+safe Rust API and the removal of its C ABI exports; upstream's Rust API is
+crate-private. libheifer again forbids `unsafe`. The C API crate links with
+`-Bsymbolic` on ELF targets, because rav1d's assembly uses PC-relative
+references to its exported tables.
+
+With assembly on both sides, `test_av1_encoding` first reported 36
+mismatches. The encoded files were identical; the decoded pixels of some
+10/12-bit images differed. Masking rav1d's CPU flags showed the difference
+starts with its SSE4.1 paths. Native dav1d built with its assembly decodes
+those streams exactly as rav1d does with assembly, and rav1d without assembly
+decodes them exactly as dav1d's C paths do. dav1d's assembly and C paths
+disagree on these rav1e streams, and rav1d follows dav1d on each path. The
+dav1d oracle is now built with its assembly, like the candidate.
 
 rusty_h265 stays vendored for monochrome decoding only. Its VUI default and
 missing-PPS patches were dropped in favour of adapter code in `src/hevc.rs`.
@@ -2088,5 +2102,4 @@ OpenH264, libjpeg-turbo and OpenJPEG parity changes are inside the decoders.
 Linux, macOS and Windows targets. The `cfg(fuzzing)` and wasm-only locked
 dependencies are outside that graph. The previously detected
 `inflate_error_cause` mutation now targets the replay and is still detected
-(84 mismatches). The 75 normal-group suites that do not use the unchanged AVC,
-JPEG, JPEG2000 and VVC decoders pass unchanged.
+(84 mismatches).

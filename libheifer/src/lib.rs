@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 //! Pure Rust HEIF implementation. See PLAN.md for current compatibility scope.
-// Only src/rav1d_api.rs may use `unsafe` (rav1d is used through its C API).
-#![deny(unsafe_code)]
+#![forbid(unsafe_code)]
 
 pub mod auxiliary;
 #[cfg(feature = "av1")]
@@ -39,8 +38,6 @@ mod mini;
 mod mini_write;
 pub mod overlay;
 pub mod properties;
-#[cfg(feature = "av1")]
-mod rav1d_api;
 pub mod security;
 pub mod sensor;
 pub mod tai;

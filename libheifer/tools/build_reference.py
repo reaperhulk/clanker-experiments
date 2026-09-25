@@ -33,7 +33,7 @@ def main():
     p.add_argument("--jpeg2000", action="store_true")
     p.add_argument("--avc", action="store_true", help="enable the native OpenH264 decoder oracle (scalar, no assembly)")
     p.add_argument("--avc-asm", action="store_true", help="with --avc: OpenH264 with its assembly kernels (performance baseline only)")
-    p.add_argument("--rav1e", action="store_true", help="enable libheif's rav1e AV1 encoder (rav1e C API via cargo-c, no assembly)")
+    p.add_argument("--rav1e", action="store_true", help="enable libheif's rav1e AV1 encoder (rav1e C API via cargo-c, with assembly like the candidate)")
     p.add_argument("--htj2k", action="store_true", help="enable libheif's OpenJPH HTJ2K encoder (scalar)")
     p.add_argument("--vvc", action="store_true", help="enable libheif's vvdec VVC decoder and vvenc VVC encoder (fixture generator)")
     p.add_argument("--x265", action="store_true", help="enable libheif's x265 HEVC encoder (scalar, no assembly; rate/distortion oracle)")
@@ -85,7 +85,10 @@ def main():
             raise SystemExit("Wrong dav1d reference revision")
         run("meson", "setup", *(["--reconfigure"] if (dbuild / "build.ninja").exists() else []), dbuild, decoder,
             "--buildtype=release", f"--prefix={install}", "--libdir=lib", "-Denable_tools=false",
-            "-Denable_tests=false", "-Denable_asm=false", "-Ddefault_library=shared")
+            # With assembly, like the candidate's rav1d: dav1d's assembly and C paths
+            # decode some rav1e 10/12-bit streams differently, and rav1d follows
+            # dav1d on each path.
+            "-Denable_tests=false", "-Denable_asm=true", "-Ddefault_library=shared")
         run("ninja", "-C", dbuild, "-j", a.j)
         run("ninja", "-C", dbuild, "install")
         flags += [f"-DDAV1D_INCLUDE_DIR={install / 'include'}", f"-DDAV1D_LIBRARY={install / 'lib/libdav1d.so'}"]
@@ -154,7 +157,7 @@ def main():
                 subprocess.run(["cargo", "update", "--manifest-path", str(encoder / "Cargo.toml"), "-p",
                                 f"{name}@{next(iter(versions))}", "--precise", next(iter(ours[name]))])
         run("cargo", "cinstall", "--manifest-path", encoder / "Cargo.toml", "--release", "--no-default-features",
-            "--features", "capi,threading", f"--prefix={install}", "--libdir=lib", "--target-dir", build.parent / "rav1e-build")
+            "--features", "asm,capi,threading", f"--prefix={install}", "--libdir=lib", "--target-dir", build.parent / "rav1e-build")
         os.environ["PKG_CONFIG_PATH"] = f"{install / 'lib/pkgconfig'}:{os.environ.get('PKG_CONFIG_PATH', '')}"
         flags += ["-DWITH_RAV1E=ON", "-DWITH_RAV1E_PLUGIN=OFF"]
     if a.x265:

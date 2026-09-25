@@ -30,8 +30,9 @@ LGPL-3.0-or-later. Compatibility work refers to and adapts libheif, Copyright
 Dirk Farin and the libheif contributors. Upstream source and headers retain their
 notices in the test submodule. See COPYING. The default DEFLATE encoder adapts
 zlib 1.3 algorithms under its zlib license (see `licenses/zlib.txt`); the pure Rust
-inflater (zlib-rs) and the AV1 decoder (rav1d, BSD-2-Clause) and encoder (rav1e,
-BSD-2-Clause) are unmodified crates.io packages under their own licenses.
+inflater (zlib-rs) and the AV1 encoder (rav1e, BSD-2-Clause) are unmodified
+crates.io packages under their own licenses; the AV1 decoder retains rav1d's
+BSD-2-Clause notices in `vendor/rav1d`.
 The in-tree VVC decoder (`src/vvc`) translates vvdec 3.2.0 under the Clear BSD
 License (see `licenses/vvdec.txt`).
 
@@ -104,7 +105,7 @@ vendored with a documented monochrome decoding patch, retaining its Apache-2.0 l
 The C API also handles native alpha, rotation/mirroring, YCbCr/RGB conversion,
 8/16-bit RGB packing, image crop/scale, grid, overlay and identity derivations, raw masks, decoding
 warnings, context thread controls and versioned decoding options.
-AV1 uses crates.io rav1d with its assembly features off. Compact
+AV1 uses rav1d with its assembly, vendored only to add a safe Rust API. Compact
 `mini` files are expanded into the image model while media reads retain the
 original source. See [docs/AV1_DEPENDENCIES.md](docs/AV1_DEPENDENCIES.md) for the
 dependency review and [PLAN.md](PLAN.md) for finite validation and open gates.

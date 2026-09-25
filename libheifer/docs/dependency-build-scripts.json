@@ -20,6 +20,9 @@
   "libc@0.2.189": {
     "build.rs": "e47f4a6762799b6e69cefc7acdb3291df828010e4de20609f7378f9c94ea29e6"
   },
+  "libheifer-capi@0.1.0": {
+    "build.rs": "48b2be68764ad92c2fb1b71f1bacc91d81127007ecd049ef690b480e19bfa36b"
+  },
   "libm@0.2.16": {
     "build.rs": "85dfa93693f40e282ecf2d9a3115280d8f508f056063862add9e529b8143b71b",
     "configure.rs": "884fa9c05c600d03450b15651665848e88b09cf602f86c843e55e5e1ee0a4772"
