@@ -301,3 +301,95 @@ fn frame_image(
     }
     Ok(image)
 }
+
+/// `Decoder_VVC::get_coded_image_size_from_config`: the coded size from the
+/// first configuration SPS, if any.
+pub fn config_coded_size(config: &[u8]) -> Result<Option<(u32, u32)>, ContextError> {
+    let arrays = crate::vvc_config::DecoderConfiguration::parse(config)?.arrays;
+    match arrays
+        .iter()
+        .find(|(kind, _)| *kind == 15)
+        .and_then(|(_, units)| units.first())
+        .filter(|s| !s.is_empty())
+    {
+        Some(sps) => sps_coded_size(sps).map(Some),
+        None => Ok(None),
+    }
+}
+
+/// `Box_vvcC::get_headers` as pushed by libheif ahead of a track's first
+/// sample: every configuration NAL with a four-byte length.
+pub fn config_units(config: &[u8]) -> Result<Vec<u8>, ContextError> {
+    let arrays = crate::vvc_config::DecoderConfiguration::parse(config)?.arrays;
+    let mut data = Vec::new();
+    for (_, units) in &arrays {
+        for nal in units {
+            data.extend_from_slice(&[0, 0]);
+            data.extend_from_slice(&(nal.len() as u16).to_be_bytes());
+            data.extend_from_slice(nal);
+        }
+    }
+    Ok(data)
+}
+
+/// libheif's vvdec plugin over one track chunk: `push` queues NAL units
+/// with the sample's user data, and each `decode_next` feeds queued units
+/// to the decoder one at a time until a picture is output (`vvdec_decode`),
+/// or flushes it after the end of input (`vvdec_flush`).
+#[derive(Default)]
+pub struct SequenceDecoder {
+    decoder: super::Decoder,
+    queue: std::collections::VecDeque<(Vec<u8>, u64)>,
+    eof: bool,
+    flushed: bool,
+}
+
+impl SequenceDecoder {
+    /// `vvdec_push_data2`: units before a malformed length stay queued.
+    pub fn push(&mut self, data: &[u8], user_data: u64) -> Result<(), ContextError> {
+        let mut data = data;
+        while !data.is_empty() {
+            if data.len() < 4 {
+                return Err(plugin_error(100, ""));
+            }
+            let size = u32::from_be_bytes([data[0], data[1], data[2], data[3]]) as usize;
+            if data.len() - 4 < size {
+                return Err(plugin_error(100, ""));
+            }
+            self.queue
+                .push_back((data[4..4 + size].to_vec(), user_data));
+            data = &data[4 + size..];
+        }
+        Ok(())
+    }
+
+    /// `vvdec_flush_data`.
+    pub fn flush(&mut self) {
+        self.eof = true;
+    }
+
+    /// `vvdec_decode_next_image2`: `Ok(None)` when no picture is output.
+    pub fn decode_next(
+        &mut self,
+        document: &Document,
+        maximum: u64,
+    ) -> Result<Option<(Image, u64)>, ContextError> {
+        let failed = || plugin_error(0, "vvdec decoding error");
+        loop {
+            if let Some(frame) = self.decoder.pop_output() {
+                let user_data = frame.user_data;
+                return Ok(Some((frame_image(&frame, document, maximum)?, user_data)));
+            }
+            if let Some((nal, user_data)) = self.queue.pop_front() {
+                self.decoder
+                    .push_nal_with(&nal, user_data)
+                    .map_err(|_| failed())?;
+            } else if self.eof && !self.flushed {
+                self.flushed = true;
+                self.decoder.flush().map_err(|_| failed())?;
+            } else {
+                return Ok(None);
+            }
+        }
+    }
+}

@@ -986,6 +986,10 @@ pub fn codec_configuration(
                 result.extend_from_slice(config);
             }
         }
+        #[cfg(feature = "vvc")]
+        5 => {
+            result = crate::vvc::heif::config_units(container.property(id, *b"vvcC")?)?;
+        }
         _ => {}
     }
     Ok(result)

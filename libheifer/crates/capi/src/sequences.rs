@@ -658,7 +658,7 @@ pub unsafe extern "C" fn heif_track_decode_next_image(
     let provider = crate::plugin_decoding::Provider(Arc::downgrade(&track.shared));
     let coded = matches!(
         &t.entry_kind.to_be_bytes(),
-        b"avc1" | b"hvc1" | b"hev1" | b"av01"
+        b"avc1" | b"hvc1" | b"hev1" | b"av01" | b"vvc1"
     );
     let core = libheifer::decoding::DecodeOptions {
         decoder_provider: coded.then_some(&provider as &dyn libheifer::decoding::DecoderProvider),

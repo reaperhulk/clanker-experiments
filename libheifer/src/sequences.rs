@@ -157,6 +157,8 @@ pub struct StatefulTrack {
 enum GroupDecoder {
     #[cfg(feature = "avc")]
     Avc(Box<crate::avc::SequenceDecoder>),
+    #[cfg(feature = "vvc")]
+    Vvc(Box<crate::vvc::heif::SequenceDecoder>),
     Plugin(Box<dyn crate::decoding::SequenceStream>),
 }
 impl Track {
@@ -1129,16 +1131,19 @@ impl Track {
         options: crate::decoding::DecodeOptions,
         ignore_editlist: bool,
     ) -> Result<crate::image::Image> {
-        // libheif drives every track through its decoder plugins. AVC always
-        // does here (the built-in decoder emulates the OpenH264 plugin); other
-        // codecs do once a registered plugin is selected over the built-in one.
+        // libheif drives every track through its decoder plugins. AVC and VVC
+        // always do here (the built-in decoders emulate the OpenH264 and vvdec
+        // plugins); other codecs do once a registered plugin is selected over
+        // the built-in one.
         let format = match &self.entry_kind.to_be_bytes() {
             b"avc1" => 2,
             b"hvc1" | b"hev1" => 1,
             b"av01" => 4,
+            b"vvc1" => 5,
             _ => 0,
         };
         if format == 2
+            || format == 5
             || (format != 0
                 && (self.stateful.is_some()
                     || options.decoder_provider.is_some_and(|p| {
@@ -1332,6 +1337,13 @@ impl Track {
                 .map(|c| crate::avc_config::coded_size(&c))
                 .transpose()?
                 .flatten(),
+            #[cfg(feature = "vvc")]
+            5 => container
+                .property(item.id, *b"vvcC")
+                .ok()
+                .map(crate::vvc::heif::config_coded_size)
+                .transpose()?
+                .flatten(),
             _ => None,
         };
         let mut decoded_idx = 0u64;
@@ -1351,6 +1363,16 @@ impl Track {
                 let frame = match slot.as_mut() {
                     #[cfg(feature = "avc")]
                     Some(GroupDecoder::Avc(decoder)) => {
+                        let document = context_document(context)?;
+                        decoder
+                            .decode_next(&document, limits.max_image_size_pixels)?
+                            .map(|(image, user)| {
+                                decoded_idx = user;
+                                image
+                            })
+                    }
+                    #[cfg(feature = "vvc")]
+                    Some(GroupDecoder::Vvc(decoder)) => {
                         let document = context_document(context)?;
                         decoder
                             .decode_next(&document, limits.max_image_size_pixels)?
@@ -1400,6 +1422,16 @@ impl Track {
                         }
                         decoder.push(data, sample_idx as u64)?
                     }
+                    #[cfg(feature = "vvc")]
+                    Some(GroupDecoder::Vvc(decoder)) => {
+                        if data.is_empty() {
+                            return Err(ContextError::invalid(
+                                0,
+                                "Unspecified: Input with empty data extent.",
+                            ));
+                        }
+                        decoder.push(&data, sample_idx as u64)?
+                    }
                     Some(GroupDecoder::Plugin(stream)) => {
                         stream.push(&data, sample_idx as u64, &options)?
                     }
@@ -1409,6 +1441,8 @@ impl Track {
                 match slot.as_mut() {
                     #[cfg(feature = "avc")]
                     Some(GroupDecoder::Avc(decoder)) => decoder.flush(),
+                    #[cfg(feature = "vvc")]
+                    Some(GroupDecoder::Vvc(decoder)) => decoder.flush(),
                     Some(GroupDecoder::Plugin(stream)) => stream.flush()?,
                     None => {}
                 }
@@ -1474,6 +1508,11 @@ fn select_group(
         *slot = Some(GroupDecoder::Avc(Box::default()));
         return Ok(());
     }
+    #[cfg(feature = "vvc")]
+    if format == 5 {
+        *slot = Some(GroupDecoder::Vvc(Box::default()));
+        return Ok(());
+    }
     Err(ContextError::new(
         4,
         3000,
@@ -1481,7 +1520,7 @@ fn select_group(
     ))
 }
 
-#[cfg(feature = "avc")]
+#[cfg(any(feature = "avc", feature = "vvc"))]
 fn context_document(context: &Context) -> Result<Arc<crate::context::Document>> {
     let mut temporary = Context {
         budget: context.budget.clone(),

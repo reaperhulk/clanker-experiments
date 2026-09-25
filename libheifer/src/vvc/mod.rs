@@ -53,7 +53,7 @@ use dpb::{RefPic, SliceRefs};
 use mv::MotionInfo;
 use pic::Picture;
 use ps::{AlfParam, Aps, ApsData, PicHeader, Pps, SliceHeader, Sps};
-use std::rc::Rc;
+use std::sync::Arc;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Error {
@@ -81,6 +81,8 @@ pub struct Frame {
     pub bit_depth: u32,
     /// Planes as (samples, width, height).
     pub planes: Vec<(Vec<u16>, usize, usize)>,
+    /// The time stamp given with the picture's last slice (vvdec's `cts`).
+    pub user_data: u64,
 }
 
 const NAL_IDR_W_RADL: u32 = 7;
@@ -118,11 +120,12 @@ struct CurPic {
     tlayer: u32,
     id: u64,
     needed_for_output: bool,
+    cts: u64,
 }
 
 /// A decoded picture held for reference or output.
 struct DpbEntry {
-    pic: Rc<RefPic>,
+    pic: Arc<RefPic>,
     mark: u8,
     needed_for_output: bool,
     idr: bool,
@@ -130,6 +133,7 @@ struct DpbEntry {
     non_ref: bool,
     /// Conformance window in luma samples: left, right, top, bottom.
     crop: [u32; 4],
+    cts: u64,
 }
 
 /// A stateful decoder for a sequence of NAL units.
@@ -154,6 +158,7 @@ pub struct Decoder {
     no_output_prior_pics: Option<i32>,
     gdr_recovery_poc: Option<i32>,
     gdr_recovered: bool,
+    nal_cts: u64,
 }
 
 impl Default for Decoder {
@@ -184,11 +189,27 @@ impl Decoder {
             no_output_prior_pics: None,
             gdr_recovery_poc: None,
             gdr_recovered: false,
+            nal_cts: 0,
         }
     }
 
-    /// Decodes one NAL unit (without start code or length prefix).
+    /// `push_nal` with a time stamp that pictures take from their slices.
+    pub fn push_nal_with(&mut self, nal: &[u8], cts: u64) -> Result<(), Error> {
+        self.nal_cts = cts;
+        self.push_nal(nal)
+    }
+
+    /// Decodes one NAL unit (without start code or length prefix). After an
+    /// error the partially decoded picture is dropped.
     pub fn push_nal(&mut self, nal: &[u8]) -> Result<(), Error> {
+        let result = self.decode_nal(nal);
+        if result.is_err() {
+            self.cur = None;
+        }
+        result
+    }
+
+    fn decode_nal(&mut self, nal: &[u8]) -> Result<(), Error> {
         if nal.len() < 2 {
             return Ok(());
         }
@@ -396,6 +417,7 @@ impl Decoder {
         let (refs, slice_refs) = self.construct_ref_lists(&sh, poc, tlayer, &sps)?;
         let inter = self.slice_inter(&sh, &sps, &ph, &slice_refs, refs)?;
         let cur = self.cur.as_mut().ok_or(Error::NoPicture)?;
+        cur.cts = self.nal_cts;
         let slice_idx = cur.slices.len() as u32;
         cur.pic.slice_refs.push(slice_refs);
         let si = ctu::SliceInfo {
@@ -494,13 +516,14 @@ impl Decoder {
             sps.log2_ctu_size,
         );
         self.dpb.push(DpbEntry {
-            pic: Rc::new(pic),
+            pic: Arc::new(pic),
             mark: if lt { LONG_TERM } else { SHORT_TERM },
             needed_for_output: false,
             idr: false,
             tlayer,
             non_ref: false,
             crop: [0; 4],
+            cts: 0,
         });
         if tlayer == 0 {
             self.prev_tid0_poc = poc;
@@ -656,6 +679,7 @@ impl Decoder {
             tlayer,
             id: self.next_id,
             needed_for_output: needed,
+            cts: 0,
         });
         Ok(())
     }
@@ -667,8 +691,8 @@ impl Decoder {
         poc: i32,
         tlayer: u32,
         sps: &Sps,
-    ) -> Result<([Vec<Rc<RefPic>>; 2], SliceRefs), Error> {
-        let mut refs: [Vec<Rc<RefPic>>; 2] = Default::default();
+    ) -> Result<([Vec<Arc<RefPic>>; 2], SliceRefs), Error> {
+        let mut refs: [Vec<Arc<RefPic>>; 2] = Default::default();
         let mut info = SliceRefs {
             slice_type: sh.slice_type,
             poc,
@@ -763,7 +787,7 @@ impl Decoder {
         sps: &Sps,
         ph: &PicHeader,
         info: &SliceRefs,
-        refs: [Vec<Rc<RefPic>>; 2],
+        refs: [Vec<Arc<RefPic>>; 2],
     ) -> Result<ctu::SliceInter, Error> {
         let cur = self.cur.as_ref().ok_or(Error::NoPicture)?;
         let poc = info.poc;
@@ -929,7 +953,7 @@ impl Decoder {
             wrap: cur.pps.wraparound.then_some(cur.pps.wrap_offset),
         };
         self.dpb.push(DpbEntry {
-            pic: Rc::new(refpic),
+            pic: Arc::new(refpic),
             mark: if cur.ph.non_ref {
                 UNREFERENCED
             } else {
@@ -940,6 +964,7 @@ impl Decoder {
             tlayer: cur.tlayer,
             non_ref: cur.ph.non_ref,
             crop,
+            cts: cur.cts,
         });
         let reorder = cur.sps.num_reorder_pics;
         while let Some(f) = self.next_output(false, reorder)? {
@@ -1044,6 +1069,7 @@ fn output_frame(e: &DpbEntry) -> Result<Frame, Error> {
         chroma_format: pic.fmt.chroma,
         bit_depth: pic.bit_depth,
         planes,
+        user_data: e.cts,
     })
 }
 

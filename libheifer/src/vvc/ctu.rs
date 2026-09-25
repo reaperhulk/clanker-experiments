@@ -84,10 +84,10 @@ pub struct Partitioner {
 
 /// A slice's reference pictures and derived inter-prediction state.
 pub struct SliceInter {
-    pub refs: [Vec<std::rc::Rc<super::dpb::RefPic>>; 2],
+    pub refs: [Vec<std::sync::Arc<super::dpb::RefPic>>; 2],
     pub info: super::dpb::SliceRefs,
     /// The collocated picture when temporal MVP is enabled.
-    pub col: Option<std::rc::Rc<super::dpb::RefPic>>,
+    pub col: Option<std::sync::Arc<super::dpb::RefPic>>,
     /// NoBackwardPredFlag (vvdec's `getCheckLDC`).
     pub check_ldc: bool,
     /// Symmetric MVD availability and reference indices.
