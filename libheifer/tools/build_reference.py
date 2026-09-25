@@ -184,7 +184,12 @@ def main():
             "-DLINKED_10BIT=ON", "-DLINKED_12BIT=ON")
         run(cmake, "--build", cbuild, "-j", a.j)
         run(cmake, "--install", cbuild)
-        os.environ["PKG_CONFIG_PATH"] = f"{install / 'lib/pkgconfig'}:{os.environ.get('PKG_CONFIG_PATH', '')}"
+        # Explicit paths, like the other codecs: pkg-config discovery of the
+        # installed x265 is not reliable on every host (the CI runner missed it).
+        library = next(install.rglob("libx265.so"), None)
+        if library is None:
+            raise SystemExit("x265 install has no libx265.so")
+        flags += [f"-DX265_INCLUDE_DIR={install / 'include'}", f"-DX265_LIBRARY={library}"]
     if a.vvc:
         for name, pin, url in (("vvdec", VVDEC, "https://github.com/fraunhoferhhi/vvdec.git"),
                                ("vvenc", VVENC, "https://github.com/fraunhoferhhi/vvenc.git")):
@@ -240,6 +245,9 @@ def main():
                   f"-DJPEG_INCLUDE_DIR={install / 'include'}", f"-DJPEG_LIBRARY_RELEASE={install / 'lib/libjpeg.so'}"]
     run(cmake, "-S", source, "-B", build, "-DCMAKE_BUILD_TYPE=Release", "-DBUILD_TESTING=OFF", "-DBUILD_DOCUMENTATION=OFF", "-DWITH_EXAMPLES=OFF", "-DWITH_GDK_PIXBUF=OFF", f"-DENABLE_PLUGIN_LOADING={'ON' if a.plugins else 'OFF'}", *(["-DPLUGIN_DIRECTORY="] if a.plugins else []), f"-DWITH_LIBDE265={'ON' if a.hevc else 'OFF'}", f"-DWITH_X265={'ON' if a.x265 else 'OFF'}", "-DWITH_X265_PLUGIN=OFF", "-DWITH_X264=OFF", *([] if a.avc else ["-DWITH_OpenH264_DECODER=OFF"]), f"-DWITH_DAV1D={'ON' if a.av1 else 'OFF'}", "-DWITH_DAV1D_PLUGIN=OFF", "-DWITH_AOM_DECODER=OFF", "-DWITH_AOM_ENCODER=OFF", "-DWITH_LIBSHARPYUV=OFF", "-DWITH_UNCOMPRESSED_CODEC=ON", *flags)
     run(cmake, "--build", build, "-j", a.j)
+    # libheif silently drops an encoder CMake cannot find; the x265 oracle must have it.
+    if a.x265 and "libx265" not in subprocess.check_output(["readelf", "-d", str(build / "libheif/libheif.so")], text=True):
+        raise SystemExit("libheif was built without x265")
 
 
 if __name__ == "__main__":
