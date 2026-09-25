@@ -1878,7 +1878,8 @@ total.
 libheif's only VVC decoder is its vvdec plugin. `src/vvc` is an in-tree pure
 Rust decoder written from vvdec 3.2.0 (Clear BSD, `licenses/vvdec.txt`),
 registered as the built-in decoder "libheifer VVC decoder" (id
-`libheifer-vvc`, priority 100 like the plugin). It decodes intra pictures:
+`libheifer-vvc`, priority 100 like the plugin). It decodes intra and inter
+pictures:
 
 - parameter sets with vvdec's checks, CABAC, partitioning with dual and local
   dual trees;
@@ -1888,7 +1889,14 @@ registered as the built-in decoder "libheifer VVC decoder" (id
   BDPCM, LFNST, MTS, JCCR, ACT and scaling lists;
 - LMCS, deblocking with LADF, SAO, ALF and CC-ALF;
 - tiles, rectangular and raster slices, WPP, subpictures and virtual
-  boundaries.
+  boundaries;
+- a DPB with POC derivation, RPL-based marking and vvdec's output, RASL,
+  GDR and missing-reference rules;
+- merge, AMVP, MMVD, SMVD, affine, SbTMVP, GEO, CIIP, HMVP and TMVP motion
+  derivation; interpolation, BCW and weighted prediction, BDOF, DMVR and
+  PROF; SBT and inter MTS; inter deblocking strengths with subblock edges;
+- reference wraparound (vvdec's wrapped border buffers and its `clipMv`/
+  `wrapClipMv` clipping) and references of subpictures treated as pictures.
 
 `src/vvc/heif.rs` reproduces libheif's VVC item path and the plugin:
 
@@ -1902,10 +1910,22 @@ registered as the built-in decoder "libheifer VVC decoder" (id
 `vvc1` handles report chroma format and bit depth from `vvcC`.
 
 The decoder was debugged against vvdec's syntax trace, with vvdec's in-loop
-filters disabled stage by stage in a local tracing build. The first picture
-of every intra JVET conformance stream that vvdec decodes matches it
-bit-exactly (41 of the 44 streams, 4:0:0 to 4:4:4, 8 and 10 bit). The three
-palette streams are rejected, as they are by vvdec.
+filters disabled stage by stage in a local tracing build. Every output
+picture of the 268 JVET conformance streams was compared with vvdec 3.2.0:
+233 streams match bit-exactly in every picture (intra, random access, low
+delay, 4:0:0 to 4:4:4, 8 and 10 bit, wraparound, subpictures, tiles and
+slices). The 21 palette streams and the 10 multi-layer streams are rejected,
+as they are by vvdec. The 4 reference picture resampling streams report
+`Unsupported` after their first pictures.
+
+`vvc1` sequence tracks go through a stateful decoder that follows libheif's
+use of the vvdec plugin: `vvcC` units with sample 0, length-prefixed units
+queued per sample and fed one at a time until a picture is output, a flush
+at the end, and each picture's `cts` taken from its last slice.
+`tools/test_vvc_sequences.py` builds tracks from 22 vvenc streams (random
+access with CRA and IDR periods, low delay, all intra, 10-bit and 4:0:0, two
+sizes) with short, repeating and chunked variants: 88 cases with no
+mismatches against libheif with vvdec, and the same in the codec-free build.
 
 `tools/generate_vvc_fixtures.py` encodes 277 owned single-picture streams with
 the pinned test-only vvenc 1.14.0 (`tests/vvc_fixture_encoder.c`). They cover
@@ -1934,8 +1954,12 @@ rounding one, and both it (92 mismatches) and the LMCS chroma rounding defect
 
 Known differences:
 
-- inter pictures are reported as unsupported; vvdec decodes them;
+- reference picture resampling is reported as unsupported; vvdec decodes it;
+- in tracks whose samples fail to decode, vvdec returns pictures only after a
+  parse delay derived from the host's thread count, so how many pictures come
+  before the error differs from libheif (and between machines for libheif
+  itself); these variants are not compared;
 - malformed-stream behavior (vvdec's exception and recovery paths) has not
   been compared systematically;
-- decoding is scalar: the first 720p picture of ALF_A takes about 0.09 s
-  against 0.033 s for single-threaded vvdec with SIMD.
+- decoding is scalar and single-threaded: the first 720p picture of ALF_A
+  takes about 0.09 s against 0.033 s for single-threaded vvdec with SIMD.
