@@ -226,14 +226,7 @@ pub fn decode(
         let (width, height) = sps_coded_size(sps)?;
         limits.check_image_size(width, height)?;
     }
-    let mut data = Vec::new();
-    for (_, units) in &arrays {
-        for nal in units {
-            data.extend_from_slice(&[0, 0]);
-            data.extend_from_slice(&(nal.len() as u16).to_be_bytes());
-            data.extend_from_slice(nal);
-        }
-    }
+    let mut data = config_units(config)?;
     data.extend_from_slice(&crate::decoding::decoder_payload(document, id)?);
     if data.is_empty() {
         return Err(ContextError::invalid(
