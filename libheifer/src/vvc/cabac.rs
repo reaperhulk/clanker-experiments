@@ -31,6 +31,11 @@ impl Model {
 pub struct Contexts(pub [Model; NUM_CTX]);
 
 impl Contexts {
+    /// Estimated cost of coding `bin` with context `ctx_id`, in 1/32768 bits.
+    pub fn cost(&self, ctx_id: usize, bin: u32) -> u32 {
+        self.0[ctx_id].cost(bin)
+    }
+
     /// `init_type` indexes vvdec's tables: 0 = B, 1 = P, 2 = I.
     pub fn new(init_type: usize, qp: i32) -> Self {
         let qp = qp.clamp(0, 63);
@@ -315,6 +320,24 @@ pub trait BinSink {
         }
         self.eps(value - offset, length);
     }
+}
+
+/// Number of bypass bins `BinSink::rem_abs` writes for a value.
+pub fn rem_abs_bins(value: u32, rice: u32, cutoff: u32, max_log2_range: u32) -> u32 {
+    let max_prefix = 32 - max_log2_range;
+    if (value >> rice) < cutoff {
+        return (value >> rice) + 1 + rice;
+    }
+    let mut prefix = cutoff;
+    while prefix < max_prefix && value >= (((1u32 << (prefix + 1 - cutoff)) + cutoff - 1) << rice) {
+        prefix += 1;
+    }
+    let length = if prefix == max_prefix {
+        max_log2_range
+    } else {
+        rice + prefix - cutoff
+    };
+    prefix + u32::from(prefix < max_prefix) + length
 }
 
 /// Rate estimation over a copy of the context models.

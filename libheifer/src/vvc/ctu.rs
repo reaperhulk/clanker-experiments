@@ -3267,6 +3267,7 @@ pub fn mip_size_id(w: i32, h: i32) -> u32 {
 }
 
 /// vvdec's `CoeffCodingContext`.
+#[derive(Clone)]
 pub struct CoeffCtx {
     pub ch: usize,
     pub width: i32,

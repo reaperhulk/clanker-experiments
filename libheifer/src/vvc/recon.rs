@@ -803,8 +803,8 @@ impl<'p, 's> Ctx<'p, 's> {
         let abs_ang = ANG_TABLE[abs_ang_mode];
         let angle = sign * abs_ang;
         const BASE: usize = 2 * 64 + 3 + 33 * 3 + 256;
-        let mut ref_above = vec![0i32; 2 * BASE];
-        let mut ref_left = vec![0i32; 2 * BASE];
+        let mut ref_above = [0i32; 2 * BASE];
+        let mut ref_left = [0i32; 2 * BASE];
         // Offsets so negative indices are representable.
         let (main_off, side_off);
         let (main_is_above,) = (is_ver,);
@@ -2280,7 +2280,7 @@ fn tr_types(ctx: &Ctx, tu: &Tu, comp: usize) -> (u8, u8) {
     (0, 0)
 }
 
-fn matrix(tr: u8, n: usize) -> &'static [i16] {
+pub(super) fn matrix(tr: u8, n: usize) -> &'static [i16] {
     match (tr, n) {
         (0, 2) => &DCT2_2,
         (0, 4) => &DCT2_4,

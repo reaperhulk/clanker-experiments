@@ -10,7 +10,7 @@
 //! mirrors the parser in [`super::ctu`].
 use super::Error;
 use super::bits::{BitReader, BitWriter, escape};
-use super::cabac::{BinSink, CabacWriter, Contexts, Estimator};
+use super::cabac::{BinSink, CabacWriter, Contexts, Estimator, rem_abs_bins};
 use super::ctu::{CoeffCtx, Partitioner, SliceInfo, SliceInter, Split, intra_mpms};
 use super::ctx;
 use super::pic::*;
@@ -45,6 +45,10 @@ pub struct Picture8<'a> {
 
 /// sps_max_mtt_hierarchy_depth_intra_slice_luma.
 const MAX_MTT_DEPTH: u32 = 2;
+
+/// Ternary splits are tried when the binary split in the same direction
+/// costs at most this factor more than the best choice, per effort.
+const TT_MARGIN: [f64; 3] = [1.0, 1.02, 1.1];
 
 const NAL_SPS: u32 = 15;
 const NAL_PPS: u32 = 16;
@@ -142,7 +146,9 @@ fn write_sps(s: &Settings, width: u32, height: u32) -> Vec<u8> {
     w.uvlc(0); // sps_max_mtt_hierarchy_depth_inter_slice
     w.flag(true); // sps_max_luma_transform_size_64_flag
     w.flag(false); // sps_transform_skip_enabled_flag
-    w.flag(false); // sps_mts_enabled_flag
+    w.flag(true); // sps_mts_enabled_flag
+    w.flag(false); // sps_explicit_mts_intra_enabled_flag: implicit MTS
+    w.flag(false); // sps_explicit_mts_inter_enabled_flag
     w.flag(false); // sps_lfnst_enabled_flag
     if s.chroma != 0 {
         w.flag(false); // sps_joint_cbcr_enabled_flag
@@ -182,7 +188,7 @@ fn write_sps(s: &Settings, width: u32, height: u32) -> Vec<u8> {
     w.flag(false); // sps_mrl_enabled_flag
     w.flag(false); // sps_mip_enabled_flag
     if s.chroma != 0 {
-        w.flag(false); // sps_cclm_enabled_flag
+        w.flag(true); // sps_cclm_enabled_flag
     }
     if s.chroma == 1 {
         w.flag(true); // sps_chroma_horizontal_collocated_flag
@@ -365,6 +371,7 @@ pub fn encode(input: &Picture8, s: &Settings) -> Result<(Vec<Vec<u8>>, Vec<Vec<u
         qp: hd.sh.qp,
         lambda: 0.57 * 2f64.powf(f64::from(hd.sh.qp - 12) / 3.0),
         effort: s.effort,
+        rdoq: true,
     };
     let ctx0 = Contexts::new(2, hd.sh.qp);
     let mut writer = CabacWriter::new(ctx0.clone());
@@ -442,6 +449,7 @@ struct Enc<'a, 's> {
     qp: i32,
     lambda: f64,
     effort: u32,
+    rdoq: bool,
 }
 
 /// State saved to undo a trial encoding of an area.
@@ -518,10 +526,19 @@ impl<'a, 's> Enc<'a, 's> {
             Split::TriH,
             Split::TriV,
         ];
+        let mut costs = [f64::MAX; 5];
         for (k, &split) in splits.iter().enumerate() {
             // Implicit splits at the picture boundary are always considered.
             if !can[k + 1] || (can[0] && !split_ok(pic, &area, split)) {
                 continue;
+            }
+            // Ternary splits only when the binary split in the same
+            // direction came close to the best choice.
+            if can[0] && k >= 3 {
+                let best_cost = best.as_ref().map_or(f64::MAX, |b| b.0);
+                if costs[k - 2] > best_cost * TT_MARGIN[self.effort.min(2) as usize] {
+                    continue;
+                }
             }
             if tried {
                 if current_is_best {
@@ -550,6 +567,7 @@ impl<'a, 's> Enc<'a, 's> {
             part.exit_split(pic);
             tried = true;
             let cost = self.distortion(pic, &area) + self.lambda * e.bits as f64 / 32768.0;
+            costs[k] = cost;
             current_is_best = best.as_ref().is_none_or(|b| cost < b.0);
             if current_is_best {
                 best = Some((cost, nodes, e));
@@ -589,9 +607,19 @@ impl<'a, 's> Enc<'a, 's> {
         let mut d = 0f64;
         for c in 0..pic.fmt.num_comp() {
             let b = clip(area.blk[c], &pic.planes[c]);
-            d += sse(&pic.planes[c], &self.src[c], &b) as f64;
+            d += sse(&pic.planes[c], &self.src[c], &b) as f64 * self.weight(c);
         }
         d
+    }
+
+    /// Distortion weight of a component: VTM's chroma weighting
+    /// 2^((QpY - QpC) / 3).
+    fn weight(&self, comp: usize) -> f64 {
+        if comp == 0 {
+            1.0
+        } else {
+            2f64.powf(f64::from(self.qp - self.comp_qp(comp)) / 3.0)
+        }
     }
 
     /// Codes the partitioner's area as one intra coding unit; returns its
@@ -690,9 +718,36 @@ impl<'a, 's> Enc<'a, 's> {
                     *sc += satd_blk(&pred, &orig, b.w as usize, b.h as usize) as f64;
                 }
             }
+            // Cross-component modes predict from the final luma
+            // reconstruction.
+            self.apply(pic, cu_id, &data)?;
+            let mut modes = modes;
+            let tu = pic.cus[cu_id as usize].first_tu as usize;
+            for lm in [LM_CHROMA, MDLM_L, MDLM_T] {
+                pic.cus[cu_id as usize].intra_dir = [luma, lm];
+                set_coeffs(pic, tu, 0, &Default::default());
+                recon::reconstruct_cu_comps(pic, self.si, cu_id, 6)?;
+                let mut sc = 0f64;
+                for c in 1..3 {
+                    let b = pic.cus[cu_id as usize].blk[c];
+                    let pred: Vec<i32> = read_block(&pic.planes[c], &b)
+                        .iter()
+                        .map(|&v| i32::from(v))
+                        .collect();
+                    let orig = read_block(&self.src[c], &b);
+                    sc += satd_blk(&pred, &orig, b.w as usize, b.h as usize) as f64;
+                }
+                modes.push(lm);
+                scores.push(sc);
+            }
             let mut cbest: Option<(f64, u8)> = None;
             for (&cm, &sc) in modes.iter().zip(&scores) {
-                let bits = if cm == DM_CHROMA { 1.0 } else { 3.0 };
+                let bits = match cm {
+                    DM_CHROMA => 2.0,
+                    LM_CHROMA => 2.0,
+                    MDLM_L | MDLM_T => 3.0,
+                    _ => 4.0,
+                };
                 let v = sc + sad_lambda * bits;
                 if cbest.is_none_or(|b| v < b.0) {
                     cbest = Some((v, cm));
@@ -749,13 +804,31 @@ impl<'a, 's> Enc<'a, 's> {
                 .map(|(&o, &p)| i32::from(o) - i32::from(p))
                 .collect();
             let qp = self.comp_qp(c);
-            let levels = quantize(
-                &forward(&res, b.w as usize, b.h as usize, 8),
-                b.w,
-                b.h,
-                qp,
-                8,
-            );
+            let tr = if c == 0 {
+                implicit_mts(b.w, b.h)
+            } else {
+                (0, 0)
+            };
+            let tc = forward(&res, b.w as usize, b.h as usize, 8, tr);
+            let levels = if self.rdoq {
+                let signs = tc.iter().map(|&v| v < 0);
+                rdoq(
+                    &tc,
+                    b.w,
+                    b.h,
+                    c,
+                    &pic.cus[cu_id as usize],
+                    &est.ctx,
+                    qp,
+                    self.lambda / self.weight(c),
+                )
+                .into_iter()
+                .zip(signs)
+                .map(|(l, neg)| if neg { -l } else { l })
+                .collect()
+            } else {
+                quantize(&tc, b.w, b.h, qp, 8)
+            };
             if levels.iter().any(|&v| v != 0) {
                 cbf |= 1 << c;
                 coeff[c] = levels;
@@ -869,83 +942,93 @@ fn sse(a: &Plane, b: &Plane, r: &Area) -> u64 {
 /// Sum of absolute Hadamard-transformed differences between a prediction
 /// and a block, over 4x4 blocks (8x8 where the block allows).
 fn satd_blk(pred: &[i32], orig: &[i16], w: usize, h: usize) -> u64 {
-    let n = if w % 8 == 0 && h % 8 == 0 { 8 } else { 4 };
     let mut total = 0u64;
-    let mut blk = [0i32; 64];
-    for by in (0..h).step_by(n) {
-        for bx in (0..w).step_by(n) {
-            for y in 0..n {
-                for x in 0..n {
-                    let i = (by + y) * w + bx + x;
-                    blk[y * n + x] = pred[i] - i32::from(orig[i]);
+    if w.is_multiple_of(8) && h.is_multiple_of(8) {
+        let mut d = [[0i32; 8]; 8];
+        for by in (0..h).step_by(8) {
+            for bx in (0..w).step_by(8) {
+                for (y, row) in d.iter_mut().enumerate() {
+                    let i = (by + y) * w + bx;
+                    let (p, o) = (&pred[i..i + 8], &orig[i..i + 8]);
+                    for x in 0..8 {
+                        row[x] = p[x] - i32::from(o[x]);
+                    }
+                    hadamard8(row);
                 }
+                let mut s = 0u64;
+                for x in 0..8 {
+                    let mut col = [
+                        d[0][x], d[1][x], d[2][x], d[3][x], d[4][x], d[5][x], d[6][x], d[7][x],
+                    ];
+                    hadamard8(&mut col);
+                    s += col.iter().map(|v| u64::from(v.unsigned_abs())).sum::<u64>();
+                }
+                total += (s + 2) >> 2;
             }
-            hadamard(&mut blk, n);
-            let s: u64 = blk[..n * n]
-                .iter()
-                .map(|v| u64::from(v.unsigned_abs()))
-                .sum();
-            total += if n == 8 { (s + 2) >> 2 } else { (s + 1) >> 1 };
+        }
+    } else {
+        let mut d = [[0i32; 4]; 4];
+        for by in (0..h).step_by(4) {
+            for bx in (0..w).step_by(4) {
+                for (y, row) in d.iter_mut().enumerate() {
+                    let i = (by + y) * w + bx;
+                    for x in 0..4 {
+                        row[x] = pred[i + x] - i32::from(orig[i + x]);
+                    }
+                    hadamard4(row);
+                }
+                let mut s = 0u64;
+                for x in 0..4 {
+                    let mut col = [d[0][x], d[1][x], d[2][x], d[3][x]];
+                    hadamard4(&mut col);
+                    s += col.iter().map(|v| u64::from(v.unsigned_abs())).sum::<u64>();
+                }
+                total += (s + 1) >> 1;
+            }
         }
     }
     total
 }
 
-fn hadamard(b: &mut [i32; 64], n: usize) {
-    for pass in 0..2 {
-        for i in 0..n {
-            let mut v = [0i32; 8];
-            for (k, vk) in v.iter_mut().take(n).enumerate() {
-                *vk = if pass == 0 {
-                    b[i * n + k]
-                } else {
-                    b[k * n + i]
-                };
-            }
-            let mut len = 1;
-            while len < n {
-                for s in (0..n).step_by(2 * len) {
-                    for k in s..s + len {
-                        let (x, y) = (v[k], v[k + len]);
-                        v[k] = x + y;
-                        v[k + len] = x - y;
-                    }
-                }
-                len <<= 1;
-            }
-            for (k, &vk) in v.iter().take(n).enumerate() {
-                if pass == 0 {
-                    b[i * n + k] = vk;
-                } else {
-                    b[k * n + i] = vk;
-                }
-            }
-        }
+#[inline(always)]
+fn hadamard4(v: &mut [i32; 4]) {
+    let (a, b, c, d) = (v[0] + v[1], v[0] - v[1], v[2] + v[3], v[2] - v[3]);
+    *v = [a + c, b + d, a - c, b - d];
+}
+
+#[inline(always)]
+fn hadamard8(v: &mut [i32; 8]) {
+    let mut t = [0i32; 8];
+    for k in 0..4 {
+        t[k] = v[2 * k] + v[2 * k + 1];
+        t[k + 4] = v[2 * k] - v[2 * k + 1];
+    }
+    let mut u = [0i32; 8];
+    for k in 0..2 {
+        u[k] = t[2 * k] + t[2 * k + 1];
+        u[k + 2] = t[2 * k] - t[2 * k + 1];
+        u[k + 4] = t[4 + 2 * k] + t[4 + 2 * k + 1];
+        u[k + 6] = t[4 + 2 * k] - t[4 + 2 * k + 1];
+    }
+    for k in 0..4 {
+        v[k] = u[2 * k] + u[2 * k + 1];
+        v[k + 4] = u[2 * k] - u[2 * k + 1];
     }
 }
 
-fn dct2(n: usize) -> &'static [i16] {
-    match n {
-        2 => &DCT2_2,
-        4 => &DCT2_4,
-        8 => &DCT2_8,
-        16 => &DCT2_16,
-        32 => &DCT2_32,
-        _ => &DCT2_64,
-    }
-}
 
 fn log2(v: usize) -> i32 {
     (usize::BITS - 1 - v.leading_zeros()) as i32
 }
 
-/// Forward DCT-II (VTM's `fastForwardDCT2` precision), zeroing the
-/// frequencies above 32 as 64-point transforms require.
-fn forward(res: &[i32], w: usize, h: usize, bd: i32) -> Vec<i32> {
+/// Forward transform (VTM's partial butterflies' precision) with the
+/// horizontal and vertical types of `recon::matrix` (0 DCT-II, 2 DST-VII),
+/// zeroing the frequencies above 32 as 64-point transforms require.
+fn forward(res: &[i32], w: usize, h: usize, bd: i32, tr: (u8, u8)) -> Vec<i32> {
     let s1 = log2(w) + bd - 9;
     let s2 = log2(h) + 6;
-    let mh = dct2(w);
-    let mv = dct2(h);
+    let mh = recon::matrix(tr.0, w);
+    let mv = recon::matrix(tr.1, h);
     let (kw, kh) = (w.min(32), h.min(32));
     let mut tmp = vec![0i32; kw * h];
     for y in 0..h {
@@ -974,6 +1057,13 @@ fn forward(res: &[i32], w: usize, h: usize, bd: i32) -> Vec<i32> {
     out
 }
 
+/// Implicit MTS transform types of an intra luma block (`tr_types`): DST-VII
+/// for dimensions of 4 to 16.
+fn implicit_mts(w: i32, h: i32) -> (u8, u8) {
+    let t = |n: i32| if (4..=16).contains(&n) { 2 } else { 0 };
+    (t(w), t(h))
+}
+
 const QUANT_SCALES: [[i64; 6]; 2] = [
     [26214, 23302, 20560, 18396, 16384, 14564],
     [18396, 16384, 14564, 13107, 11651, 10280],
@@ -996,6 +1086,242 @@ fn quantize(coeff: &[i32], w: i32, h: i32, qp: i32, bd: i32) -> Vec<i32> {
             if c < 0 { -a } else { a }
         })
         .collect()
+}
+
+/// Quantizer step and distortion scale of a transform block.
+struct QuantParams {
+    scale: i64,
+    qbits: i32,
+    /// Squared quantizer step in pixel-domain units: the SSE of one level of
+    /// error.
+    step2: f64,
+}
+
+fn quant_params(w: i32, h: i32, qp: i32, bd: i32) -> QuantParams {
+    let (lw, lh) = (log2(w as usize), log2(h as usize));
+    let sqrt_adj = (lw + lh) & 1 == 1;
+    let tshift = 15 - bd - ((lw + lh) >> 1) - i32::from(sqrt_adj);
+    let (per, rem) = (qp / 6, qp % 6);
+    let qbits = 14 + per + tshift;
+    let scale = QUANT_SCALES[usize::from(sqrt_adj)][rem as usize];
+    // Coefficients carry a gain of 2^(15 - bd - (lw + lh) / 2).
+    let gain = f64::from(15 - bd) - f64::from(lw + lh) / 2.0;
+    let step = 2f64.powi(qbits) / scale as f64;
+    QuantParams {
+        scale,
+        qbits,
+        step2: step * step / 2f64.powf(2.0 * gain),
+    }
+}
+
+/// Rate-distortion optimized quantization: greedy level decisions in coding
+/// order with context-accurate rate estimates, coded-subblock decisions and
+/// a final choice of the last position (or no coefficients) by exact rate.
+#[allow(clippy::too_many_arguments)]
+fn rdoq(
+    coeff: &[i32],
+    w: i32,
+    h: i32,
+    comp: usize,
+    cu: &Cu,
+    ctx: &Contexts,
+    qp: i32,
+    lambda: f64,
+) -> Vec<i32> {
+    let q = quant_params(w, h, qp, 8);
+    let n = (w * h) as usize;
+    let div = 2f64.powi(q.qbits);
+    let lf: Vec<f64> = coeff
+        .iter()
+        .enumerate()
+        .map(|(i, &c)| {
+            if (i as i32 % w) >= 32 || (i as i32 / w) >= 32 {
+                0.0
+            } else {
+                (i64::from(c).abs() * q.scale) as f64 / div
+            }
+        })
+        .collect();
+    let l0: Vec<i32> = lf.iter().map(|&v| ((v + 0.5) as i32).min(32767)).collect();
+    let dist = |i: usize, l: i32| -> f64 {
+        let e = lf[i] - f64::from(l);
+        e * e * q.step2
+    };
+    let ch = usize::from(comp != 0);
+    let mut cc = CoeffCtx::new(w, h, ch, false, comp == 0, cu, MTS_DCT2, false, false);
+    let n_real = (w.min(32) * h.min(32)) as usize;
+    let Some(last) = (0..n_real).rev().find(|&p| l0[cc.scan[p] as usize] != 0) else {
+        return vec![0; n];
+    };
+    cc.scan_pos_last = last;
+    let bits = |b: u32| f64::from(b) / 32768.0;
+    let mut levels = vec![0i32; n];
+    let mut work = vec![0i32; n];
+    let mut sub_set = (last >> cc.log2_cg_size) as i32;
+    while sub_set >= 0 {
+        cc.init_subblock(sub_set as usize);
+        let before = (cc.clone(), work.clone());
+        let min_sub = cc.min_sub_pos as i32;
+        let is_last = cc.is_last();
+        let first_sig = if is_last {
+            cc.scan_pos_last as i32
+        } else {
+            cc.max_sub_pos as i32
+        };
+        let group_inferred = is_last || min_sub == 0;
+        cc.set_sig_group();
+        let infer_sig = if first_sig != cc.scan_pos_last as i32 {
+            if cc.sub_set != 0 { min_sub } else { -1 }
+        } else {
+            first_sig
+        };
+        let mut rem_bins = cc.reg_bin_limit;
+        let mut num_nz = 0;
+        let mut coded_cost = 0f64;
+        let mut zero_dist = 0f64;
+        let mut gt2: Vec<usize> = Vec::new();
+        let mut next = first_sig;
+        while next >= min_sub && rem_bins >= 4 {
+            let blk = cc.scan[next as usize] as usize;
+            let big = l0[blk];
+            let forced = next == last as i32 || (num_nz == 0 && next == infer_sig);
+            let inferred = num_nz == 0 && next == infer_sig;
+            let sig_id = (!inferred).then(|| cc.sig_ctx(blk, 0));
+            let off = cc.ctx_offset_abs();
+            let rice = GO_RICE_PARS[cc.template_abs_sum(blk, &work, 4) as usize];
+            let mut cands = vec![big, big - 1, if big <= 2 { 0 } else { big }];
+            if forced {
+                cands.iter_mut().for_each(|l| *l = (*l).max(1));
+            }
+            cands.retain(|&l| l >= 0);
+            cands.sort_unstable();
+            cands.dedup();
+            let mut best = (f64::MAX, 0);
+            for &l in &cands {
+                let mut r = sig_id.map_or(0, |id| ctx.cost(id, u32::from(l > 0)));
+                if l > 0 {
+                    r += 32768 + ctx.cost(cc.gtx1_ctx(off), u32::from(l > 1));
+                    if l > 1 {
+                        r += ctx.cost(cc.par_ctx(off), ((l - 2) & 1) as u32)
+                            + ctx.cost(cc.gtx2_ctx(off), u32::from(l > 3));
+                        if l > 3 {
+                            let rem = ((l - 4 - ((l - 2) & 1)) >> 1) as u32;
+                            r += 32768 * rem_abs_bins(rem, rice, 5, cc.max_log2_range);
+                        }
+                    }
+                }
+                let cost = dist(blk, l) + lambda * bits(r);
+                if cost < best.0 {
+                    best = (cost, l);
+                }
+            }
+            let l = best.1;
+            coded_cost += best.0;
+            zero_dist += dist(blk, 0);
+            levels[blk] = l;
+            rem_bins -= i32::from(!inferred);
+            if l > 0 {
+                num_nz += 1;
+                rem_bins -= 1;
+                let first = if l > 1 {
+                    rem_bins -= 2;
+                    if l > 3 {
+                        gt2.push(blk);
+                    }
+                    2 + ((l - 2) & 1) + 2 * i32::from(l > 3)
+                } else {
+                    1
+                };
+                cc.abs_val_1st_pass(blk, &mut work, first);
+            }
+            next -= 1;
+        }
+        cc.reg_bin_limit = rem_bins;
+        for &p in &gt2 {
+            work[p] = levels[p];
+        }
+        while next >= min_sub {
+            let blk = cc.scan[next as usize] as usize;
+            let big = l0[blk];
+            let forced = next == last as i32 || (num_nz == 0 && next == infer_sig);
+            let rice = GO_RICE_PARS[cc.template_abs_sum(blk, &work, 0) as usize];
+            let pos0 = 1u32 << rice;
+            let mut cands = vec![big, big - 1, 0];
+            if forced {
+                cands.iter_mut().for_each(|l| *l = (*l).max(1));
+            }
+            cands.retain(|&l| l >= 0);
+            let mut best = (f64::MAX, 0);
+            for &l in &cands {
+                let tc = l as u32;
+                let code = if tc == 0 {
+                    pos0
+                } else if tc <= pos0 {
+                    tc - 1
+                } else {
+                    tc
+                };
+                let r = 32768 * (rem_abs_bins(code, rice, 5, cc.max_log2_range) + u32::from(l > 0));
+                let cost = dist(blk, l) + lambda * bits(r);
+                if cost < best.0 {
+                    best = (cost, l);
+                }
+            }
+            let l = best.1;
+            coded_cost += best.0;
+            zero_dist += dist(blk, 0);
+            levels[blk] = l;
+            if l > 0 {
+                num_nz += 1;
+                work[blk] = l;
+            }
+            next -= 1;
+        }
+        if !group_inferred {
+            let coded = coded_cost + lambda * bits(ctx.cost(cc.sig_group_ctx, 1));
+            let zero = zero_dist + lambda * bits(ctx.cost(cc.sig_group_ctx, 0));
+            if num_nz == 0 || zero < coded {
+                (cc, work) = before;
+                for p in min_sub..=first_sig {
+                    levels[cc.scan[p as usize] as usize] = 0;
+                }
+            }
+        }
+        sub_set -= 1;
+    }
+    // The last position: truncations at the highest non-zero positions, or
+    // no coefficients, by exact rate.
+    let cbf_ctx = [ctx::QT_CBF0, ctx::QT_CBF1, ctx::QT_CBF2][comp];
+    let nz: Vec<usize> = (0..n_real)
+        .rev()
+        .filter(|&p| levels[cc.scan[p] as usize] != 0)
+        .take(4)
+        .collect();
+    let base_dist: f64 = (0..n).map(|i| dist(i, levels[i])).sum();
+    let mut best = (
+        (0..n).map(|i| dist(i, 0)).sum::<f64>() + lambda * bits(ctx.cost(cbf_ctx, 0)),
+        None,
+    );
+    let mut extra = 0f64;
+    for (k, &p) in nz.iter().enumerate() {
+        if k > 0 {
+            let b = cc.scan[nz[k - 1]] as usize;
+            extra += dist(b, 0) - dist(b, levels[b]);
+        }
+        let mut t = levels.clone();
+        for &sp in &nz[..k] {
+            t[cc.scan[sp] as usize] = 0;
+        }
+        let _ = p;
+        let mut e = Estimator::new(ctx.clone());
+        e.bin(cbf_ctx, 1);
+        write_residual(&mut e, &t, w, h, comp, cu);
+        let cost = base_dist + extra + lambda * bits(e.bits as u32);
+        if cost < best.0 {
+            best = (cost, Some(t));
+        }
+    }
+    best.1.unwrap_or_else(|| vec![0; n])
 }
 
 fn set_coeffs(pic: &mut Picture, tu: usize, cbf: u8, coeff: &[Vec<i32>; 3]) {
@@ -1219,7 +1545,15 @@ fn write_cu<S: BinSink>(s: &mut S, pic: &Picture, si: &SliceInfo, cu_id: u32, d:
     // intra_chroma_pred_mode
     if pic.fmt.chroma != 0 {
         let cm = cu.intra_dir[1];
-        if cm == DM_CHROMA {
+        // cclm_mode_flag and cclm_mode_idx (the tree is never dual).
+        let lm = [LM_CHROMA, MDLM_L, MDLM_T].iter().position(|&m| m == cm);
+        s.bin(ctx::CCLM_MODE_FLAG, u32::from(lm.is_some()));
+        if let Some(sym) = lm {
+            s.bin(ctx::CCLM_MODE_IDX, u32::from(sym != 0));
+            if sym != 0 {
+                s.ep(sym as u32 - 1);
+            }
+        } else if cm == DM_CHROMA {
             s.bin(ctx::I_PRED_MODE1, 0);
         } else {
             s.bin(ctx::I_PRED_MODE1, 1);
