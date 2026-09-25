@@ -149,7 +149,7 @@ fn write_sps(s: &Settings, width: u32, height: u32) -> Vec<u8> {
     w.flag(true); // sps_mts_enabled_flag
     w.flag(false); // sps_explicit_mts_intra_enabled_flag: implicit MTS
     w.flag(false); // sps_explicit_mts_inter_enabled_flag
-    w.flag(false); // sps_lfnst_enabled_flag
+    w.flag(true); // sps_lfnst_enabled_flag
     if s.chroma != 0 {
         w.flag(false); // sps_joint_cbcr_enabled_flag
         w.flag(true); // sps_same_qp_table_for_chroma_flag
@@ -436,9 +436,10 @@ enum Node {
     Leaf(Box<CuData>),
 }
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 struct CuData {
     intra_dir: [u8; 2],
+    lfnst: u8,
     cbf: u8,
     coeff: [Vec<i32>; 3],
 }
@@ -598,6 +599,7 @@ impl<'a, 's> Enc<'a, 's> {
     /// reconstructs it.
     fn apply(&self, pic: &mut Picture, cu_id: u32, d: &CuData) -> Result<(), Error> {
         pic.cus[cu_id as usize].intra_dir = d.intra_dir;
+        pic.cus[cu_id as usize].lfnst = d.lfnst;
         let tu = pic.cus[cu_id as usize].first_tu as usize;
         set_coeffs(pic, tu, d.cbf, &d.coeff);
         recon::reconstruct_cu(pic, self.si, cu_id)
@@ -689,8 +691,7 @@ impl<'a, 's> Enc<'a, 's> {
         for &m in &cands {
             let mut d = CuData {
                 intra_dir: [m, DM_CHROMA],
-                cbf: 0,
-                coeff: Default::default(),
+                ..Default::default()
             };
             let (cost, e) = self.rd_cu(pic, cu_id, &mut d, est, fmt.chroma != 0)?;
             if best.as_ref().is_none_or(|b| cost < b.0) {
@@ -757,8 +758,7 @@ impl<'a, 's> Enc<'a, 's> {
             if cm != DM_CHROMA {
                 let mut d = CuData {
                     intra_dir: [luma, cm],
-                    cbf: 0,
-                    coeff: Default::default(),
+                    ..Default::default()
                 };
                 let (c2, e2) = self.rd_cu(pic, cu_id, &mut d, est, true)?;
                 if c2 < cost {
@@ -766,6 +766,20 @@ impl<'a, 's> Enc<'a, 's> {
                     data = d;
                     e = e2;
                 }
+            }
+        }
+        // LFNST with the chosen modes.
+        for lfnst in 1..=2 {
+            let mut d = CuData {
+                intra_dir: data.intra_dir,
+                lfnst,
+                ..Default::default()
+            };
+            let (c2, e2) = self.rd_cu(pic, cu_id, &mut d, est, true)?;
+            if c2 < cost {
+                cost = c2;
+                data = d;
+                e = e2;
             }
         }
         self.apply(pic, cu_id, &data)?;
@@ -786,6 +800,7 @@ impl<'a, 's> Enc<'a, 's> {
     ) -> Result<(f64, Estimator), Error> {
         let tu = pic.cus[cu_id as usize].first_tu as usize;
         pic.cus[cu_id as usize].intra_dir = d.intra_dir;
+        pic.cus[cu_id as usize].lfnst = d.lfnst;
         set_coeffs(pic, tu, 0, &Default::default());
         recon::reconstruct_cu(pic, self.si, cu_id)?;
         let blk = pic.tus[tu].blk;
@@ -804,12 +819,18 @@ impl<'a, 's> Enc<'a, 's> {
                 .map(|(&o, &p)| i32::from(o) - i32::from(p))
                 .collect();
             let qp = self.comp_qp(c);
-            let tr = if c == 0 {
+            let tr = if c == 0 && d.lfnst == 0 {
                 implicit_mts(b.w, b.h)
             } else {
                 (0, 0)
             };
-            let tc = forward(&res, b.w as usize, b.h as usize, 8, tr);
+            let mut tc = forward(&res, b.w as usize, b.h as usize, 8, tr);
+            if c == 0 && d.lfnst != 0 {
+                if b.w < 4 || b.h < 4 {
+                    return Ok((f64::MAX, est.clone()));
+                }
+                fwd_lfnst(&mut tc, b.w, b.h, d.intra_dir[0], d.lfnst);
+            }
             let levels = if self.rdoq {
                 let signs = tc.iter().map(|&v| v < 0);
                 rdoq(
@@ -836,6 +857,11 @@ impl<'a, 's> Enc<'a, 's> {
         }
         d.cbf = cbf;
         d.coeff = coeff;
+        // A chosen LFNST index must be signalled, which needs coefficients
+        // within its region.
+        if d.lfnst != 0 && !lfnst_signalled(pic, cu_id, d) {
+            return Ok((f64::MAX, est.clone()));
+        }
         set_coeffs(pic, tu, cbf, &d.coeff);
         recon::reconstruct_cu(pic, self.si, cu_id)?;
         let mut e = est.clone();
@@ -1015,7 +1041,6 @@ fn hadamard8(v: &mut [i32; 8]) {
         v[k + 4] = u[2 * k] - u[2 * k + 1];
     }
 }
-
 
 fn log2(v: usize) -> i32 {
     (usize::BITS - 1 - v.leading_zeros()) as i32
@@ -1583,6 +1608,130 @@ fn write_cu<S: BinSink>(s: &mut S, pic: &Picture, si: &SliceInfo, cu_id: u32, d:
         if cbf(comp) {
             write_residual(s, &d.coeff[comp], tu.blk[comp].w, tu.blk[comp].h, comp, cu);
         }
+    }
+    // lfnst_idx
+    if lfnst_signalled(pic, cu_id, d) {
+        s.bin(ctx::LFNST_IDX, u32::from(d.lfnst != 0));
+        if d.lfnst != 0 {
+            s.bin(ctx::LFNST_IDX + 2, u32::from(d.lfnst == 2));
+        }
+    }
+}
+
+/// Whether lfnst_idx is coded for a single-tree intra coding unit with
+/// these coefficients (`residual_lfnst_mode`): no block's last significant
+/// scan position beyond the LFNST region, and one beyond DC.
+fn lfnst_signalled(pic: &Picture, cu_id: u32, d: &CuData) -> bool {
+    let tu = &pic.tus[pic.cus[cu_id as usize].first_tu as usize];
+    let mut violates = false;
+    let mut last_pos = false;
+    for comp in 0..pic.fmt.num_comp() {
+        let b = tu.blk[comp];
+        if d.cbf >> comp & 1 == 0 || b.w < 4 || b.h < 4 {
+            continue;
+        }
+        let scan = super::ctu::grouped_scan_cached(b.w, b.h);
+        let n = (b.w.min(32) * b.h.min(32)) as usize;
+        let last = (0..n)
+            .rev()
+            .find(|&p| d.coeff[comp][scan[p] as usize] != 0)
+            .unwrap_or(0);
+        let max = if (b.w == 4 && b.h == 4) || (b.w == 8 && b.h == 8) {
+            7
+        } else {
+            15
+        };
+        violates |= last > max;
+        last_pos |= last >= 1;
+    }
+    !violates && last_pos
+}
+
+/// Forward LFNST of a luma block's primary DCT-II coefficients (the
+/// transpose of `recon::inv_lfnst`): the top-left region becomes 8 or 16
+/// coefficients in the first scan positions; the rest are zero.
+fn fwd_lfnst(coeff: &mut [i32], w: i32, h: i32, mode: u8, lfnst: u8) {
+    let whge3 = w >= 8 && h >= 8;
+    let scan: Vec<u16> = if whge3 {
+        super::ps::diag_scan(4, 4)
+            .iter()
+            .map(|&p| ((p as i32 / 4) * w + p as i32 % 4) as u16)
+            .collect()
+    } else {
+        super::ctu::grouped_scan_cached(w, h)
+    };
+    let mut mode = i32::from(mode);
+    if mode >= 2 {
+        const SHIFT: [i32; 6] = [0, 6, 10, 12, 14, 15];
+        let delta = (log2(w as usize) - log2(h as usize)).unsigned_abs() as usize;
+        if w > h && mode < 2 + SHIFT[delta] {
+            mode += VDIA as i32 - 1;
+        } else if h > w && mode > VDIA as i32 - SHIFT[delta] {
+            mode -= VDIA as i32 + 1;
+        }
+    }
+    let intra_mode = if mode < 0 {
+        (mode + 14 + 67) as usize
+    } else if mode >= 67 {
+        (mode + 14) as usize
+    } else {
+        mode as usize
+    };
+    let transpose = intra_mode >= 67 + 14 || (intra_mode < 67 && intra_mode > DIA as usize);
+    let sb = if whge3 { 8 } else { 4 };
+    let small = (w == 4 && h == 4) || (w == 8 && h == 8);
+    let zero_out = if small { 8 } else { 16 };
+    let set = LFNST_LUT[intra_mode] as usize;
+    let idx = usize::from(lfnst - 1);
+    let tr_size = if sb > 4 { 48 } else { 16 };
+    let wu = w as usize;
+    // The region in the inverse transform's output order.
+    let mut x = vec![0i32; tr_size];
+    if transpose {
+        if sb == 4 {
+            for y in 0..4 {
+                for k in 0..4 {
+                    x[y + 4 * k] = coeff[y * wu + k];
+                }
+            }
+        } else {
+            for y in 0..8 {
+                for k in 0..4 {
+                    x[y + 8 * k] = coeff[y * wu + k];
+                }
+                if y < 4 {
+                    for k in 0..4 {
+                        x[y + 32 + 4 * k] = coeff[y * wu + 4 + k];
+                    }
+                }
+            }
+        }
+    } else {
+        let mut k = 0;
+        for y in 0..sb {
+            let s = if y < 4 { sb } else { 4 };
+            for xx in 0..s {
+                x[k] = coeff[y * wu + xx];
+                k += 1;
+            }
+        }
+    }
+    let mut out = [0i32; 16];
+    for (i, o) in out.iter_mut().enumerate().take(zero_out) {
+        let mut acc = 0i64;
+        for (j, &v) in x.iter().enumerate() {
+            let m = if sb > 4 {
+                LFNST_8X8[((set * 2 + idx) * 48 + j) * 16 + i]
+            } else {
+                LFNST_4X4[((set * 2 + idx) * 16 + j) * 16 + i]
+            };
+            acc += i64::from(v) * i64::from(m);
+        }
+        *o = ((acc + 64) >> 7) as i32;
+    }
+    coeff.fill(0);
+    for i in 0..zero_out {
+        coeff[scan[i] as usize] = out[i];
     }
 }
 
