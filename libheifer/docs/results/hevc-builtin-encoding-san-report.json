@@ -6,7 +6,6 @@
   "files": 148,
   "known_differences": {
     "hpvca-monochrome-profile": 9,
-    "hevc-rext-decoding": 24,
     "x265-open-failure": 2,
     "x265-option": 2,
     "shared-hvcC": 1
@@ -48,49 +47,9 @@
       "kind": "hpvca-monochrome-profile"
     },
     {
-      "case": "16385-40-36-2-0-12-1-8",
-      "line": 57,
-      "kind": "hevc-rext-decoding"
-    },
-    {
-      "case": "2049-40-36-2-0-12-1-8",
-      "line": 59,
-      "kind": "hevc-rext-decoding"
-    },
-    {
-      "case": "32769-40-36-2-0-12-1-8",
-      "line": 61,
-      "kind": "hevc-rext-decoding"
-    },
-    {
-      "case": "18433-40-36-2-0-12-1-8",
-      "line": 63,
-      "kind": "hevc-rext-decoding"
-    },
-    {
       "case": "1-40-36-2-0-8-1-8",
       "line": 69,
       "kind": "hpvca-monochrome-profile"
-    },
-    {
-      "case": "1-40-36-0-1-12-1-8",
-      "line": 80,
-      "kind": "hevc-rext-decoding"
-    },
-    {
-      "case": "1-40-36-2-0-12-1-8",
-      "line": 81,
-      "kind": "hevc-rext-decoding"
-    },
-    {
-      "case": "1-40-36-0-3-12-1-8",
-      "line": 82,
-      "kind": "hevc-rext-decoding"
-    },
-    {
-      "case": "1-40-36-0-2-12-1-8",
-      "line": 83,
-      "kind": "hevc-rext-decoding"
     },
     {
       "case": "993198081-33-29-0-3-10-1-8",
@@ -113,26 +72,6 @@
       "kind": "x265-option"
     },
     {
-      "case": "1224736769-70-50-0-1-8-1-8",
-      "line": 118,
-      "kind": "hevc-rext-decoding"
-    },
-    {
-      "case": "1228079105-33-29-0-3-10-1-8",
-      "line": 119,
-      "kind": "hevc-rext-decoding"
-    },
-    {
-      "case": "520093697-70-50-0-1-8-1-8",
-      "line": 130,
-      "kind": "hevc-rext-decoding"
-    },
-    {
-      "case": "523436033-33-29-0-3-10-1-8",
-      "line": 131,
-      "kind": "hevc-rext-decoding"
-    },
-    {
       "case": "1-48-36-2-0-8-1-520",
       "line": 158,
       "kind": "hpvca-monochrome-profile"
@@ -141,73 +80,13 @@
       "case": "513-64-40-0-1-8-16-8",
       "line": 163,
       "kind": "shared-hvcC"
-    },
-    {
-      "case": "16385-40-36-2-0-12-1-8",
-      "file": 57,
-      "kind": "hevc-rext-decoding"
-    },
-    {
-      "case": "2049-40-36-2-0-12-1-8",
-      "file": 59,
-      "kind": "hevc-rext-decoding"
-    },
-    {
-      "case": "32769-40-36-2-0-12-1-8",
-      "file": 61,
-      "kind": "hevc-rext-decoding"
-    },
-    {
-      "case": "18433-40-36-2-0-12-1-8",
-      "file": 63,
-      "kind": "hevc-rext-decoding"
-    },
-    {
-      "case": "1-40-36-0-1-12-1-8",
-      "file": 72,
-      "kind": "hevc-rext-decoding"
-    },
-    {
-      "case": "1-40-36-2-0-12-1-8",
-      "file": 73,
-      "kind": "hevc-rext-decoding"
-    },
-    {
-      "case": "1-40-36-0-3-12-1-8",
-      "file": 74,
-      "kind": "hevc-rext-decoding"
-    },
-    {
-      "case": "1-40-36-0-2-12-1-8",
-      "file": 75,
-      "kind": "hevc-rext-decoding"
-    },
-    {
-      "case": "1224736769-70-50-0-1-8-1-8",
-      "file": 102,
-      "kind": "hevc-rext-decoding"
-    },
-    {
-      "case": "1228079105-33-29-0-3-10-1-8",
-      "file": 103,
-      "kind": "hevc-rext-decoding"
-    },
-    {
-      "case": "520093697-70-50-0-1-8-1-8",
-      "file": 114,
-      "kind": "hevc-rext-decoding"
-    },
-    {
-      "case": "523436033-33-29-0-3-10-1-8",
-      "file": 115,
-      "kind": "hevc-rext-decoding"
     }
   ],
   "decode_mismatches": [],
   "client_sanitizers": true,
   "corpus_sha256": "5b22ab5596a98d90500e0061bed09b8c41b01047d2fbf5d523494fd320be6225",
   "differences": [],
-  "client_sha256": "87a09843bcf2011b17e298e0225584b8d04cc6b60cbdecbbb60f5f04f75666ee",
+  "client_sha256": "f70e276c5a527cd2d053af2f686a4f36f3aa4f511946583d51127adbe6666418",
   "reference_sha256": "0293563714250c95b0a0f77ae5347b53465842cf699282f5cbd7cd56beb43e04",
-  "candidate_sha256": "2781d38f082b59b86f3fe75045ffd522725dea2cca822a49e16b2c37fdc917c3"
+  "candidate_sha256": "bcd0711a415e8b807dc1b0cadc647be17a1cfc30a1aafafee5f92ece3510ebc9"
 }

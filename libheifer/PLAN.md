@@ -766,7 +766,7 @@ sequence-track cases.
 HEVC encoding uses the pure Rust hpvca 0.1.17 from crates.io, unmodified
 (MSRV raised to 1.94), behind a record reproducing libheif's x265 plugin
 interface. It matches libheif with x265 4.1 on 164 encoding cases (everything
-but the codec output; 38 classified known differences), and libde265
+but the codec output; 14 classified known differences), and libde265
 decodes every file as the candidate does. Mean BD-rate against x265 is
 +5.6%. See `docs/RESULTS.md` and `docs/HEVC_DEPENDENCIES.md`.
 
@@ -776,6 +776,13 @@ It matches libheif with x264 on 145 encoding cases (29 classified known
 differences), and OpenH264 decodes every file as the candidate does. Mean
 BD-rate against x264 is +3.6%. See `docs/RESULTS.md` and
 `docs/AVC_DEPENDENCIES.md`.
+
+HEVC range-extension streams (4:2:2, 4:4:4, bit depths above 10, RExt tools),
+which rusty_h265 rejects, are decoded by oxideav-h265 0.0.11 from crates.io,
+unmodified. It decodes all 49 JCT-VC RExt conformance streams to their
+reference MD5, and matches libheif with libde265 on 301 x265-generated items
+(7,525 cases) apart from four where libde265 misses x265's picture hash. See
+`docs/RESULTS.md` and `docs/HEVC_DEPENDENCIES.md`.
 
 Next: remaining plan gates. All 465 functions remain partial; strict completion
 remains false.

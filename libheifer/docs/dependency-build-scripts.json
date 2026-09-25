@@ -71,6 +71,12 @@
   "rusty_h264-encoder@0.16.0": {
     "build.rs": "f105ccb828180d10fbb4ccad374d5c06e13416d1cef5d92ee95849402a4e74da"
   },
+  "serde_core@1.0.229": {
+    "build.rs": "7bc6b1eec8913ff4cd8e4b9b92cd04a82a4f38beb30a0b73a64c1e6e49f07b5f"
+  },
+  "serde_json@1.0.151": {
+    "build.rs": "a681e754be844c7dbef957f5d2d00b01f37c5dca160ef1055a8d8f975697a881"
+  },
   "thiserror@2.0.21": {
     "build.rs": "ccc38283604f99237ad2333bbe395259e29fdf2ff4e04a60a95de9e4499c09a3"
   },
@@ -79,5 +85,8 @@
   },
   "wasm-bindgen@0.2.128": {
     "build.rs": "33c90a6eb1745c53f9047e0ecde135b249b0ea3d9e1a2a40c9610a33f225e6c9"
+  },
+  "zmij@1.0.23": {
+    "build.rs": "ad320bc635887879bdbbf1b9322da4a157ec2c5a4243bd7c2cf9b6884a3b2a41"
   }
 }

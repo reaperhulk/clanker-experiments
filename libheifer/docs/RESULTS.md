@@ -2010,11 +2010,11 @@ compared on version, chroma format, bit depths and array types. Every
 candidate file is also decoded by libheif with libde265 and by the
 candidate, in two decode modes, and the outputs must agree. Results: 0
 mismatches in normal, sanitizer-client and codec-free builds, and no decode
-disagreements. There are 38 classified known differences, all listed in the
-report:
+disagreements. There are 14 classified known differences, all listed in the
+report (before HEVC range-extension decoding there were also 24
+`hevc-rext-decoding` ones, where the candidate could not read its own 4:2:2,
+4:4:4 and 12-bit files):
 
-- `hevc-rext-decoding` (24): the candidate's decoder cannot read its own
-  4:2:2, 4:4:4 or 12-bit output; libde265 decodes it;
 - `hpvca-monochrome-profile` (9): hpvca signals Main for 4:0:0, so libheif
   chooses brand `heic` where x265 gives `heix`;
 - `x265-option` (2): `x265:` options are rejected by name;
@@ -2188,3 +2188,71 @@ The patched vendored rusty_h264-common is now a renamed package that the
 vendored decoder uses by path. The encoder gets the unmodified crates.io
 rusty_h264-common, and the `[patch]` entry for common is gone.
 
+
+## HEVC range-extension decoding (oxideav-h265)
+
+libheif decodes HEVC with libde265, which implements the format range
+extensions. rusty_h265 decodes only 4:2:0 and 4:0:0 at 8 and 10 bits without
+extension tools. libheifer now decodes the other streams with oxideav-h265
+0.0.11, used unmodified from crates.io (`docs/HEVC_DEPENDENCIES.md`).
+`src/hevc.rs` routes a stream to it when an SPS has chroma_format_idc 2 or 3,
+a bit depth above 10, the range-extension profile with colour, or an SPS or
+PPS range extension. Pictures above level 6.2 stay with rusty_h265, which
+rejects them as before.
+
+Conformance: `tools/compare_hevc_rext_conformance.py` downloads the 49 JCT-VC
+range-extension conformance streams and decodes every picture of each with
+oxideav-h265 (`examples/hevc_sequence_yuv.rs`) and with libde265's dec265
+(`results/hevc-rext-conformance-report.json`). The candidate reproduces the
+reference reconstruction MD5 of all 49, covering every RExt tool: 4:0:0 to
+4:4:4 at 8 to 16 bits, cross-component prediction, implicit and explicit
+RDPCM, transform-skip contexts and rotation, persistent Rice adaptation,
+extended precision, CABAC bypass alignment, scaling lists, IPCM, WPP and
+tiles. libde265 matches 29. Of the other 20, two (`Bitdepth_A`/`B`, unequal
+luma and chroma depths) only differ in dec265's file layout, which writes the
+8-bit planes as bytes; the other 18 are extended precision, 16-bit and
+high-throughput streams, CABAC bypass alignment, the 4:4:4 scaling-list
+stream and `WAVETILES`, where libde265's samples differ from the reference
+or dec265 stops with an error. Items using these tools would differ from
+libheif in the same way; x265 uses none of them, so the generated corpus
+below does not contain them.
+
+Generated items: `tools/generate_hevc_rext_fixtures.py` encodes 301 owned
+single-picture streams with the reference build's x265 4.1
+(`tests/hevc_fixture_encoder.c`, CTU size chosen as libheif's x265 plugin
+does). They cover 4:0:0 to 4:4:4 at 8, 10 and 12 bits, sizes from 16x16 to
+272x256 with conformance windows, QPs 0-51, lossless with and without
+transform skip, 26 tool settings, all presets and VUI colour descriptions.
+Each carries x265's MD5 picture hash, and the generator records whether
+libde265 reproduces it. `tools/test_hevc_rext.py` wraps them as `hvc1`
+items and compares samples, handles, conversions and errors with libheif and
+libde265 in 25 modes: 7,525 cases, 0 mismatches in normal and
+sanitizer-client runs (`results/hevc-rext-*-report.json.gz`). The 92 known
+differences
+(`libde265-hash-mismatch`) are the four 4:4:4 streams at QP 51: libde265
+misses x265's hash in both chroma planes and the candidate matches it.
+
+Found along the way:
+
+- libheifer's colour conversion lacked libheif's `Op_RGB24_32_to_YCbCr`,
+  which converts 8-bit interleaved RGB straight to YCbCr with its own
+  rounding (`0.85547` for limited-range luma, rounded before adding 16).
+  x265's limited-range 4:0:0 items reach it through monochrome → RGB →
+  YCbCr; the edge is added in libheif's order.
+- With persistent Rice adaptation, hpvca 0.1.17 writes lossless streams
+  above 8 bits that libde265 conceals and oxideav-h265 rejects
+  (`end_of_slice_segment_flag` missing on the last CTB). The HEVC encoder
+  now turns the tool off. The builtin HEVC suite had hidden this behind its
+  24 `hevc-rext-decoding` known differences; it now decodes every file.
+- x265 4.1 writes one-picture multi-slice streams through its API whose
+  later slices are a few bytes long; both decoders miss x265's own picture
+  hash. They are left out of the generated corpus.
+
+Two deliberate defects are detected (`results/hevc-rext-mutations-report.json`):
+the byte order of the range-extension samples and the rounding of the new
+conversion edge. A first routing mutant (4:2:2 no longer routed by chroma
+format) survived: x265's 4:2:2 streams also signal the range-extension
+profile, which routes them anyway. It was replaced.
+
+oxideav-h265 is much slower than libde265: 9 pictures of 1080p 4:2:2 10-bit
+took 12 s against libde265's 1.6 s on the same machine.

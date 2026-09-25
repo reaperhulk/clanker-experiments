@@ -101,7 +101,8 @@ python tools/check_coverage.py --reference .build/reference/libheif/libheif.so
 The native reference build is test-only and requires a C/C++ toolchain and CMake.
 It is never linked into libheifer. The Rust `hevc` feature enables direct-item
 HEVC decoding; the separate C ABI package enables it and the Rust `av1` feature by default. The HEVC decoder is
-vendored with a documented monochrome decoding patch, retaining its Apache-2.0 license.
+vendored with a documented monochrome decoding patch, retaining its Apache-2.0 license;
+range-extension streams (4:2:2, 4:4:4, above 10 bits) use oxideav-h265 from crates.io.
 The C API also handles native alpha, rotation/mirroring, YCbCr/RGB conversion,
 8/16-bit RGB packing, image crop/scale, grid, overlay and identity derivations, raw masks, decoding
 warnings, context thread controls and versioned decoding options.

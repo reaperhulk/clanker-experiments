@@ -38,6 +38,11 @@ REVIEWED |= {
 # hpvca (HEVC encoder, crates.io as published; no dependencies). Its default
 # avx/neon features select core::arch intrinsic kernels behind runtime detection.
 REVIEWED |= {('hpvca', '0.1.17')}
+# oxideav-h265 (HEVC range-extension decoding, crates.io as published; no
+# unsafe, no build script) and oxideav-core, whose non-optional serde_json
+# brings serde_core, itoa and zmij (cfg-probing build scripts, hash-reviewed).
+REVIEWED |= {('oxideav-h265', '0.0.11'), ('oxideav-core', '0.1.36'), ('serde_json', '1.0.151'), ('serde_core', '1.0.229'),
+             ('itoa', '1.0.18'), ('zmij', '1.0.23')}
 # Assembly build tooling for rav1d and rav1e (nasm-rs drives nasm; cc assembles
 # AArch64 sources and archives objects). Dependency assembly is allowed.
 REVIEWED |= {('cc', '1.4.7'), ('nasm-rs', '0.3.2'), ('jobserver', '0.1.35'), ('getrandom', '0.4.3'),
@@ -94,6 +99,9 @@ def main():
                 problems.append('hpvca must use only its reviewed default features')
             if any(p.suffix.lower() in ('.c', '.cc', '.cpp', '.s', '.asm') for p in root.rglob('*')) or (root / 'build.rs').exists():
                 problems.append('Native source or build script in hpvca')
+        if name[0] in ('oxideav-h265', 'oxideav-core'):
+            if set(features[package['id']]) - {'default'} or any(p.suffix.lower() in ('.c', '.cc', '.cpp', '.s', '.asm') for p in root.rglob('*')) or (root / 'build.rs').exists():
+                problems.append(f'{name[0]} must be used without extra features, native source or build script')
         if name[0] == 'hayro-jpeg2000':
             if set(features[package['id']]) != {'std'}:
                 problems.append('hayro-jpeg2000 must use only the reviewed scalar Rust implementation')

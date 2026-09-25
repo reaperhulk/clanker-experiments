@@ -260,7 +260,11 @@ pub fn encode(picture: &Picture, settings: &Settings) -> Result<Vec<Vec<u8>>, St
         } else {
             hpvca::Speed::Fast
         })
-        .with_threads(1);
+        .with_threads(1)
+        // With persistent Rice adaptation, hpvca 0.1.17 writes lossless
+        // streams above 8 bits that libde265 and oxideav-h265 both find
+        // malformed (libde265 conceals the error).
+        .with_persistent_rice(false);
     // The VUI: a colour description only when hpvca knows all three code
     // points; without one it signals full range.
     cfg.color = hpvca::ColorMetadata {

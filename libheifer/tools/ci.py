@@ -129,6 +129,7 @@ SUITES = {
         'tools/test_security_lifetimes.py --reference-build .build/reference',
         'tools/test_warnings.py --reference-build .build/reference',
         'tools/test_hevc.py --reference-build .build/reference --require-default-output',
+        'tools/test_hevc_rext.py --reference-build .build/reference',
     ],
     'sanitized': [
         'tools/test_avc.py --reference-build .build/reference-avc --sanitize --work .build/avc-sanitized --output .build/avc-sanitized-report.json',
@@ -138,6 +139,7 @@ SUITES = {
         'tools/test_avc_sequences.py --reference-build .build/reference-avc --sanitize --work .build/avc-sequences-sanitized --output .build/avc-sequences-sanitized-report.json',
         'tools/test_plugin_sequences.py --reference-build .build/reference-avc --sanitize --work .build/plugin-sequences-sanitized --output .build/plugin-sequences-sanitized-report.json',
         'tools/test_vvc.py --reference-build .build/reference-vvc --sanitize --work .build/vvc-sanitized --output .build/vvc-sanitized-report.json',
+        'tools/test_hevc_rext.py --reference-build .build/reference --sanitize --work .build/hevc-rext-sanitized --output .build/hevc-rext-sanitized-report.json',
         'tools/test_vvc_sequences.py --reference-build .build/reference-vvc --sanitize --work .build/vvc-sequences-sanitized --output .build/vvc-sequences-sanitized-report.json',
         'tools/test_brand_boxes.py --reference-build .build/reference --sanitize --output .build/brand-boxes-sanitized-report.json',
         'tools/test_jpeg2000_tiles.py --reference-build .build/reference-jpeg2000 --sanitize --work .build/jpeg2000-tiles-san --output .build/jpeg2000-tiles-san-report.json',

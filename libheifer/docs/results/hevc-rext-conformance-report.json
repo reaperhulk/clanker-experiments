@@ -1,0 +1,1138 @@
+{
+ "scope": "Decode the JCT-VC HEVC range-extension conformance streams with the candidate's\nRExt decoder (oxideav-h265, examples/hevc_sequence_yuv.rs) and with libde265's\ndec265, and compare each whole output sequence with the conformance package's\nreconstruction MD5.\n\nThe streams are downloaded from the ITU-T site into --work (73 MB) and are not\nredistributed; the report records every stream's name, SHA-256 and results.\n",
+ "site": "https://www.itu.int/wftp3/av-arch/jctvc-site/bitstream_exchange/draft_conformance/RExt/",
+ "streams": 49,
+ "candidate_matches": 49,
+ "libde265_matches": 29,
+ "candidate_sha256": "dff1c358577d6d094c233ecb54857747a9d914e4c555f08277fd9e003d52b9fa",
+ "dec265_sha256": "6f8fd043c03c75c572bca3b7f6172103ab4fb0e9ddd3561396bb9af352f67268",
+ "results": [
+  {
+   "stream": "ADJUST_IPRED_ANGLE_A_RExt_Mitsubishi_2.bit",
+   "sha256": "54b72f9b2f5bd7c25049a63fd4289ab19735af5b30c2105dedd7aa5ae90a72e8",
+   "expected_md5": "b045776950c2e06d35348bd03268c07f",
+   "candidate": {
+    "exit": 0,
+    "md5": "b045776950c2e06d35348bd03268c07f",
+    "bytes": 24883200,
+    "match": true,
+    "message": [
+     "3 pictures"
+    ]
+   },
+   "libde265": {
+    "exit": 0,
+    "md5": "b045776950c2e06d35348bd03268c07f",
+    "bytes": 24883200,
+    "match": true,
+    "message": [
+     "nFrames decoded: 3 (1920x1080 @  5.87 fps)"
+    ]
+   }
+  },
+  {
+   "stream": "Bitdepth_A_RExt_Sony_1.bin",
+   "sha256": "0519f266d11fad0a25878f29d5dac153ba00629aacef34ecd78f5f5ad0fb2174",
+   "expected_md5": "2b65fa2f384085926deb4f9d20fcd798",
+   "candidate": {
+    "exit": 0,
+    "md5": "2b65fa2f384085926deb4f9d20fcd798",
+    "bytes": 199065600,
+    "match": true,
+    "message": [
+     "16 pictures"
+    ]
+   },
+   "libde265": {
+    "exit": 0,
+    "md5": "3bcc3e13383e57792c1dbcf27ee91b1c",
+    "bytes": 132710400,
+    "match": false,
+    "message": [
+     "nFrames decoded: 16 (1920x1080 @ 17.79 fps)"
+    ]
+   }
+  },
+  {
+   "stream": "Bitdepth_B_RExt_Sony_1.bin",
+   "sha256": "c8b03a11e8453e430e41bc499f686be9e75cef269f80ccab85c971d048a91ea8",
+   "expected_md5": "cf489cf45491fab54cdba936885836cb",
+   "candidate": {
+    "exit": 0,
+    "md5": "cf489cf45491fab54cdba936885836cb",
+    "bytes": 199065600,
+    "match": true,
+    "message": [
+     "16 pictures"
+    ]
+   },
+   "libde265": {
+    "exit": 0,
+    "md5": "bd7c891a95bcb093f9260b419ab0212c",
+    "bytes": 165888000,
+    "match": false,
+    "message": [
+     "nFrames decoded: 16 (1920x1080 @ 14.41 fps)"
+    ]
+   }
+  },
+  {
+   "stream": "CCP_10bit_RExt_QCOM.bin",
+   "sha256": "6e40e49ba5bef61d951c4088b0234db20e1f264804c59a007b9f32a117a45603",
+   "expected_md5": "363f55fc6097a3bb7525392b87a6498a",
+   "candidate": {
+    "exit": 0,
+    "md5": "363f55fc6097a3bb7525392b87a6498a",
+    "bytes": 111974400,
+    "match": true,
+    "message": [
+     "9 pictures"
+    ]
+   },
+   "libde265": {
+    "exit": 0,
+    "md5": "363f55fc6097a3bb7525392b87a6498a",
+    "bytes": 111974400,
+    "match": true,
+    "message": [
+     "nFrames decoded: 9 (1920x1080 @  7.57 fps)"
+    ]
+   }
+  },
+  {
+   "stream": "CCP_12bit_RExt_QCOM.bin",
+   "sha256": "17fd17f2449b4c44d4afdaddac9fe1a61b572e1bd4bf1fbdac609e108a7f2bd3",
+   "expected_md5": "f3e914fccdb820eac85f46642ea0e168",
+   "candidate": {
+    "exit": 0,
+    "md5": "f3e914fccdb820eac85f46642ea0e168",
+    "bytes": 221184000,
+    "match": true,
+    "message": [
+     "9 pictures"
+    ]
+   },
+   "libde265": {
+    "exit": 0,
+    "md5": "f3e914fccdb820eac85f46642ea0e168",
+    "bytes": 221184000,
+    "match": true,
+    "message": [
+     "nFrames decoded: 9 (2560x1600 @  3.53 fps)"
+    ]
+   }
+  },
+  {
+   "stream": "CCP_8bit_RExt_QCOM.bin",
+   "sha256": "c5e0d9b5e0062c2f4bfb1ec9e8a6465fb715e3af498306d7d0e4bec0bc9bae5c",
+   "expected_md5": "54231c6f121ca65d8b94a747b9504b8b",
+   "candidate": {
+    "exit": 0,
+    "md5": "54231c6f121ca65d8b94a747b9504b8b",
+    "bytes": 24883200,
+    "match": true,
+    "message": [
+     "9 pictures"
+    ]
+   },
+   "libde265": {
+    "exit": 0,
+    "md5": "54231c6f121ca65d8b94a747b9504b8b",
+    "bytes": 24883200,
+    "match": true,
+    "message": [
+     "nFrames decoded: 9 (1280x720 @ 32.86 fps)"
+    ]
+   }
+  },
+  {
+   "stream": "EXTPREC_HIGHTHROUGHPUT_444_16_INTRA_10BIT_RExt_Sony_1.bit",
+   "sha256": "5fe487203641fdc5920c2fbc85f1a0e329a01462e18862850b42890f90f148ae",
+   "expected_md5": "ae359f92c74a42c6733e9adfa7ddbbe5",
+   "candidate": {
+    "exit": 0,
+    "md5": "ae359f92c74a42c6733e9adfa7ddbbe5",
+    "bytes": 1843200,
+    "match": true,
+    "message": [
+     "2 pictures"
+    ]
+   },
+   "libde265": {
+    "exit": 0,
+    "md5": "64a12c8832f5d2c316bc55ce53cdc3bb",
+    "bytes": 1843200,
+    "match": false,
+    "message": [
+     "nFrames decoded: 2 (400x384 @ 31.71 fps)"
+    ]
+   }
+  },
+  {
+   "stream": "EXTPREC_HIGHTHROUGHPUT_444_16_INTRA_12BIT_RExt_Sony_1.bit",
+   "sha256": "bebb8d008469343017680082d847309a0122f3133b9a8296d5bea8f402d3f445",
+   "expected_md5": "bcccdfb428885adb0a026d55df207e23",
+   "candidate": {
+    "exit": 0,
+    "md5": "bcccdfb428885adb0a026d55df207e23",
+    "bytes": 1843200,
+    "match": true,
+    "message": [
+     "2 pictures"
+    ]
+   },
+   "libde265": {
+    "exit": 0,
+    "md5": "856e5456d52f1eda382d17cb3bb67fec",
+    "bytes": 1843200,
+    "match": false,
+    "message": [
+     "nFrames decoded: 2 (400x384 @ 55.71 fps)"
+    ]
+   }
+  },
+  {
+   "stream": "EXTPREC_HIGHTHROUGHPUT_444_16_INTRA_16BIT_RExt_Sony_1.bit",
+   "sha256": "1d5b12658f3f7dd916472bc2e5d4b9b236b642bfe1b3fde69aab918d90cafdaf",
+   "expected_md5": "23d546b71e9bc7c8a636099ef9a3dfcd",
+   "candidate": {
+    "exit": 0,
+    "md5": "23d546b71e9bc7c8a636099ef9a3dfcd",
+    "bytes": 1843200,
+    "match": true,
+    "message": [
+     "2 pictures"
+    ]
+   },
+   "libde265": {
+    "exit": 0,
+    "md5": "e7df9ba51979c95ecd4e3d815a980dff",
+    "bytes": 1843200,
+    "match": false,
+    "message": [
+     "nFrames decoded: 2 (400x384 @ 86.03 fps)"
+    ]
+   }
+  },
+  {
+   "stream": "EXTPREC_HIGHTHROUGHPUT_444_16_INTRA_8BIT_RExt_Sony_1.bit",
+   "sha256": "07c7a14717fffb5828d9b3472d1db1de554acb9a126d34ca4e73ef1ed6f68734",
+   "expected_md5": "cd84e70999e4577f23eb2077c7a1d24f",
+   "candidate": {
+    "exit": 0,
+    "md5": "cd84e70999e4577f23eb2077c7a1d24f",
+    "bytes": 921600,
+    "match": true,
+    "message": [
+     "2 pictures"
+    ]
+   },
+   "libde265": {
+    "exit": 0,
+    "md5": "fbf33892db94f2efe3bde9d0436fce9e",
+    "bytes": 921600,
+    "match": false,
+    "message": [
+     "nFrames decoded: 2 (400x384 @ 91.84 fps)"
+    ]
+   }
+  },
+  {
+   "stream": "EXTPREC_MAIN_444_16_INTRA_10BIT_RExt_Sony_1.bit",
+   "sha256": "8760aba893522fe302c14c8472677fed3c3a29b241918a49067f12107f6b5fde",
+   "expected_md5": "6c45bc0e653c5687acbc4bb483b8a512",
+   "candidate": {
+    "exit": 0,
+    "md5": "6c45bc0e653c5687acbc4bb483b8a512",
+    "bytes": 1843200,
+    "match": true,
+    "message": [
+     "2 pictures"
+    ]
+   },
+   "libde265": {
+    "exit": 0,
+    "md5": "62e760852e98086de683cea483f77d21",
+    "bytes": 1843200,
+    "match": false,
+    "message": [
+     "nFrames decoded: 2 (400x384 @ 25.92 fps)"
+    ]
+   }
+  },
+  {
+   "stream": "EXTPREC_MAIN_444_16_INTRA_12BIT_RExt_Sony_1.bit",
+   "sha256": "5f0164dccc333296fb2753068cafe4985b758ddb7e282358dbb8faf74986817d",
+   "expected_md5": "b10f17ae9968230f2904216c9551eb2b",
+   "candidate": {
+    "exit": 0,
+    "md5": "b10f17ae9968230f2904216c9551eb2b",
+    "bytes": 1843200,
+    "match": true,
+    "message": [
+     "2 pictures"
+    ]
+   },
+   "libde265": {
+    "exit": 0,
+    "md5": "0755a3b3db08dbd717610d29bc974657",
+    "bytes": 1843200,
+    "match": false,
+    "message": [
+     "nFrames decoded: 2 (400x384 @ 25.23 fps)"
+    ]
+   }
+  },
+  {
+   "stream": "EXTPREC_MAIN_444_16_INTRA_16BIT_RExt_Sony_1.bit",
+   "sha256": "f83d718339fe99916187487a0c005c30a916fd14e2ecbaa1a5f8826f362cc160",
+   "expected_md5": "68d8956971e5b327e90391b18c0dc0eb",
+   "candidate": {
+    "exit": 0,
+    "md5": "68d8956971e5b327e90391b18c0dc0eb",
+    "bytes": 1843200,
+    "match": true,
+    "message": [
+     "2 pictures"
+    ]
+   },
+   "libde265": {
+    "exit": 0,
+    "md5": "96eec861a25a07dc0bb9a1947385b7d8",
+    "bytes": 1843200,
+    "match": false,
+    "message": [
+     "nFrames decoded: 2 (400x384 @ 36.16 fps)"
+    ]
+   }
+  },
+  {
+   "stream": "EXTPREC_MAIN_444_16_INTRA_8BIT_RExt_Sony_1.bit",
+   "sha256": "52def2115f3ff5d2b4e1bcdd702b893df280b83cd6d0dded940735e6899556a8",
+   "expected_md5": "7ef62c35074ed780790cb32d1b5da436",
+   "candidate": {
+    "exit": 0,
+    "md5": "7ef62c35074ed780790cb32d1b5da436",
+    "bytes": 921600,
+    "match": true,
+    "message": [
+     "2 pictures"
+    ]
+   },
+   "libde265": {
+    "exit": 0,
+    "md5": "7ef62c35074ed780790cb32d1b5da436",
+    "bytes": 921600,
+    "match": true,
+    "message": [
+     "nFrames decoded: 2 (400x384 @ 41.74 fps)"
+    ]
+   }
+  },
+  {
+   "stream": "ExplicitRdpcm_A_BBC_1.bit",
+   "sha256": "f8ba09b0ab7fcd9d9bcab1868f16344f97fab0ef719126132e3f1a1909cb3918",
+   "expected_md5": "1156aca54db44114c2737e9679942656",
+   "candidate": {
+    "exit": 0,
+    "md5": "1156aca54db44114c2737e9679942656",
+    "bytes": 1658880000,
+    "match": true,
+    "message": [
+     "600 pictures"
+    ]
+   },
+   "libde265": {
+    "exit": 0,
+    "md5": "1156aca54db44114c2737e9679942656",
+    "bytes": 1658880000,
+    "match": true,
+    "message": [
+     "nFrames decoded: 600 (1280x720 @ 55.12 fps)"
+    ]
+   }
+  },
+  {
+   "stream": "ExplicitRdpcm_B_BBC_2.bit",
+   "sha256": "4c721ab540b390ef2e1a0f992cae41f8ce08d9d0d08d601018fd51c37644c823",
+   "expected_md5": "866d75c3530d7b659b3632655c7eb974",
+   "candidate": {
+    "exit": 0,
+    "md5": "866d75c3530d7b659b3632655c7eb974",
+    "bytes": 3686400000,
+    "match": true,
+    "message": [
+     "150 pictures"
+    ]
+   },
+   "libde265": {
+    "exit": 0,
+    "md5": "866d75c3530d7b659b3632655c7eb974",
+    "bytes": 3686400000,
+    "match": true,
+    "message": [
+     "nFrames decoded: 150 (2560x1600 @  2.40 fps)"
+    ]
+   }
+  },
+  {
+   "stream": "GENERAL_10b_420_RExt_Sony_1.bit",
+   "sha256": "de0f153bde98066c6d7368a51e0907cc9a829b34a6b998672999ce0b283cb212",
+   "expected_md5": "d19c7e1764971983f0e827277db2f69a",
+   "candidate": {
+    "exit": 0,
+    "md5": "d19c7e1764971983f0e827277db2f69a",
+    "bytes": 460800,
+    "match": true,
+    "message": [
+     "1 pictures"
+    ]
+   },
+   "libde265": {
+    "exit": 0,
+    "md5": "d19c7e1764971983f0e827277db2f69a",
+    "bytes": 460800,
+    "match": true,
+    "message": [
+     "nFrames decoded: 1 (400x384 @ 59.59 fps)"
+    ]
+   }
+  },
+  {
+   "stream": "GENERAL_10b_422_RExt_Sony_1.bit",
+   "sha256": "a6c012634574009542d4046b24a2c29fbabaa7351a62b19300df5eec3336e810",
+   "expected_md5": "ea5dfb01c95bffb169cd78e549bd39ab",
+   "candidate": {
+    "exit": 0,
+    "md5": "ea5dfb01c95bffb169cd78e549bd39ab",
+    "bytes": 1228800,
+    "match": true,
+    "message": [
+     "2 pictures"
+    ]
+   },
+   "libde265": {
+    "exit": 0,
+    "md5": "ea5dfb01c95bffb169cd78e549bd39ab",
+    "bytes": 1228800,
+    "match": true,
+    "message": [
+     "nFrames decoded: 2 (400x384 @ 54.02 fps)"
+    ]
+   }
+  },
+  {
+   "stream": "GENERAL_10b_444_RExt_Sony_2.bit",
+   "sha256": "ab9c7d7c0554e6342836fa0212e6334ecc894141f1cb90cd4512c108dabcb936",
+   "expected_md5": "079dd98d0cb2ab8fe26475a2e946fe53",
+   "candidate": {
+    "exit": 0,
+    "md5": "079dd98d0cb2ab8fe26475a2e946fe53",
+    "bytes": 11059200,
+    "match": true,
+    "message": [
+     "12 pictures"
+    ]
+   },
+   "libde265": {
+    "exit": 0,
+    "md5": "079dd98d0cb2ab8fe26475a2e946fe53",
+    "bytes": 11059200,
+    "match": true,
+    "message": [
+     "nFrames decoded: 12 (400x384 @ 39.08 fps)"
+    ]
+   }
+  },
+  {
+   "stream": "GENERAL_12b_400_RExt_Sony_1.bit",
+   "sha256": "42ba06081165645c28b1f38ca1addd62eaf48925bb64e3439b404f32a2b50952",
+   "expected_md5": "549ff2b94ede8d83bfdc64a34440817d",
+   "candidate": {
+    "exit": 0,
+    "md5": "549ff2b94ede8d83bfdc64a34440817d",
+    "bytes": 307200,
+    "match": true,
+    "message": [
+     "1 pictures"
+    ]
+   },
+   "libde265": {
+    "exit": 0,
+    "md5": "549ff2b94ede8d83bfdc64a34440817d",
+    "bytes": 307200,
+    "match": true,
+    "message": [
+     "nFrames decoded: 1 (400x384 @ 85.13 fps)"
+    ]
+   }
+  },
+  {
+   "stream": "GENERAL_12b_420_RExt_Sony_1.bit",
+   "sha256": "3b1f3e683bc1c6b6abcaa26fe540d6ec26a3734255010b27ae650b44b52654e9",
+   "expected_md5": "27a2b09b136687f7a391bfdbc50ac964",
+   "candidate": {
+    "exit": 0,
+    "md5": "27a2b09b136687f7a391bfdbc50ac964",
+    "bytes": 460800,
+    "match": true,
+    "message": [
+     "1 pictures"
+    ]
+   },
+   "libde265": {
+    "exit": 0,
+    "md5": "27a2b09b136687f7a391bfdbc50ac964",
+    "bytes": 460800,
+    "match": true,
+    "message": [
+     "nFrames decoded: 1 (400x384 @ 57.51 fps)"
+    ]
+   }
+  },
+  {
+   "stream": "GENERAL_12b_422_RExt_Sony_1.bit",
+   "sha256": "a3f534275c0c3d317a3dafc30a3e0eb89d3e7d6aa2f2c0df0e9d27712354700d",
+   "expected_md5": "d4f51ab5405659ad90e788083bcfc18d",
+   "candidate": {
+    "exit": 0,
+    "md5": "d4f51ab5405659ad90e788083bcfc18d",
+    "bytes": 1228800,
+    "match": true,
+    "message": [
+     "2 pictures"
+    ]
+   },
+   "libde265": {
+    "exit": 0,
+    "md5": "d4f51ab5405659ad90e788083bcfc18d",
+    "bytes": 1228800,
+    "match": true,
+    "message": [
+     "nFrames decoded: 2 (400x384 @ 41.78 fps)"
+    ]
+   }
+  },
+  {
+   "stream": "GENERAL_12b_444_RExt_Sony_2.bit",
+   "sha256": "197023ccc20fd340c108646fd06b08b92fc29a613609714f6983e15d3770d669",
+   "expected_md5": "0b81d1008ff671da0d930bd38ab3489c",
+   "candidate": {
+    "exit": 0,
+    "md5": "0b81d1008ff671da0d930bd38ab3489c",
+    "bytes": 12902400,
+    "match": true,
+    "message": [
+     "14 pictures"
+    ]
+   },
+   "libde265": {
+    "exit": 0,
+    "md5": "0b81d1008ff671da0d930bd38ab3489c",
+    "bytes": 12902400,
+    "match": true,
+    "message": [
+     "nFrames decoded: 14 (400x384 @ 29.30 fps)"
+    ]
+   }
+  },
+  {
+   "stream": "GENERAL_16b_400_RExt_Sony_1.bit",
+   "sha256": "9c867a622a389cf336daff0d6aa0352e846579e38e0247f31910dd3cb9e3de96",
+   "expected_md5": "eb432746ce6c66943613397da28526a7",
+   "candidate": {
+    "exit": 0,
+    "md5": "eb432746ce6c66943613397da28526a7",
+    "bytes": 2150400,
+    "match": true,
+    "message": [
+     "7 pictures"
+    ]
+   },
+   "libde265": {
+    "exit": 0,
+    "md5": "2b96b126e8e37bd09c08b2471681d0ba",
+    "bytes": 2150400,
+    "match": false,
+    "message": [
+     "nFrames decoded: 7 (400x384 @ 71.60 fps)"
+    ]
+   }
+  },
+  {
+   "stream": "GENERAL_16b_444_RExt_Sony_2.bit",
+   "sha256": "51cde74f6a300ab6228c4f46dd9f952b80cc27dfa4513c485c3d6d9f73123fe7",
+   "expected_md5": "41eb40070aae0bbedd584e1f73512840",
+   "candidate": {
+    "exit": 0,
+    "md5": "41eb40070aae0bbedd584e1f73512840",
+    "bytes": 14745600,
+    "match": true,
+    "message": [
+     "16 pictures"
+    ]
+   },
+   "libde265": {
+    "exit": 0,
+    "md5": "60ebbee13883b8cc653fec377556995d",
+    "bytes": 14745600,
+    "match": false,
+    "message": [
+     "nFrames decoded: 16 (400x384 @ 23.85 fps)"
+    ]
+   }
+  },
+  {
+   "stream": "GENERAL_16b_444_highThroughput_RExt_Sony_2.bit",
+   "sha256": "9075ed7736024067bc4e715af487127fd0c44ddc1b33d77751320258691f9800",
+   "expected_md5": "7422848e6a99897a8ade34814d396657",
+   "candidate": {
+    "exit": 0,
+    "md5": "7422848e6a99897a8ade34814d396657",
+    "bytes": 14745600,
+    "match": true,
+    "message": [
+     "16 pictures"
+    ]
+   },
+   "libde265": {
+    "exit": 0,
+    "md5": "d175beea91356d730a4fc55d075edf8e",
+    "bytes": 14745600,
+    "match": false,
+    "message": [
+     "nFrames decoded: 16 (400x384 @ 55.73 fps)"
+    ]
+   }
+  },
+  {
+   "stream": "GENERAL_8b_400_RExt_Sony_1.bit",
+   "sha256": "6151ab4b8fdc2a8643d169f98d9878e8221f9d23d97c71447bd4d7de5e79bd4b",
+   "expected_md5": "e5223be3da805fb96440dbf2bd170db0",
+   "candidate": {
+    "exit": 0,
+    "md5": "e5223be3da805fb96440dbf2bd170db0",
+    "bytes": 153600,
+    "match": true,
+    "message": [
+     "1 pictures"
+    ]
+   },
+   "libde265": {
+    "exit": 0,
+    "md5": "e5223be3da805fb96440dbf2bd170db0",
+    "bytes": 153600,
+    "match": true,
+    "message": [
+     "nFrames decoded: 1 (400x384 @ 147.28 fps)"
+    ]
+   }
+  },
+  {
+   "stream": "GENERAL_8b_420_RExt_Sony_1.bit",
+   "sha256": "44b43ba732bae1b05c217661f7ea9049a52288bd5e4a966252b44406122b6ea4",
+   "expected_md5": "99eb7a5106988759fd0eaecdb66e2cd2",
+   "candidate": {
+    "exit": 0,
+    "md5": "99eb7a5106988759fd0eaecdb66e2cd2",
+    "bytes": 230400,
+    "match": true,
+    "message": [
+     "1 pictures"
+    ]
+   },
+   "libde265": {
+    "exit": 0,
+    "md5": "99eb7a5106988759fd0eaecdb66e2cd2",
+    "bytes": 230400,
+    "match": true,
+    "message": [
+     "nFrames decoded: 1 (400x384 @ 77.63 fps)"
+    ]
+   }
+  },
+  {
+   "stream": "GENERAL_8b_444_RExt_Sony_2.bit",
+   "sha256": "ef4e0d887ad0a02e1f8218e3fbf93258c1b1e3923d079296df8df69fac56e538",
+   "expected_md5": "3ed16fed34c4ed3ad8fe31962fb77aac",
+   "candidate": {
+    "exit": 0,
+    "md5": "3ed16fed34c4ed3ad8fe31962fb77aac",
+    "bytes": 6451200,
+    "match": true,
+    "message": [
+     "14 pictures"
+    ]
+   },
+   "libde265": {
+    "exit": 0,
+    "md5": "3ed16fed34c4ed3ad8fe31962fb77aac",
+    "bytes": 6451200,
+    "match": true,
+    "message": [
+     "nFrames decoded: 14 (400x384 @ 63.47 fps)"
+    ]
+   }
+  },
+  {
+   "stream": "IPCM_A_RExt_NEC_2.bit",
+   "sha256": "26ae7aefa4ded2ccdc917b99b5ecf2352bd9c7100ce0cfd9a9bdc918c5d242b6",
+   "expected_md5": "8d4eb18812338f9f475035b8da27e74a",
+   "candidate": {
+    "exit": 0,
+    "md5": "8d4eb18812338f9f475035b8da27e74a",
+    "bytes": 399360,
+    "match": true,
+    "message": [
+     "1 pictures"
+    ]
+   },
+   "libde265": {
+    "exit": 0,
+    "md5": "8d4eb18812338f9f475035b8da27e74a",
+    "bytes": 399360,
+    "match": true,
+    "message": [
+     "nFrames decoded: 1 (416x240 @ 128.82 fps)"
+    ]
+   }
+  },
+  {
+   "stream": "IPCM_B_RExt_NEC.bit",
+   "sha256": "39f97b25079ce5f12340cce43c9dbd5821c5e23f44da58dd6f1942e135bc93b5",
+   "expected_md5": "eea32e6e1f88b7782515e53f8122be7d",
+   "candidate": {
+    "exit": 0,
+    "md5": "eea32e6e1f88b7782515e53f8122be7d",
+    "bytes": 599040,
+    "match": true,
+    "message": [
+     "1 pictures"
+    ]
+   },
+   "libde265": {
+    "exit": 0,
+    "md5": "eea32e6e1f88b7782515e53f8122be7d",
+    "bytes": 599040,
+    "match": true,
+    "message": [
+     "nFrames decoded: 1 (416x240 @ 195.77 fps)"
+    ]
+   }
+  },
+  {
+   "stream": "Main_422_10_A_RExt_Sony_2.bin",
+   "sha256": "4004fe9c86d10f36acc6e111b8e6a473351ceeceb6b0649f1d3efb442d27a231",
+   "expected_md5": "66530b83be6647f87efbb2b9ae6e1e28",
+   "candidate": {
+    "exit": 0,
+    "md5": "66530b83be6647f87efbb2b9ae6e1e28",
+    "bytes": 74649600,
+    "match": true,
+    "message": [
+     "9 pictures"
+    ]
+   },
+   "libde265": {
+    "exit": 0,
+    "md5": "66530b83be6647f87efbb2b9ae6e1e28",
+    "bytes": 74649600,
+    "match": true,
+    "message": [
+     "nFrames decoded: 9 (1920x1080 @  3.43 fps)"
+    ]
+   }
+  },
+  {
+   "stream": "Main_422_10_B_RExt_Sony_2.bin",
+   "sha256": "951acc9c846dcb9f8ccbdc0b6971a947144baed2d9021ae4be77bcce106bbe21",
+   "expected_md5": "fd163bcbdc24792a23781ee7aace74eb",
+   "candidate": {
+    "exit": 0,
+    "md5": "fd163bcbdc24792a23781ee7aace74eb",
+    "bytes": 16384000,
+    "match": true,
+    "message": [
+     "1 pictures"
+    ]
+   },
+   "libde265": {
+    "exit": 0,
+    "md5": "fd163bcbdc24792a23781ee7aace74eb",
+    "bytes": 16384000,
+    "match": true,
+    "message": [
+     "nFrames decoded: 1 (2560x1600 @  1.25 fps)"
+    ]
+   }
+  },
+  {
+   "stream": "PERSIST_RPARAM_A_RExt_Sony_3.bit",
+   "sha256": "5e1a69d29278e3e4cbd7695c7d3c229ac63c1e5e2b7af3b1c8f8062586ea1468",
+   "expected_md5": "d19f5cd87d5b971c4b4abbca22958031",
+   "candidate": {
+    "exit": 0,
+    "md5": "d19f5cd87d5b971c4b4abbca22958031",
+    "bytes": 1843200,
+    "match": true,
+    "message": [
+     "2 pictures"
+    ]
+   },
+   "libde265": {
+    "exit": 0,
+    "md5": "d19f5cd87d5b971c4b4abbca22958031",
+    "bytes": 1843200,
+    "match": true,
+    "message": [
+     "nFrames decoded: 2 (400x384 @ 20.40 fps)"
+    ]
+   }
+  },
+  {
+   "stream": "QMATRIX_A_RExt_Sony_1.bit",
+   "sha256": "74847e07f3298923da0e9b68b1f861930d227bd5ad83a834a8280cf042a7e78f",
+   "expected_md5": "e0fe38f19cf0ac875ce6674da989ea38",
+   "candidate": {
+    "exit": 0,
+    "md5": "e0fe38f19cf0ac875ce6674da989ea38",
+    "bytes": 55296000,
+    "match": true,
+    "message": [
+     "20 pictures"
+    ]
+   },
+   "libde265": {
+    "exit": 0,
+    "md5": "500c17caae13d03705e732b061dd61fd",
+    "bytes": 55296000,
+    "match": false,
+    "message": [
+     "nFrames decoded: 20 (1280x720 @ 28.38 fps)"
+    ]
+   }
+  },
+  {
+   "stream": "SAO_A_RExt_MediaTek_1.bit",
+   "sha256": "6b0d45b5ca4d4919eaec5a98daf0eb4cebcc6d8b0a12b30b748386cc9358df13",
+   "expected_md5": "126cd42a185b327d86640a9269044bc8",
+   "candidate": {
+    "exit": 0,
+    "md5": "126cd42a185b327d86640a9269044bc8",
+    "bytes": 196608000,
+    "match": true,
+    "message": [
+     "8 pictures"
+    ]
+   },
+   "libde265": {
+    "exit": 0,
+    "md5": "126cd42a185b327d86640a9269044bc8",
+    "bytes": 196608000,
+    "match": true,
+    "message": [
+     "nFrames decoded: 8 (2560x1600 @  2.21 fps)"
+    ]
+   }
+  },
+  {
+   "stream": "TSCTX_10bit_I_RExt_SHARP_1.bin",
+   "sha256": "4b62369d263f475dd560d9f129760100c3ee429f14a515da23d5a7a622b9368a",
+   "expected_md5": "2230c35a91ddde5455a36c49fb868e86",
+   "candidate": {
+    "exit": 0,
+    "md5": "2230c35a91ddde5455a36c49fb868e86",
+    "bytes": 111974400,
+    "match": true,
+    "message": [
+     "9 pictures"
+    ]
+   },
+   "libde265": {
+    "exit": 0,
+    "md5": "2230c35a91ddde5455a36c49fb868e86",
+    "bytes": 111974400,
+    "match": true,
+    "message": [
+     "nFrames decoded: 9 (1920x1080 @  3.78 fps)"
+    ]
+   }
+  },
+  {
+   "stream": "TSCTX_10bit_RExt_SHARP_1.bin",
+   "sha256": "73e6a97d3de0141d4dcf7b19da334aed719c7a7a0e158745df1d74017b0927d4",
+   "expected_md5": "a3015d8f4bd0a90645514bcf2e1fa8a7",
+   "candidate": {
+    "exit": 0,
+    "md5": "a3015d8f4bd0a90645514bcf2e1fa8a7",
+    "bytes": 111974400,
+    "match": true,
+    "message": [
+     "9 pictures"
+    ]
+   },
+   "libde265": {
+    "exit": 0,
+    "md5": "a3015d8f4bd0a90645514bcf2e1fa8a7",
+    "bytes": 111974400,
+    "match": true,
+    "message": [
+     "nFrames decoded: 9 (1920x1080 @  5.61 fps)"
+    ]
+   }
+  },
+  {
+   "stream": "TSCTX_12bit_I_RExt_SHARP_1.bin",
+   "sha256": "7a9608103f06aa750f0a07abe42693f87b77e38ee7bbf2e47d1d0af9a1cd958d",
+   "expected_md5": "acebd42c1edea6812f0c07a4e91d943f",
+   "candidate": {
+    "exit": 0,
+    "md5": "acebd42c1edea6812f0c07a4e91d943f",
+    "bytes": 221184000,
+    "match": true,
+    "message": [
+     "9 pictures"
+    ]
+   },
+   "libde265": {
+    "exit": 0,
+    "md5": "acebd42c1edea6812f0c07a4e91d943f",
+    "bytes": 221184000,
+    "match": true,
+    "message": [
+     "nFrames decoded: 9 (2560x1600 @  2.14 fps)"
+    ]
+   }
+  },
+  {
+   "stream": "TSCTX_12bit_RExt_SHARP_1.bin",
+   "sha256": "2dc416474900aed158869df9f4ac9aea109f3912e59bbbf4e8a45972025cf133",
+   "expected_md5": "f311f3e96d9fbda375bfce341b99cb99",
+   "candidate": {
+    "exit": 0,
+    "md5": "f311f3e96d9fbda375bfce341b99cb99",
+    "bytes": 221184000,
+    "match": true,
+    "message": [
+     "9 pictures"
+    ]
+   },
+   "libde265": {
+    "exit": 0,
+    "md5": "f311f3e96d9fbda375bfce341b99cb99",
+    "bytes": 221184000,
+    "match": true,
+    "message": [
+     "nFrames decoded: 9 (2560x1600 @  3.15 fps)"
+    ]
+   }
+  },
+  {
+   "stream": "TSCTX_8bit_I_RExt_SHARP_1.bin",
+   "sha256": "fcb7b066ff751fe3ba72c0583d289c73b61be3db59691b4423ed10b9f00a5f25",
+   "expected_md5": "5930ca9acf0bc741fb4dd827214f8db7",
+   "candidate": {
+    "exit": 0,
+    "md5": "5930ca9acf0bc741fb4dd827214f8db7",
+    "bytes": 55987200,
+    "match": true,
+    "message": [
+     "9 pictures"
+    ]
+   },
+   "libde265": {
+    "exit": 0,
+    "md5": "5930ca9acf0bc741fb4dd827214f8db7",
+    "bytes": 55987200,
+    "match": true,
+    "message": [
+     "nFrames decoded: 9 (1920x1080 @  5.75 fps)"
+    ]
+   }
+  },
+  {
+   "stream": "TSCTX_8bit_RExt_SHARP_1.bin",
+   "sha256": "a8905fbbd43304ea0d7a0bfacb040d119747ab13cff3902bcbc2e1db7aca97ac",
+   "expected_md5": "00fa6cd027d3a37cc0d10e5575d955d2",
+   "candidate": {
+    "exit": 0,
+    "md5": "00fa6cd027d3a37cc0d10e5575d955d2",
+    "bytes": 55987200,
+    "match": true,
+    "message": [
+     "9 pictures"
+    ]
+   },
+   "libde265": {
+    "exit": 0,
+    "md5": "00fa6cd027d3a37cc0d10e5575d955d2",
+    "bytes": 55987200,
+    "match": true,
+    "message": [
+     "nFrames decoded: 9 (1920x1080 @  9.62 fps)"
+    ]
+   }
+  },
+  {
+   "stream": "WAVETILES_RExt_Sony_2.bit",
+   "sha256": "d8f99160cd452951165e4374d01ea87ff8ff2af33cd194b694aed33763cac992",
+   "expected_md5": "d4809354218e6747c70aed951b80acc9",
+   "candidate": {
+    "exit": 0,
+    "md5": "d4809354218e6747c70aed951b80acc9",
+    "bytes": 4718592,
+    "match": true,
+    "message": [
+     "4 pictures"
+    ]
+   },
+   "libde265": {
+    "exit": 10,
+    "md5": "72bd39307288ff2f5f8f1dbf6cfd39fc",
+    "bytes": 2359296,
+    "match": false,
+    "message": [
+     "nFrames decoded: 2 (512x384 @ 60.79 fps)"
+    ]
+   }
+  },
+  {
+   "stream": "WPP_AND_TILE_10Bit422Test_HIGH_TP_444_10BIT_RExt_Apple_2.bit",
+   "sha256": "25dbd378d19e10b020f413213a3ca183ff4c5132500ddecf84d7d9d22218f301",
+   "expected_md5": "32e6b91c9497e161fe66c1fbd3cec51e",
+   "candidate": {
+    "exit": 0,
+    "md5": "32e6b91c9497e161fe66c1fbd3cec51e",
+    "bytes": 24883200,
+    "match": true,
+    "message": [
+     "3 pictures"
+    ]
+   },
+   "libde265": {
+    "exit": 10,
+    "md5": "d41d8cd98f00b204e9800998ecf8427e",
+    "bytes": 0,
+    "match": false,
+    "message": [
+     "nFrames decoded: 0 (0x0 @  0.00 fps)"
+    ]
+   }
+  },
+  {
+   "stream": "WPP_AND_TILE_AND_CABAC_BYPASS_ALIGN_0_HIGH_TP_444_14BIT_RExt_Apple_2.bit",
+   "sha256": "00075c57f3c1e17619904b60c5352c52814eaff495012df453763fe7a5dcb9f2",
+   "expected_md5": "e134676d233f3f5b49ab4c252d5d18be",
+   "candidate": {
+    "exit": 0,
+    "md5": "e134676d233f3f5b49ab4c252d5d18be",
+    "bytes": 3538944,
+    "match": true,
+    "message": [
+     "3 pictures"
+    ]
+   },
+   "libde265": {
+    "exit": 10,
+    "md5": "d41d8cd98f00b204e9800998ecf8427e",
+    "bytes": 0,
+    "match": false,
+    "message": [
+     "nFrames decoded: 0 (0x0 @  0.00 fps)"
+    ]
+   }
+  },
+  {
+   "stream": "WPP_AND_TILE_AND_CABAC_BYPASS_ALIGN_1_HIGH_TP_444_14BIT_RExt_Apple_2.bit",
+   "sha256": "bdc2868a887a56a58aaef4046f4341525c320616834189c9e2d2f582e08340c7",
+   "expected_md5": "5347f09153fd54b24a37427ca0bd9b30",
+   "candidate": {
+    "exit": 0,
+    "md5": "5347f09153fd54b24a37427ca0bd9b30",
+    "bytes": 3538944,
+    "match": true,
+    "message": [
+     "3 pictures"
+    ]
+   },
+   "libde265": {
+    "exit": 10,
+    "md5": "d41d8cd98f00b204e9800998ecf8427e",
+    "bytes": 0,
+    "match": false,
+    "message": [
+     "nFrames decoded: 0 (0x0 @  0.00 fps)"
+    ]
+   }
+  },
+  {
+   "stream": "WPP_AND_TILE_AND_CABAC_EXT_PREC_1_HIGH_TP_444_14BIT_RExt_Apple_2.bit",
+   "sha256": "be5be06a8dd2c873e8b386b4e4eab2f45713277f1d6f2e6bde5c96e6d7426af4",
+   "expected_md5": "95f0019aed6c9c845fe5e2088aefdc39",
+   "candidate": {
+    "exit": 0,
+    "md5": "95f0019aed6c9c845fe5e2088aefdc39",
+    "bytes": 3538944,
+    "match": true,
+    "message": [
+     "3 pictures"
+    ]
+   },
+   "libde265": {
+    "exit": 10,
+    "md5": "d41d8cd98f00b204e9800998ecf8427e",
+    "bytes": 0,
+    "match": false,
+    "message": [
+     "nFrames decoded: 0 (0x0 @  0.00 fps)"
+    ]
+   }
+  },
+  {
+   "stream": "WPP_AND_TILE_HIGH_TP_444_8BIT_RExt_Apple_2.bit",
+   "sha256": "00075c57f3c1e17619904b60c5352c52814eaff495012df453763fe7a5dcb9f2",
+   "expected_md5": "e134676d233f3f5b49ab4c252d5d18be",
+   "candidate": {
+    "exit": 0,
+    "md5": "e134676d233f3f5b49ab4c252d5d18be",
+    "bytes": 3538944,
+    "match": true,
+    "message": [
+     "3 pictures"
+    ]
+   },
+   "libde265": {
+    "exit": 10,
+    "md5": "d41d8cd98f00b204e9800998ecf8427e",
+    "bytes": 0,
+    "match": false,
+    "message": [
+     "nFrames decoded: 0 (0x0 @  0.00 fps)"
+    ]
+   }
+  },
+  {
+   "stream": "WPP_HIGH_TP_444_8BIT_RExt_Apple_2.bit",
+   "sha256": "2b7110f868bfb62da8282a0a6300408d7abad70a5a940a6a0ba1fbc69536f870",
+   "expected_md5": "3c94b5ebc0aed0abae4e619b9dcca9cc",
+   "candidate": {
+    "exit": 0,
+    "md5": "3c94b5ebc0aed0abae4e619b9dcca9cc",
+    "bytes": 3538944,
+    "match": true,
+    "message": [
+     "3 pictures"
+    ]
+   },
+   "libde265": {
+    "exit": 0,
+    "md5": "2ab9dd1dd203ed4f4ae495fffc7cabb0",
+    "bytes": 3538944,
+    "match": false,
+    "message": [
+     "nFrames decoded: 3 (1024x768 @ 61.18 fps)"
+    ]
+   }
+  }
+ ]
+}

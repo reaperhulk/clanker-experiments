@@ -15,6 +15,30 @@ libde265 are handled in `src/hevc.rs` around the unmodified API:
 It supports only 4:2:0 and 4:0:0 at 8 and 10 bits. It rejects range-extension
 streams (4:2:2, 4:4:4, 12-bit).
 
+## HEVC range-extension decoding (oxideav-h265)
+
+Streams rusty_h265 rejects for their format go to
+[oxideav-h265](https://crates.io/crates/oxideav-h265) 0.0.11 (MIT), used
+unmodified from crates.io. `src/hevc.rs` routes a stream there when an SPS has
+chroma_format_idc 2 or 3, a bit depth above 10, the range-extension profile
+with colour, or an SPS or PPS range extension. Pictures above level 6.2 stay
+with rusty_h265, which rejects them. The first output picture is used, cropped
+to the conformance window.
+
+- oxideav-h265 has no unsafe code, no build script and no native sources.
+- It depends on oxideav-core 0.1.36 (MIT), whose non-optional serde_json pulls
+  in serde_core, itoa and zmij. Their build scripts only probe the compiler
+  version and are hash-reviewed in `dependency-build-scripts.json`.
+  oxideav-core's unsafe code is in its frame arena, which the sequence decoder
+  libheifer calls does not use.
+- `tools/audit_dependencies.py` allowlists these versions, without features.
+
+It decodes all 49 JCT-VC range-extension conformance streams to their
+reference MD5 (`results/hevc-rext-conformance-report.json`), including the
+extended-precision, 16-bit, cabac-bypass-alignment and 4:4:4 scaling-list
+streams that libde265 decodes differently. It is slower than libde265: about
+1 s per 1080p 4:2:2 picture.
+
 ## HEVC encoding (hpvca)
 
 The built-in HEVC encoder is [hpvca](https://crates.io/crates/hpvca) 0.1.17,
@@ -75,5 +99,6 @@ Known limitations:
   than x265's;
 - monochrome streams signal the Main profile, so libheif chooses brand
   `heic` where x265's RExt monochrome profile gives `heix`;
-- the candidate decoder cannot decode the encoder's own 4:2:2, 4:4:4 and
-  12-bit output (RExt); libde265 decodes it.
+- persistent Rice adaptation is turned off: with it, hpvca 0.1.17 writes
+  lossless streams above 8 bits that libde265 and oxideav-h265 both find
+  malformed.

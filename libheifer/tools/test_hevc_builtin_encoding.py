@@ -210,7 +210,6 @@ def transcript(line, names=(('hpvca', 'x265'),)):
     return ' '.join(parts), files
 
 
-REXT_ERROR = re.compile(r'e7,0,Decoder plugin generated an error: Unspecified: Codec\(Unsupported\(".*?"\)\)')
 
 
 def classify(reference, candidate):
@@ -219,14 +218,6 @@ def classify(reference, candidate):
         return 'x265-option'
     if 'x265 encoder could not be opened' in reference and 'e9,5001' not in candidate:
         return 'x265-open-failure'
-    if REXT_ERROR.search(candidate):
-        # The candidate's HEVC decoder lacks the range extensions: apart from
-        # decodes that fail there and succeed in libde265, the lines agree.
-        decoded = re.compile(r'e0,0,Success (?:pixels\S* ?)+')
-        c = [part.strip() for part in REXT_ERROR.split(candidate)]
-        r = [part.strip() for part in decoded.split(reference)]
-        if len(c) == len(r) and c == r:
-            return 'hevc-rext-decoding'
     # hpvca signals Main / Main 10 for 4:0:0 where x265 (and the standard)
     # use the RExt Monochrome profiles, so libheif chooses the heic brand.
     heix, heic = '68656978', '68656963'
@@ -258,7 +249,9 @@ def fallback(reference, candidate):
 NAMES = (('hpvca', 'x265'),)
 LISTING_FORMAT = 1
 DEFAULTS = ('.build/reference-x265', '.build/hevc-builtin-encoding-report.json', '.build/hevc-builtin-encoding')
-DECODE_KNOWN = 'hevc-rext-decoding'
+# The kind for candidate decodes refused as unsupported where libheif succeeds;
+# None counts them as mismatches.
+DECODE_KNOWN = None
 
 
 def main():
@@ -333,7 +326,7 @@ def main():
         if outputs['reference'] != outputs['candidate']:
             unsupported = any(b'Codec(Unsupported(' in out for _, out in outputs['candidate'])
             reference_ok = all(code == 0 and b'e7,' not in out for code, out in outputs['reference'])
-            if unsupported and reference_ok:
+            if DECODE_KNOWN and unsupported and reference_ok:
                 known.append(dict(case=case, file=index, kind=DECODE_KNOWN))
             else:
                 decode_mismatches.append(dict(case=case, file=index))

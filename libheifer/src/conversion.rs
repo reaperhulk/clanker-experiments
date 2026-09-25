@@ -46,6 +46,7 @@ enum Op {
     YuvPacked,
     MonoYuv,
     MonoPacked,
+    PackedYuv,
     RgbYuv,
     DropAlpha,
     Depth,
@@ -271,6 +272,29 @@ fn next(s: State, t: State, o: ColorConversionOptions) -> Vec<(State, Op, u32)> 
                 11,
             );
         }
+    }
+    // Op_RGB24_32_to_YCbCr: interleaved 8-bit RGB(A) straight to 8-bit YCbCr
+    // in the target chroma, nearest-neighbour chroma only.
+    if s.cs == 1
+        && matches!(s.ch, 10 | 11)
+        && s.depth == 8
+        && (1..=3).contains(&t.ch)
+        && (t.ch == 3
+            || o.preferred_chroma_downsampling_algorithm == 1
+            || o.only_use_preferred_chroma_algorithm == 0)
+        && !matches!(t.nclx.matrix, 0 | 8 | 11 | 14)
+    {
+        add(
+            State {
+                cs: 0,
+                ch: t.ch,
+                alpha: if t.alpha > 0 { 8 } else { 0 },
+                depth: 8,
+                nclx: t.nclx,
+            },
+            Op::PackedYuv,
+            11,
+        );
     }
     if s.cs == 1
         && s.ch == 3
@@ -846,6 +870,7 @@ fn apply(image: &Image, s: State, t: State, op: Op) -> Result<Image, Error> {
             }
         }
         Op::RgbYuv => rgb_to_yuv(image, &mut out, t)?,
+        Op::PackedYuv => packed_to_yuv(image, &mut out, s, t)?,
     }
     Ok(out)
 }
@@ -924,6 +949,133 @@ fn upsample(p: &Plane, q: &mut Plane, w: u32, h: u32, ch: i32) {
         }
     }
 }
+/// RGB to YCbCr rows (Y, Cb, Cr) for the target's matrix.
+fn rgb_yuv_coefficients(p: Nclx) -> [[f32; 3]; 3] {
+    if let Some((r, b)) = kr_kb(p) {
+        [
+            [r, 1.0 - r - b, b],
+            [-r / (1.0 - b) / 2.0, -(1.0 - r - b) / (1.0 - b) / 2.0, 0.5],
+            [0.5, -(1.0 - r - b) / (1.0 - r) / 2.0, -b / (1.0 - r) / 2.0],
+        ]
+    } else {
+        [
+            [0.299, 0.587, 0.114],
+            [-0.168735, -0.331264, 0.5],
+            [0.5, -0.418688, -0.081312],
+        ]
+    }
+}
+/// Op_RGB24_32_to_YCbCr: 8-bit arithmetic on interleaved input, chroma from
+/// truncated 2x2 / 2x1 averages (4:2:0) or the left sample (4:2:2).
+fn packed_to_yuv(image: &Image, out: &mut Image, s: State, t: State) -> Result<(), Error> {
+    let (w, h) = (image.width, image.height);
+    let (sx, sy) = subsample(t.ch);
+    let p = image.plane(10).ok_or(UNSUPPORTED)?;
+    let n = if s.ch == 11 { 4 } else { 3 };
+    for c in 0..=2 {
+        out.add_plane(
+            c,
+            if c == 0 { w } else { w.div_ceil(sx) },
+            if c == 0 { h } else { h.div_ceil(sy) },
+            8,
+        )?;
+    }
+    let coeff = rgb_yuv_coefficients(t.nclx);
+    let full = t.nclx.full_range;
+    let px = |x: u32, y: u32| {
+        let at = y as usize * p.stride + x as usize * n;
+        [0, 1, 2].map(|c| i32::from(p.data()[at + c]))
+    };
+    for y in 0..h {
+        for x in 0..w {
+            let [r, g, b] = px(x, y).map(|v| v as f32);
+            let v = r * coeff[0][0] + g * coeff[0][1] + b * coeff[0][2];
+            let v = if full {
+                clip(v, 255)
+            } else {
+                clip(v * 0.85547, 219) + 16
+            };
+            put(out.plane_mut(0).unwrap(), x, y, v);
+        }
+    }
+    let mut chroma = |x: u32, y: u32, [r, g, b]: [i32; 3]| {
+        let [r, g, b] = [r, g, b].map(|v| v as f32);
+        let cb = r * coeff[1][0] + g * coeff[1][1] + b * coeff[1][2];
+        let cr = r * coeff[2][0] + g * coeff[2][1] + b * coeff[2][2];
+        let (cb, cr) = if full {
+            (clip(cb + 128.0, 255), clip(cr + 128.0, 255))
+        } else {
+            (clip(cb * 0.875 + 128.0, 255), clip(cr * 0.875 + 128.0, 255))
+        };
+        put(out.plane_mut(1).unwrap(), x / sx, y / sy, cb);
+        put(out.plane_mut(2).unwrap(), x / sx, y / sy, cr);
+    };
+    let average = |pixels: &[[i32; 3]]| {
+        let count = pixels.len() as i32;
+        [0, 1, 2].map(|c| pixels.iter().map(|p| p[c]).sum::<i32>() / count)
+    };
+    match (sx, sy) {
+        (1, 1) => {
+            for y in 0..h {
+                for x in 0..w {
+                    chroma(x, y, px(x, y));
+                }
+            }
+        }
+        (2, 1) => {
+            for y in 0..h {
+                for x in (0..w).step_by(2) {
+                    chroma(x, y, px(x, y));
+                }
+            }
+        }
+        _ => {
+            for y in (0..h & !1).step_by(2) {
+                for x in (0..w & !1).step_by(2) {
+                    let v = average(&[px(x, y), px(x + 1, y), px(x, y + 1), px(x + 1, y + 1)]);
+                    chroma(x, y, v);
+                }
+            }
+            if w & 1 == 1 {
+                let x = w - 1;
+                for y in (0..h).step_by(2) {
+                    let v = if y + 1 < h {
+                        average(&[px(x, y), px(x, y + 1)])
+                    } else {
+                        px(x, y)
+                    };
+                    chroma(x, y, v);
+                }
+            }
+            if h & 1 == 1 {
+                let y = h - 1;
+                for x in (0..w).step_by(2) {
+                    let v = if x + 1 < w {
+                        average(&[px(x, y), px(x + 1, y)])
+                    } else {
+                        px(x, y)
+                    };
+                    chroma(x, y, v);
+                }
+            }
+        }
+    }
+    if t.alpha > 0 {
+        out.add_plane(6, w, h, 8)?;
+        let q = out.plane_mut(6).unwrap();
+        for y in 0..h {
+            for x in 0..w {
+                let a = if n == 4 {
+                    i32::from(p.data()[y as usize * p.stride + x as usize * 4 + 3])
+                } else {
+                    255
+                };
+                put(q, x, y, a);
+            }
+        }
+    }
+    Ok(())
+}
 fn rgb_to_yuv(image: &Image, out: &mut Image, t: State) -> Result<(), Error> {
     let (w, h) = (image.width, image.height);
     let (sx, sy) = subsample(t.ch);
@@ -936,19 +1088,7 @@ fn rgb_to_yuv(image: &Image, out: &mut Image, t: State) -> Result<(), Error> {
         )?;
     }
     let p = t.nclx;
-    let coeff = if let Some((r, b)) = kr_kb(p) {
-        [
-            [r, 1.0 - r - b, b],
-            [-r / (1.0 - b) / 2.0, -(1.0 - r - b) / (1.0 - b) / 2.0, 0.5],
-            [0.5, -(1.0 - r - b) / (1.0 - r) / 2.0, -b / (1.0 - r) / 2.0],
-        ]
-    } else {
-        [
-            [0.299, 0.587, 0.114],
-            [-0.168735, -0.331264, 0.5],
-            [0.5, -0.418688, -0.081312],
-        ]
-    };
+    let coeff = rgb_yuv_coefficients(p);
     let (max, half, offset) = ((1 << t.depth) - 1, 1 << (t.depth - 1), 16 << (t.depth - 8));
     let rgb = |x, y| [3, 4, 5].map(|c| sample(image.plane(c).unwrap(), x, y));
     for y in 0..h {

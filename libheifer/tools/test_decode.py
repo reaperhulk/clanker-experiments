@@ -9,6 +9,10 @@ from pathlib import Path
 import subprocess
 from test_hevc import FIXTURES
 
+# Fixture path -> known-difference kind; differing cases of these fixtures are
+# reported as known differences instead of mismatches.
+KNOWN = {}
+
 
 def main():
     p = argparse.ArgumentParser(description=__doc__)
@@ -52,6 +56,8 @@ def main():
             data[name]=out.read_bytes()
         match=data['reference']==data['candidate']
         record={'fixture':fixture,'fixture_sha256':hashlib.sha256((source/fixture).read_bytes()).hexdigest(),'mode':mode,'match':match, **{name+'_sha256':hashlib.sha256(value).hexdigest() for name,value in data.items()}}
+        if not match and fixture in KNOWN:
+            record['known']=KNOWN[fixture]
         if not match:
             at=next((i for i,(a,b) in enumerate(zip(data['reference'],data['candidate'])) if a!=b),min(map(len,data.values())))
             record.update(offset=at,reference=data['reference'][max(0,at-16):at+80].hex(),candidate=data['candidate'][max(0,at-16):at+80].hex())
@@ -64,10 +70,14 @@ def main():
     with concurrent.futures.ThreadPoolExecutor(max_workers=(os.cpu_count() or 1) if distinct else 1) as pool:
         for (fixture,mode),record in zip(cases,pool.map(lambda c: case(*c),cases)):
             results.append(record)
-            print(f'{fixture} mode={mode}: {"match" if record["match"] else "DIFFERENT"}',flush=True)
+            print(f'{fixture} mode={mode}: {"match" if record["match"] else record.get("known","DIFFERENT")}',flush=True)
     if binary_hashes != {name:hashlib.sha256(path.read_bytes()).hexdigest() for name,path in libraries.items()} or client_hash != hashlib.sha256(Path('tests/decode.c').read_bytes()).hexdigest():
         raise SystemExit('Decode binaries or client changed during comparison; no report accepted')
-    report={'scope':__doc__,'cases':len(results),'mismatches':sum(not r['match'] for r in results),
+    known={}
+    for r in results:
+        if 'known' in r:known[r['known']]=known.get(r['known'],0)+1
+    report={'scope':__doc__,'cases':len(results),'mismatches':sum(not r['match'] and 'known' not in r for r in results),
+            **({'known_differences':known} if KNOWN else {}),
             'client_sanitizers':args.sanitize,'leak_check':args.sanitize and not args.no_leak_check,
             'client_sha256':client_hash,
             **{name+'_sha256':value for name,value in binary_hashes.items()},'results':results}
