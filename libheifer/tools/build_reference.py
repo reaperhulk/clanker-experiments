@@ -187,8 +187,16 @@ def main():
             "-DLINKED_10BIT=ON", "-DLINKED_12BIT=ON")
         run(cmake, "--build", cbuild, "-j", a.j)
         run(cmake, "--install", cbuild)
-        # Explicit paths, like the other codecs: pkg-config discovery of the
-        # installed x265 is not reliable on every host (the CI runner missed it).
+        # x265 installs its shared library (and x265.pc) only when git describe
+        # finds a release tag, which a shallow fetch by commit does not have.
+        for built in sorted(cbuild.glob("libx265.so*")):
+            target = install / "lib" / built.name
+            if not target.exists() and not target.is_symlink():
+                if built.is_symlink():
+                    target.symlink_to(os.readlink(built))
+                else:
+                    shutil.copy2(built, target)
+        # Explicit paths, like the other codecs, since x265.pc may be missing.
         library = next(install.rglob("libx265.so"), None)
         if library is None:
             raise SystemExit("x265 install has no libx265.so")
