@@ -322,7 +322,7 @@ MUTATIONS = [
     ("item_reference_order", "crates/capi/src/items.rs", ".filter(|r| r.from == from)\n        .nth(index as usize)", ".filter(|r| r.from == from)\n        .rev()\n        .nth(index as usize)", "items"),
     ("item_error_compression", "crates/capi/src/items.rs", "&& method == 0\n        && !compression.is_null()", "&& false\n        && !compression.is_null()", "items"),
     ("deflate_tree_tiebreak", "src/deflate_compat.rs", "nodes[a].depth <= nodes[b].depth", "nodes[a].depth < nodes[b].depth", "items"),
-    ("inflate_error_cause", "vendor/zlib-rs/src/inflate.rs", "self.error_message.get_or_insert(msg);", "self.error_message = Some(msg);", "items"),
+    ("inflate_error_cause", "src/compression.rs", "original_message(&data, method == 4).unwrap_or(m)", "m", "items"),
     ("compressed_handle_metadata", "src/context.rs", "if !matches!(method, 0 | 3 | 4)", "if method != 0", "metadata_compression"),
     ("tai_copy_version", "crates/capi/src/tai.rs", "if unsafe { dst.cast::<u8>().read() } == 0", "if unsafe { dst.cast::<u8>().read() } <= 1", "tai"),
     ("tai_typed_equality", "src/properties.rs", "p.tai == property.tai", "p.data == property.data", "tai"),

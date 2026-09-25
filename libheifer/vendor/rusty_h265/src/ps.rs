@@ -440,7 +440,7 @@ pub fn parse_st_ref_pic_set(r: &mut BitReader, idx: usize, sets: &[ShortTermRps]
 }
 
 /// The VUI fields the decoder itself needs (the rest is skipped exactly).
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Vui {
     pub sar_width: u16,
     pub sar_height: u16,
@@ -454,19 +454,6 @@ pub struct Vui {
     pub min_spatial_segmentation_idc: u32,
     /// `default_display_window` offsets (in chroma units like the conf window).
     pub def_disp_win: [u32; 4],
-}
-
-// ISO/IEC 23008-2: absent colour_description fields mean "unspecified" (2),
-// not identity matrix (0). Preserve these defaults when exporting decoded NCLX.
-impl Default for Vui {
-    fn default() -> Self {
-        Self {
-            sar_width: 0, sar_height: 0, video_full_range_flag: false,
-            colour_primaries: 2, transfer_characteristics: 2, matrix_coeffs: 2,
-            timing_info_present: false, num_units_in_tick: 0, time_scale: 0,
-            min_spatial_segmentation_idc: 0, def_disp_win: [0; 4],
-        }
-    }
 }
 
 fn parse_vui(r: &mut BitReader, max_sub_layers_minus1: u32) -> Result<Vui> {

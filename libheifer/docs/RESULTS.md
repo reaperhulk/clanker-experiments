@@ -294,8 +294,11 @@ through retained image handles. Both suites pass C-client ASan/UBSan; local leak
 checking is disabled because of ptrace, while CI enables it.
 
 Pure Rust `zlib-rs` 0.6.8 supplies inflation with only `std`/`rust-allocator`
-features. Its vendored compatibility patch preserves the original malformed-
-stream diagnostic instead of overwriting it with a repeated-call message.
+features, unmodified from crates.io. When its fast decoding loop fails it
+overwrites the diagnostic with "repeated call with bad state";
+`src/compression.rs` then replays the stream with an output buffer below the
+fast loop's minimum, which reports the original malformed-stream diagnostic
+as zlib does (this replaced an earlier vendored patch).
 The default encoder is an in-tree Rust adaptation of zlib 1.3's level-6 matching
 and Huffman algorithms, retaining the zlib license in `licenses/zlib.txt`.
 Using the dependency's default encoder initially produced different compressed
@@ -2063,3 +2066,27 @@ not observable in these comparisons and were dropped:
 
 Encoding is all-intra, including image sequences. HEVC sequence encoding and
 the VUI are open coverage gaps.
+
+## Vendoring reduced to decoders with parity patches
+
+rav1d, rav1e, av-scenechange and zlib-rs now come from crates.io unmodified.
+Their vendored copies had no Rust source changes, or only a change that
+libheifer now makes around the public API:
+
+- rav1d is driven through its dav1d-compatible C API from
+  `src/rav1d_api.rs`;
+- rav1e and av-scenechange build with `asm` off;
+- the zlib-rs diagnostic is recovered by a slow-path replay.
+
+rusty_h265 stays vendored for monochrome decoding only. Its VUI default and
+missing-PPS patches were dropped in favour of adapter code in `src/hevc.rs`.
+
+rusty_h264, jpeg-decoder and hayro-jpeg2000 stay vendored, because their
+OpenH264, libjpeg-turbo and OpenJPEG parity changes are inside the decoders.
+
+`tools/audit_dependencies.py` now audits the graph built for the supported
+Linux, macOS and Windows targets. The `cfg(fuzzing)` and wasm-only locked
+dependencies are outside that graph. The previously detected
+`inflate_error_cause` mutation now targets the replay and is still detected
+(84 mismatches). The 75 normal-group suites that do not use the unchanged AVC,
+JPEG, JPEG2000 and VVC decoders pass unchanged.

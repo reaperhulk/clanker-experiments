@@ -62,10 +62,27 @@ fn decode_nals(
                 *present = true;
             }
             if let Some(vui) = sps.vui {
+                // rusty_h265 leaves an absent colour description as zeros;
+                // primaries and transfer 0 are reserved, so all zeros means
+                // "not present" and the fields stay unspecified (2), as
+                // libde265 reports them.
+                let absent = (
+                    vui.colour_primaries,
+                    vui.transfer_characteristics,
+                    vui.matrix_coeffs,
+                ) == (0, 0, 0);
                 nclx = crate::color::Nclx {
-                    primaries: vui.colour_primaries.into(),
-                    transfer: vui.transfer_characteristics.into(),
-                    matrix: vui.matrix_coeffs.into(),
+                    primaries: if absent {
+                        2
+                    } else {
+                        vui.colour_primaries.into()
+                    },
+                    transfer: if absent {
+                        2
+                    } else {
+                        vui.transfer_characteristics.into()
+                    },
+                    matrix: if absent { 2 } else { vui.matrix_coeffs.into() },
                     full_range: vui.video_full_range_flag,
                 };
             }
@@ -86,7 +103,9 @@ fn decode_nals(
         // libde265 discards slices whose parameter sets have not arrived. Keep
         // accepting later NALs so a subsequent complete picture can be decoded.
         match decoder.push_nal(&nal, None) {
-            Ok(()) | Err(rusty_h265::Error::MissingParameterSet(_)) => {}
+            Ok(()) => {}
+            Err(rusty_h265::Error::InvalidData(message))
+                if message.starts_with("slice refers to unknown PPS ") => {}
             Err(error) => return Err(DecodeError::Codec(error)),
         }
     }

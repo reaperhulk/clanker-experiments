@@ -1,13 +1,17 @@
 # AV1 implementation dependencies
 
-The vendored rav1d 1.1.0 source is pinned to
-`782dab2135ea64a057c097088a13eb8ed3cc3320`. Its manifest contains only the
-`bitdepth_8` and `bitdepth_16` features. The original assembly build script,
-assembly sources, `cc`/nasm dependencies, and unmangled dav1d entry points are
-absent. The added safe API calls internal Rust functions and owns the decoder,
-packets, pictures, and copied pixel buffers. No foreign decoder is called.
-The core retains `forbid(unsafe_code)`; upstream rav1d contains its own unsafe
-Rust implementation and is not described as entirely safe Rust.
+The AV1 decoder is rav1d 1.1.0 from crates.io, unmodified, with only the
+`bitdepth_8` and `bitdepth_16` features. Its `asm` features are off, so its
+build script does nothing. Its unconditional cc and nasm-rs build-dependencies
+are compiled as build tooling and never invoked. The package still ships its
+assembly and C sources, but they are not compiled. rav1d's public API is its
+dav1d-compatible `extern "C"` interface. `src/rav1d_api.rs` wraps it as an
+owned decoder that copies complete active sample planes. It is the only
+libheifer module allowed to use `unsafe` (the crate denies `unsafe_code` and
+this module opts out). rav1d itself contains unsafe Rust and is not described
+as entirely safe Rust. Its `dav1d_*` entry points are exported from the C API
+library, as rav1e's `rav1e_*` entry points already were. No foreign decoder is
+called.
 
 The resolved graph is allowlisted by exact package/version in
 `tools/audit_dependencies.py`. Compiler/platform build scripts are allowed only
@@ -37,26 +41,28 @@ still require the broader project gates.
 
 ## AV1 encoding (rav1e)
 
-The AV1 encoder is rav1e 0.8.1, vendored in `vendor/rav1e` with its
-av-scenechange 0.14.1 dependency in `vendor/av-scenechange`. Both trees drop
-the assembly and C sources and keep only the build-information/environment
-steps of their build scripts; the `asm`, `cc` and `nasm-rs` features and build
-dependencies, the binaries and the native decoder test features are removed
-(`LIBHEIFER_CHANGES.md` in each). The C API crate enables rav1e's `capi` and
-`threading` features. `tools/audit_dependencies.py` pins both feature sets and
-rejects native sources in either tree; the new pure Rust crates are allowlisted
-by exact version and their build scripts by hash:
+The AV1 encoder is rav1e 0.8.1 from crates.io, unmodified, with its
+av-scenechange 0.14.1 dependency (default features off). rav1e's `asm`
+default feature is off, and the C API crate enables only `capi` and
+`threading`. Both build scripts compile their packaged assembly only under
+`asm`. `tools/audit_dependencies.py` pins both feature sets and the build
+scripts by hash. The audited graph is the one built for the supported Linux,
+macOS and Windows targets, so rav1e's `cfg(fuzzing)` harness dependencies
+(libfuzzer-sys and others) and wasm-only dependencies are locked but never
+compiled. The pure Rust crates are allowlisted by exact version:
 
 | Package | Build behavior |
 |---|---|
-| rav1e, av-scenechange | Build information (`built`) and environment variables only |
+| rav1e, av-scenechange | Build information (`built`) and environment variables only; assembly only under the disabled `asm` feature |
+| rav1d | Empty without `asm` |
+| getrandom | Memory-sanitizer cfg detection (cc/nasm-rs build tooling for rav1d) |
 | anyhow, thiserror | Compile Rust probes with rustc to select cfgs |
 | crossbeam-*, num-traits | Rust version/cfg probes |
 | rayon-core | Empty; its `links` key only guards against duplicate versions |
 | wasm-bindgen, wasm-bindgen-shared | wasm32 target dependencies (version and schema hash); never built natively |
 
 The native oracle builds librav1e from git tag v0.8.1 (whose `src/` is
-identical to the vendored crate) with cargo-c, `--no-default-features
+identical to the crates.io package) with cargo-c, `--no-default-features
 --features capi,threading`, after aligning its lockfile to libheifer's
 dependency versions; only proc-macro crates differ.
 

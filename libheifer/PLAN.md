@@ -751,7 +751,7 @@ OpenJPH plugin (311 encoding cases; 2,000 fuzzed codestreams). Its read-back
 fixed 9/7 single-sample synthesis and deep-decomposition precincts in the
 decoder.
 
-AV1 encoding uses vendored Rust-only rav1e 0.8.1 behind a transliteration of
+AV1 encoding uses crates.io rav1e 0.8.1 (assembly off) behind a transliteration of
 libheif's rav1e plugin, byte-identical to libheif with the same rav1e (143
 encoding cases).
 

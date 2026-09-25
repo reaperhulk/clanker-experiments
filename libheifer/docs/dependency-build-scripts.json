@@ -3,7 +3,7 @@
     "build.rs": "89d1baedcff59822ed692d3a33f131c211a213bdec33c83f68b54110d9c64223"
   },
   "av-scenechange@0.14.1": {
-    "build.rs": "8b5d950e0ad713fa0cbc86b4673c721c673415ea8da37e512e17bdfc9e301157"
+    "build.rs": "ac91ff305fd1b0ab4607c3b6c4ad152b63563bbd8e6e4076aff47c837a9fda3e"
   },
   "crossbeam-deque@0.8.8": {
     "build.rs": "c8c35fc536a2e6481549bc13979293cb51244cd9c72d4ed9e35c22a1d70fa9ae"
@@ -13,6 +13,9 @@
   },
   "crossbeam-utils@0.8.23": {
     "build.rs": "79cc5363313f77ab76e2de4779e384c672a747fbcd4b96647a79286568714807"
+  },
+  "getrandom@0.4.3": {
+    "build.rs": "662faa06d7b2a9c5bea2c17a127a90e00b9f9b31105b0360da516e47cf816e95"
   },
   "libc@0.2.189": {
     "build.rs": "e47f4a6762799b6e69cefc7acdb3291df828010e4de20609f7378f9c94ea29e6"
@@ -43,8 +46,11 @@
   "quote@1.0.47": {
     "build.rs": "cd6808c02e476b09a520105e2c6f6d325cccb1ecd542cbbcc836a0ae6f6fb0f1"
   },
+  "rav1d@1.1.0": {
+    "build.rs": "a7b17c3c9498d98835197a9654b1fe1f41f745e62e9fc9bf2fd27f7840a68c58"
+  },
   "rav1e@0.8.1": {
-    "build.rs": "22f1c04d8584aec52b59848a8c894cc895db494e3e8a55a1516f4e57a819167b"
+    "build.rs": "762a52a53ca01a04d5c173619555391ec0d4029377d43e31a177d14bb0562add"
   },
   "rayon-core@1.13.0": {
     "build.rs": "fa31cb198b772600d100a7c403ddedccef637d2e6b2da431fa7f02ca41307fc6"

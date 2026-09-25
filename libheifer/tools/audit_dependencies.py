@@ -29,7 +29,7 @@ REVIEWED |= {
     ('fearless_simd', '1.0.0'), ('spin', '0.12.3'),
 }
 
-# rav1e (AV1 encoder; vendored Rust-only with av-scenechange) and its Rust graph.
+# rav1e (AV1 encoder, crates.io with its `asm` feature off) with av-scenechange and its Rust graph.
 # wasm-bindgen* are wasm32-only target dependencies that never build natively.
 REVIEWED |= {
     ('aligned', '0.4.3'), ('aligned-vec', '0.6.4'), ('anyhow', '1.0.104'), ('arg_enum_proc_macro', '0.3.4'), ('arrayvec', '0.7.8'), ('as-slice', '0.2.1'), ('autocfg', '1.5.1'), ('av-scenechange', '0.14.1'), ('av1-grain', '0.2.5'), ('bitstream-io', '4.10.0'), ('built', '0.8.1'), ('bumpalo', '3.20.3'), ('crossbeam-deque', '0.8.8'), ('crossbeam-epoch', '0.9.21'), ('crossbeam-utils', '0.8.23'), ('either', '1.18.0'), ('equator', '0.4.2'), ('equator-macro', '0.4.2'), ('itertools', '0.14.0'), ('log', '0.4.34'), ('maybe-rayon', '0.1.1'), ('memchr', '2.8.3'), ('new_debug_unreachable', '1.0.6'), ('no_std_io2', '0.9.4'), ('nom', '8.0.0'), ('noop_proc_macro', '0.3.0'), ('num-bigint', '0.4.8'), ('num-derive', '0.4.2'), ('num-integer', '0.1.47'), ('num-rational', '0.4.2'), ('num-traits', '0.2.19'), ('pastey', '0.1.1'), ('profiling', '1.0.18'), ('profiling-procmacros', '1.0.18'), ('rav1e', '0.8.1'), ('rayon', '1.12.0'), ('rayon-core', '1.13.0'), ('scan_fmt', '0.2.6'), ('simd_helpers', '0.1.0'), ('stable_deref_trait', '1.2.1'), ('syn', '3.0.6'), ('thiserror', '2.0.21'), ('thiserror-impl', '2.0.21'), ('v_frame', '0.3.9'), ('wasm-bindgen', '0.2.128'), ('wasm-bindgen-macro', '0.2.128'), ('wasm-bindgen-macro-support', '0.2.128'), ('wasm-bindgen-shared', '0.2.128'), ('y4m', '0.8.0'),
@@ -37,13 +37,26 @@ REVIEWED |= {
 # hpvca (HEVC encoder, crates.io as published; no dependencies). Its default
 # avx/neon features select core::arch intrinsic kernels behind runtime detection.
 REVIEWED |= {('hpvca', '0.1.17')}
+# rav1d's unconditional build-dependencies. Its build script calls them only
+# under the `asm` feature, which is off (checked below); they are compiled as
+# build tooling and never invoked.
+REVIEWED |= {('cc', '1.4.7'), ('nasm-rs', '0.3.2'), ('jobserver', '0.1.35'), ('getrandom', '0.4.3'),
+             ('shlex', '2.0.1'), ('find-msvc-tools', '0.1.13')}
 # `links` keys that only guard against duplicate crate versions (no native library).
 MARKER_LINKS = {('rayon-core', '1.13.0'), ('wasm-bindgen-shared', '0.2.128')}
 
+TARGETS = ["x86_64-unknown-linux-gnu", "aarch64-unknown-linux-gnu", "x86_64-apple-darwin", "aarch64-apple-darwin", "x86_64-pc-windows-msvc"]
+
+
 def main():
-    metadata = json.loads(subprocess.check_output(["cargo", "metadata", "--locked", "--format-version=1", "--all-features"], text=True))
-    resolved = {node["id"] for node in metadata["resolve"]["nodes"]}
-    features = {node["id"]: node["features"] for node in metadata["resolve"]["nodes"]}
+    # The graph that builds on the supported platforms. Dependencies behind
+    # cfg(fuzzing) or wasm-only targets (such as rav1e's fuzzing harness) are
+    # locked but never compiled, so they are outside the reviewed graph.
+    resolved, features = set(), {}
+    for target in TARGETS:
+        metadata = json.loads(subprocess.check_output(["cargo", "metadata", "--locked", "--format-version=1", "--all-features", "--filter-platform", target], text=True))
+        resolved |= {node["id"] for node in metadata["resolve"]["nodes"]}
+        features.update({node["id"]: node["features"] for node in metadata["resolve"]["nodes"]})
     problems = []
     report = []
     build_scripts = json.loads(Path('docs/dependency-build-scripts.json').read_text())
@@ -68,15 +81,12 @@ def main():
         if name[0] == 'rav1d':
             if set(features[package['id']]) != {'bitdepth_8', 'bitdepth_16'}:
                 problems.append('rav1d must enable only Rust 8/16-bit implementations')
-            if any(p.suffix.lower() in ('.c', '.cc', '.cpp', '.s', '.asm') for p in root.rglob('*')):
-                problems.append('Native implementation source in rav1d vendor tree')
         if name[0] in ('rav1e', 'av-scenechange'):
-            # Vendored Rust-only trees: no assembly sources or native build path.
+            # crates.io packages ship assembly sources; their build scripts
+            # (hash-reviewed) compile them only under the `asm` feature.
             expected = {'capi', 'scan_fmt', 'threading'} if name[0] == 'rav1e' else set()
             if set(features[package['id']]) != expected:
-                problems.append(f'{name[0]} must use only the reviewed Rust configuration')
-            if any(p.suffix.lower() in ('.c', '.cc', '.cpp', '.s', '.asm', '.h') for p in root.rglob('*')):
-                problems.append(f'Native implementation source in {name[0]} vendor tree')
+                problems.append(f'{name[0]} must use only the reviewed Rust configuration (no asm)')
         if name[0] == 'hpvca':
             if set(features[package['id']]) != {'avx', 'default', 'neon'}:
                 problems.append('hpvca must use only its reviewed default features')

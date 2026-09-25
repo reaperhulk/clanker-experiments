@@ -19,6 +19,28 @@ pub fn compress(data: &[u8], method: i32) -> Result<Vec<u8>> {
     Ok(crate::deflate_compat::compress(data, method == 4))
 }
 
+/// zlib-rs replaces the error its fast decoding loop reports with "repeated
+/// call with bad state" when that loop fails. zlib keeps the original message,
+/// so replay the stream with an output buffer below the fast loop's minimum
+/// (260 bytes); the slower loop reports the error without overwriting it.
+fn original_message(data: &[u8], zlib: bool) -> Option<&'static str> {
+    let mut codec = Inflate::new(zlib, 15);
+    let mut buffer = [0u8; 256];
+    loop {
+        let before = (codec.total_in(), codec.total_out());
+        match codec.decompress(
+            &data[codec.total_in() as usize..],
+            &mut buffer,
+            InflateFlush::NoFlush,
+        ) {
+            Err(_) => return codec.error_message(),
+            Ok(Status::StreamEnd) => return None,
+            Ok(_) if (codec.total_in(), codec.total_out()) == before => return None,
+            Ok(_) => {}
+        }
+    }
+}
+
 pub fn decompress(data: Vec<u8>, method: i32, budget: &Arc<Budget>) -> Result<Vec<u8>> {
     if method == 0 {
         return Ok(data);
@@ -59,7 +81,12 @@ pub fn decompress(data: Vec<u8>, method: i32, budget: &Arc<Budget>) -> Result<Ve
                     150,
                     &format!(
                         "Invalid data in generic compression inflation: Error performing zlib inflate: {} ({code})\n",
-                        codec.error_message().unwrap_or("NULL")
+                        match codec.error_message() {
+                            Some(m) if m.starts_with("repeated call with bad state") => {
+                                original_message(&data, method == 4).unwrap_or(m)
+                            }
+                            m => m.unwrap_or("NULL"),
+                        }
                     ),
                 )
             })?;

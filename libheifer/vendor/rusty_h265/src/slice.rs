@@ -201,7 +201,7 @@ pub fn parse_slice_header<'a>(r: &mut BitReader, nal: &NalHeader, sps_by_pps: &d
         no_output_of_prior_pics = r.read_flag()?;
     }
     let pps_id = r.read_ue_max(63)? as u8;
-    let (sps, pps) = sps_by_pps(pps_id).ok_or(Error::MissingParameterSet(pps_id))?;
+    let (sps, pps) = sps_by_pps(pps_id).ok_or_else(|| Error::invalid(format!("slice refers to unknown PPS {pps_id}")))?;
 
     let mut dependent_slice_segment = false;
     let mut segment_address = 0;

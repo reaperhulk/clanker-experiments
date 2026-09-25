@@ -2,10 +2,18 @@
 
 ## HEVC decoding (rusty_h265)
 
-The decoder is rusty_h265 0.6.0, vendored in `vendor/rusty_h265`; its SIMD
-crate rusty_h265-accel comes from crates.io. See `CODECS.md`. It supports only 4:2:0
-and 4:0:0 at 8 and 10 bits. It rejects range-extension streams (4:2:2, 4:4:4,
-12-bit).
+The decoder is rusty_h265 0.6.0, vendored in `vendor/rusty_h265` because
+libheif's HEVC alpha planes are monochrome: the only patch adds monochrome
+(profile 4) decoding, which upstream rejects (`LIBHEIFER-PATCHES.md`). Its SIMD
+crate rusty_h265-accel comes from crates.io. Two other differences from
+libde265 are handled in `src/hevc.rs` around the unmodified API:
+
+- an all-zero VUI colour description (upstream's value when none is present)
+  is reported as unspecified;
+- slices that refer to an unknown PPS are discarded.
+
+It supports only 4:2:0 and 4:0:0 at 8 and 10 bits. It rejects range-extension
+streams (4:2:2, 4:4:4, 12-bit).
 
 ## HEVC encoding (hpvca)
 
