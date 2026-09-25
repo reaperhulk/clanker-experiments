@@ -777,6 +777,13 @@ differences), and OpenH264 decodes every file as the candidate does. Mean
 BD-rate against x264 is +3.6%. See `docs/RESULTS.md` and
 `docs/AVC_DEPENDENCIES.md`.
 
+VVC encoding uses an in-tree all-intra encoder built on the in-tree decoder
+(QT/BT/TT partitioning, MIP, MRL, CCLM, MTS, LFNST, dependent quantization,
+deblocking, SAO and ALF) behind a record reproducing libheif's vvenc plugin.
+It matches libheif with vvenc on 121 encoding cases with no known
+differences, vvdec decodes every file as the candidate does, and the mean
+BD-rate against vvenc's medium preset is +3.7%. See `docs/RESULTS.md`.
+
 HEVC range-extension streams (4:2:2, 4:4:4, bit depths above 10, RExt tools),
 which rusty_h265 rejects, are decoded by oxideav-h265 0.0.11 from crates.io,
 unmodified. It decodes all 49 JCT-VC RExt conformance streams to their

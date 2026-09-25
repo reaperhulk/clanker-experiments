@@ -34,7 +34,8 @@ inflater (zlib-rs) and the AV1 encoder (rav1e, BSD-2-Clause) are unmodified
 crates.io packages under their own licenses; the AV1 decoder retains rav1d's
 BSD-2-Clause notices in `vendor/rav1d`.
 The in-tree VVC decoder (`src/vvc`) translates vvdec 3.2.0 under the Clear BSD
-License (see `licenses/vvdec.txt`).
+License (see `licenses/vvdec.txt`); the in-tree all-intra VVC encoder
+(`src/vvc/encoder.rs`) builds on it.
 
 ## Development validation
 

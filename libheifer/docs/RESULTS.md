@@ -2189,6 +2189,98 @@ vendored decoder uses by path. The encoder gets the unmodified crates.io
 rusty_h264-common, and the `[patch]` entry for common is gone.
 
 
+## Built-in VVC encoding
+
+libheif encodes VVC with its vvenc plugin. No pure Rust VVC encoder exists on
+crates.io (the `vvenc` crate wraps the C++ library), so `src/vvc/encoder.rs`
+is an in-tree all-intra encoder. It is registered as "libheifer VVC
+encoder" (id `libheifer-vvc`, priority 100) right after the HEVC encoder, as
+libheif registers vvenc right after x265.
+
+The encoder reuses the decoder rather than duplicating it:
+
+- phase 1 searches each CTU with rates estimated on a copy of the CABAC
+  contexts, adding coding units to the decoder's `Picture` and reconstructing
+  them with the decoder's `reconstruct_cu`;
+- the in-loop filter decisions run the decoder's deblocking, SAO and ALF on
+  copies of the picture;
+- phase 2 replays the chosen trees through a CABAC writer whose syntax
+  mirrors the parser in `src/vvc/ctu.rs`, sharing its partitioner, MPM
+  derivation and coefficient contexts.
+
+With in-loop filters disabled, the decoder reproduces the encoder's
+reconstruction exactly for 4:0:0, 4:2:0, 4:2:2 and 4:4:4 (unit test).
+
+Coding tools: 64x64 CTUs, quadtree plus binary and ternary splits (MTT depth 2,
+32x32 maximum); the 67 regular modes, MIP and multiple reference lines for
+luma; DM, the four listed modes and CCLM/MDLM for chroma; DCT-II, implicit
+MTS and LFNST; dependent quantization with a four-state trellis; deblocking,
+SAO and ALF (per-class least-squares luma filters, per-component chroma
+filters, and the 16 fixed filter sets per CTU). Not used: dual trees, ISP,
+transform skip and BDPCM, JCCR, CC-ALF, 128x128 CTUs and perceptual QP
+adaptation.
+
+`crates/capi/src/builtin_vvc_encoder.rs` reproduces encoder_vvenc.cc:
+
+- `quality` and `lossless` (stored but never applied, as in the plugin);
+- 8-bit input only, sizes padded to multiples of 8 by edge replication;
+- QP `63 - quality * 63 / 100`;
+- extended SAR in the VUI for colour images;
+- the level from picture size and luma sample rate at the frame rate;
+- one packet per NAL unit.
+
+vvenc keeps its default internal 4:2:0 for every colour input, so 4:4:4
+chroma is averaged over 2x2 samples (vvenc's `downsampleYuv`) and the
+encoder codes 4:2:0 or 4:0:0. For 4:2:2 input vvenc copies full-height
+chroma planes into its half-height buffer, a heap buffer overflow that
+AddressSanitizer reports. That input is undefined upstream and excluded;
+the candidate averages rows in pairs.
+
+`tools/test_vvc_builtin_encoding.py` runs on the shared builtin harness
+against `.build/reference-vvc` (libheif with vvdec and vvenc). It covers
+121 cases: sizes from 1x1 to 200x136, colourspaces, qualities, lossless, bit
+depths 7-16, vvenc's parameters and unknown names, metadata, thumbnails,
+overlays and alpha. `vvcC` is summarized as chroma, depth, profile, tier,
+level, size and parameter-set arrays. Results: 0 mismatches and no known
+differences in normal, sanitizer-client and codec-free builds; vvdec decodes
+all 106 candidate files exactly as libheifer's decoder does.
+
+`test_vvc_encoding` now uses the vvenc oracle and classifies its
+refused-plugin fallback lines: 0 of 1,509 mismatches (normal and sanitizer
+clients). The 13 other encoder, plugin and writing suites are unchanged.
+
+The transcripts mask pixels, so `tools/test_vvc_encoder_quality.py` checks
+quality. It encodes three deterministic synthetic images (smooth, texture,
+blocky) through libheif with vvenc and with the candidate at five qualities,
+decodes both with vvdec, and fails when an image's BD-rate grows more than
+10 points above its recorded value. Recorded: -3.6% (smooth), +10.1% (texture) and +40.8% (blocky); the latest
+run gives -3.2%, +10.0% and +40.9% (`results/vvc-encoder-quality-report.json`). The
+blocky screen-like image shows the missing transform skip and BDPCM.
+vvenc's perceptual QP adaptation spends more bits on smooth content.
+
+Rate/distortion against vvenc's `medium` preset on 8 Kodak images through
+libheif (luma PSNR, qualities 10-95): mean BD-rate +3.7%, from -1.1% to
++8.8% per image (`results/vvc-rd-report.json`). At the same libheif
+quality the candidate's files are smaller and about 3 dB lower in PSNR
+than vvenc's, although both use the plugin's QP; the BD-rate compares them
+at equal PSNR. Per-tool steps on two images (05 and 13,
+QP 22-42): +23.6% for quadtree and regular modes, then MTT, RDOQ, CCLM,
+implicit MTS, LFNST, MIP, MRL, SAO, ALF and dependent quantization brought it
+to +5.6%. Encoding takes about 30-40 seconds for a 768x512 image on one core;
+vvenc medium through libheif uses several threads.
+
+Mutations (`results/vvc-encode-mutations-report.json`): 17 of 17 detected.
+Ten are new: the padding, accepted bit depth, quality range, `lossless`
+parameter, level sample rate and profile in the plugin, and the MIP mode
+count, CBF context, dependent-quantization levels and SAO edge class in the
+bitstream. The seven existing `vvcC` and brand mutations now run against
+the vvenc oracle. Four first candidates were replaced: a `quality` default
+mutant CI did not reach, an internal-chroma mutant that crashed, a chroma
+distortion weight with no observable effect, and an RDOQ mutant that
+dependent quantization made unreachable.
+
+Reports: `results/vvc-builtin-encoding-{normal,san,no-codecs}-report.json`.
+
 ## HEVC range-extension decoding (oxideav-h265)
 
 libheif decodes HEVC with libde265, which implements the format range
