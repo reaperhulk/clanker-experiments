@@ -1148,6 +1148,9 @@ pub struct Pps {
     pub height: u32,
     pub conf_win: Window,
     pub conf_win_present: bool,
+    /// Scaling window offsets (left, right, top, bottom) in chroma units:
+    /// explicit, or the conformance window.
+    pub scaling_win: [i32; 4],
     pub output_flag_present: bool,
     pub no_pic_partition: bool,
     pub subpic_id_mapping_present: bool,
@@ -1601,6 +1604,7 @@ pub fn parse_pps(r: &mut BitReader, sps_list: &[Option<Sps>]) -> Result<Pps, Err
         !sps.rpr_enabled && scaling_window,
         "pps_scaling_window_explicit_signalling_flag",
     )?;
+    let mut explicit_scaling = None;
     if scaling_window {
         let w = p.width as i64;
         let h = p.height as i64;
@@ -1623,6 +1627,7 @@ pub fn parse_pps(r: &mut BitReader, sps_list: &[Option<Sps>]) -> Result<Pps, Err
                 "pps_scaling_win offset out of bounds",
             )?;
         }
+        explicit_scaling = Some([left as i32, right as i32, top as i32, bottom as i32]);
     }
     p.output_flag_present = r.flag()?;
     p.no_pic_partition = r.flag()?;
@@ -1948,6 +1953,9 @@ pub fn parse_pps(r: &mut BitReader, sps_list: &[Option<Sps>]) -> Result<Pps, Err
     if p.width == sps.max_width && p.height == sps.max_height {
         p.conf_win = sps.conf_win.clone();
     }
+    let c = &p.conf_win;
+    p.scaling_win =
+        explicit_scaling.unwrap_or([c.left as i32, c.right as i32, c.top as i32, c.bottom as i32]);
     // finalizePPSPartitioning
     if p.no_pic_partition {
         p.log2_ctu_size = sps.log2_ctu_size;

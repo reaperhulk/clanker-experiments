@@ -42,6 +42,10 @@ pub struct RefPic {
     /// Wraparound offset of the picture's PPS when its border is extended
     /// by wrapping (vvdec's `PIC_RECON_WRAP` buffer).
     pub wrap: Option<i32>,
+    /// The PPS scaling window (`isRefScaled`, `getRprScaling`).
+    pub scaling_win: [i32; 4],
+    /// SPS chroma sample location flags (hor, ver collocated).
+    pub collocated: (bool, bool),
 }
 
 impl RefPic {
@@ -94,6 +98,8 @@ impl RefPic {
             col: vec![MotionInfo::default(); col_w * col_h],
             col_w,
             wrap: None,
+            scaling_win: [0; 4],
+            collocated: (true, true),
         }
     }
 }

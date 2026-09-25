@@ -506,7 +506,7 @@ impl Decoder {
     fn insert_unavailable(&mut self, poc: i32, lt: bool, tlayer: u32, sps: &Sps, pps: &Pps) {
         self.next_id += 1;
         let fmt = pic::Format::new(sps.chroma_format_idc);
-        let pic = RefPic::grey(
+        let mut pic = RefPic::grey(
             self.next_id,
             poc,
             fmt,
@@ -515,6 +515,8 @@ impl Decoder {
             sps.bit_depth,
             sps.log2_ctu_size,
         );
+        pic.scaling_win = pps.scaling_win;
+        pic.collocated = (sps.chroma_hor_collocated, sps.chroma_ver_collocated);
         self.dpb.push(DpbEntry {
             pic: Arc::new(pic),
             mark: if lt { LONG_TERM } else { SHORT_TERM },
@@ -791,11 +793,6 @@ impl Decoder {
     ) -> Result<ctu::SliceInter, Error> {
         let cur = self.cur.as_ref().ok_or(Error::NoPicture)?;
         let poc = info.poc;
-        for r in refs.iter().flatten() {
-            if r.width != cur.pic.width || r.height != cur.pic.height {
-                return Err(Error::Unsupported("reference picture resampling"));
-            }
-        }
         if sh.slice_type != ps::I_SLICE && sps.wraparound && !cur.pps.wraparound {
             // vvdec would read the never-extended wraparound buffer margins
             return Err(Error::Unsupported("SPS wraparound without PPS wraparound"));
@@ -951,6 +948,8 @@ impl Decoder {
             col,
             col_w,
             wrap: cur.pps.wraparound.then_some(cur.pps.wrap_offset),
+            scaling_win: cur.pps.scaling_win,
+            collocated: (cur.sps.chroma_hor_collocated, cur.sps.chroma_ver_collocated),
         };
         self.dpb.push(DpbEntry {
             pic: Arc::new(refpic),

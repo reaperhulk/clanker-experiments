@@ -785,6 +785,199 @@ impl<'p, 's> McCtx<'p, 's> {
         ))
     }
 
+    /// `Picture::isRefScaled` with `Slice::getScalingRatio`: the horizontal
+    /// and vertical ratios (14 fractional bits) of a scaled reference.
+    fn rpr_ratio(&self, refpic: &RefPic) -> Option<(i32, i32)> {
+        let pps = self.si.pps;
+        if refpic.width == pps.width as i32
+            && refpic.height == pps.height as i32
+            && refpic.scaling_win == pps.scaling_win
+        {
+            return None;
+        }
+        let (ux, uy) = (
+            self.si.sps.sub_width_c() as i32,
+            self.si.sps.sub_height_c() as i32,
+        );
+        let [l, r, t, b] = pps.scaling_win;
+        let [rl, rr, rt, rb] = refpic.scaling_win;
+        let cur_w = pps.width as i32 - (l + r) * ux;
+        let cur_h = pps.height as i32 - (t + b) * uy;
+        let ref_w = refpic.width - (rl + rr) * ux;
+        let ref_h = refpic.height - (rt + rb) * uy;
+        Some((
+            ((ref_w << 14) + (cur_w >> 1)) / cur_w,
+            ((ref_h << 14) + (cur_h >> 1)) / cur_h,
+        ))
+    }
+
+    /// `InterPrediction::xPredInterBlkRPR`: a block predicted from a scaled
+    /// reference, column by column horizontally and then row by row.
+    #[allow(clippy::too_many_arguments)]
+    fn pred_blk_rpr(
+        &self,
+        refpic: &RefPic,
+        p: &BlkParams,
+        (bx, by): (i32, i32),
+        (w, h): (usize, usize),
+        mv: Mv,
+        (rx, ry): (i32, i32),
+        filter_index: usize,
+    ) -> Buf {
+        const ONE: i32 = 1 << 14;
+        let luma = p.comp == 0;
+        let (csx, csy) = (p.sx as i32, p.sy as i32);
+        let (shift_h, shift_v) = (4 + csx, 4 + csy);
+        let (thr1, thr2) = (ONE * 5 / 4, ONE * 7 / 4);
+        let pick = |r: i32| {
+            if r > thr2 {
+                4
+            } else if r > thr1 {
+                3
+            } else {
+                filter_index
+            }
+        };
+        let (mut xf, mut yf) = (pick(rx), pick(ry));
+        if luma && filter_index == 2 {
+            if rx > thr1 {
+                xf += 2;
+            }
+            if ry > thr1 {
+                yf += 2;
+            }
+        }
+        let coeff = |idx: usize, frac: usize, cs: i32, alt: bool| -> &'static [i32] {
+            if luma {
+                match idx {
+                    0 if frac == 8 && alt => &LUMA_ALT_HPEL,
+                    0 => &LUMA_FILTER[frac],
+                    2 => &LUMA_FILTER_4X4[frac],
+                    3 => &LUMA_RPR1[frac],
+                    4 => &LUMA_RPR2[frac],
+                    5 => &AFFINE_LUMA_RPR1[frac],
+                    _ => &AFFINE_LUMA_RPR2[frac],
+                }
+            } else {
+                let f = frac << (1 - cs);
+                match idx {
+                    3 => &CHROMA_RPR1[f],
+                    4 => &CHROMA_RPR2[f],
+                    _ => &CHROMA_FILTER[f],
+                }
+            }
+        };
+        let pos_shift = 10;
+        let step_x = (rx + 8) >> 4;
+        let step_y = (ry + 8) >> 4;
+        let off_x = 1 << (pos_shift - shift_h - 1);
+        let off_y = 1 << (pos_shift - shift_v - 1);
+        let (ux, uy) = (
+            self.si.sps.sub_width_c() as i64,
+            self.si.sps.sub_height_c() as i64,
+        );
+        let win = self.si.pps.scaling_win;
+        let pos_x = ((i64::from(bx) << csx) - i64::from(win[0]) * ux) >> csx;
+        let pos_y = ((i64::from(by) << csy) - i64::from(win[2]) * uy) >> csy;
+        let (hor_col, ver_col) = refpic.collocated;
+        let add_x = if luma {
+            0
+        } else {
+            (1 - i64::from(hor_col)) * 8 * i64::from(rx - ONE)
+        };
+        let add_y = if luma {
+            0
+        } else {
+            (1 - i64::from(ver_col)) * 8 * i64::from(ry - ONE)
+        };
+        let round = |v: i64, cs: i32| v.signum() * ((v.abs() + (1i64 << (7 + cs))) >> (8 + cs));
+        let x0 = round(
+            ((pos_x << (4 + csx)) + i64::from(mv.x)) * i64::from(rx) + add_x,
+            csx,
+        ) + ((i64::from(refpic.scaling_win[0]) * ux) << (pos_shift - csx));
+        let y0 = round(
+            ((pos_y << (4 + csy)) + i64::from(mv.y)) * i64::from(ry) + add_y,
+            csy,
+        ) + ((i64::from(refpic.scaling_win[2]) * uy) << (pos_shift - csy));
+        let (x0, y0) = (x0 as i32, y0 as i32);
+        let plane = &refpic.planes[p.comp];
+        let (rw, rh) = (plane.width as i32, plane.height as i32);
+        let taps: usize = if luma { 8 } else { 4 };
+        let back = taps as i32 / 2 - 1;
+        let clip_x = |v: i32| v.clamp(-4, rw + 4);
+        let clip_y = |v: i32| v.clamp(-4, rh + 4);
+        let y_int0 = clip_y((y0 + off_y) >> pos_shift);
+        let ref_height = ((((y0 + (h as i32 - 1) * step_y) + off_y) >> pos_shift)
+            - ((y0 + off_y) >> pos_shift)
+            + 1)
+        .max(1);
+        let ext = if luma { 1 } else { 2 };
+        let mut rows = ref_height as usize + taps - 1 + ext;
+        for row in 0..h as i32 {
+            let y_int = clip_y((y0 + row * step_y + off_y) >> pos_shift);
+            rows = rows.max((y_int - y_int0) as usize + taps);
+        }
+        let mut tmp = Buf::new(w, rows);
+        for col in 0..w {
+            let pos = x0 + col as i32 * step_x;
+            let x_int = clip_x((pos + off_x) >> pos_shift);
+            let frac = (((pos + off_x) >> (pos_shift - shift_h)) & ((1 << shift_h) - 1)) as usize;
+            let src = fetch(plane, x_int - back, y_int0 - back, taps, rows, p);
+            if frac == 0 && xf < 2 {
+                filter_copy(
+                    &src,
+                    back as usize,
+                    0,
+                    &mut tmp,
+                    col,
+                    0,
+                    1,
+                    rows,
+                    true,
+                    false,
+                    p.bd,
+                    false,
+                );
+            } else {
+                let c = coeff(xf, frac, csx, p.alt_hpel && rx == ONE);
+                filter(
+                    &src,
+                    back as usize,
+                    0,
+                    &mut tmp,
+                    col,
+                    0,
+                    1,
+                    rows,
+                    c,
+                    false,
+                    true,
+                    false,
+                    p.bd,
+                );
+            }
+        }
+        let mut dst = Buf::new(w, h);
+        let last = !p.bi;
+        for row in 0..h {
+            let pos = y0 + row as i32 * step_y;
+            let y_int = clip_y((pos + off_y) >> pos_shift);
+            let frac = (((pos + off_y) >> (pos_shift - shift_v)) & ((1 << shift_v) - 1)) as usize;
+            let center = (y_int - y_int0) as usize + back as usize;
+            if frac == 0 && yf < 2 {
+                filter_copy(
+                    &tmp, 0, center, &mut dst, 0, row, w, 1, false, last, p.bd, false,
+                );
+            } else {
+                let c = coeff(yf, frac, csy, p.alt_hpel && ry == ONE);
+                filter(
+                    &tmp, 0, center, &mut dst, 0, row, w, 1, c, true, false, last, p.bd,
+                );
+            }
+        }
+        dst
+    }
+
     /// The wraparound offset for reading `refpic`'s wraparound buffer.
     fn ref_wrap(&self, refpic: &RefPic, comp: usize, wrap_ref: bool) -> Option<i32> {
         let (sx, _) = self.fmt.scale(comp);
@@ -895,6 +1088,17 @@ impl<'p, 's> McCtx<'p, 's> {
             } else {
                 let (bx, by, w, h) = self.blk(u, comp);
                 let mut p = self.params(comp, bi, u);
+                if let Some(ratio) = self.rpr_ratio(refpic) {
+                    // no clipMv for scaled references; wrapClipMv still runs
+                    let mut mv = u.mv[l][0];
+                    let mut wrap_ref = false;
+                    if self.si.sps.wraparound {
+                        (mv, wrap_ref) = self.wrap_clip_mv(mv, (u.x, u.y, u.w, u.h));
+                    }
+                    p.wrap = self.ref_wrap(refpic, comp, wrap_ref);
+                    out[comp] = self.pred_blk_rpr(refpic, &p, (bx, by), (w, h), mv, ratio, 0);
+                    continue;
+                }
                 // clipMv, then wrapClipMv, which leaves a clipped vector as is
                 let mv = self.clip_mv(u.mv[l][0], self.cu_area);
                 p.wrap = self.ref_wrap(refpic, comp, self.wrap_enabled());
@@ -1045,6 +1249,10 @@ impl<'p, 's> McCtx<'p, 's> {
         base.merge = false;
         base.mmvd = false;
         base.ciip = false;
+        // RPR_FIX: equal motion is not joined when a first reference is scaled
+        let scaled = self.refpic(0, 0).is_ok_and(|r| self.rpr_ratio(r).is_some())
+            || (self.si.sh.slice_type == B_SLICE
+                && self.refpic(1, 0).is_ok_and(|r| self.rpr_ratio(r).is_some()));
         self.sub_pu = true;
         let mut fst = fst_start;
         while fst < fst_end {
@@ -1060,7 +1268,7 @@ impl<'p, 's> McCtx<'p, 's> {
                     } else {
                         self.pic.mi(fst, later)
                     };
-                    if lm == cur {
+                    if !scaled && lm == cur {
                         length += sec_step;
                     } else {
                         break;
@@ -1135,7 +1343,15 @@ impl<'p, 's> McCtx<'p, 's> {
                     && u.w * u.h >= 128;
             }
         }
-        let dmvr = !self.sub_pu && self.dmvr_condition(u);
+        let mut dmvr = !self.sub_pu && self.dmvr_condition(u);
+        let mut ref_scaled = false;
+        for l in 0..2 {
+            if u.ref_idx[l] >= 0 {
+                ref_scaled |= self.rpr_ratio(self.refpic(l, u.ref_idx[l])?).is_some();
+            }
+        }
+        dmvr &= !ref_scaled;
+        bio &= !ref_scaled;
         if u.merge_type != MRG_TYPE_SUBPU_ATMVP && bio && !dmvr {
             self.sub_pu_bio(u)
         } else if dmvr {
@@ -1464,7 +1680,9 @@ impl<'p, 's> McCtx<'p, 's> {
             && comp == 0
             && !self.si.ph.dis_prof
             && !((u.affine_type == 1 && lt == rt && lt == lb) || (u.affine_type == 0 && lt == rt))
-            && !spread;
+            && !spread
+            && self.rpr_ratio(refpic).is_none();
+        let rpr = self.rpr_ratio(refpic);
         let mut dmv_h = [0i32; 16];
         let mut dmv_v = [0i32; 16];
         if prof {
@@ -1535,7 +1753,8 @@ impl<'p, 's> McCtx<'p, 's> {
                     let (a, b) = round_affine(sum.x * f, sum.y * f, 1);
                     Mv::new(a, b)
                 };
-                let (mv, wrap_ref) = if self.wrap_enabled() {
+                // isWrapAroundEnabled is false for scaled references
+                let (mv, wrap_ref) = if self.wrap_enabled() && rpr.is_none() {
                     let area = (
                         u.x + ((xb as i32) << sx),
                         u.y + ((yb as i32) << sy),
@@ -1551,6 +1770,27 @@ impl<'p, 's> McCtx<'p, 's> {
                         false,
                     )
                 };
+                if let Some(ratio) = rpr {
+                    let b = self.pred_blk_rpr(
+                        refpic,
+                        &BlkParams {
+                            wrap: self.ref_wrap(refpic, comp, wrap_ref),
+                            ..p
+                        },
+                        (pbx + xb as i32, pby + yb as i32),
+                        (4, 4),
+                        mv,
+                        ratio,
+                        2,
+                    );
+                    for y in 0..4 {
+                        for x in 0..4 {
+                            dst.set(xb + x, yb + y, b.at(x, y));
+                        }
+                    }
+                    xb += 4;
+                    continue;
+                }
                 let (shx, shy) = (4 + sx as i32, 4 + sy as i32);
                 let fx = (mv.x & ((1 << shx) - 1)) as usize;
                 let fy = (mv.y & ((1 << shy) - 1)) as usize;
