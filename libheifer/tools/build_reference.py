@@ -16,11 +16,12 @@ OPENJPH = "8c2826fdaaac3b0334ff5bc2ed2a8ec153c99a35"  # 0.32.0
 RAV1E = "1fe82de02510767539e89b2ee6fa846920ae2686"  # v0.8.1
 VVDEC = "649f0b2fafee977c998d7e4d674f8b88d952e3a3"  # v3.2.0
 VVENC = "9428ea8636ae7f443ecde89999d16b2dfc421524"  # v1.14.0
+X264 = "b35605ace3ddf7c1a5d67a2eb553f034aef41d55"  # the AVC fixture generator revision
 X265 = "1d117bed4747758b51bd2c124d738527e30392cb"  # 4.1
 
 
-def run(*args):
-    subprocess.run(list(map(str, args)), check=True)
+def run(*args, cwd=None):
+    subprocess.run(list(map(str, args)), check=True, cwd=cwd)
 
 
 def main():
@@ -36,6 +37,7 @@ def main():
     p.add_argument("--rav1e", action="store_true", help="enable libheif's rav1e AV1 encoder (rav1e C API via cargo-c, with assembly like the candidate)")
     p.add_argument("--htj2k", action="store_true", help="enable libheif's OpenJPH HTJ2K encoder (scalar)")
     p.add_argument("--vvc", action="store_true", help="enable libheif's vvdec VVC decoder and vvenc VVC encoder (fixture generator)")
+    p.add_argument("--x264", action="store_true", help="enable libheif's x264 AVC encoder (scalar, no assembly; built-in AVC encoder oracle)")
     p.add_argument("--x265", action="store_true", help="enable libheif's x265 HEVC encoder (scalar, no assembly; rate/distortion oracle)")
     p.add_argument("--plugins", action="store_true", help="enable native dynamic-plugin oracle with an empty default search path")
     p.add_argument("-j", default="4")
@@ -201,6 +203,23 @@ def main():
         if library is None:
             raise SystemExit("x265 install has no libx265.so")
         flags += [f"-DX265_INCLUDE_DIR={install / 'include'}", f"-DX265_LIBRARY={library}"]
+    if a.x264:
+        codec = build.parent / "x264-oracle-source"
+        install = build.parent / "x264-oracle-install"
+        if not codec.exists():
+            run("git", "init", codec)
+            run("git", "-C", codec, "remote", "add", "origin", "https://code.videolan.org/videolan/x264.git")
+            run("git", "-C", codec, "fetch", "--depth=1", "origin", X264)
+            run("git", "-C", codec, "checkout", "--detach", "FETCH_HEAD")
+        revision = subprocess.check_output(["git", "-C", str(codec), "rev-parse", "HEAD"], text=True).strip()
+        if revision != X264:
+            raise SystemExit("Wrong x264 reference revision")
+        # 8 and 10 bit in one library (x264's --bit-depth=all), without assembly.
+        run("./configure", f"--prefix={install}", "--enable-shared", "--disable-static", "--disable-cli",
+            "--disable-asm", "--bit-depth=all", "--chroma-format=all", cwd=codec)
+        run("make", "-C", codec, "-j", a.j)
+        run("make", "-C", codec, "install")
+        flags += [f"-DX264_INCLUDE_DIR={install / 'include'}", f"-DX264_LIBRARY={install / 'lib/libx264.so'}"]
     if a.vvc:
         for name, pin, url in (("vvdec", VVDEC, "https://github.com/fraunhoferhhi/vvdec.git"),
                                ("vvenc", VVENC, "https://github.com/fraunhoferhhi/vvenc.git")):
@@ -254,11 +273,13 @@ def main():
         run(cmake, "--install", dbuild)
         flags += ["-DWITH_JPEG_DECODER=ON", "-DWITH_JPEG_DECODER_PLUGIN=OFF", "-DWITH_JPEG_ENCODER=ON",
                   f"-DJPEG_INCLUDE_DIR={install / 'include'}", f"-DJPEG_LIBRARY_RELEASE={install / 'lib/libjpeg.so'}"]
-    run(cmake, "-S", source, "-B", build, "-DCMAKE_BUILD_TYPE=Release", "-DBUILD_TESTING=OFF", "-DBUILD_DOCUMENTATION=OFF", "-DWITH_EXAMPLES=OFF", "-DWITH_GDK_PIXBUF=OFF", f"-DENABLE_PLUGIN_LOADING={'ON' if a.plugins else 'OFF'}", *(["-DPLUGIN_DIRECTORY="] if a.plugins else []), f"-DWITH_LIBDE265={'ON' if a.hevc else 'OFF'}", f"-DWITH_X265={'ON' if a.x265 else 'OFF'}", "-DWITH_X265_PLUGIN=OFF", "-DWITH_X264=OFF", *([] if a.avc else ["-DWITH_OpenH264_DECODER=OFF"]), f"-DWITH_DAV1D={'ON' if a.av1 else 'OFF'}", "-DWITH_DAV1D_PLUGIN=OFF", "-DWITH_AOM_DECODER=OFF", "-DWITH_AOM_ENCODER=OFF", "-DWITH_LIBSHARPYUV=OFF", "-DWITH_UNCOMPRESSED_CODEC=ON", *flags)
+    run(cmake, "-S", source, "-B", build, "-DCMAKE_BUILD_TYPE=Release", "-DBUILD_TESTING=OFF", "-DBUILD_DOCUMENTATION=OFF", "-DWITH_EXAMPLES=OFF", "-DWITH_GDK_PIXBUF=OFF", f"-DENABLE_PLUGIN_LOADING={'ON' if a.plugins else 'OFF'}", *(["-DPLUGIN_DIRECTORY="] if a.plugins else []), f"-DWITH_LIBDE265={'ON' if a.hevc else 'OFF'}", f"-DWITH_X265={'ON' if a.x265 else 'OFF'}", "-DWITH_X265_PLUGIN=OFF", f"-DWITH_X264={'ON' if a.x264 else 'OFF'}", "-DWITH_X264_PLUGIN=OFF", *([] if a.avc else ["-DWITH_OpenH264_DECODER=OFF"]), f"-DWITH_DAV1D={'ON' if a.av1 else 'OFF'}", "-DWITH_DAV1D_PLUGIN=OFF", "-DWITH_AOM_DECODER=OFF", "-DWITH_AOM_ENCODER=OFF", "-DWITH_LIBSHARPYUV=OFF", "-DWITH_UNCOMPRESSED_CODEC=ON", *flags)
     run(cmake, "--build", build, "-j", a.j)
     # libheif silently drops an encoder CMake cannot find; the x265 oracle must have it.
-    if a.x265 and "libx265" not in subprocess.check_output(["readelf", "-d", str(build / "libheif/libheif.so")], text=True):
-        raise SystemExit("libheif was built without x265")
+    needed = subprocess.check_output(["readelf", "-d", str(build / "libheif/libheif.so")], text=True)
+    for enabled, library in ((a.x265, "libx265"), (a.x264, "libx264")):
+        if enabled and library not in needed:
+            raise SystemExit(f"libheif was built without {library}")
 
 
 if __name__ == "__main__":

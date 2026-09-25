@@ -23,12 +23,14 @@ hpvca = { version = "=0.1.17", optional = true }
 hayro-jpeg2000 = { version = "=0.4.0", optional = true, default-features = false, features = ["std"] }
 jpeg-decoder = { version = "=0.3.2", optional = true, default-features = false, features = ["platform_independent"] }
 rav1d = { version = "=1.1.0", optional = true }
+rusty_h264-common = { version = "=0.16.0", optional = true, default-features = false, features = ["libm"] }
+rusty_h264-encoder = { version = "=0.16.0", optional = true, default-features = false, features = ["libm"] }
 rusty_h264-decoder = { version = "=0.16.0", optional = true, default-features = false, features = ["libm", "simd-detect"] }
 rusty_h265 = { version = "=0.6.0", optional = true }
 zlib-rs = { version = "=0.6.8", default-features = false, features = ["std"] }
 
 [features]
-avc = ["dep:rusty_h264-decoder"]
+avc = ["dep:rusty_h264-common", "dep:rusty_h264-encoder", "dep:rusty_h264-decoder"]
 jpeg2000 = ["dep:hayro-jpeg2000"]
 jpeg = ["dep:jpeg-decoder"]
 av1 = ["dep:rav1d"]
@@ -52,7 +54,6 @@ required-features = ["hevc-profile"]
 rav1d = { path = "vendor/rav1d" }
 hayro-jpeg2000 = { path = "vendor/hayro-jpeg2000" }
 jpeg-decoder = { path = "vendor/jpeg-decoder" }
-rusty_h264-common = { path = "vendor/rusty_h264-common" }
 rusty_h264-decoder = { path = "vendor/rusty_h264-decoder" }
 rusty_h265 = { path = "vendor/rusty_h265" }
 

@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: LGPL-3.0-or-later */
-// enc: rd enc W H QUALITY in.rgb out.heic [encoder-id]
+// enc: rd enc W H QUALITY in.rgb out.heic [encoder-id]   (RD_FORMAT: compression format, default HEVC)
 // dec: rd dec in.heic out.rgb   (prints W H)
 #include <libheif/heif.h>
 #include <stdio.h>
@@ -15,7 +15,8 @@ int main(int c,char**v){
     int stride;uint8_t*p=heif_image_get_plane(img,heif_channel_interleaved,&stride);
     for(int y=0;y<h;y++)memcpy(p+y*stride,rgb+y*w*3,w*3);
     struct heif_context*ctx=heif_context_alloc();
-    const struct heif_encoder_descriptor*d[8];int n=heif_get_encoder_descriptors(heif_compression_HEVC,c>7?v[7]:NULL,d,8);
+    const struct heif_encoder_descriptor*d[8];const char*format=getenv("RD_FORMAT");
+    int n=heif_get_encoder_descriptors(format?(enum heif_compression_format)atoi(format):heif_compression_HEVC,c>7?v[7]:NULL,d,8);
     if(n<1){fprintf(stderr,"no encoder\n");return 1;}
     fprintf(stderr,"encoder: %s\n",heif_encoder_descriptor_get_name(d[0]));
     struct heif_encoder*enc;chk(heif_context_get_encoder(ctx,d[0],&enc));

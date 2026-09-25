@@ -1,0 +1,161 @@
+{
+  "scope": "14 deliberate defects; not comprehensive mutation coverage",
+  "shard": null,
+  "mutations": [
+    {
+      "mutation": "avc_encode_rounded_size",
+      "suite": "avc_builtin_encoding",
+      "source": "crates/capi/src/builtin_avc_encoder.rs",
+      "before": "((s + 1) & !1).max(64)",
+      "after": "((s + 1) & !1).max(32)",
+      "candidate_sha256": "e26c5d5a0524f47f8da6ab5e8f834b0027ba2d68d83a6200672c1603e0b80987",
+      "mismatches": 99,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "avc_encode_default_tu_depth",
+      "suite": "avc_builtin_encoding",
+      "source": "crates/capi/src/builtin_avc_encoder.rs",
+      "before": "set_integer(p, c\"tu-intra-depth\".as_ptr(), 2);",
+      "after": "set_integer(p, c\"tu-intra-depth\".as_ptr(), 3);",
+      "candidate_sha256": "38f56345b2159bbab4e6131d182be208e71b9176ca91ea0a38c4b635a054dace",
+      "mismatches": 1,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "avc_encode_x264_options",
+      "suite": "avc_builtin_encoding",
+      "source": "crates/capi/src/builtin_avc_encoder.rs",
+      "before": "(n, _) if n.starts_with(b\"x264:\") => {",
+      "after": "(n, _) if n.starts_with(b\"x264:-\") => {",
+      "candidate_sha256": "b827b092e07fe861766df23ab99c42f9c7976d4d3a4421f6ca25f31f39cf4e49",
+      "mismatches": 1,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "avc_encode_ultrafast_baseline",
+      "suite": "avc_builtin_encoding",
+      "source": "crates/capi/src/builtin_avc_encoder.rs",
+      "before": "baseline: ultrafast,",
+      "after": "baseline: false,",
+      "candidate_sha256": "56a8c45b93c726ed05c7a999256a849cc61f717c4d57579658af9c26f36f6c54",
+      "mismatches": 1,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "avc_encode_level_frame_size",
+      "suite": "avc_builtin_encoding",
+      "source": "src/avc_encoder.rs",
+      "before": "(10, 99, 396, 64),",
+      "after": "(10, 396, 396, 64),",
+      "candidate_sha256": "fed453b33c59dc9aa92e69591120688bb0e792ef049d6b4d4f331fa006fd8e5c",
+      "mismatches": 0,
+      "process_failures": [],
+      "detected": false
+    },
+    {
+      "mutation": "avc_encode_constraint_flags",
+      "suite": "avc_builtin_encoding",
+      "source": "src/avc_encoder.rs",
+      "before": "w.bytes[1] = if baseline { 0xc0 } else { 0x40 }",
+      "after": "w.bytes[1] = if baseline { 0x80 } else { 0x40 }",
+      "candidate_sha256": "d3fda8a1ba86a688affc7655d2cb7280ae0a854a273349b5a41efbacc5487a1c",
+      "mismatches": 1,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "avc_encode_chroma_formats",
+      "suite": "avc_builtin_encoding",
+      "source": "crates/capi/src/builtin_avc_encoder.rs",
+      "before": "if !matches!(chroma, 0 | 1) {",
+      "after": "if !matches!(chroma, 0 | 1 | 2) {",
+      "candidate_sha256": "70c1bee669c25871d28a728a1126b8962f8407f9c2a91dbe9f5df6e3fe42f9d2",
+      "mismatches": 1,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "avc_interlaced_height",
+      "suite": "avc_encoding",
+      "source": "src/avc_config.rs",
+      "before": "h *= u64::from(2 - frame);",
+      "after": "h *= 1;",
+      "candidate_sha256": "39f05a3c6f0b09f83c73c7a32d5c1e0d52581ae96fae272818c5713e46082460",
+      "mismatches": 242,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "avc_crop_units",
+      "suite": "avc_encoding",
+      "source": "src/avc_config.rs",
+      "before": "let sx = if matches!(self.chroma, 1 | 2) { 2 } else { 1 };",
+      "after": "let sx = 1;",
+      "candidate_sha256": "d7e1a8f2d3f8ecd061166f0f30f594ec13bb4d2e36a48dd0696c528b452c255a",
+      "mismatches": 48,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "avc_scaling_break",
+      "suite": "avc_encoding",
+      "source": "src/avc_config.rs",
+      "before": "if next == 0 {",
+      "after": "if next != 0 {",
+      "candidate_sha256": "0d43ac2b8ec9809b558c560043efac344b4df4260ad6d88324c373aab5bb3471",
+      "mismatches": 72,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "avc_sps_partial",
+      "suite": "avc_encoding",
+      "source": "src/avc_config.rs",
+      "before": "let _ = self.parse(nal);",
+      "after": "self.parse(nal)?;",
+      "candidate_sha256": "be9f3747d2153f27dfb9dca1fb6d6b4600fa05e93868d4e9ae71867e6c61f068",
+      "mismatches": 30,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "avc_extended_configuration",
+      "suite": "avc_encoding",
+      "source": "src/avc_config.rs",
+      "before": "if !matches!(self.profile, 66 | 77 | 88) {",
+      "after": "if matches!(self.profile, 66 | 77 | 88) {",
+      "candidate_sha256": "52e41b625cb271236cfd0dedcdab485dab45e12ca4d7b1b0425fc04ccc5f8778",
+      "mismatches": 1233,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "avc_parameter_count",
+      "suite": "avc_encoding",
+      "source": "src/avc_config.rs",
+      "before": "self.sps.len() > 31",
+      "after": "self.sps.len() >= 31",
+      "candidate_sha256": "b16b11d1a72d0e4ab1d0fa9a78ff2422bfa27c2f67d36aa4c52823bb84d4b0d6",
+      "mismatches": 1,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "configuration_write_prefix",
+      "suite": "avc_encoding",
+      "source": "src/writing.rs",
+      "before": "ipco.extend([0; 8]);",
+      "after": "ipco.extend([1; 8]);",
+      "candidate_sha256": "531d8747cddff162c5ca0499cf717d08775987a5c7dcf962b55d8f3ff241c1f4",
+      "mismatches": 21,
+      "process_failures": [],
+      "detected": true
+    }
+  ],
+  "all_detected": false
+}

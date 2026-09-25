@@ -91,6 +91,8 @@ mod jpeg2000_properties;
 
 #[cfg(feature = "avc")]
 pub mod avc;
+#[cfg(feature = "avc")]
+pub mod avc_encoder;
 
 #[cfg(feature = "avc")]
 mod avc_openh264;

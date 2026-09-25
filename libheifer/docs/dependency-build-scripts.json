@@ -23,6 +23,9 @@
   "libheifer-capi@0.1.0": {
     "build.rs": "48b2be68764ad92c2fb1b71f1bacc91d81127007ecd049ef690b480e19bfa36b"
   },
+  "libheifer-rusty_h264-common@0.16.0": {
+    "build.rs": "f105ccb828180d10fbb4ccad374d5c06e13416d1cef5d92ee95849402a4e74da"
+  },
   "libm@0.2.16": {
     "build.rs": "85dfa93693f40e282ecf2d9a3115280d8f508f056063862add9e529b8143b71b",
     "configure.rs": "884fa9c05c600d03450b15651665848e88b09cf602f86c843e55e5e1ee0a4772"
@@ -63,6 +66,9 @@
     "build/rustc.rs": "faf67033ec831d968406f5a66c475df337f7221e9d1ab3477fed3a629e1ec5bc"
   },
   "rusty_h264-common@0.16.0": {
+    "build.rs": "f105ccb828180d10fbb4ccad374d5c06e13416d1cef5d92ee95849402a4e74da"
+  },
+  "rusty_h264-encoder@0.16.0": {
     "build.rs": "f105ccb828180d10fbb4ccad374d5c06e13416d1cef5d92ee95849402a4e74da"
   },
   "thiserror@2.0.21": {

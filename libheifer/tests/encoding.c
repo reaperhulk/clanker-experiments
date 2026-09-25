@@ -59,6 +59,8 @@ static const char* const parameter_sets[]={
   "tu-intra-depth=1","tu-intra-depth=4","tu-intra-depth=5","complexity=0","complexity=100","complexity=101",
   "x265:ctu=32","x265:bogus=1","chroma=420;preset=fast;tune=fastdecode","lossless=true;chroma=444",
   "quality=101","quality=-1","complexity=90;tu-intra-depth=3","preset=medium;@lossless=1",
+  /* 78-80: x264 plugin options */
+  "x264:keyint=1","x264:bogus=1","x264:ref=2;preset=veryfast",
 };
 static void set_parameters(heif_encoder* enc,unsigned index) {
   if(!enc||!index||index>sizeof(parameter_sets)/sizeof(*parameter_sets)) return;

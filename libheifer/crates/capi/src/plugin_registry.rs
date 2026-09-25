@@ -71,6 +71,12 @@ impl Registry {
         self.encoders.push(Arc::new(EncoderDescriptor {
             source: EncoderSource::External(&crate::builtin_htj2k_encoder::HTJ2K_ENCODER.0),
         }));
+        // After the JPEG encoder: libheif registers x264 after libjpeg-turbo,
+        // and both have priority 100.
+        #[cfg(feature = "avc")]
+        self.encoders.push(Arc::new(EncoderDescriptor {
+            source: EncoderSource::External(&crate::builtin_avc_encoder::AVC_ENCODER.0),
+        }));
         #[cfg(feature = "av1")]
         self.encoders.push(Arc::new(EncoderDescriptor {
             source: EncoderSource::External(&crate::builtin_av1_encoder::AV1_ENCODER.0),

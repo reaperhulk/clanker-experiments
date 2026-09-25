@@ -770,5 +770,12 @@ but the codec output; 38 classified known differences), and libde265
 decodes every file as the candidate does. Mean BD-rate against x265 is
 +5.6%. See `docs/RESULTS.md` and `docs/HEVC_DEPENDENCIES.md`.
 
+AVC encoding uses rusty_h264-encoder 0.16.0 from crates.io, unmodified,
+behind a record reproducing libheif's x264 plugin (all-intra, 8-bit 4:2:0).
+It matches libheif with x264 on 145 encoding cases (29 classified known
+differences), and OpenH264 decodes every file as the candidate does. Mean
+BD-rate against x264 is +3.6%. See `docs/RESULTS.md` and
+`docs/AVC_DEPENDENCIES.md`.
+
 Next: remaining plan gates. All 465 functions remain partial; strict completion
 remains false.

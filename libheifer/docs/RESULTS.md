@@ -2104,3 +2104,87 @@ Linux, macOS and Windows targets. The `cfg(fuzzing)` and wasm-only locked
 dependencies are outside that graph. The previously detected
 `inflate_error_cause` mutation now targets the replay and is still detected
 (84 mismatches).
+
+## Built-in AVC encoding (rusty_h264-encoder)
+
+libheif encodes AVC with its x264 plugin. libheifer registers
+rusty_h264-encoder 0.16.0, used unmodified from crates.io
+(`docs/AVC_DEPENDENCIES.md`), as "libheifer AVC encoder (rusty_h264)" (id
+`libheifer-avc`, priority 100). It is registered after the JPEG encoder, as
+x264 is in libheif. `crates/capi/src/builtin_avc_encoder.rs` reproduces the
+x264 plugin, whose parameters and setters are identical to the x265
+plugin's:
+
+- `quality`, `lossless`, `preset`, `tune`, `tu-intra-depth`, `complexity`,
+  `chroma` and stored `x264:` options;
+- the input checks, the padding to even sizes of at least 64, and the nclx
+  and SAR VUI signalling for colour and alpha images;
+- one packet per NAL unit, with the parameter sets repeated at every IDR
+  picture.
+
+The encoder writes no VUI, so `src/avc_encoder.rs` rewrites its SPS with
+x264's VUI, level (x264's automatic choice), profile and constraint flags.
+The choices follow x264: Main profile with CABAC for 8-bit input, Main
+without CABAC for tune `fastdecode`, and constrained Baseline for preset
+`ultrafast`. The encoder is intra-only and 8-bit 4:2:0 only.
+
+The oracle `.build/reference-x264` builds x264 b35605ac (the AVC fixture
+generator's revision) without assembly, for 8 and 10 bits and all chroma
+formats, into libheif with the OpenH264 decoder
+(`tools/build_reference.py --avc --x264`).
+
+`tools/test_avc_builtin_encoding.py` reuses the HEVC builtin harness. It
+covers 145 cases:
+
+- sizes from 1x1 to 400x300, including 192x144, the smallest level 1.1
+  picture;
+- colourspaces, qualities, lossless, bit depths 7-16;
+- the x264 parameter sets, including three new `x264:` sets;
+- metadata, thumbnails, overlays and alpha.
+
+It compares the same things as the HEVC suite, with `avcC` summarized as
+profile, constraint flags, level and parameter-set counts. It also compares
+the parameter listing, and checks that OpenH264 decodes every candidate file
+exactly as libheifer's decoder does. Results: 0 mismatches in normal,
+sanitizer-client and codec-free builds, and no decode disagreements. There
+are 29 classified known differences:
+
+- `rusty-h264-monochrome-as-420` (14): monochrome is coded as 4:2:0 with
+  neutral chroma in Main profile, where x264 codes 4:0:0 in High profile;
+- `x264-crf0-lossless` (4): quality 99 and 100 give x264 CRF 0, which is
+  lossless High 4:4:4 Predictive (the OpenH264 oracle cannot decode it);
+  rusty_h264-encoder has no lossless mode;
+- `openh264-monochrome-decoding` (3): OpenH264 fails to decode some of
+  x264's 4:0:0 pictures, which the candidate's files avoid;
+- `rusty-h264-10-bit` (3): 10-bit input is rejected;
+- `rusty-h264-chroma-format` (2): `chroma` 422/444 are rejected;
+- `x264-option` (2): `x264:` options are rejected by name;
+- `shared-avcC` (1): an alpha plane coded as 4:2:0 has the colour image's
+  parameter sets, so libheif shares one `avcC`.
+
+`test_avc_encoding` now uses the x264 oracle. Its refused-plugin fallback
+lines (20) are compared after normalization, and so are its monochrome (2)
+and 10-bit (10) lines: 0 of 1,344 mismatches in normal and sanitizer-client
+builds. The 25 other encoder, plugin and writing suites are unchanged.
+
+Rate/distortion against x264's default `slow` preset (with tune `ssim`) on
+8 Kodak images: mean BD-rate +3.6%, PSNR within 0.6 dB at the same quality
+(after calibrating the QP mapping), and about 2.4 times faster than x264
+without assembly (`results/avc-rd-report.json`).
+
+Seven new mutations are detected (`results/avc-encode-mutations-report.json`):
+the padding minimum, the `tu-intra-depth` default, `x264:` rejection, the
+ultrafast Baseline choice, a level table entry, the constraint flags and
+the accepted chroma formats. The existing `avc_encoding` mutations are also
+detected against the x264 oracle. In the first run the level mutant survived
+(`results/avc-encode-mutations-initial-report.json`), for two reasons:
+
+- no picture fell between level 1 and level 1.1;
+- the encoder corrects the level it is given.
+
+The 192x144 case was added and the SPS rewrite now writes the level itself.
+
+The patched vendored rusty_h264-common is now a renamed package that the
+vendored decoder uses by path. The encoder gets the unmodified crates.io
+rusty_h264-common, and the `[patch]` entry for common is gone.
+

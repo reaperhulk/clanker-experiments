@@ -14,6 +14,8 @@ use std::ptr;
 mod auxiliary;
 #[cfg(feature = "av1")]
 mod builtin_av1_encoder;
+#[cfg(feature = "avc")]
+mod builtin_avc_encoder;
 #[cfg(feature = "hevc")]
 mod builtin_hevc_encoder;
 #[cfg(feature = "jpeg2000")]

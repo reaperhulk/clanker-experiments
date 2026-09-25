@@ -24,6 +24,7 @@ REVIEWED |= {
     ('unicode-ident', '1.0.26'), ('windows-link', '0.2.1'),
     ('zerocopy', '0.7.35'), ('zerocopy-derive', '0.7.35'),
     ('rusty_h264-decoder', '0.16.0'), ('rusty_h264-common', '0.16.0'),
+    ('libheifer-rusty_h264-common', '0.16.0'), ('rusty_h264-encoder', '0.16.0'),
     ('wide', '0.7.33'), ('safe_arch', '0.7.4'), ('bytemuck', '1.25.2'),
     ('libm', '0.2.16'), ('once_cell', '1.21.4'), ('portable-atomic', '1.15.0'),
     ('fearless_simd', '1.0.0'), ('spin', '0.12.3'),
@@ -98,13 +99,20 @@ def main():
                 problems.append('hayro-jpeg2000 must use only the reviewed scalar Rust implementation')
             if any(p.suffix.lower() in ('.c', '.cc', '.cpp', '.s', '.asm') for p in root.rglob('*')):
                 problems.append('Native implementation source in hayro-jpeg2000 vendor tree')
-        if name[0] in ('rusty_h264-decoder', 'rusty_h264-common'):
-            # no_std + libm: no accel kernels, global allocator, environment knobs or
-            # threads; `simd-detect` only enables fearless_simd's runtime detection.
+        if name[0] in ('rusty_h264-decoder', 'libheifer-rusty_h264-common'):
+            # The vendored decoder and its patched common (renamed so it can sit
+            # beside the crates.io one): no_std + libm, no accel kernels, global
+            # allocator, environment knobs or threads; `simd-detect` only enables
+            # fearless_simd's runtime detection.
             if set(features[package['id']]) != {'libm', 'simd-detect'}:
                 problems.append(f'{name[0]} must use only the reviewed no_std Rust SIMD configuration')
             if any(p.suffix.lower() in ('.c', '.cc', '.cpp', '.s', '.asm') for p in root.rglob('*')):
                 problems.append(f'Native implementation source in {name[0]} vendor tree')
+        if name[0] in ('rusty_h264-encoder', 'rusty_h264-common'):
+            # The crates.io encoder and its unmodified common: no_std + libm, no
+            # accel kernels, global allocator or environment knobs.
+            if set(features[package['id']]) != {'libm'}:
+                problems.append(f'{name[0]} must use only the reviewed no_std configuration')
         if name[0] == 'fearless_simd':
             # Pure Rust core::arch wrappers; `std` is used for CPU feature detection.
             if set(features[package['id']]) != {'libm', 'std'}:

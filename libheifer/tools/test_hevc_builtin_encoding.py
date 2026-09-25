@@ -93,6 +93,25 @@ def hvcc_summary(body):
     return f'hvcC(version={body[0]},chroma={chroma},depth={luma}/{chroma_depth},arrays={"+".join(arrays)})'
 
 
+def avcc_summary(body):
+    """The avcC fields libheif copies from the SPS: profile, constraint flags,
+    level, parameter-set counts and the High-profile format fields."""
+    if len(body) < 7:
+        return 'avcC-short:' + body.hex()
+    at = 6
+    sps = body[5] & 31
+    for _ in range(sps):
+        at += 2 + int.from_bytes(body[at:at + 2], 'big')
+    pps = body[at] if at < len(body) else -1
+    at += 1
+    for _ in range(max(pps, 0)):
+        at += 2 + int.from_bytes(body[at:at + 2], 'big')
+    ext = ''
+    if body[1] in (100, 110, 122, 144) and at + 3 <= len(body):
+        ext = f',chroma={body[at] & 3},depth={(body[at + 1] & 7) + 8}/{(body[at + 2] & 7) + 8}'
+    return f'avcC(version={body[0]},profile={body[1]},compat={body[2]:02x},level={body[3]},sps={sps},pps={pps}{ext})'
+
+
 def normalize(data, depth=0):
     """Box tree with every box byte-exact except hvcC (format fields), iloc (item and
     extent counts) and mdat (length only when not HEVC data)."""
@@ -103,6 +122,8 @@ def normalize(data, depth=0):
             out.append(f'truncated-{name}')
         elif kind == b'hvcC':
             out.append(hvcc_summary(body))
+        elif kind == b'avcC':
+            out.append(avcc_summary(body))
         elif kind == b'mdat':
             out.append('mdat')
         elif kind == b'iloc':
@@ -127,9 +148,11 @@ def normalize(data, depth=0):
     return ' '.join(out)
 
 
-def transcript(line):
+def transcript(line, names=(('hpvca', 'x265'),)):
     """Normalize one transcript line; returns (text, candidate files)."""
-    text = line.decode(errors='replace').replace('hpvca', 'x265')
+    text = line.decode(errors='replace')
+    for candidate, reference in names:
+        text = text.replace(candidate, reference)
     files = []
     parts = text.split(' ')
     for i, part in enumerate(parts):
@@ -187,12 +210,19 @@ def fallback(reference, candidate):
     return classify(r, c)
 
 
+# Hooks for suites that reuse this harness for another codec (test_avc_builtin_encoding).
+NAMES = (('hpvca', 'x265'),)
+LISTING_FORMAT = 1
+DEFAULTS = ('.build/reference-x265', '.build/hevc-builtin-encoding-report.json', '.build/hevc-builtin-encoding')
+DECODE_KNOWN = 'hevc-rext-decoding'
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument('--reference-build', default='.build/reference-x265')
+    p.add_argument('--reference-build', default=DEFAULTS[0])
     p.add_argument('--candidate', default='target/release/libheifer.so')
-    p.add_argument('--output', default='.build/hevc-builtin-encoding-report.json')
-    p.add_argument('--work', default='.build/hevc-builtin-encoding')
+    p.add_argument('--output', default=DEFAULTS[1])
+    p.add_argument('--work', default=DEFAULTS[2])
     p.add_argument('--sanitize', action='store_true')
     a = p.parse_args()
     work = Path(a.work).resolve()
@@ -224,17 +254,17 @@ def main():
     # The default HEVC encoder's parameter surface: types, defaults, valid values and values.
     listings = {}
     for name in libs:
-        run = subprocess.run([str(work / f'{name}-encoder_listing'), '1'], capture_output=True, timeout=60, env=env)
+        run = subprocess.run([str(work / f'{name}-encoder_listing'), str(LISTING_FORMAT)], capture_output=True, timeout=60, env=env)
         if run.returncode:
             raise SystemExit(f'{name} listing exited {run.returncode}: {run.stderr.decode(errors="replace")[:3000]}')
-        listings[name] = run.stdout.decode(errors='replace').replace('hpvca', 'x265')
+        listings[name] = transcript(run.stdout, NAMES)[0]
     if listings['reference'] != listings['candidate']:
         differences.append(dict(case='encoder-listing', reference=listings['reference'], candidate=listings['candidate']))
     known = []
     files = []
     for i, (x, y) in enumerate(zip(lines['reference'], lines['candidate'], strict=True)):
-        rx, _ = transcript(x)
-        ry, candidate_files = transcript(y)
+        rx, _ = transcript(x, NAMES)
+        ry, candidate_files = transcript(y, NAMES)
         files += [(cases[i][0], data) for data in candidate_files]
         if rx != ry and (kind := classify(rx, ry)):
             known.append(dict(case=cases[i][0], line=i, kind=kind))
@@ -260,7 +290,7 @@ def main():
             unsupported = any(b'Codec(Unsupported(' in out for _, out in outputs['candidate'])
             reference_ok = all(code == 0 and b'e7,' not in out for code, out in outputs['reference'])
             if unsupported and reference_ok:
-                known.append(dict(case=case, file=index, kind='hevc-rext-decoding'))
+                known.append(dict(case=case, file=index, kind=DECODE_KNOWN))
             else:
                 decode_mismatches.append(dict(case=case, file=index))
     kinds = {}

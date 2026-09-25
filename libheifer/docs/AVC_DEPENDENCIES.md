@@ -1,4 +1,6 @@
-# AVC decoding dependencies
+# AVC implementation dependencies
+
+## AVC decoding
 
 The optional `avc` feature (enabled by the C adapter's default features) decodes
 H.264 with vendored rusty_h264-decoder/rusty_h264-common 0.16.0, built `no_std`
@@ -11,7 +13,7 @@ Resolved implementation graph added by the feature:
 | Crate | Version | Notes |
 |---|---|---|
 | rusty_h264-decoder | 0.16.0 | Vendored, BSD-2-Clause, `forbid(unsafe_code)`; features `libm` only. |
-| rusty_h264-common | 0.16.0 | Vendored; build script only sets accel cfgs, which stay off without `asm`. |
+| libheifer-rusty_h264-common | 0.16.0 | Vendored rusty_h264-common, renamed so it can sit beside the unmodified crates.io copy the encoder uses; the vendored decoder depends on it by path. Build script only sets accel cfgs, which stay off without `asm`. |
 | wide / safe_arch | 0.7.33 / 0.7.4 | Portable Rust SIMD wrappers over `core::arch`. |
 | bytemuck | 1.25.2 | Safe transmutes for the SIMD wrappers. |
 | once_cell | 1.21.4 | `race`/`alloc` cells for `no_std`. |
@@ -98,3 +100,45 @@ SIMD does not help.
   SVC extension units are rejected as OpenH264's header checks decide, never
   decoded; FMO slice groups and constrained-intra P prediction are not yet
   compared. Multi-access-unit items are compared on valid streams only.
+
+## AVC encoding (rusty_h264-encoder)
+
+The built-in AVC encoder is rusty_h264-encoder 0.16.0 from crates.io, from the
+same project as the decoder, used unmodified with `libm` only (`no_std`, none
+of the `asm`/accel kernels, global allocator or environment knobs). It depends
+on the unmodified crates.io rusty_h264-common 0.16.0 with `libm`. The patched
+vendored common is a separate, renamed package (`libheifer-rusty_h264-common`),
+because the decoder patches change APIs the encoder uses (for example the
+separate Cb/Cr QP offsets of `deblock::filter_frame`). Both copies are compiled
+into the library. `tools/audit_dependencies.py` pins the three packages and
+their feature sets, and the encoder's build script (accel cfgs only) by hash.
+
+`src/avc_encoder.rs` drives the encoder, and
+`crates/capi/src/builtin_avc_encoder.rs` reproduces libheif's x264 plugin
+around it: parameters, input checks, padding, packets, and the registration
+order after the JPEG encoder. Pictures are coded all-intra and 8-bit 4:2:0
+only:
+
+- Main profile with CABAC and no 8x8 transform, as
+  `x264_param_apply_profile("main")` gives for 8-bit input;
+- constrained Baseline without CABAC for preset `ultrafast`, and Main
+  without CABAC for tune `fastdecode`, as x264 chooses;
+- the level x264 would choose for the picture size;
+- the encoder writes no VUI, so its SPS is rewritten with x264's VUI: full
+  range, colour description, SAR, timing and bitstream restrictions, plus
+  x264's constraint flags;
+- quality maps to a constant QP near x264's CRF, calibrated to x264's luma
+  PSNR;
+- monochrome is coded as 4:2:0 with neutral chroma;
+- 10-bit input and the `chroma` values 422/444 are rejected;
+- `x264:` options are rejected by name.
+
+Rate/distortion against x264 (b35605ac, no assembly, default preset `slow`
+and tune `ssim`, read back with OpenH264; `tools/bench_hevc_encoding.py
+--codec avc`, `results/avc-rd-report.json`), on 8 Kodak images at qualities
+10-95:
+
+- mean BD-rate +3.6% (per image from -0.1% to +5.6%);
+- PSNR within 0.6 dB of x264 at the same quality;
+- about 0.14 s per 768x512 image against 0.33 s for x264.
+

@@ -12,7 +12,10 @@
 [package]
 edition = "2021"
 rust-version = "1.89"
-name = "rusty_h264-common"
+# libheifer: renamed so the patched copy (used only by the vendored decoder)
+# can coexist with the unmodified crates.io rusty_h264-common that
+# rusty_h264-encoder uses.
+name = "libheifer-rusty_h264-common"
 version = "0.16.0"
 authors = ["Mata Network"]
 build = "build.rs"

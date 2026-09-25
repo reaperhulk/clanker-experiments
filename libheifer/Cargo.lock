@@ -344,7 +344,9 @@ dependencies = [
  "hpvca",
  "jpeg-decoder",
  "rav1d",
+ "rusty_h264-common",
  "rusty_h264-decoder",
+ "rusty_h264-encoder",
  "rusty_h265",
  "zlib-rs",
 ]
@@ -356,6 +358,18 @@ dependencies = [
  "libheifer",
  "num-traits",
  "rav1e",
+]
+
+[[package]]
+name = "libheifer-rusty_h264-common"
+version = "0.16.0"
+dependencies = [
+ "bytemuck",
+ "fearless_simd",
+ "libm",
+ "once_cell",
+ "portable-atomic",
+ "wide",
 ]
 
 [[package]]
@@ -722,9 +736,10 @@ checksum = "cf54715a573b99ac80df0bc206da022bcd442c974952c7b9720069370852e21f"
 [[package]]
 name = "rusty_h264-common"
 version = "0.16.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "aaf982ae23ecf8f13015ec1c5576fe2935f4e4296b097ebc4233b5872623af2a"
 dependencies = [
  "bytemuck",
- "fearless_simd",
  "libm",
  "once_cell",
  "portable-atomic",
@@ -735,8 +750,17 @@ dependencies = [
 name = "rusty_h264-decoder"
 version = "0.16.0"
 dependencies = [
- "rusty_h264-common",
+ "libheifer-rusty_h264-common",
  "spin",
+]
+
+[[package]]
+name = "rusty_h264-encoder"
+version = "0.16.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e037f6341a02f54021f7077735bd12e2fd61a749e1ee7248eee00466ef5fa4ba"
+dependencies = [
+ "rusty_h264-common",
 ]
 
 [[package]]

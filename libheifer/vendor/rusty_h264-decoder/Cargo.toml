@@ -56,6 +56,9 @@ default-features = false
 features = ["mutex", "spin_mutex", "rwlock", "once"]
 
 [dependencies.rusty_h264-common]
+# libheifer: the patched common, renamed (see its manifest).
+package = "libheifer-rusty_h264-common"
+path = "../rusty_h264-common"
 version = "0.16.0"
 default-features = false
 

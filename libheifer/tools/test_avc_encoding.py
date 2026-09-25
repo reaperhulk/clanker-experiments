@@ -4,6 +4,7 @@ import itertools
 import struct
 import sys
 import test_writing
+from test_avc_builtin_encoding import fallback as avc_fallback
 from test_plugin_encoding import corpus as av1_corpus
 from test_hevc_encoding import packets
 from test_hevc_limits import ue
@@ -69,6 +70,9 @@ if __name__=='__main__':
     test_writing.corpus=corpus
     test_writing.CLIENT='tests/plugin_encoding.c'
     test_writing.__doc__=__doc__
+    # A refused plugin falls back to the default AVC encoder: x264 in the
+    # oracle (.build/reference-x264), rusty_h264 in the candidate.
+    test_writing.known=lambda x,y:avc_fallback(x,y) if b'e5,2003,Unsupported plugin version' in y else None
     if '--work' not in sys.argv:sys.argv+=['--work','.build/avc-encoding']
     if '--output' not in sys.argv:sys.argv+=['--output','.build/avc-encoding-report.json']
     test_writing.main()
