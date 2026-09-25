@@ -2708,6 +2708,7 @@ impl<'a, 's, 'b> CtuDecoder<'a, 's, 'b> {
             &c,
             t.mts[comp],
             false,
+            self.si.sps.mts && c.sbt != 0,
         );
         // last_sig_coeff
         let last = self.last_sig_coeff(&cc, comp, &c);
@@ -2986,7 +2987,7 @@ impl<'a, 's, 'b> CtuDecoder<'a, 's, 'b> {
         let t = &self.pic.tus[tu_id as usize];
         let b = t.blk[comp];
         let ch = if comp == 0 { 0 } else { 1 };
-        let mut cc = CoeffCtx::new(b.w, b.h, ch, false, comp == 0, c, MTS_SKIP, true);
+        let mut cc = CoeffCtx::new(b.w, b.h, ch, false, comp == 0, c, MTS_SKIP, true, false);
         let n = (b.w * b.h) as usize;
         let mut coeff = vec![0i32; n];
         let mut out = vec![0i32; n];
@@ -3341,6 +3342,7 @@ impl CoeffCtx {
         cu: &Cu,
         mts: u8,
         ts: bool,
+        sbt_zero_out: bool,
     ) -> Self {
         let (lcw, lch) = LOG2_SBB_SIZE[log2(w) as usize][log2(h) as usize];
         let (lcw, lch) = (lcw as i32, lch as i32);
@@ -3356,7 +3358,7 @@ impl CoeffCtx {
         };
         // getTbAreaAfterCoefZeroOut
         let (mut zw, mut zh) = (w, h);
-        if is_luma && mts > MTS_SKIP {
+        if is_luma && (mts > MTS_SKIP || (sbt_zero_out && zw <= 32 && zh <= 32)) {
             if zw == 32 {
                 zw = 16;
             }

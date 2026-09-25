@@ -1175,6 +1175,8 @@ pub struct Pps {
     pub weighted_pred: bool,
     pub weighted_bipred: bool,
     pub wraparound: bool,
+    /// Wraparound offset in luma samples (`PPS::getWrapAroundOffset`).
+    pub wrap_offset: i32,
     pub init_qp_minus26: i32,
     pub cu_qp_delta: bool,
     pub chroma_tool_offsets: bool,
@@ -1864,11 +1866,12 @@ pub fn parse_pps(r: &mut BitReader, sps_list: &[Option<Sps>]) -> Result<Pps, Err
         "pps_ref_wraparound_enabled_flag shall be equal to 0",
     )?;
     if p.wraparound {
-        r.uvlc_range(
+        let minus = r.uvlc_range(
             0,
             (p.width / min_cb) - (ctb / min_cb) - 2,
             "pps_pic_width_minus_wraparound_offset",
         )?;
+        p.wrap_offset = (min_cb * (p.width / min_cb - minus)) as i32;
     }
     p.init_qp_minus26 = r.svlc_range(-(26 + sps.qp_bd_offset), 37, "pps_init_qp_minus26")?;
     p.cu_qp_delta = r.flag()?;

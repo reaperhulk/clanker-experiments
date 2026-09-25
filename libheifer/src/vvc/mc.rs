@@ -5,8 +5,9 @@
 //! and geometric partitioning.
 //!
 //! Reference samples are read with coordinates clamped to the picture, which
-//! reproduces vvdec's border-extended reference buffers for the clipped
-//! motion vectors it uses.
+//! reproduces vvdec's border-extended reference buffers, or wrapped
+//! horizontally for its wraparound buffers (`PIC_RECON_WRAP`). Motion
+//! vectors are clipped as vvdec does (`clipMv`, `wrapClipMv`).
 use super::Error;
 use super::ctu::SliceInfo;
 use super::dpb::{DmvrRefinement, RefPic};
@@ -56,16 +57,56 @@ fn pel(v: i32) -> i32 {
     v as i16 as i32
 }
 
-/// Reference samples of a rectangle, read with clamped coordinates.
-fn fetch(plane: &Plane, x0: i32, y0: i32, w: usize, h: usize) -> Buf {
+/// Horizontal sample position in a reference buffer: clamped, or for the
+/// wraparound buffer (`Picture::extendPicBorderWrap`) wrapped by `wrap`
+/// samples within that distance of the picture edge.
+#[inline]
+fn ref_x(x: i32, w: i32, wrap: Option<i32>, win: Option<Win>) -> i32 {
+    if let Some(r) = win {
+        return x.clamp(r.0, r.2);
+    }
+    match wrap {
+        Some(off) if x < 0 => {
+            if -x - 1 < off {
+                x + off
+            } else {
+                0
+            }
+        }
+        Some(off) if x >= w => {
+            if x - w < off {
+                x - off
+            } else {
+                w - 1
+            }
+        }
+        _ => x.clamp(0, w - 1),
+    }
+}
+
+/// Inclusive sample window (x0, y0, x1, y1) of a subpicture treated as a
+/// picture, which vvdec reads from its own border-extended buffer.
+pub type Win = (i32, i32, i32, i32);
+
+#[inline]
+fn ref_y(y: i32, h: i32, win: Option<Win>) -> i32 {
+    match win {
+        Some(r) => y.clamp(r.1, r.3),
+        None => y.clamp(0, h - 1),
+    }
+}
+
+/// Reference samples of a rectangle, read with clamped (or wrapped)
+/// coordinates.
+fn fetch(plane: &Plane, x0: i32, y0: i32, w: usize, h: usize, p: &BlkParams) -> Buf {
     let mut b = Buf::new(w, h);
     let (pw, ph) = (plane.width as i32, plane.height as i32);
     for y in 0..h {
-        let py = (y0 + y as i32).clamp(0, ph - 1) as usize;
+        let py = ref_y(y0 + y as i32, ph, p.win) as usize;
         let row = &plane.data[py * plane.stride..py * plane.stride + plane.width];
         let out = &mut b.data[y * w..(y + 1) * w];
         for (x, o) in out.iter_mut().enumerate() {
-            let px = (x0 + x as i32).clamp(0, pw - 1) as usize;
+            let px = ref_x(x0 + x as i32, pw, p.wrap, p.win) as usize;
             *o = i32::from(row[px]);
         }
     }
@@ -190,6 +231,7 @@ fn luma_coeff(frac: usize, alt: bool, small: bool) -> &'static [i32] {
 }
 
 /// Parameters of one call of vvdec's `xPredInterBlk`.
+#[derive(Clone, Copy)]
 pub struct BlkParams {
     pub comp: usize,
     pub bi: bool,
@@ -198,6 +240,23 @@ pub struct BlkParams {
     pub bd: u32,
     pub sx: u32,
     pub sy: u32,
+    /// Wraparound offset in component samples when reading vvdec's
+    /// wraparound buffer.
+    pub wrap: Option<i32>,
+    /// Subpicture window when the subpicture is treated as a picture.
+    pub win: Option<Win>,
+}
+
+/// A DMVR prefetch buffer (`xPrefetchPad`): `rect` is the prefetched area
+/// in the coordinates of the unclipped merge vector, `shift` moves it to
+/// where the clipped vector fetched it from, and `wrap` selects the buffer.
+/// `pos_mv` is the unclipped refined vector that addresses the buffer.
+#[derive(Clone, Copy)]
+pub struct Region {
+    pub rect: (i32, i32, i32, i32),
+    pub shift: (i32, i32),
+    pub wrap: Option<i32>,
+    pub pos_mv: Mv,
 }
 
 /// Interpolates a `w`x`h` block whose integer origin in `src` is at
@@ -286,23 +345,30 @@ fn interp(
 /// Margins read around a block by the interpolation filters.
 const MARGIN: i32 = 4;
 
-/// Reference samples clamped first to `region` (x, y, w, h) and then to
-/// the picture: vvdec's DMVR prefetch buffer with its edge padding.
+/// Reference samples clamped first to the prefetched region and then read
+/// from the reference: vvdec's DMVR prefetch buffer with its edge padding.
 fn fetch_region(
     plane: &Plane,
     x0: i32,
     y0: i32,
     w: usize,
     h: usize,
-    region: (i32, i32, i32, i32),
+    region: &Region,
+    win: Option<Win>,
 ) -> Buf {
     let mut b = Buf::new(w, h);
     let (pw, ph) = (plane.width as i32, plane.height as i32);
-    let (rx, ry, rw, rh) = region;
+    let (rx, ry, rw, rh) = region.rect;
+    let (dx, dy) = region.shift;
     for y in 0..h {
-        let py = (y0 + y as i32).clamp(ry, ry + rh - 1).clamp(0, ph - 1) as usize;
+        let py = ref_y((y0 + y as i32).clamp(ry, ry + rh - 1) + dy, ph, win) as usize;
         for x in 0..w {
-            let px = (x0 + x as i32).clamp(rx, rx + rw - 1).clamp(0, pw - 1) as usize;
+            let px = ref_x(
+                (x0 + x as i32).clamp(rx, rx + rw - 1) + dx,
+                pw,
+                region.wrap,
+                win,
+            ) as usize;
             b.data[y * w + x] = i32::from(plane.data[py * plane.stride + px]);
         }
     }
@@ -337,16 +403,17 @@ pub fn pred_blk_region(
     mv: Mv,
     p: &BlkParams,
     bdof: bool,
-    region: Option<(i32, i32, i32, i32)>,
+    region: Option<Region>,
 ) -> Buf {
     let plane = &refpic.planes[p.comp];
     let shift_h = 4 + p.sx as i32;
     let shift_v = 4 + p.sy as i32;
     let fx = (mv.x & ((1 << shift_h) - 1)) as usize;
     let fy = (mv.y & ((1 << shift_v) - 1)) as usize;
-    let x0 = bx + (mv.x >> shift_h);
-    let y0 = by + (mv.y >> shift_v);
-    let src = match region {
+    let pos = region.map_or(mv, |r| r.pos_mv);
+    let x0 = bx + (pos.x >> shift_h);
+    let y0 = by + (pos.y >> shift_v);
+    let src = match &region {
         Some(r) => fetch_region(
             plane,
             x0 - MARGIN,
@@ -354,6 +421,7 @@ pub fn pred_blk_region(
             w + 2 * MARGIN as usize + 1,
             h + 2 * MARGIN as usize + 1,
             r,
+            p.win,
         ),
         None => fetch(
             plane,
@@ -361,6 +429,7 @@ pub fn pred_blk_region(
             y0 - MARGIN,
             w + 2 * MARGIN as usize + 1,
             h + 2 * MARGIN as usize + 1,
+            p,
         ),
     };
     let (ox, oy) = (MARGIN as usize, MARGIN as usize);
@@ -621,6 +690,9 @@ pub struct McCtx<'p, 's> {
     /// Collected DMVR refinements (vvdec's `m_dmvrMvCache`).
     pub dmvr: Option<DmvrRefinement>,
     sub_pu: bool,
+    /// Luma area of the unit passed to `motion_compensation`
+    /// (`m_currCuArea`), which bounds `clipMv`.
+    cu_area: (i32, i32, i32, i32),
 }
 
 impl<'p, 's> McCtx<'p, 's> {
@@ -632,6 +704,94 @@ impl<'p, 's> McCtx<'p, 's> {
             bd: pic.bit_depth,
             dmvr: None,
             sub_pu: false,
+            cu_area: (0, 0, 0, 0),
+        }
+    }
+
+    fn wrap_enabled(&self) -> bool {
+        self.si.sps.wraparound && self.si.pps.wraparound
+    }
+
+    /// `clipMvInPic` / `clipMvInSubpic` for a luma area; both defer to
+    /// `wrapClipMv` when the SPS enables wraparound.
+    fn clip_mv(&self, mv: Mv, area: (i32, i32, i32, i32)) -> Mv {
+        let (pps, sps) = (self.si.pps, self.si.sps);
+        if sps.wraparound {
+            return self.wrap_clip_mv(mv, area).0;
+        }
+        let (x, y) = (area.0, area.1);
+        let ctu = 1i32 << sps.log2_ctu_size;
+        let (w, h) = (pps.width as i32, pps.height as i32);
+        let mut hor = ((-ctu - 8 - x + 1) * 16, (w + 8 - x - 1) * 16);
+        let mut ver = ((-ctu - 8 - y + 1) * 16, (h + 8 - y - 1) * 16);
+        if pps.num_subpics > 1
+            && let Some(sp) = super::mvpred::subpic_at(pps, x, y)
+            && sp.treated_as_pic
+        {
+            let (l, r, t, b) = (
+                sp.left as i32,
+                sp.right as i32,
+                sp.top as i32,
+                sp.bottom as i32,
+            );
+            hor = ((-ctu - 8 - (x - l) + 1) * 16, ((r + 1) + 8 - x - 1) * 16);
+            ver = ((-ctu - 8 - (y - t) + 1) * 16, ((b + 1) + 8 - y - 1) * 16);
+        }
+        Mv::new(mv.x.max(hor.0).min(hor.1), mv.y.max(ver.0).min(ver.1))
+    }
+
+    /// `wrapClipMv`: returns the vector and whether the wraparound buffer
+    /// is read.
+    fn wrap_clip_mv(&self, mv: Mv, (x, y, bw, _): (i32, i32, i32, i32)) -> (Mv, bool) {
+        let (pps, sps) = (self.si.pps, self.si.sps);
+        let ctu = 1i32 << sps.log2_ctu_size;
+        let (w, h) = (pps.width as i32, pps.height as i32);
+        let hor_max = (w + ctu - bw + 8 - x - 1) * 16;
+        let hor_min = (-ctu - 8 - x + 1) * 16;
+        let ver_max = (h + 8 - y - 1) * 16;
+        let ver_min = (-ctu - 8 - y + 1) * 16;
+        let mut wrap_ref = true;
+        let mut mx = mv.x;
+        if mx > hor_max {
+            mx -= pps.wrap_offset * 16;
+            mx = mx.max(hor_min).min(hor_max);
+            wrap_ref = false;
+        }
+        if mx < hor_min {
+            mx += pps.wrap_offset * 16;
+            mx = mx.max(hor_min).min(hor_max);
+            wrap_ref = false;
+        }
+        (Mv::new(mx, mv.y.max(ver_min).min(ver_max)), wrap_ref)
+    }
+
+    /// The window of the current subpicture in component samples when it
+    /// is treated as a picture (`getSubPicBuf`).
+    fn win(&self, comp: usize) -> Option<Win> {
+        let pps = self.si.pps;
+        if pps.num_subpics <= 1 {
+            return None;
+        }
+        let sp = super::mvpred::subpic_at(pps, self.cu_area.0, self.cu_area.1)?;
+        if !sp.treated_as_pic {
+            return None;
+        }
+        let (sx, sy) = self.fmt.scale(comp);
+        Some((
+            (sp.left as i32) >> sx,
+            (sp.top as i32) >> sy,
+            ((sp.right as i32 + 1) >> sx) - 1,
+            ((sp.bottom as i32 + 1) >> sy) - 1,
+        ))
+    }
+
+    /// The wraparound offset for reading `refpic`'s wraparound buffer.
+    fn ref_wrap(&self, refpic: &RefPic, comp: usize, wrap_ref: bool) -> Option<i32> {
+        let (sx, _) = self.fmt.scale(comp);
+        if wrap_ref {
+            refpic.wrap.map(|o| o >> sx)
+        } else {
+            None
         }
     }
 
@@ -719,6 +879,8 @@ impl<'p, 's> McCtx<'p, 's> {
             bd: self.bd,
             sx,
             sy,
+            wrap: None,
+            win: self.win(comp),
         }
     }
 
@@ -732,8 +894,11 @@ impl<'p, 's> McCtx<'p, 's> {
                 out[comp] = self.pred_affine(u, l, comp, refpic, bi)?;
             } else {
                 let (bx, by, w, h) = self.blk(u, comp);
-                let p = self.params(comp, bi, u);
-                out[comp] = pred_blk(refpic, bx, by, w, h, u.mv[l][0], &p, bio);
+                let mut p = self.params(comp, bi, u);
+                // clipMv, then wrapClipMv, which leaves a clipped vector as is
+                let mv = self.clip_mv(u.mv[l][0], self.cu_area);
+                p.wrap = self.ref_wrap(refpic, comp, self.wrap_enabled());
+                out[comp] = pred_blk(refpic, bx, by, w, h, mv, &p, bio);
             }
         }
         Ok(out)
@@ -952,6 +1117,7 @@ impl<'p, 's> McCtx<'p, 's> {
 
     /// `InterPrediction::motionCompensation` for inter (non-IBC) units.
     pub fn motion_compensation(&mut self, u: &Mcu) -> Result<PredUnit, Error> {
+        self.cu_area = (u.x, u.y, u.w, u.h);
         let (sps, ph, pps) = (self.si.sps, self.si.ph, self.si.pps);
         let slice_type = self.si.sh.slice_type;
         let mut bio = false;
@@ -1116,7 +1282,10 @@ impl<'p, 's> McCtx<'p, 's> {
         let mut bl: Vec<Buf> = Vec::new();
         for l in 0..2 {
             let refpic = self.refpic(l, u.ref_idx[l])?;
-            let mv = merge[l].sub(Mv::new(2 << 4, 2 << 4));
+            // xinitMC: clipMv, then wrapClipMv (a no-op on a clipped vector)
+            let mv = self
+                .clip_mv(merge[l], (u.x, u.y, u.w, u.h))
+                .sub(Mv::new(2 << 4, 2 << 4));
             let p = BlkParams {
                 comp: 0,
                 bi: true,
@@ -1125,6 +1294,8 @@ impl<'p, 's> McCtx<'p, 's> {
                 bd: self.bd,
                 sx: 0,
                 sy: 0,
+                wrap: self.ref_wrap(refpic, 0, self.wrap_enabled()),
+                win: self.win(0),
             };
             bl.push(pred_blk(refpic, u.x, u.y, ext_w, ext_h, mv, &p, false));
         }
@@ -1220,6 +1391,7 @@ impl<'p, 's> McCtx<'p, 's> {
             let (bx, by, w, h) = self.blk(sub, comp);
             let (shx, shy) = (4 + sx as i32, 4 + sy as i32);
             let moved = (mv.x >> shx) != (start.x >> shx) || (mv.y >> shy) != (start.y >> shy);
+            let area = (sub.x, sub.y, sub.w, sub.h);
             let p = BlkParams {
                 comp,
                 bi: true,
@@ -1228,17 +1400,36 @@ impl<'p, 's> McCtx<'p, 's> {
                 bd: self.bd,
                 sx,
                 sy,
+                wrap: self.ref_wrap(refpic, comp, self.wrap_enabled()),
+                win: self.win(comp),
             };
             let region = if moved {
+                // xPrefetchPad fetched from the clipped merge vector
                 let taps = if comp == 0 { 3 } else { 1 };
-                let ox = bx + ((start.x - (taps << shx)) >> shx);
-                let oy = by + ((start.y - (taps << shy)) >> shy);
+                let adj = Mv::new(start.x - (taps << shx), start.y - (taps << shy));
+                let (clipped, wrap_ref) = if self.wrap_enabled() {
+                    self.wrap_clip_mv(adj, area)
+                } else {
+                    (self.clip_mv(adj, area), false)
+                };
+                let (ox, oy) = (bx + (adj.x >> shx), by + (adj.y >> shy));
                 let ext = 2 * taps + 1;
-                Some((ox, oy, w as i32 + ext, h as i32 + ext))
+                Some(Region {
+                    rect: (ox, oy, w as i32 + ext, h as i32 + ext),
+                    shift: (
+                        (clipped.x >> shx) - (adj.x >> shx),
+                        (clipped.y >> shy) - (adj.y >> shy),
+                    ),
+                    wrap: self.ref_wrap(refpic, comp, wrap_ref),
+                    pos_mv: mv,
+                })
             } else {
                 None
             };
-            out[comp] = pred_blk_region(refpic, bx, by, w, h, mv, &p, bio, region);
+            // the final vector is clipped to the subblock (clipMv), which
+            // sets its fraction; the prefetch buffer is addressed unclipped
+            let mvc = self.clip_mv(mv, area);
+            out[comp] = pred_blk_region(refpic, bx, by, w, h, mvc, &p, bio, region);
         }
         Ok(out)
     }
@@ -1313,6 +1504,8 @@ impl<'p, 's> McCtx<'p, 's> {
             bd: self.bd,
             sx,
             sy,
+            wrap: None,
+            win: self.win(comp),
         };
         let shift = 2.max(IF_INTERNAL_PREC - self.bd as i32);
         let max = (1 << self.bd) - 1;
@@ -1342,7 +1535,22 @@ impl<'p, 's> McCtx<'p, 's> {
                     let (a, b) = round_affine(sum.x * f, sum.y * f, 1);
                     Mv::new(a, b)
                 };
-                let mv = Mv::new(mv.x.clamp(hor_min, hor_max), mv.y.clamp(ver_min, ver_max));
+                let (mv, wrap_ref) = if self.wrap_enabled() {
+                    let area = (
+                        u.x + ((xb as i32) << sx),
+                        u.y + ((yb as i32) << sy),
+                        4 << sx,
+                        4 << sy,
+                    );
+                    self.wrap_clip_mv(mv, area)
+                } else if pps.num_subpics > 1 {
+                    (self.clip_mv(mv, (u.x, u.y, u.w, u.h)), false)
+                } else {
+                    (
+                        Mv::new(mv.x.clamp(hor_min, hor_max), mv.y.clamp(ver_min, ver_max)),
+                        false,
+                    )
+                };
                 let (shx, shy) = (4 + sx as i32, 4 + sy as i32);
                 let fx = (mv.x & ((1 << shx) - 1)) as usize;
                 let fy = (mv.y & ((1 << shy) - 1)) as usize;
@@ -1354,6 +1562,10 @@ impl<'p, 's> McCtx<'p, 's> {
                     y0 - MARGIN,
                     4 + 2 * MARGIN as usize + 1,
                     4 + 2 * MARGIN as usize + 1,
+                    &BlkParams {
+                        wrap: self.ref_wrap(refpic, comp, wrap_ref),
+                        ..p
+                    },
                 );
                 let (ox, oy) = (MARGIN as usize, MARGIN as usize);
                 if prof {

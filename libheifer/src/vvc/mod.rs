@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
-//! Pure Rust VVC (H.266) still-picture decoder, written to reproduce the
-//! output of vvdec 3.2.0 as used by libheif's vvdec plugin. Intra pictures
-//! only; inter prediction reports [`Error::Unsupported`].
+//! Pure Rust VVC (H.266) decoder, written to reproduce the output of vvdec
+//! 3.2.0 as used by libheif's vvdec plugin. Reference picture resampling
+//! reports [`Error::Unsupported`]; palette mode is rejected as vvdec does.
 //!
 //! The decoding processes and tables are translated from vvdec 3.2.0,
 //! Copyright (c) 2018-2026 Fraunhofer-Gesellschaft zur Förderung der
@@ -132,8 +132,8 @@ struct DpbEntry {
     crop: [u32; 4],
 }
 
-#[derive(Default)]
-struct Decoder {
+/// A stateful decoder for a sequence of NAL units.
+pub struct Decoder {
     sps: Vec<Option<Sps>>,
     pps: Vec<Option<Pps>>,
     /// [type][id]
@@ -156,8 +156,14 @@ struct Decoder {
     gdr_recovered: bool,
 }
 
+impl Default for Decoder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Decoder {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             sps: vec![None; 16],
             pps: vec![None; 64],
@@ -166,11 +172,23 @@ impl Decoder {
             first_slice_in_sequence: true,
             poc_random_access: i32::MAX,
             prev_poc: i32::MAX,
-            ..Default::default()
+            ph: None,
+            cur: None,
+            dpb: Vec::new(),
+            output: std::collections::VecDeque::new(),
+            next_id: 0,
+            prev_tid0_poc: 0,
+            poc_cra: 0,
+            last_no_output_before_recovery: false,
+            no_output_before_recovery: false,
+            no_output_prior_pics: None,
+            gdr_recovery_poc: None,
+            gdr_recovered: false,
         }
     }
 
-    fn push_nal(&mut self, nal: &[u8]) -> Result<(), Error> {
+    /// Decodes one NAL unit (without start code or length prefix).
+    pub fn push_nal(&mut self, nal: &[u8]) -> Result<(), Error> {
         if nal.len() < 2 {
             return Ok(());
         }
@@ -754,6 +772,10 @@ impl Decoder {
                 return Err(Error::Unsupported("reference picture resampling"));
             }
         }
+        if sh.slice_type != ps::I_SLICE && sps.wraparound && !cur.pps.wraparound {
+            // vvdec would read the never-extended wraparound buffer margins
+            return Err(Error::Unsupported("SPS wraparound without PPS wraparound"));
+        }
         let mut check_ldc = true;
         if sh.slice_type != ps::I_SLICE {
             let lists = if sh.slice_type == ps::B_SLICE { 2 } else { 1 };
@@ -904,6 +926,7 @@ impl Decoder {
             slices: std::mem::take(&mut pic.slice_refs),
             col,
             col_w,
+            wrap: cur.pps.wraparound.then_some(cur.pps.wrap_offset),
         };
         self.dpb.push(DpbEntry {
             pic: Rc::new(refpic),
@@ -971,7 +994,13 @@ impl Decoder {
         output_frame(&self.dpb[k]).map(Some)
     }
 
-    fn flush(&mut self) -> Result<(), Error> {
+    /// Removes and returns the next picture in output order, if any.
+    pub fn pop_output(&mut self) -> Option<Frame> {
+        self.output.pop_front()
+    }
+
+    /// Finishes the current picture and outputs all pending pictures.
+    pub fn flush(&mut self) -> Result<(), Error> {
         if self.cur.is_some() {
             self.finish_picture()?;
         }

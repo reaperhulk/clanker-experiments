@@ -39,6 +39,9 @@ pub struct RefPic {
     /// Collocated motion on the 8x8 grid (`ColocatedMotionInfo`).
     pub col: Vec<MotionInfo>,
     pub col_w: usize,
+    /// Wraparound offset of the picture's PPS when its border is extended
+    /// by wrapping (vvdec's `PIC_RECON_WRAP` buffer).
+    pub wrap: Option<i32>,
 }
 
 impl RefPic {
@@ -90,6 +93,7 @@ impl RefPic {
             slices: Vec::new(),
             col: vec![MotionInfo::default(); col_w * col_h],
             col_w,
+            wrap: None,
         }
     }
 }
