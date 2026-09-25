@@ -17,7 +17,7 @@ QUALITIES = [10, 25, 40, 55, 70]
 # when one grows by more than MARGIN. Screen-like content ('blocks') lacks
 # transform skip and BDPCM in the candidate; vvenc's perceptual QP
 # adaptation spends more bits on smooth content.
-EXPECTED = {'smooth': -0.5, 'texture': 13.4, 'blocks': 43.9}
+EXPECTED = {'smooth': -2.1, 'texture': 13.6, 'blocks': 42.5}
 MARGIN = 10.0
 
 

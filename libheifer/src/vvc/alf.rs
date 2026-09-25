@@ -960,3 +960,31 @@ pub fn alf(
         }
     }
 }
+
+/// The ALF class and transpose index of every 4x4 luma block of a
+/// picture, in raster order of 4x4 blocks (the encoder's statistics).
+pub(super) fn luma_classes(plane: &Plane, ctu_log2: u32, bd: u32) -> Vec<(usize, usize)> {
+    let ctu = 1i32 << ctu_log2;
+    let (pw, ph) = (plane.width as i32, plane.height as i32);
+    let bw = (pw as usize).div_ceil(4);
+    let mut out = vec![(0, 0); bw * (ph as usize).div_ceil(4)];
+    let src = PicSrc(plane);
+    for y0 in (0..ph).step_by(ctu as usize) {
+        for x0 in (0..pw).step_by(ctu as usize) {
+            let (w, h) = (ctu.min(pw - x0), ctu.min(ph - y0));
+            let padded = Padded::new(&src, x0, y0, w, h);
+            let classes = classify_area(&padded, x0, y0, w, h, y0, bd, ctu, ctu - 4);
+            let cw = (w as usize).div_ceil(4);
+            for (i, c) in classes.into_iter().enumerate() {
+                let (bx, by) = (x0 as usize / 4 + i % cw, y0 as usize / 4 + i / cw);
+                out[by * bw + bx] = c;
+            }
+        }
+    }
+    out
+}
+
+/// Coefficient index order of the luma filter taps for transpose `t`.
+pub(super) fn transpose_map(t: usize) -> &'static [usize; 13] {
+    &TRANSPOSE[t]
+}

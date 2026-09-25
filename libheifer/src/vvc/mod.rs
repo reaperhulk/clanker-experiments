@@ -30,6 +30,7 @@ pub(crate) fn trace_enabled() -> bool {
 }
 
 mod alf;
+mod alf_enc;
 mod bits;
 mod cabac;
 mod ctu;

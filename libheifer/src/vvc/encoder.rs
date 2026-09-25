@@ -9,6 +9,7 @@
 //! reconstruction is the decoder's by construction; the syntax writer
 //! mirrors the parser in [`super::ctu`].
 use super::Error;
+use super::alf_enc::{self, AlfDecision};
 use super::bits::{BitReader, BitWriter, escape};
 use super::cabac::{BinSink, CabacWriter, Contexts, Estimator, rem_abs_bins};
 use super::ctu::{CoeffCtx, Partitioner, SliceInfo, SliceInter, Split, intra_mpms};
@@ -54,6 +55,7 @@ const TT_MARGIN: [f64; 3] = [1.0, 1.02, 1.1];
 const NAL_SPS: u32 = 15;
 const NAL_PPS: u32 = 16;
 const NAL_IDR_N_LP: u32 = 8;
+const NAL_PREFIX_APS: u32 = 17;
 
 fn nal(kind: u32, rbsp: &[u8]) -> Vec<u8> {
     let mut out = vec![0, ((kind << 3) | 1) as u8];
@@ -163,7 +165,10 @@ fn write_sps(s: &Settings, width: u32, height: u32) -> Vec<u8> {
         }
     }
     w.flag(s.deblocking); // sps_sao_enabled_flag
-    w.flag(false); // sps_alf_enabled_flag
+    w.flag(s.deblocking); // sps_alf_enabled_flag
+    if s.deblocking && s.chroma != 0 {
+        w.flag(false); // sps_ccalf_enabled_flag
+    }
     w.flag(false); // sps_lmcs_enabled_flag
     w.flag(false); // sps_weighted_pred_flag
     w.flag(false); // sps_weighted_bipred_flag
@@ -272,7 +277,7 @@ fn write_pps(s: &Settings, width: u32, height: u32) -> Vec<u8> {
 
 /// The slice header with the picture header in it, up to and including
 /// byte_alignment().
-fn write_slice_header(s: &Settings) -> Vec<u8> {
+fn write_slice_header(s: &Settings, alf: Option<&AlfDecision>) -> Vec<u8> {
     let mut w = BitWriter::default();
     w.flag(true); // sh_picture_header_in_slice_header_flag
     // picture_header_structure( )
@@ -283,6 +288,23 @@ fn write_slice_header(s: &Settings) -> Vec<u8> {
     w.uvlc(0); // ph_pic_parameter_set_id
     w.write(0, 8); // ph_pic_order_cnt_lsb
     w.flag(false); // sh_no_output_of_prior_pics_flag
+    if s.deblocking {
+        let on = alf.is_some_and(|a| a.enabled());
+        w.flag(on); // sh_alf_enabled_flag
+        if let Some(a) = alf.filter(|_| on) {
+            w.write(u32::from(a.luma_aps), 3); // sh_num_alf_aps_ids_luma
+            if a.luma_aps {
+                w.write(0, 3); // sh_alf_aps_id_luma
+            }
+            if s.chroma != 0 {
+                w.flag(a.chroma[0]); // sh_alf_cb_enabled_flag
+                w.flag(a.chroma[1]); // sh_alf_cr_enabled_flag
+                if a.chroma[0] || a.chroma[1] {
+                    w.write(0, 3); // sh_alf_aps_id_chroma
+                }
+            }
+        }
+    }
     w.svlc(0); // sh_qp_delta
     if s.deblocking {
         w.flag(true); // sh_sao_luma_used_flag
@@ -337,7 +359,7 @@ pub fn encode(input: &Picture8, s: &Settings) -> Result<(Vec<Vec<u8>>, Vec<Vec<u
     }
     let sps_rbsp = write_sps(s, w, h);
     let pps_rbsp = write_pps(s, w, h);
-    let sh_rbsp = write_slice_header(s);
+    let sh_rbsp = write_slice_header(s, None);
     let hd = parse_headers(&sps_rbsp, &pps_rbsp, &sh_rbsp)?;
     let inter = SliceInter {
         refs: Default::default(),
@@ -395,6 +417,7 @@ pub fn encode(input: &Picture8, s: &Settings) -> Result<(Vec<Vec<u8>>, Vec<Vec<u
         trees.push(enc.search(&mut pic, &mut part, &mut est)?);
     }
     // In-loop filter decisions on the deblocked reconstruction.
+    let mut alf: Option<AlfDecision> = None;
     let sao = if s.deblocking {
         let mut deblocked = pic.clone();
         super::deblock::deblock(
@@ -404,7 +427,18 @@ pub fn encode(input: &Picture8, s: &Settings) -> Result<(Vec<Vec<u8>>, Vec<Vec<u
             &hd.ph,
             std::slice::from_ref(&hd.sh),
         );
-        enc.sao_decisions(&deblocked)
+        let sao = enc.sao_decisions(&deblocked);
+        for (c, d) in deblocked.ctus.iter_mut().zip(&sao) {
+            c.sao = d.p;
+        }
+        super::sao::sao(&mut deblocked, &hd.sps, &hd.pps, &hd.ph);
+        let chroma = fmt.chroma != 0;
+        let wc = |c| if chroma { enc.weight(c) } else { 1.0 };
+        let weight = [1.0, wc(1), wc(2)];
+        alf = Some(alf_enc::decide(
+            &deblocked, &enc.src, &hd.sps, &hd.pps, &hd.ph, &hd.sh, enc.lambda, weight,
+        ));
+        sao
     } else {
         Vec::new()
     };
@@ -417,6 +451,9 @@ pub fn encode(input: &Picture8, s: &Settings) -> Result<(Vec<Vec<u8>>, Vec<Vec<u
         if let Some(d) = sao.get(addr as usize) {
             write_sao(&mut writer, &pic, addr, d);
         }
+        if let Some(a) = alf.as_ref().filter(|a| a.enabled()) {
+            write_alf(&mut writer, &pic, addr, a);
+        }
         let mut part = Partitioner::new(&pic, &si, ctu_area(addr), 0, 0);
         let mut it = trees[i].iter();
         enc.write_tree(&mut pic, &mut part, &mut writer, &mut it)?;
@@ -424,21 +461,23 @@ pub fn encode(input: &Picture8, s: &Settings) -> Result<(Vec<Vec<u8>>, Vec<Vec<u
             writer.term(1); // end_of_slice_one_bit
         }
     }
-    let mut slice = sh_rbsp;
+    let mut slice = write_slice_header(s, alf.as_ref());
     slice.extend(writer.finish());
     let recon = pic
         .planes
         .iter()
         .map(|p| p.data.iter().map(|&v| v as u8).collect())
         .collect();
-    Ok((
-        vec![
-            nal(NAL_SPS, &sps_rbsp),
-            nal(NAL_PPS, &pps_rbsp),
-            nal(NAL_IDR_N_LP, &slice),
-        ],
-        recon,
-    ))
+    let mut nals = vec![nal(NAL_SPS, &sps_rbsp), nal(NAL_PPS, &pps_rbsp)];
+    if let Some(aps) = alf
+        .as_ref()
+        .filter(|a| a.enabled())
+        .and_then(|a| a.aps.as_ref())
+    {
+        nals.push(nal(NAL_PREFIX_APS, &alf_enc::write_aps(aps, s.chroma != 0)));
+    }
+    nals.push(nal(NAL_IDR_N_LP, &slice));
+    Ok((nals, recon))
 }
 
 /// A CTU's SAO decision: merged from the left (0) or above (1) CTU, or
@@ -670,6 +709,52 @@ impl<'a, 's> Enc<'a, 's> {
             out.push(best.1);
         }
         out
+    }
+}
+
+/// The ALF syntax of one CTU (`read_alf`).
+fn write_alf<S: BinSink>(s: &mut S, pic: &Picture, addr: u32, a: &AlfDecision) {
+    let wc = pic.width_ctus;
+    let (cx, cy) = (addr % wc, addr / wc);
+    let none = AlfCtu::default();
+    let left = if cx > 0 {
+        &a.ctus[addr as usize - 1]
+    } else {
+        &none
+    };
+    let above = if cy > 0 {
+        &a.ctus[(addr - wc) as usize]
+    } else {
+        &none
+    };
+    let cur = &a.ctus[addr as usize];
+    for c in 0..pic.fmt.num_comp() {
+        if c > 0 && !a.chroma[c - 1] {
+            continue;
+        }
+        let inc = usize::from(left.enable[c]) + usize::from(above.enable[c]);
+        s.bin(ctx::CTB_ALF_FLAG + c * 3 + inc, u32::from(cur.enable[c]));
+        if !cur.enable[c] {
+            continue;
+        }
+        if c == 0 {
+            let aps = cur.filter_idx >= 16;
+            if a.luma_aps {
+                s.bin(ctx::ALF_USE_TEMPORAL_FILT, u32::from(aps));
+            }
+            if !aps {
+                write_trunc_bin(s, u32::from(cur.filter_idx), 16);
+            }
+        } else {
+            // Two alternatives (Cb's and Cr's filters).
+            let alt = cur.alt[c - 1];
+            for _ in 0..alt {
+                s.bin(ctx::CTB_ALF_ALTERNATIVE + c - 1, 1);
+            }
+            if alt + 1 < 2 {
+                s.bin(ctx::CTB_ALF_ALTERNATIVE + c - 1, 0);
+            }
+        }
     }
 }
 
