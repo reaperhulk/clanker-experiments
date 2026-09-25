@@ -36,6 +36,7 @@ mod ctu;
 mod ctx;
 mod deblock;
 mod dpb;
+pub mod encoder;
 mod filter;
 pub mod heif;
 mod mc;

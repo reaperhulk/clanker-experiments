@@ -2194,93 +2194,8 @@ impl<'a, 's, 'b> CtuDecoder<'a, 's, 'b> {
         Ok(())
     }
 
-    fn intra_dir_luma(&self, cu_id: u32) -> u8 {
-        let c = self.cu(cu_id);
-        if c.mip { PLANAR } else { c.intra_dir[0] }
-    }
-
     fn intra_mpms(&self, cu_id: u32) -> [u8; 6] {
-        let c = self.cu(cu_id);
-        let b = c.blk[0];
-        let (rt_x, rt_y) = (b.x + b.w - 1, b.y);
-        let (lb_x, lb_y) = (b.x, b.y + b.h - 1);
-        let mut left_dir = PLANAR as i32;
-        let mut above_dir = PLANAR as i32;
-        if let Some(l) = self
-            .pic
-            .get_cu_restricted(lb_x - 1, lb_y, cu_id, 0, c.left, self.wpp)
-            && self.cu(l).pred == Pred::Intra
-        {
-            left_dir = self.intra_dir_luma(l) as i32;
-        }
-        if let Some(a) = self
-            .pic
-            .get_cu_restricted(rt_x, rt_y - 1, cu_id, 0, c.above, self.wpp)
-            && self.cu(a).pred == Pred::Intra
-        {
-            let ac = self.cu(a);
-            let same_ctu = (ac.lx() >> self.pic.ctu_log2) == (c.lx() >> self.pic.ctu_log2)
-                && (ac.ly() >> self.pic.ctu_log2) == (c.ly() >> self.pic.ctu_log2);
-            if same_ctu {
-                above_dir = self.intra_dir_luma(a) as i32;
-            }
-        }
-        let offset = 67 - 6;
-        let m = offset + 3;
-        let mut mpm = [
-            PLANAR as i32,
-            DC as i32,
-            VER as i32,
-            HOR as i32,
-            VER as i32 - 4,
-            VER as i32 + 4,
-        ];
-        if left_dir == above_dir {
-            if left_dir > DC as i32 {
-                mpm = [
-                    PLANAR as i32,
-                    left_dir,
-                    ((left_dir + offset) % m) + 2,
-                    ((left_dir - 1) % m) + 2,
-                    ((left_dir + offset - 1) % m) + 2,
-                    (left_dir % m) + 2,
-                ];
-            }
-        } else if left_dir > DC as i32 && above_dir > DC as i32 {
-            mpm[0] = PLANAR as i32;
-            mpm[1] = left_dir;
-            mpm[2] = above_dir;
-            let (max_i, min_i) = if mpm[1] > mpm[2] { (1, 2) } else { (2, 1) };
-            let (mx, mn) = (mpm[max_i], mpm[min_i]);
-            if mx - mn == 1 {
-                mpm[3] = ((mn + offset) % m) + 2;
-                mpm[4] = ((mx - 1) % m) + 2;
-                mpm[5] = ((mn + offset - 1) % m) + 2;
-            } else if mx - mn >= 62 {
-                mpm[3] = ((mn - 1) % m) + 2;
-                mpm[4] = ((mx + offset) % m) + 2;
-                mpm[5] = (mn % m) + 2;
-            } else if mx - mn == 2 {
-                mpm[3] = ((mn - 1) % m) + 2;
-                mpm[4] = ((mn + offset) % m) + 2;
-                mpm[5] = ((mx - 1) % m) + 2;
-            } else {
-                mpm[3] = ((mn + offset) % m) + 2;
-                mpm[4] = ((mn - 1) % m) + 2;
-                mpm[5] = ((mx + offset) % m) + 2;
-            }
-        } else if left_dir + above_dir >= 2 {
-            let mx = left_dir.max(above_dir);
-            mpm = [
-                PLANAR as i32,
-                mx,
-                ((mx + offset) % m) + 2,
-                ((mx - 1) % m) + 2,
-                ((mx + offset - 1) % m) + 2,
-                (mx % m) + 2,
-            ];
-        }
-        mpm.map(|v| v as u8)
+        intra_mpms(self.pic, cu_id, self.wpp)
     }
 
     fn check_cclm_allowed(&self, cu_id: u32) -> bool {
@@ -3255,6 +3170,92 @@ impl<'a, 's, 'b> CtuDecoder<'a, 's, 'b> {
     }
 }
 
+fn intra_dir_luma(pic: &Picture, cu_id: u32) -> u8 {
+    let c = &pic.cus[cu_id as usize];
+    if c.mip { PLANAR } else { c.intra_dir[0] }
+}
+
+/// The six most probable luma modes (vvdec's `PU::getIntraMPMs`).
+pub(super) fn intra_mpms(pic: &Picture, cu_id: u32, wpp: bool) -> [u8; 6] {
+    let c = &pic.cus[cu_id as usize];
+    let b = c.blk[0];
+    let (rt_x, rt_y) = (b.x + b.w - 1, b.y);
+    let (lb_x, lb_y) = (b.x, b.y + b.h - 1);
+    let mut left_dir = PLANAR as i32;
+    let mut above_dir = PLANAR as i32;
+    if let Some(l) = pic.get_cu_restricted(lb_x - 1, lb_y, cu_id, 0, c.left, wpp)
+        && pic.cus[l as usize].pred == Pred::Intra
+    {
+        left_dir = intra_dir_luma(pic, l) as i32;
+    }
+    if let Some(a) = pic.get_cu_restricted(rt_x, rt_y - 1, cu_id, 0, c.above, wpp)
+        && pic.cus[a as usize].pred == Pred::Intra
+    {
+        let ac = &pic.cus[a as usize];
+        let same_ctu = (ac.lx() >> pic.ctu_log2) == (c.lx() >> pic.ctu_log2)
+            && (ac.ly() >> pic.ctu_log2) == (c.ly() >> pic.ctu_log2);
+        if same_ctu {
+            above_dir = intra_dir_luma(pic, a) as i32;
+        }
+    }
+    let offset = 67 - 6;
+    let m = offset + 3;
+    let mut mpm = [
+        PLANAR as i32,
+        DC as i32,
+        VER as i32,
+        HOR as i32,
+        VER as i32 - 4,
+        VER as i32 + 4,
+    ];
+    if left_dir == above_dir {
+        if left_dir > DC as i32 {
+            mpm = [
+                PLANAR as i32,
+                left_dir,
+                ((left_dir + offset) % m) + 2,
+                ((left_dir - 1) % m) + 2,
+                ((left_dir + offset - 1) % m) + 2,
+                (left_dir % m) + 2,
+            ];
+        }
+    } else if left_dir > DC as i32 && above_dir > DC as i32 {
+        mpm[0] = PLANAR as i32;
+        mpm[1] = left_dir;
+        mpm[2] = above_dir;
+        let (max_i, min_i) = if mpm[1] > mpm[2] { (1, 2) } else { (2, 1) };
+        let (mx, mn) = (mpm[max_i], mpm[min_i]);
+        if mx - mn == 1 {
+            mpm[3] = ((mn + offset) % m) + 2;
+            mpm[4] = ((mx - 1) % m) + 2;
+            mpm[5] = ((mn + offset - 1) % m) + 2;
+        } else if mx - mn >= 62 {
+            mpm[3] = ((mn - 1) % m) + 2;
+            mpm[4] = ((mx + offset) % m) + 2;
+            mpm[5] = (mn % m) + 2;
+        } else if mx - mn == 2 {
+            mpm[3] = ((mn - 1) % m) + 2;
+            mpm[4] = ((mn + offset) % m) + 2;
+            mpm[5] = ((mx - 1) % m) + 2;
+        } else {
+            mpm[3] = ((mn + offset) % m) + 2;
+            mpm[4] = ((mn - 1) % m) + 2;
+            mpm[5] = ((mx + offset) % m) + 2;
+        }
+    } else if left_dir + above_dir >= 2 {
+        let mx = left_dir.max(above_dir);
+        mpm = [
+            PLANAR as i32,
+            mx,
+            ((mx + offset) % m) + 2,
+            ((mx - 1) % m) + 2,
+            ((mx + offset - 1) % m) + 2,
+            (mx % m) + 2,
+        ];
+    }
+    mpm.map(|v| v as u8)
+}
+
 pub fn mip_size_id(w: i32, h: i32) -> u32 {
     if w == 4 && h == 4 {
         0
@@ -3474,7 +3475,7 @@ impl CoeffCtx {
         self.sig_group_ctx_ts = ctx::TS_SIG_COEFF_GROUP + usize::from(left) + usize::from(above);
     }
 
-    fn sig_ctx(&mut self, blk: usize, state: u32) -> usize {
+    pub(super) fn sig_ctx(&mut self, blk: usize, state: u32) -> usize {
         let py = (blk >> self.log2_w) as i32;
         let px = (blk & ((1 << self.log2_w) - 1)) as i32;
         let diag = px + py;
@@ -3490,7 +3491,7 @@ impl CoeffCtx {
         self.sig_sets[(state as i32 - 1).max(0) as usize] + ofs as usize
     }
 
-    fn abs_val_1st_pass(&mut self, blk: usize, coeff: &mut [i32], abs: i32) {
+    pub(super) fn abs_val_1st_pass(&mut self, blk: usize, coeff: &mut [i32], abs: i32) {
         coeff[blk] = abs;
         let py = blk >> self.log2_w;
         let px = blk & ((1 << self.log2_w) - 1);
@@ -3517,7 +3518,7 @@ impl CoeffCtx {
         }
     }
 
-    fn ctx_offset_abs(&self) -> usize {
+    pub(super) fn ctx_offset_abs(&self) -> usize {
         let mut offset = 0;
         if self.tmpl_diag != -1 {
             offset = self.tmpl_sum1.min(4) + 1;
@@ -3538,17 +3539,17 @@ impl CoeffCtx {
         offset as usize
     }
 
-    fn par_ctx(&self, off: usize) -> usize {
+    pub(super) fn par_ctx(&self, off: usize) -> usize {
         self.par_set + off
     }
-    fn gtx1_ctx(&self, off: usize) -> usize {
+    pub(super) fn gtx1_ctx(&self, off: usize) -> usize {
         self.gtx_sets[1] + off
     }
-    fn gtx2_ctx(&self, off: usize) -> usize {
+    pub(super) fn gtx2_ctx(&self, off: usize) -> usize {
         self.gtx_sets[0] + off
     }
 
-    fn template_abs_sum(&self, blk: usize, coeff: &[i32], base: i32) -> u32 {
+    pub(super) fn template_abs_sum(&self, blk: usize, coeff: &[i32], base: i32) -> u32 {
         let py = (blk >> self.log2_w) as i32;
         let px = (blk & ((1 << self.log2_w) - 1)) as i32;
         let w = self.width;

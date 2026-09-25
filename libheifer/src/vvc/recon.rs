@@ -1048,6 +1048,17 @@ fn pred_dc(src: &RefBuf, w: i32, h: i32, mrl: i32) -> i32 {
 }
 
 pub fn reconstruct_cu(pic: &mut Picture, si: &SliceInfo, cu_id: u32) -> Result<(), Error> {
+    reconstruct_cu_comps(pic, si, cu_id, 0b111)
+}
+
+/// [`reconstruct_cu`] for the components in `mask` (bit n: component n);
+/// the encoder predicts single components during mode decisions.
+pub fn reconstruct_cu_comps(
+    pic: &mut Picture,
+    si: &SliceInfo,
+    cu_id: u32,
+    mask: u8,
+) -> Result<(), Error> {
     let cu = pic.cus[cu_id as usize].clone();
     // DecCu::predAndReco for inter coding units: motion compensation
     let mut inter_pred: Option<super::mc::PredUnit> = if cu.pred == Pred::Inter {
@@ -1160,7 +1171,7 @@ pub fn reconstruct_cu(pic: &mut Picture, si: &SliceInfo, cu_id: u32) -> Result<(
         }
         for comp in 0..num_comp {
             let area = tu.blk[comp];
-            if !area.valid() {
+            if !area.valid() || mask >> comp & 1 == 0 {
                 continue;
             }
             let ch = if comp == 0 { 0 } else { 1 };

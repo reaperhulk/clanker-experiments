@@ -202,3 +202,69 @@ pub fn ceil_log2(n: u32) -> u32 {
         32 - (n - 1).leading_zeros()
     }
 }
+
+/// MSB-first bit writer for high-level syntax (the encoder's counterpart of
+/// [`BitReader`]).
+#[derive(Default)]
+pub struct BitWriter {
+    pub data: Vec<u8>,
+    cur: u32,
+    n: u32,
+}
+
+impl BitWriter {
+    pub fn write(&mut self, value: u32, n: u32) {
+        for i in (0..n).rev() {
+            self.cur = (self.cur << 1) | ((value >> i) & 1);
+            self.n += 1;
+            if self.n == 8 {
+                self.data.push(self.cur as u8);
+                self.cur = 0;
+                self.n = 0;
+            }
+        }
+    }
+    pub fn flag(&mut self, v: bool) {
+        self.write(u32::from(v), 1);
+    }
+    pub fn uvlc(&mut self, v: u32) {
+        let v1 = u64::from(v) + 1;
+        let len = 64 - v1.leading_zeros();
+        self.write(0, len - 1);
+        for i in (0..len).rev() {
+            self.write(((v1 >> i) & 1) as u32, 1);
+        }
+    }
+    pub fn svlc(&mut self, v: i32) {
+        self.uvlc(if v > 0 {
+            2 * v as u32 - 1
+        } else {
+            2 * v.unsigned_abs()
+        });
+    }
+    pub fn align_zero(&mut self) {
+        while self.n != 0 {
+            self.write(0, 1);
+        }
+    }
+    /// rbsp_trailing_bits / byte_alignment: a one bit then zero bits.
+    pub fn trailing_bits(&mut self) {
+        self.write(1, 1);
+        self.align_zero();
+    }
+}
+
+/// Inserts emulation prevention bytes into an RBSP.
+pub fn escape(rbsp: &[u8]) -> Vec<u8> {
+    let mut out = Vec::with_capacity(rbsp.len() + rbsp.len() / 64);
+    let mut zeros = 0;
+    for &b in rbsp {
+        if zeros >= 2 && b <= 3 {
+            out.push(3);
+            zeros = 0;
+        }
+        out.push(b);
+        zeros = if b == 0 { zeros + 1 } else { 0 };
+    }
+    out
+}

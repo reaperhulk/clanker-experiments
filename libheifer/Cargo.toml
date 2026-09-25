@@ -62,5 +62,9 @@ name = "vvc_decode"
 required-features = ["vvc"]
 
 [[example]]
+name = "vvc_encode"
+required-features = ["vvc"]
+
+[[example]]
 name = "inspect_hevc"
 required-features = ["hevc"]
