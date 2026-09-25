@@ -205,7 +205,7 @@ fn write_sps(s: &Settings, width: u32, height: u32) -> Vec<u8> {
     w.flag(false); // sps_ibc_enabled_flag
     w.flag(false); // sps_ladf_enabled_flag
     w.flag(false); // sps_explicit_scaling_list_enabled_flag
-    w.flag(false); // sps_dep_quant_enabled_flag
+    w.flag(true); // sps_dep_quant_enabled_flag
     w.flag(false); // sps_sign_data_hiding_enabled_flag
     w.flag(false); // sps_virtual_boundaries_enabled_flag
     w.flag(false); // sps_timing_hrd_params_present_flag
@@ -312,6 +312,7 @@ fn write_slice_header(s: &Settings, alf: Option<&AlfDecision>) -> Vec<u8> {
             w.flag(true); // sh_sao_chroma_used_flag
         }
     }
+    w.flag(true); // sh_dep_quant_used_flag
     w.trailing_bits(); // byte_alignment( )
     w.data
 }
@@ -400,7 +401,6 @@ pub fn encode(input: &Picture8, s: &Settings) -> Result<(Vec<Vec<u8>>, Vec<Vec<u
         qp: hd.sh.qp,
         lambda: 0.57 * 2f64.powf(f64::from(hd.sh.qp - 12) / 3.0),
         effort: s.effort,
-        rdoq: true,
     };
     let ctx0 = Contexts::new(2, hd.sh.qp);
     let ctu = hd.sps.ctu_size as i32;
@@ -408,6 +408,7 @@ pub fn encode(input: &Picture8, s: &Settings) -> Result<(Vec<Vec<u8>>, Vec<Vec<u
         let (cx, cy) = (addr % hd.pps.width_ctus, addr / hd.pps.width_ctus);
         fmt.unit(cx as i32 * ctu, cy as i32 * ctu, ctu, ctu)
     };
+    let t0 = std::time::Instant::now();
     // Phase 1: decide every coding tree with estimated rates.
     let mut trees = Vec::with_capacity(hd.sh.ctus.len());
     let mut est = Estimator::new(ctx0.clone());
@@ -416,6 +417,7 @@ pub fn encode(input: &Picture8, s: &Settings) -> Result<(Vec<Vec<u8>>, Vec<Vec<u
         let mut part = Partitioner::new(&pic, &si, ctu_area(addr), 0, 0);
         trees.push(enc.search(&mut pic, &mut part, &mut est)?);
     }
+    eprintln!("TIMING search {:?}", t0.elapsed());
     // In-loop filter decisions on the deblocked reconstruction.
     let mut alf: Option<AlfDecision> = None;
     let sao = if s.deblocking {
@@ -442,6 +444,7 @@ pub fn encode(input: &Picture8, s: &Settings) -> Result<(Vec<Vec<u8>>, Vec<Vec<u
     } else {
         Vec::new()
     };
+    eprintln!("TIMING filters {:?}", t0.elapsed());
     // Phase 2: rebuild the picture as the decoder parses it while writing it.
     let mut pic = Picture::new(&hd.sps, &hd.pps);
     let mut writer = CabacWriter::new(ctx0);
@@ -847,7 +850,6 @@ struct Enc<'a, 's> {
     qp: i32,
     lambda: f64,
     effort: u32,
-    rdoq: bool,
 }
 
 /// State saved to undo a trial encoding of an area.
@@ -913,9 +915,16 @@ impl<'a, 's> Enc<'a, 's> {
             let mut e = start.clone();
             write_split(&mut e, pic, part, Split::None);
             let (cost, data) = self.code_cu(pic, part, &mut e)?;
+            // An unsplit coding unit without residual ends the search.
+            let done = data.cbf == 0 && self.effort < 2;
             best = Some((cost, vec![Node::Leaf(Box::new(data))], e));
             tried = true;
             current_is_best = true;
+            if done {
+                let (_, nodes, e) = best.ok_or(Error::NoPicture)?;
+                *est = e;
+                return Ok(nodes);
+            }
         }
         let splits = [
             Split::Quad,
@@ -997,7 +1006,7 @@ impl<'a, 's> Enc<'a, 's> {
     fn apply(&self, pic: &mut Picture, cu_id: u32, d: &CuData) -> Result<(), Error> {
         set_modes(pic, cu_id, d);
         let tu = pic.cus[cu_id as usize].first_tu as usize;
-        set_coeffs(pic, tu, d.cbf, &d.coeff);
+        set_coeffs(pic, tu, d.cbf, &d.coeff, self.si.sh.dep_quant);
         recon::reconstruct_cu(pic, self.si, cu_id)
     }
 
@@ -1193,7 +1202,7 @@ impl<'a, 's> Enc<'a, 's> {
             let tu = pic.cus[cu_id as usize].first_tu as usize;
             for lm in [LM_CHROMA, MDLM_L, MDLM_T] {
                 pic.cus[cu_id as usize].intra_dir[1] = lm;
-                set_coeffs(pic, tu, 0, &Default::default());
+                set_coeffs(pic, tu, 0, &Default::default(), false);
                 recon::reconstruct_cu_comps(pic, self.si, cu_id, 6)?;
                 let mut sc = 0f64;
                 for c in 1..3 {
@@ -1232,8 +1241,9 @@ impl<'a, 's> Enc<'a, 's> {
                 }
             }
         }
-        // LFNST with the chosen modes.
-        for lfnst in 1..=2 {
+        // LFNST with the chosen modes, when luma has coefficients.
+        let luma_coded = data.cbf & 1 != 0;
+        for lfnst in (1..=2).filter(|_| luma_coded) {
             let mut d = CuData {
                 lfnst,
                 ..with_luma(data.intra_dir, &data)
@@ -1263,30 +1273,35 @@ impl<'a, 's> Enc<'a, 's> {
     ) -> Result<(f64, Estimator), Error> {
         let tu = pic.cus[cu_id as usize].first_tu as usize;
         set_modes(pic, cu_id, d);
-        set_coeffs(pic, tu, 0, &Default::default());
+        set_coeffs(pic, tu, 0, &Default::default(), false);
         recon::reconstruct_cu(pic, self.si, cu_id)?;
         let blk = pic.tus[tu].blk;
         let mut cbf = 0u8;
         let mut coeff: [Vec<i32>; 3] = Default::default();
+        let resid: Vec<Vec<i32>> = (0..pic.fmt.num_comp())
+            .map(|c| {
+                let b = blk[c];
+                let pred = read_block(&pic.planes[c], &b);
+                let orig = read_block(&self.src[c], &b);
+                orig.iter()
+                    .zip(&pred)
+                    .map(|(&o, &p)| i32::from(o) - i32::from(p))
+                    .collect()
+            })
+            .collect();
         for c in 0..pic.fmt.num_comp() {
             let b = blk[c];
             if !b.valid() {
                 continue;
             }
-            let pred = read_block(&pic.planes[c], &b);
-            let orig = read_block(&self.src[c], &b);
-            let res: Vec<i32> = orig
-                .iter()
-                .zip(&pred)
-                .map(|(&o, &p)| i32::from(o) - i32::from(p))
-                .collect();
+            let res = &resid[c];
             let qp = self.comp_qp(c);
             let tr = if c == 0 && d.lfnst == 0 && !d.mip {
                 implicit_mts(b.w, b.h)
             } else {
                 (0, 0)
             };
-            let mut tc = forward(&res, b.w as usize, b.h as usize, 8, tr);
+            let mut tc = forward(res, b.w as usize, b.h as usize, 8, tr);
             if c == 0 && d.lfnst != 0 {
                 if b.w < 4 || b.h < 4 {
                     return Ok((f64::MAX, est.clone()));
@@ -1294,7 +1309,18 @@ impl<'a, 's> Enc<'a, 's> {
                 let mode = if d.mip { PLANAR } else { d.intra_dir[0] };
                 fwd_lfnst(&mut tc, b.w, b.h, mode, d.lfnst);
             }
-            let levels = if self.rdoq {
+            let levels = if self.si.sh.dep_quant {
+                dq_quantize(
+                    &tc,
+                    b.w,
+                    b.h,
+                    c,
+                    &pic.cus[cu_id as usize],
+                    &est.ctx,
+                    qp,
+                    self.lambda / self.weight(c),
+                )
+            } else {
                 let signs = tc.iter().map(|&v| v < 0);
                 rdoq(
                     &tc,
@@ -1305,13 +1331,12 @@ impl<'a, 's> Enc<'a, 's> {
                     &est.ctx,
                     qp,
                     self.lambda / self.weight(c),
+                    4,
                 )
                 .into_iter()
                 .zip(signs)
                 .map(|(l, neg)| if neg { -l } else { l })
                 .collect()
-            } else {
-                quantize(&tc, b.w, b.h, qp, 8)
             };
             if levels.iter().any(|&v| v != 0) {
                 cbf |= 1 << c;
@@ -1325,7 +1350,7 @@ impl<'a, 's> Enc<'a, 's> {
         if d.lfnst != 0 && !lfnst_signalled(pic, cu_id, d) {
             return Ok((f64::MAX, est.clone()));
         }
-        set_coeffs(pic, tu, cbf, &d.coeff);
+        set_coeffs(pic, tu, cbf, &d.coeff, self.si.sh.dep_quant);
         recon::reconstruct_cu(pic, self.si, cu_id)?;
         let mut e = est.clone();
         write_cu(&mut e, pic, self.si, cu_id, d);
@@ -1557,25 +1582,6 @@ const QUANT_SCALES: [[i64; 6]; 2] = [
     [18396, 16384, 14564, 13107, 11651, 10280],
 ];
 
-/// Scalar quantization with an intra rounding offset of 171/512.
-fn quantize(coeff: &[i32], w: i32, h: i32, qp: i32, bd: i32) -> Vec<i32> {
-    let (lw, lh) = (log2(w as usize), log2(h as usize));
-    let sqrt_adj = (lw + lh) & 1 == 1;
-    let tshift = 15 - bd - ((lw + lh) >> 1) - i32::from(sqrt_adj);
-    let (per, rem) = (qp / 6, qp % 6);
-    let qbits = 14 + per + tshift;
-    let scale = QUANT_SCALES[usize::from(sqrt_adj)][rem as usize];
-    let offset = 171i64 << (qbits - 9);
-    coeff
-        .iter()
-        .map(|&c| {
-            let a = (i64::from(c).abs() * scale + offset) >> qbits;
-            let a = a.min(32767) as i32;
-            if c < 0 { -a } else { a }
-        })
-        .collect()
-}
-
 /// Quantizer step and distortion scale of a transform block.
 struct QuantParams {
     scale: i64,
@@ -1615,6 +1621,7 @@ fn rdoq(
     ctx: &Contexts,
     qp: i32,
     lambda: f64,
+    last_candidates: usize,
 ) -> Vec<i32> {
     let q = quant_params(w, h, qp, 8);
     let n = (w * h) as usize;
@@ -1783,7 +1790,7 @@ fn rdoq(
     let nz: Vec<usize> = (0..n_real)
         .rev()
         .filter(|&p| levels[cc.scan[p] as usize] != 0)
-        .take(4)
+        .take(last_candidates)
         .collect();
     let base_dist: f64 = (0..n).map(|i| dist(i, levels[i])).sum();
     let mut best = (
@@ -1803,13 +1810,267 @@ fn rdoq(
         let _ = p;
         let mut e = Estimator::new(ctx.clone());
         e.bin(cbf_ctx, 1);
-        write_residual(&mut e, &t, w, h, comp, cu);
+        write_residual(&mut e, &t, w, h, comp, cu, false);
         let cost = base_dist + extra + lambda * bits(e.bits as u32);
         if cost < best.0 {
             best = (cost, Some(t));
         }
     }
     best.1.unwrap_or_else(|| vec![0; n])
+}
+
+/// Per-position context information for the dependent quantization
+/// trellis, from a preliminary quantization in coding order.
+#[derive(Clone, Copy, Default)]
+struct DqPos {
+    /// Significance context of state set 0 (states 0 and 1).
+    sig: usize,
+    gt1: usize,
+    par: usize,
+    gt2: usize,
+    rice_gt2: u32,
+    rice_bypass: u32,
+    regular: bool,
+}
+
+/// Dependent quantization: a four-state trellis over the coefficients in
+/// coding order choosing quantization indices (and the last position) by
+/// distortion plus estimated rate. Returns signed indices.
+#[allow(clippy::too_many_arguments)]
+fn dq_quantize(
+    coeff: &[i32],
+    w: i32,
+    h: i32,
+    comp: usize,
+    cu: &Cu,
+    ctx: &Contexts,
+    qp: i32,
+    lambda: f64,
+) -> Vec<i32> {
+    let n = (w * h) as usize;
+    // Reconstruction levels are multiples of half the step of QP + 1.
+    let q = quant_params(w, h, qp + 1, 8);
+    let half = 2f64.powi(q.qbits) / q.scale as f64 / 2.0;
+    let dunit = q.step2 / 4.0;
+    let u: Vec<f64> = coeff
+        .iter()
+        .enumerate()
+        .map(|(i, &c)| {
+            if (i as i32 % w) >= 32 || (i as i32 / w) >= 32 {
+                0.0
+            } else {
+                f64::from(c.unsigned_abs()) / half
+            }
+        })
+        .collect();
+    let ch = usize::from(comp != 0);
+    let mut cc = CoeffCtx::new(w, h, ch, false, comp == 0, cu, MTS_DCT2, false, false);
+    let n_real = (w.min(32) * h.min(32)) as usize;
+    let scan = cc.scan;
+    let Some(p_max) = (0..n_real).rev().find(|&p| u[scan[p] as usize] >= 1.0) else {
+        return vec![0; n];
+    };
+    // Preliminary indices and the contexts they imply.
+    let pre: Vec<i32> = u
+        .iter()
+        .map(|&v| ((v / 2.0 + 0.5) as i32).min(16383))
+        .collect();
+    let mut info = vec![DqPos::default(); p_max + 1];
+    {
+        cc.scan_pos_last = p_max;
+        let mut work = vec![0i32; n];
+        let mut sub_set = (p_max >> cc.log2_cg_size) as i32;
+        while sub_set >= 0 {
+            cc.init_subblock(sub_set as usize);
+            let min_sub = cc.min_sub_pos as i32;
+            let first = if cc.is_last() {
+                p_max as i32
+            } else {
+                cc.max_sub_pos as i32
+            };
+            let mut rem_bins = cc.reg_bin_limit;
+            let mut next = first;
+            while next >= min_sub && rem_bins >= 4 {
+                let blk = scan[next as usize] as usize;
+                let sig = cc.sig_ctx(blk, 0);
+                let off = cc.ctx_offset_abs();
+                let k = pre[blk];
+                info[next as usize] = DqPos {
+                    sig,
+                    gt1: cc.gtx1_ctx(off),
+                    par: cc.par_ctx(off),
+                    gt2: cc.gtx2_ctx(off),
+                    rice_gt2: GO_RICE_PARS[cc.template_abs_sum(blk, &work, 4) as usize],
+                    rice_bypass: 0,
+                    regular: true,
+                };
+                rem_bins -= 1;
+                if k > 0 {
+                    rem_bins -= 1 + 2 * i32::from(k > 1);
+                    let fp = if k > 1 {
+                        2 + ((k - 2) & 1) + 2 * i32::from(k > 3)
+                    } else {
+                        1
+                    };
+                    cc.abs_val_1st_pass(blk, &mut work, fp);
+                }
+                next -= 1;
+            }
+            cc.reg_bin_limit = rem_bins;
+            while next >= min_sub {
+                let blk = scan[next as usize] as usize;
+                info[next as usize] = DqPos {
+                    rice_bypass: GO_RICE_PARS[cc.template_abs_sum(blk, &work, 0) as usize],
+                    ..Default::default()
+                };
+                if pre[blk] > 0 {
+                    work[blk] = pre[blk];
+                }
+                next -= 1;
+            }
+            cc.set_sig_group();
+            sub_set -= 1;
+        }
+    }
+    let sig_base = [
+        ctx::SIG_FLAG0,
+        ctx::SIG_FLAG1,
+        ctx::SIG_FLAG2,
+        ctx::SIG_FLAG3,
+        ctx::SIG_FLAG4,
+        ctx::SIG_FLAG5,
+    ];
+    let bits = |b: u32| f64::from(b) / 32768.0;
+    // Rate of index k at position p in state s (sig not coded when `start`).
+    let rate = |p: usize, k: i32, s: u32, start: bool| -> f64 {
+        let d = &info[p];
+        if !d.regular {
+            let pos0 = (if s < 2 { 1u32 } else { 2 }) << d.rice_bypass;
+            let tc = k as u32;
+            let code = if tc == 0 {
+                pos0
+            } else if tc <= pos0 {
+                tc - 1
+            } else {
+                tc
+            };
+            return f64::from(rem_abs_bins(code, d.rice_bypass, 5, 15) + u32::from(k > 0));
+        }
+        let mut r = 0u32;
+        if !start {
+            let set = (s as usize).saturating_sub(1);
+            let id = sig_base[ch + 2 * set] + (d.sig - sig_base[ch]);
+            r += ctx.cost(id, u32::from(k > 0));
+        }
+        if k > 0 {
+            r += 32768 + ctx.cost(d.gt1, u32::from(k > 1));
+            if k > 1 {
+                r += ctx.cost(d.par, ((k - 2) & 1) as u32) + ctx.cost(d.gt2, u32::from(k > 3));
+                if k > 3 {
+                    let rem = ((k - 4 - ((k - 2) & 1)) >> 1) as u32;
+                    r += 32768 * rem_abs_bins(rem, d.rice_gt2, 5, 15);
+                }
+            }
+        }
+        bits(r)
+    };
+    // Rate of the last significant position at scan position p.
+    let last_rate = |p: usize| -> f64 {
+        let blk = scan[p] as i32;
+        let (px, py) = ((blk % w) as u32, (blk / w) as u32);
+        let (lx, ly) = if ch == 0 {
+            (ctx::LASTX0, ctx::LASTY0)
+        } else {
+            (ctx::LASTX1, ctx::LASTY1)
+        };
+        let mut r = 0u32;
+        for (pos, max, base, off, shift) in [
+            (px, cc.max_last_x, lx, cc.last_off_x, cc.last_shift_x),
+            (py, cc.max_last_y, ly, cc.last_off_y, cc.last_shift_y),
+        ] {
+            let g = GROUP_IDX[pos as usize];
+            for i in 0..g {
+                r += ctx.cost(base + (off + (i >> shift)) as usize, 1);
+            }
+            if g < max {
+                r += ctx.cost(base + (off + (g >> shift)) as usize, 0);
+            }
+            if g > 3 {
+                r += 32768 * ((g - 2) >> 1);
+            }
+        }
+        bits(r)
+    };
+    let dist = |p: usize, r: i32| {
+        let e = u[scan[p] as usize] - f64::from(r);
+        e * e * dunit
+    };
+    let trans = |s: u32, k: i32| (DQ_TRANSITIONS >> ((s << 2) + (((k & 1) as u32) << 1))) & 3;
+    let cands = |p: usize, s: u32| -> [i32; 3] {
+        let v = u[scan[p] as usize];
+        if s < 2 {
+            let k = (v / 2.0) as i32;
+            [0, k.min(16383), (k + 1).min(16383)]
+        } else {
+            let k = ((v + 1.0) / 2.0) as i32;
+            [0, k.clamp(1, 16383), (k + 1).min(16383)]
+        }
+    };
+    const START: u8 = 4;
+    let mut cost = [f64::INFINITY; 4];
+    let mut zero = 0f64;
+    let mut back = vec![[(START, 0i32); 4]; p_max + 1];
+    for p in (0..=p_max).rev() {
+        let mut new = [f64::INFINITY; 4];
+        let mut rec = [(START, 0i32); 4];
+        for s in 0..4u32 {
+            if !cost[s as usize].is_finite() {
+                continue;
+            }
+            for k in cands(p, s) {
+                let r = if k == 0 { 0 } else { 2 * k - i32::from(s > 1) };
+                let c = cost[s as usize] + dist(p, r) + lambda * rate(p, k, s, false);
+                let t = trans(s, k) as usize;
+                if c < new[t] {
+                    new[t] = c;
+                    rec[t] = (s as u8, k);
+                }
+            }
+        }
+        // Start the coded coefficients here (the last position, state 0).
+        for k in cands(p, 0) {
+            if k == 0 {
+                continue;
+            }
+            let c = zero + dist(p, 2 * k) + lambda * (rate(p, k, 0, true) + last_rate(p));
+            let t = trans(0, k) as usize;
+            if c < new[t] {
+                new[t] = c;
+                rec[t] = (START, k);
+            }
+        }
+        zero += dist(p, 0);
+        cost = new;
+        back[p] = rec;
+    }
+    let mut out = vec![0i32; n];
+    let (mut t, best) = (0..4)
+        .map(|t| (t, cost[t]))
+        .min_by(|a, b| a.1.total_cmp(&b.1))
+        .unwrap_or((0, f64::INFINITY));
+    if best.partial_cmp(&zero) != Some(std::cmp::Ordering::Less) {
+        return out;
+    }
+    for p in 0..=p_max {
+        let (prev, k) = back[p][t];
+        let blk = scan[p] as usize;
+        out[blk] = if coeff[blk] < 0 { -k } else { k };
+        if prev == START {
+            break;
+        }
+        t = prev as usize;
+    }
+    out
 }
 
 fn set_modes(pic: &mut Picture, cu_id: u32, d: &CuData) {
@@ -1821,7 +2082,46 @@ fn set_modes(pic: &mut Picture, cu_id: u32, d: &CuData) {
     cu.lfnst = d.lfnst;
 }
 
-fn set_coeffs(pic: &mut Picture, tu: usize, cbf: u8, coeff: &[Vec<i32>; 3]) {
+/// Dependent quantization reconstruction levels (`2k - (state > 1)`) of
+/// quantization indices, walking the states as the parser does (subblocks
+/// that are not coded do not advance the state).
+fn dq_levels(k: &[i32], w: i32, h: i32) -> Vec<i32> {
+    let scan = super::ctu::grouped_scan_cached(w, h);
+    let n_real = (w.min(32) * h.min(32)) as usize;
+    let mut out = vec![0i32; k.len()];
+    let Some(last) = (0..n_real).rev().find(|&p| k[scan[p] as usize] != 0) else {
+        return out;
+    };
+    let (lcw, lch) = LOG2_SBB_SIZE[log2(w as usize) as usize][log2(h as usize) as usize];
+    let log2_cg = u32::from(lcw + lch);
+    let last_sub = last >> log2_cg;
+    let mut state = 0u32;
+    for sub in (0..=last_sub).rev() {
+        let min_sub = sub << log2_cg;
+        let first = if sub == last_sub {
+            last
+        } else {
+            min_sub + (1 << log2_cg) - 1
+        };
+        let coded =
+            sub == last_sub || sub == 0 || (min_sub..=first).any(|p| k[scan[p] as usize] != 0);
+        if !coded {
+            continue;
+        }
+        for p in (min_sub..=first).rev() {
+            let blk = scan[p] as usize;
+            let a = k[blk].abs();
+            if a != 0 {
+                let r = 2 * a - i32::from(state > 1);
+                out[blk] = if k[blk] < 0 { -r } else { r };
+            }
+            state = (DQ_TRANSITIONS >> ((state << 2) + (((a & 1) as u32) << 1))) & 3;
+        }
+    }
+    out
+}
+
+fn set_coeffs(pic: &mut Picture, tu: usize, cbf: u8, coeff: &[Vec<i32>; 3], dq: bool) {
     let cu = pic.tus[tu].cu as usize;
     pic.cus[cu].root_cbf = cbf != 0;
     pic.cus[cu].plane_cbf = [cbf & 1 != 0, cbf & 2 != 0, cbf & 4 != 0];
@@ -1830,7 +2130,11 @@ fn set_coeffs(pic: &mut Picture, tu: usize, cbf: u8, coeff: &[Vec<i32>; 3]) {
     for c in 0..3 {
         if cbf >> c & 1 != 0 {
             let b = t.blk[c];
-            t.coeff[c] = coeff[c].clone();
+            t.coeff[c] = if dq {
+                dq_levels(&coeff[c], b.w, b.h)
+            } else {
+                coeff[c].clone()
+            };
             t.max_scan[c] = max_scan(&coeff[c], b.w, b.h);
         } else {
             t.coeff[c] = Vec::new();
@@ -2111,7 +2415,8 @@ fn write_cu<S: BinSink>(s: &mut S, pic: &Picture, si: &SliceInfo, cu_id: u32, d:
     s.bin(ctx::QT_CBF0, u32::from(cbf(0)));
     for comp in 0..pic.fmt.num_comp() {
         if cbf(comp) {
-            write_residual(s, &d.coeff[comp], tu.blk[comp].w, tu.blk[comp].h, comp, cu);
+            let b = tu.blk[comp];
+            write_residual(s, &d.coeff[comp], b.w, b.h, comp, cu, si.sh.dep_quant);
         }
     }
     // lfnst_idx
@@ -2167,7 +2472,7 @@ fn fwd_lfnst(coeff: &mut [i32], w: i32, h: i32, mode: u8, lfnst: u8) {
             .map(|&p| ((p as i32 / 4) * w + p as i32 % 4) as u16)
             .collect()
     } else {
-        super::ctu::grouped_scan_cached(w, h)
+        super::ctu::grouped_scan_cached(w, h).to_vec()
     };
     let mut mode = i32::from(mode);
     if mode >= 2 {
@@ -2246,7 +2551,17 @@ fn fwd_lfnst(coeff: &mut [i32], w: i32, h: i32, mode: u8, lfnst: u8) {
 
 /// residual_coding( ) without transform skip, dependent quantization or
 /// sign hiding, mirroring the parser's context derivations.
-fn write_residual<S: BinSink>(s: &mut S, coeff: &[i32], w: i32, h: i32, comp: usize, cu: &Cu) {
+/// `dq`: dependent quantization (coefficients are quantization indices).
+#[allow(clippy::too_many_arguments)]
+fn write_residual<S: BinSink>(
+    s: &mut S,
+    coeff: &[i32],
+    w: i32,
+    h: i32,
+    comp: usize,
+    cu: &Cu,
+    dq: bool,
+) {
     let ch = usize::from(comp != 0);
     let mut cc = CoeffCtx::new(w, h, ch, false, comp == 0, cu, MTS_DCT2, false, false);
     let n_real = (w.min(32) * h.min(32)) as usize;
@@ -2285,14 +2600,27 @@ fn write_residual<S: BinSink>(s: &mut S, coeff: &[i32], w: i32, h: i32, comp: us
     let n = (w * h) as usize;
     let mut work = vec![0i32; n];
     let mut sub_set = (last >> cc.log2_cg_size) as i32;
+    let tt = if dq { DQ_TRANSITIONS } else { 0 };
+    let mut state = 0u32;
     while sub_set >= 0 {
         cc.init_subblock(sub_set as usize);
-        write_subblock(s, &mut cc, coeff, &mut work);
+        write_subblock(s, &mut cc, coeff, &mut work, &mut state, tt);
         sub_set -= 1;
     }
 }
 
-fn write_subblock<S: BinSink>(s: &mut S, cc: &mut CoeffCtx, coeff: &[i32], work: &mut [i32]) {
+/// Dependent quantization state transitions (`32040`): the next state is
+/// `(DQ_TRANSITIONS >> ((state << 2) + (parity << 1))) & 3`.
+const DQ_TRANSITIONS: u32 = 32040;
+
+fn write_subblock<S: BinSink>(
+    s: &mut S,
+    cc: &mut CoeffCtx,
+    coeff: &[i32],
+    work: &mut [i32],
+    state: &mut u32,
+    tt: u32,
+) {
     let min_sub = cc.min_sub_pos as i32;
     let is_last = cc.is_last();
     let first_sig = if is_last {
@@ -2322,11 +2650,13 @@ fn write_subblock<S: BinSink>(s: &mut S, cc: &mut CoeffCtx, coeff: &[i32], work:
         let blk = cc.scan[next as usize] as usize;
         let a = coeff[blk].abs();
         if !(sig_pos.is_empty() && next == infer_sig) {
-            let ctx_id = cc.sig_ctx(blk, 0);
+            let ctx_id = cc.sig_ctx(blk, *state);
             s.bin(ctx_id, u32::from(a != 0));
             rem_bins -= 1;
         }
-        if a != 0 {
+        if a == 0 {
+            *state = (tt >> (*state << 2)) & 3;
+        } else {
             let off = cc.ctx_offset_abs();
             sig_pos.push(blk);
             let gt1 = a > 1;
@@ -2342,8 +2672,10 @@ fn write_subblock<S: BinSink>(s: &mut S, cc: &mut CoeffCtx, coeff: &[i32], work:
                 if gt2 {
                     gt2_pos.push((blk, a));
                 }
+                *state = (tt >> ((*state << 2) + (par << 1))) & 3;
                 2 + par as i32 + 2 * i32::from(gt2)
             } else {
+                *state = (tt >> ((*state << 2) + 2)) & 3;
                 1
             };
             cc.abs_val_1st_pass(blk, work, first);
@@ -2362,8 +2694,9 @@ fn write_subblock<S: BinSink>(s: &mut S, cc: &mut CoeffCtx, coeff: &[i32], work:
         let blk = cc.scan[next as usize] as usize;
         let sum = cc.template_abs_sum(blk, work, 0);
         let rice = GO_RICE_PARS[sum as usize];
-        let pos0 = 1u32 << rice;
+        let pos0 = (if *state < 2 { 1u32 } else { 2 }) << rice;
         let tc = coeff[blk].unsigned_abs();
+        *state = (tt >> ((*state << 2) + ((tc & 1) << 1))) & 3;
         let code = if tc == 0 {
             pos0
         } else if tc <= pos0 {

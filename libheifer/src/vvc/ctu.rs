@@ -3278,8 +3278,8 @@ pub struct CoeffCtx {
     width_in_groups: i32,
     height_in_groups: i32,
     log2_w: i32,
-    pub scan: Vec<u16>,
-    scan_cg: Vec<u16>,
+    pub scan: &'static [u16],
+    scan_cg: &'static [u16],
     pub max_last_x: u32,
     pub max_last_y: u32,
     pub last_off_x: u32,
@@ -3329,8 +3329,18 @@ fn grouped_scan(w: i32, h: i32) -> Vec<u16> {
     out
 }
 
-pub fn grouped_scan_cached(w: i32, h: i32) -> Vec<u16> {
-    grouped_scan(w, h)
+/// [`grouped_scan`] for power-of-two sizes up to 64, computed once.
+pub fn grouped_scan_cached(w: i32, h: i32) -> &'static [u16] {
+    static CACHE: [[std::sync::OnceLock<Vec<u16>>; 7]; 7] =
+        [const { [const { std::sync::OnceLock::new() }; 7] }; 7];
+    CACHE[log2(w) as usize][log2(h) as usize].get_or_init(|| grouped_scan(w, h))
+}
+
+/// `diag_scan` for power-of-two sizes up to 64, computed once.
+fn diag_scan_cached(w: usize, h: usize) -> &'static [u16] {
+    static CACHE: [[std::sync::OnceLock<Vec<u16>>; 7]; 7] =
+        [const { [const { std::sync::OnceLock::new() }; 7] }; 7];
+    CACHE[w.ilog2() as usize][h.ilog2() as usize].get_or_init(|| super::ps::diag_scan(w, h))
 }
 
 impl CoeffCtx {
@@ -3397,8 +3407,8 @@ impl CoeffCtx {
             width_in_groups: wig,
             height_in_groups: hig,
             log2_w,
-            scan: grouped_scan(w, h),
-            scan_cg: super::ps::diag_scan(wig as usize, hig as usize),
+            scan: grouped_scan_cached(w, h),
+            scan_cg: diag_scan_cached(wig as usize, hig as usize),
             max_last_x: GROUP_IDX[(32.min(w) - 1) as usize],
             max_last_y: GROUP_IDX[(32.min(h) - 1) as usize],
             last_off_x: if ch == 0 { PREFIX[log2_w as usize] } else { 0 },

@@ -411,6 +411,7 @@ pub(super) fn decide(
         ctus: vec![AlfCtu::default(); n],
     };
     let mut best_total = 0f64;
+    let mut fixed: Vec<Vec<[f64; 3]>> = Vec::new();
     // Two passes: filters from every CTU, then from the CTUs that used them.
     for _ in 0..2 {
         let luma = design_luma(
@@ -433,8 +434,9 @@ pub(super) fn decide(
         hdr.alf_aps_id_chroma = 0;
         // Errors with each luma filter choice (16 = the APS filters) and
         // with the chroma filters.
-        let mut errs: Vec<Vec<[f64; 3]>> = Vec::with_capacity(17);
-        for idx in 0..17u16 {
+        // The fixed sets do not depend on the pass.
+        let mut errs: Vec<Vec<[f64; 3]>> = std::mem::take(&mut fixed);
+        for idx in errs.len() as u16..17 {
             let mut p = input.clone();
             for c in p.ctus.iter_mut() {
                 c.alf = AlfCtu {
@@ -447,6 +449,7 @@ pub(super) fn decide(
             alf::alf(&mut p, sps, pps, ph, std::slice::from_ref(&hdr), &apss);
             errs.push(ctu_errors(&p, src));
         }
+        fixed = errs[..16].to_vec();
         let mut ctus = vec![AlfCtu::default(); n];
         let mut total = -lambda * aps_bits;
         let mut uses_aps = false;

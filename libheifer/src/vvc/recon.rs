@@ -297,6 +297,8 @@ struct Ctx<'p, 's> {
     isp_base: [RefBuf; 2],
     luma_pred: Vec<i32>,
     lm_stride: usize,
+    /// Reference line buffers of angular prediction, reused across calls.
+    ang_scratch: std::cell::RefCell<[Vec<i32>; 2]>,
 }
 
 pub fn is_dm_chroma_mip(pic: &Picture, si: &SliceInfo, cu_id: u32) -> bool {
@@ -803,8 +805,25 @@ impl<'p, 's> Ctx<'p, 's> {
         let abs_ang = ANG_TABLE[abs_ang_mode];
         let angle = sign * abs_ang;
         const BASE: usize = 2 * 64 + 3 + 33 * 3 + 256;
-        let mut ref_above = [0i32; 2 * BASE];
-        let mut ref_left = [0i32; 2 * BASE];
+        // Zeroed reference lines long enough for every index this call
+        // writes or reads (the far reads of steep angles included).
+        let reach = ((width.max(height) * abs_ang * (1 + mrl)) >> 5) as usize;
+        let len = (2 * BASE).min(
+            3 * (width + height) as usize
+                + self.top_len
+                + self.left_len
+                + 4 * mrl as usize
+                + reach
+                + 16,
+        );
+        let mut scratch = self.ang_scratch.borrow_mut();
+        let [above_buf, left_buf] = &mut *scratch;
+        for b in [&mut *above_buf, &mut *left_buf] {
+            b.clear();
+            b.resize(len, 0);
+        }
+        let mut ref_above = &mut above_buf[..];
+        let mut ref_left = &mut left_buf[..];
         // Offsets so negative indices are representable.
         let (main_off, side_off);
         let (main_is_above,) = (is_ver,);
@@ -876,7 +895,7 @@ impl<'p, 's> Ctx<'p, 's> {
         // For negative angles refMain is accessed at negative indices;
         // index through a helper with the original base.
         let main_base = main_off + mrl as usize;
-        let main_all: &[i32] = if is_ver { &ref_above } else { &ref_left };
+        let main_all: &[i32] = if is_ver { ref_above } else { ref_left };
         let rm = |i: i32| main_all[(main_base as i32 + i) as usize];
         let _ = ref_main;
         if !is_ver {
@@ -1121,6 +1140,7 @@ pub fn reconstruct_cu_comps(
         isp_base: [RefBuf::new(1, 1), RefBuf::new(1, 1)],
         luma_pred: vec![0; lw * lh],
         lm_stride: 0,
+        ang_scratch: Default::default(),
     };
     let num_comp = ctx.pic.fmt.num_comp();
     if let Some(pred) = inter_pred.as_mut() {
@@ -1354,6 +1374,7 @@ pub fn predict_modes(
         isp_base: [RefBuf::new(1, 1), RefBuf::new(1, 1)],
         luma_pred: vec![0; lw * lh],
         lm_stride: 0,
+        ang_scratch: Default::default(),
     };
     ctx.init_pattern(cu.first_tu, comp, area, comp == 0);
     let ch = usize::from(comp != 0);
@@ -1393,6 +1414,7 @@ pub fn predict_mip(
         isp_base: [RefBuf::new(1, 1), RefBuf::new(1, 1)],
         luma_pred: Vec::new(),
         lm_stride: 0,
+        ang_scratch: Default::default(),
     };
     ctx.init_pattern(cu.first_tu, 0, area, false);
     ctx.cu.mip = true;
@@ -2453,7 +2475,7 @@ fn inv_lfnst(ctx: &Ctx, tu: &Tu, comp: usize, coeff: &mut [i32], max_scan: &mut 
         }
         s
     } else {
-        grouped_scan_cached(w, h)
+        grouped_scan_cached(w, h).to_vec()
     };
     let ch = if comp == 0 { 0 } else { 1 };
     let is_mip = if ch == 0 {
