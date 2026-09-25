@@ -1896,7 +1896,9 @@ pictures:
   derivation; interpolation, BCW and weighted prediction, BDOF, DMVR and
   PROF; SBT and inter MTS; inter deblocking strengths with subblock edges;
 - reference wraparound (vvdec's wrapped border buffers and its `clipMv`/
-  `wrapClipMv` clipping) and references of subpictures treated as pictures.
+  `wrapClipMv` clipping), references of subpictures treated as pictures, and
+  reference picture resampling with vvdec's scaling-window positions and RPR
+  filter sets.
 
 `src/vvc/heif.rs` reproduces libheif's VVC item path and the plugin:
 
@@ -1912,11 +1914,10 @@ pictures:
 The decoder was debugged against vvdec's syntax trace, with vvdec's in-loop
 filters disabled stage by stage in a local tracing build. Every output
 picture of the 268 JVET conformance streams was compared with vvdec 3.2.0:
-233 streams match bit-exactly in every picture (intra, random access, low
-delay, 4:0:0 to 4:4:4, 8 and 10 bit, wraparound, subpictures, tiles and
-slices). The 21 palette streams and the 10 multi-layer streams are rejected,
-as they are by vvdec. The 4 reference picture resampling streams report
-`Unsupported` after their first pictures.
+237 streams match bit-exactly in every picture (intra, random access, low
+delay, 4:0:0 to 4:4:4, 8 and 10 bit, wraparound, subpictures, tiles, slices
+and reference picture resampling). The other 31 are the palette and
+multi-layer streams, which are rejected as they are by vvdec.
 
 `vvc1` sequence tracks go through a stateful decoder that follows libheif's
 use of the vvdec plugin: `vvcC` units with sample 0, length-prefixed units
@@ -1954,7 +1955,6 @@ rounding one, and both it (92 mismatches) and the LMCS chroma rounding defect
 
 Known differences:
 
-- reference picture resampling is reported as unsupported; vvdec decodes it;
 - in tracks whose samples fail to decode, vvdec returns pictures only after a
   parse delay derived from the host's thread count, so how many pictures come
   before the error differs from libheif (and between machines for libheif
