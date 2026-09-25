@@ -31,6 +31,8 @@ pub struct Settings {
     pub effort: u32,
     /// Enables the deblocking filter.
     pub deblocking: bool,
+    /// Picture rate for the level choice.
+    pub fps: f64,
 }
 
 /// An 8-bit picture whose dimensions are multiples of 8.
@@ -40,6 +42,9 @@ pub struct Picture8<'a> {
     /// Y, Cb and Cr planes, tightly packed (Cb and Cr absent for 4:0:0).
     pub planes: [&'a [u8]; 3],
 }
+
+/// sps_max_mtt_hierarchy_depth_intra_slice_luma.
+const MAX_MTT_DEPTH: u32 = 2;
 
 const NAL_SPS: u32 = 15;
 const NAL_PPS: u32 = 16;
@@ -51,28 +56,33 @@ fn nal(kind: u32, rbsp: &[u8]) -> Vec<u8> {
     out
 }
 
-/// general_level_idc: the lowest level whose MaxLumaPs and maximum
-/// dimension admit the picture (H.266 table A.1).
-fn level_idc(width: u32, height: u32) -> u32 {
-    const LEVELS: [(u32, u64); 13] = [
-        (16, 36_864),
-        (32, 122_880),
-        (35, 245_760),
-        (48, 552_960),
-        (51, 983_040),
-        (64, 2_228_224),
-        (67, 2_228_224),
-        (80, 8_912_896),
-        (83, 8_912_896),
-        (86, 8_912_896),
-        (96, 35_651_584),
-        (99, 35_651_584),
-        (102, 35_651_584),
+/// general_level_idc: the lowest level whose MaxLumaPs, maximum dimension
+/// and MaxLumaSr (at `fps` pictures per second) admit the picture (H.266
+/// tables A.1 and A.2).
+fn level_idc(width: u32, height: u32, fps: f64) -> u32 {
+    const LEVELS: [(u32, u64, u64); 13] = [
+        (16, 36_864, 552_960),
+        (32, 122_880, 3_686_400),
+        (35, 245_760, 7_372_800),
+        (48, 552_960, 16_588_800),
+        (51, 983_040, 33_177_600),
+        (64, 2_228_224, 66_846_720),
+        (67, 2_228_224, 133_693_440),
+        (80, 8_912_896, 267_386_880),
+        (83, 8_912_896, 534_773_760),
+        (86, 8_912_896, 1_069_547_520),
+        (96, 35_651_584, 1_069_547_520),
+        (99, 35_651_584, 2_139_095_040),
+        (102, 35_651_584, 4_278_190_080),
     ];
     let ps = u64::from(width) * u64::from(height);
-    for &(idc, max_ps) in &LEVELS {
+    for &(idc, max_ps, max_sr) in &LEVELS {
         let max_dim = ((max_ps * 8) as f64).sqrt() as u64;
-        if ps <= max_ps && u64::from(width) <= max_dim && u64::from(height) <= max_dim {
+        if ps <= max_ps
+            && u64::from(width) <= max_dim
+            && u64::from(height) <= max_dim
+            && ps as f64 * fps <= max_sr as f64
+        {
             return idc;
         }
     }
@@ -96,7 +106,7 @@ fn write_sps(s: &Settings, width: u32, height: u32) -> Vec<u8> {
     // profile_tier_level( 1, 0 )
     w.write(profile_idc(s.chroma), 7);
     w.flag(false); // general_tier_flag
-    w.write(level_idc(width, height), 8);
+    w.write(level_idc(width, height, s.fps), 8);
     w.flag(true); // ptl_frame_only_constraint_flag
     w.flag(false); // ptl_multilayer_enabled_flag
     w.flag(false); // gci_present_flag
@@ -122,7 +132,9 @@ fn write_sps(s: &Settings, width: u32, height: u32) -> Vec<u8> {
     w.uvlc(0); // sps_log2_min_luma_coding_block_size_minus2: 4
     w.flag(false); // sps_partition_constraints_override_enabled_flag
     w.uvlc(1); // sps_log2_diff_min_qt_min_cb_intra_slice_luma: MinQt 8
-    w.uvlc(0); // sps_max_mtt_hierarchy_depth_intra_slice_luma
+    w.uvlc(MAX_MTT_DEPTH); // sps_max_mtt_hierarchy_depth_intra_slice_luma
+    w.uvlc(2); // sps_log2_diff_max_bt_min_qt_intra_slice_luma: MaxBt 32
+    w.uvlc(2); // sps_log2_diff_max_tt_min_qt_intra_slice_luma: MaxTt 32
     if s.chroma != 0 {
         w.flag(false); // sps_qtbtt_dual_tree_intra_flag
     }
@@ -413,7 +425,7 @@ fn clear_map(pic: &mut Picture, area: &UnitArea) {
 /// A decided coding tree node in parsing order: a split or a coding unit.
 #[derive(Clone)]
 enum Node {
-    Split,
+    Split(Split),
     Leaf(Box<CuData>),
 }
 
@@ -474,7 +486,7 @@ impl<'a, 's> Enc<'a, 's> {
     }
 
     /// Phase 1: chooses between coding the partitioner's area as one coding
-    /// unit and splitting it; leaves the chosen reconstruction in `pic`.
+    /// unit and each allowed split; leaves the chosen reconstruction in `pic`.
     fn search(
         &mut self,
         pic: &mut Picture,
@@ -485,52 +497,83 @@ impl<'a, 's> Enc<'a, 's> {
         let can = part.can_split(pic);
         let snap = self.snapshot(pic, &area);
         let start = est.clone();
-        let mut leaf: Option<(f64, CuData, Estimator)> = None;
+        // The best choice so far and the state needed to reinstate it.
+        let mut best: Option<(f64, Vec<Node>, Estimator)> = None;
+        let mut best_state: Option<(Snapshot, Vec<Cu>, Vec<Tu>)> = None;
+        // Whether `pic` holds the best candidate's reconstruction.
+        let mut current_is_best = false;
+        let mut tried = false;
         if can[0] {
             let mut e = start.clone();
-            write_split(&mut e, pic, part, false);
+            write_split(&mut e, pic, part, Split::None);
             let (cost, data) = self.code_cu(pic, part, &mut e)?;
-            leaf = Some((cost, data, e));
+            best = Some((cost, vec![Node::Leaf(Box::new(data))], e));
+            tried = true;
+            current_is_best = true;
         }
-        if !can[1] {
-            let (_, data, e) = leaf.ok_or(Error::Invalid("no partitioning allowed"))?;
-            *est = e;
-            return Ok(vec![Node::Leaf(Box::new(data))]);
-        }
-        if leaf.is_some() {
-            self.restore(pic, &area, &snap);
-        }
-        let mut e = start;
-        write_split(&mut e, pic, part, true);
-        let mut nodes = vec![Node::Split];
-        part.split(Split::Quad, pic);
-        let chan = pic.chan_area(0);
-        loop {
-            let b = part.area().blk[0];
-            if chan.contains(b.x, b.y) {
-                nodes.extend(self.search(pic, part, &mut e)?);
+        let splits = [
+            Split::Quad,
+            Split::Horz,
+            Split::Vert,
+            Split::TriH,
+            Split::TriV,
+        ];
+        for (k, &split) in splits.iter().enumerate() {
+            // Implicit splits at the picture boundary are always considered.
+            if !can[k + 1] || (can[0] && !split_ok(pic, &area, split)) {
+                continue;
             }
-            if !part.next_part(pic, false) {
-                break;
-            }
-        }
-        part.exit_split(pic);
-        let cost = self.distortion(pic, &area) + self.lambda * e.bits as f64 / 32768.0;
-        match leaf {
-            Some((leaf_cost, data, leaf_e)) if leaf_cost <= cost => {
-                // Put the unsplit coding unit back.
+            if tried {
+                if current_is_best {
+                    best_state = Some((
+                        self.snapshot(pic, &area),
+                        pic.cus[snap.cus..].to_vec(),
+                        pic.tus[snap.tus..].to_vec(),
+                    ));
+                }
                 self.restore(pic, &area, &snap);
-                let cu_id = add_cu(pic, self.si, part, self.qp);
-                add_tus(pic, self.si, part, cu_id);
-                self.apply(pic, cu_id, &data)?;
-                *est = leaf_e;
-                Ok(vec![Node::Leaf(Box::new(data))])
             }
-            _ => {
-                *est = e;
-                Ok(nodes)
+            let mut e = start.clone();
+            write_split(&mut e, pic, part, split);
+            let mut nodes = vec![Node::Split(split)];
+            part.split(split, pic);
+            let chan = pic.chan_area(0);
+            loop {
+                let b = part.area().blk[0];
+                if chan.contains(b.x, b.y) {
+                    nodes.extend(self.search(pic, part, &mut e)?);
+                }
+                if !part.next_part(pic, false) {
+                    break;
+                }
+            }
+            part.exit_split(pic);
+            tried = true;
+            let cost = self.distortion(pic, &area) + self.lambda * e.bits as f64 / 32768.0;
+            current_is_best = best.as_ref().is_none_or(|b| cost < b.0);
+            if current_is_best {
+                best = Some((cost, nodes, e));
             }
         }
+        let (_, nodes, e) = best.ok_or(Error::Invalid("no partitioning allowed"))?;
+        if !current_is_best {
+            let (keep, cus, tus) = best_state.ok_or(Error::Invalid("lost best candidate"))?;
+            // A previous candidate won: reinstate its coding units and
+            // reconstruction.
+            self.restore(pic, &area, &snap);
+            write_block_all(pic, &area, &keep);
+            for (i, c, t) in keep.num_cus {
+                pic.ctus[i].num_cus = c;
+                pic.ctus[i].num_tus = t;
+            }
+            pic.cus.extend(cus);
+            pic.tus.extend(tus);
+            for id in snap.cus..pic.cus.len() {
+                pic.fill_map(id as u32);
+            }
+        }
+        *est = e;
+        Ok(nodes)
     }
 
     /// Sets a coding unit's decided modes and coefficients and
@@ -562,34 +605,35 @@ impl<'a, 's> Enc<'a, 's> {
         let cu_id = add_cu(pic, self.si, part, self.qp);
         add_tus(pic, self.si, part, cu_id);
         let fmt = pic.fmt;
-        let tu = pic.cus[cu_id as usize].first_tu as usize;
         let lb = pic.cus[cu_id as usize].blk[0];
         let mpm = intra_mpms(pic, cu_id, false);
         // Rough luma mode decision on prediction SATD.
         let mut rough: Vec<(f64, u8)> = Vec::new();
         let sad_lambda = self.lambda.sqrt();
-        let eval = |pic: &mut Picture, m: u8, rough: &mut Vec<(f64, u8)>| -> Result<(), Error> {
-            if rough.iter().any(|r| r.1 == m) {
-                return Ok(());
+        let orig: Vec<i16> = read_block(&self.src[0], &lb);
+        let eval = |pic: &mut Picture, modes: Vec<u8>, rough: &mut Vec<(f64, u8)>| {
+            let modes: Vec<u8> = modes
+                .into_iter()
+                .filter(|m| !rough.iter().any(|r| r.1 == *m))
+                .collect();
+            let preds = recon::predict_modes(pic, self.si, cu_id, 0, &modes);
+            for (m, pred) in modes.into_iter().zip(preds) {
+                if rough.iter().any(|r| r.1 == m) {
+                    continue;
+                }
+                let satd = satd_blk(&pred, &orig, lb.w as usize, lb.h as usize) as f64;
+                let bits = if let Some(i) = mpm.iter().position(|&x| x == m) {
+                    1.0 + (i.min(4) + 1) as f64
+                } else {
+                    6.0
+                };
+                rough.push((satd + sad_lambda * bits, m));
             }
-            pic.cus[cu_id as usize].intra_dir = [m, DM_CHROMA];
-            set_coeffs(pic, tu, 0, &Default::default());
-            recon::reconstruct_cu_comps(pic, self.si, cu_id, 1)?;
-            let satd = satd(&pic.planes[0], &self.src[0], &lb) as f64;
-            let bits = if let Some(i) = mpm.iter().position(|&x| x == m) {
-                1.0 + (i.min(4) + 1) as f64
-            } else {
-                6.0
-            };
-            rough.push((satd + sad_lambda * bits, m));
-            Ok(())
         };
         let step = if self.effort == 0 { 4 } else { 2 };
-        for m in (2..=66u8).step_by(step) {
-            eval(pic, m, &mut rough)?;
-        }
-        eval(pic, PLANAR, &mut rough)?;
-        eval(pic, DC, &mut rough)?;
+        let mut first: Vec<u8> = (2..=66u8).step_by(step).collect();
+        first.extend([PLANAR, DC]);
+        eval(pic, first, &mut rough);
         rough.sort_by(|a, b| a.0.total_cmp(&b.0));
         let mut refine: Vec<u8> = Vec::new();
         for &(_, m) in rough.iter().take(2) {
@@ -603,9 +647,8 @@ impl<'a, 's> Enc<'a, 's> {
                 }
             }
         }
-        for m in refine.into_iter().chain(mpm) {
-            eval(pic, m, &mut rough)?;
-        }
+        refine.extend(mpm);
+        eval(pic, refine, &mut rough);
         rough.sort_by(|a, b| a.0.total_cmp(&b.0));
         let n_full = match self.effort {
             0 => 1,
@@ -636,21 +679,21 @@ impl<'a, 's> Enc<'a, 's> {
                     *m = VDIA;
                 }
             }
-            let mut cbest: Option<(f64, u8)> = None;
-            for cm in std::iter::once(DM_CHROMA).chain(list) {
-                pic.cus[cu_id as usize].intra_dir = [luma, cm];
-                set_coeffs(pic, tu, 0, &Default::default());
-                recon::reconstruct_cu_comps(pic, self.si, cu_id, 6)?;
-                let mut s = 0f64;
-                for c in 1..3 {
-                    s += satd(
-                        &pic.planes[c],
-                        &self.src[c],
-                        &pic.cus[cu_id as usize].blk[c],
-                    ) as f64;
+            let modes: Vec<u8> = std::iter::once(DM_CHROMA).chain(list).collect();
+            pic.cus[cu_id as usize].intra_dir[0] = luma;
+            let mut scores = vec![0f64; modes.len()];
+            for c in 1..3 {
+                let b = pic.cus[cu_id as usize].blk[c];
+                let orig = read_block(&self.src[c], &b);
+                let preds = recon::predict_modes(pic, self.si, cu_id, c, &modes);
+                for (sc, pred) in scores.iter_mut().zip(preds) {
+                    *sc += satd_blk(&pred, &orig, b.w as usize, b.h as usize) as f64;
                 }
+            }
+            let mut cbest: Option<(f64, u8)> = None;
+            for (&cm, &sc) in modes.iter().zip(&scores) {
                 let bits = if cm == DM_CHROMA { 1.0 } else { 3.0 };
-                let v = s + sad_lambda * bits;
+                let v = sc + sad_lambda * bits;
                 if cbest.is_none_or(|b| v < b.0) {
                     cbest = Some((v, cm));
                 }
@@ -751,9 +794,9 @@ impl<'a, 's> Enc<'a, 's> {
     ) -> Result<(), Error> {
         let node = it.next().ok_or(Error::Invalid("coding tree underrun"))?;
         match node {
-            Node::Split => {
-                write_split(w, pic, part, true);
-                part.split(Split::Quad, pic);
+            &Node::Split(split) => {
+                write_split(w, pic, part, split);
+                part.split(split, pic);
                 let chan = pic.chan_area(0);
                 loop {
                     let b = part.area().blk[0];
@@ -767,7 +810,7 @@ impl<'a, 's> Enc<'a, 's> {
                 part.exit_split(pic);
             }
             Node::Leaf(d) => {
-                write_split(w, pic, part, false);
+                write_split(w, pic, part, Split::None);
                 let cu_id = add_cu(pic, self.si, part, self.qp);
                 add_tus(pic, self.si, part, cu_id);
                 self.apply(pic, cu_id, d)?;
@@ -775,6 +818,13 @@ impl<'a, 's> Enc<'a, 's> {
             }
         }
         Ok(())
+    }
+}
+
+fn write_block_all(pic: &mut Picture, area: &UnitArea, snap: &Snapshot) {
+    for c in 0..pic.fmt.num_comp() {
+        let b = clip(area.blk[c], &pic.planes[c]);
+        write_block(&mut pic.planes[c], &b, &snap.planes[c]);
     }
 }
 
@@ -816,22 +866,25 @@ fn sse(a: &Plane, b: &Plane, r: &Area) -> u64 {
     s
 }
 
-/// Sum of absolute Hadamard-transformed differences over 4x4 blocks
-/// (8x8 where the block allows).
-fn satd(a: &Plane, b: &Plane, r: &Area) -> u64 {
-    let n = if r.w % 8 == 0 && r.h % 8 == 0 { 8 } else { 4 };
+/// Sum of absolute Hadamard-transformed differences between a prediction
+/// and a block, over 4x4 blocks (8x8 where the block allows).
+fn satd_blk(pred: &[i32], orig: &[i16], w: usize, h: usize) -> u64 {
+    let n = if w % 8 == 0 && h % 8 == 0 { 8 } else { 4 };
     let mut total = 0u64;
     let mut blk = [0i32; 64];
-    for by in (r.y..r.y + r.h).step_by(n) {
-        for bx in (r.x..r.x + r.w).step_by(n) {
+    for by in (0..h).step_by(n) {
+        for bx in (0..w).step_by(n) {
             for y in 0..n {
                 for x in 0..n {
-                    let i = (by as usize + y) * a.stride + bx as usize + x;
-                    blk[y * n + x] = i32::from(a.data[i]) - i32::from(b.data[i]);
+                    let i = (by + y) * w + bx + x;
+                    blk[y * n + x] = pred[i] - i32::from(orig[i]);
                 }
             }
             hadamard(&mut blk, n);
-            let s: u64 = blk[..n * n].iter().map(|v| v.unsigned_abs() as u64).sum();
+            let s: u64 = blk[..n * n]
+                .iter()
+                .map(|v| u64::from(v.unsigned_abs()))
+                .sum();
             total += if n == 8 { (s + 2) >> 2 } else { (s + 1) >> 1 };
         }
     }
@@ -1036,24 +1089,90 @@ fn add_tus(pic: &mut Picture, _si: &SliceInfo, part: &Partitioner, cu_id: u32) {
     pic.cus[cu_id as usize].num_tu += 1;
 }
 
-/// split_cu_flag for quadtree-only partitioning (`split_cu_mode`).
-fn write_split<S: BinSink>(s: &mut S, pic: &Picture, part: &Partitioner, split: bool) {
+/// split_cu_flag, split_qt_flag, mtt_split_cu_vertical_flag and
+/// mtt_split_cu_binary_flag (`split_cu_mode`).
+fn write_split<S: BinSink>(s: &mut S, pic: &Picture, part: &Partitioner, split: Split) {
     let can = part.can_split(pic);
     let num_hor = u32::from(can[2]) + u32::from(can[4]);
     let num_ver = u32::from(can[3]) + u32::from(can[5]);
     let num_split = (u32::from(can[1]) << 1) + num_hor + num_ver;
-    if !can[0] || num_split == 0 {
+    if can[0] && num_split == 0 {
         return;
     }
     let left = part.cu_left().map(|c| &pic.cus[c as usize]);
     let above = part.cu_above().map(|c| &pic.cus[c as usize]);
     let w = part.area().blk[0].w;
     let h = part.area().blk[0].h;
-    let mut ctx_split = usize::from(left.is_some_and(|c| c.blk[0].h < h))
-        + usize::from(above.is_some_and(|c| c.blk[0].w < w));
-    const OFFSET: [usize; 7] = [0, 0, 0, 3, 3, 6, 6];
-    ctx_split += OFFSET[num_split as usize];
-    s.bin(ctx::SPLIT_FLAG + ctx_split, u32::from(split));
+    let (l_h, l_qt) = left.map_or((0, 0), |c| (c.blk[0].h, c.qt_depth));
+    let (a_w, a_qt) = above.map_or((0, 0), |c| (c.blk[0].w, c.qt_depth));
+    let (has_l, has_a) = (left.is_some(), above.is_some());
+    if can[0] {
+        let mut ctx_split = usize::from(has_l && l_h < h) + usize::from(has_a && a_w < w);
+        const OFFSET: [usize; 7] = [0, 0, 0, 3, 3, 6, 6];
+        ctx_split += OFFSET[num_split as usize];
+        s.bin(ctx::SPLIT_FLAG + ctx_split, u32::from(split != Split::None));
+    }
+    if split == Split::None {
+        return;
+    }
+    let can_btt = num_hor != 0 || num_ver != 0;
+    if can[1] && can_btt {
+        let mut c =
+            usize::from(has_l && l_qt > part.qt_depth) + usize::from(has_a && a_qt > part.qt_depth);
+        c += if part.qt_depth < 2 { 0 } else { 3 };
+        s.bin(ctx::SPLIT_QT_FLAG + c, u32::from(split == Split::Quad));
+    }
+    if split == Split::Quad {
+        return;
+    }
+    let is_ver = matches!(split, Split::Vert | Split::TriV);
+    if num_ver != 0 && num_hor != 0 {
+        let mut c = 0;
+        if num_ver == num_hor {
+            if has_l && has_a {
+                let dep_above = w >> a_w.ilog2();
+                let dep_left = h >> l_h.ilog2();
+                c = if dep_above == dep_left {
+                    0
+                } else if dep_above < dep_left {
+                    1
+                } else {
+                    2
+                };
+            }
+        } else if num_ver < num_hor {
+            c = 3;
+        } else {
+            c = 4;
+        }
+        s.bin(ctx::SPLIT_HV_FLAG + c, u32::from(is_ver));
+    }
+    let can14 = if is_ver { can[5] } else { can[4] };
+    let can12 = if is_ver { can[3] } else { can[2] };
+    if can12 && can14 {
+        let c = usize::from(part.mt_depth <= 1) + (usize::from(is_ver) << 1);
+        s.bin(
+            ctx::SPLIT12_FLAG + c,
+            u32::from(matches!(split, Split::Horz | Split::Vert)),
+        );
+    }
+}
+
+/// Whether the encoder considers a split: every resulting chroma block keeps
+/// at least 4x4 samples, so no split needs the local dual tree
+/// (`mode_constraint`) or 2xN chroma blocks.
+fn split_ok(pic: &Picture, area: &UnitArea, split: Split) -> bool {
+    let b = area.blk[0];
+    let (w, h) = match split {
+        Split::Quad => (b.w / 2, b.h / 2),
+        Split::Horz => (b.w, b.h / 2),
+        Split::Vert => (b.w / 2, b.h),
+        Split::TriH => (b.w, b.h / 4),
+        Split::TriV => (b.w / 4, b.h),
+        _ => return false,
+    };
+    let (sx, sy) = (pic.fmt.sx, pic.fmt.sy);
+    pic.fmt.chroma == 0 || ((w >> sx) >= 4 && (h >> sy) >= 4)
 }
 
 /// truncated binary code (`trunc_bin`).
@@ -1323,6 +1442,7 @@ mod tests {
                     sar: None,
                     effort: 1,
                     deblocking: true,
+                    fps: 25.0,
                 };
                 // Without deblocking the decoder reproduces the encoder's
                 // reconstruction exactly.

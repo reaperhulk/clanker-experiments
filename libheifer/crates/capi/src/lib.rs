@@ -24,6 +24,8 @@ mod builtin_htj2k_encoder;
 mod builtin_jpeg2000_encoder;
 #[cfg(feature = "jpeg")]
 mod builtin_jpeg_encoder;
+#[cfg(feature = "vvc")]
+mod builtin_vvc_encoder;
 pub use auxiliary::DepthRepresentationInfo;
 mod camera;
 mod color;

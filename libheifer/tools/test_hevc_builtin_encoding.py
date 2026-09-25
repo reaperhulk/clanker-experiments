@@ -112,6 +112,48 @@ def avcc_summary(body):
     return f'avcC(version={body[0]},profile={body[1]},compat={body[2]:02x},level={body[3]},sps={sps},pps={pps}{ext})'
 
 
+def vvcc_summary(body):
+    """The vvcC fields: chroma format, bit depth, profile, tier, level, picture
+    size and the parameter-set arrays (types and counts)."""
+    try:
+        at = 4
+        ptl = body[at] & 1
+        at += 1
+        fields = ''
+        if ptl:
+            v = int.from_bytes(body[at:at + 2], 'big')
+            sublayers, chroma = v >> 4 & 7, v & 3
+            depth = (body[at + 2] >> 5) + 8
+            at += 3
+            n = body[at] & 63
+            profile, tier, level = body[at + 1] >> 1, body[at + 1] & 1, body[at + 2]
+            at += 3 + n
+            if sublayers > 1:
+                flags = body[at]
+                at += 1 + sum(1 for i in range(sublayers - 1) if flags >> (7 - i) & 1)
+            at += 1 + 4 * body[at]
+            width = int.from_bytes(body[at:at + 2], 'big')
+            height = int.from_bytes(body[at + 2:at + 4], 'big')
+            at += 6
+            fields = f'chroma={chroma},depth={depth},profile={profile},tier={tier},level={level},size={width}x{height},'
+        arrays = []
+        num = body[at]
+        at += 1
+        for _ in range(num):
+            kind = body[at] & 31
+            at += 1
+            count = 1
+            if kind not in (12, 13):
+                count = int.from_bytes(body[at:at + 2], 'big')
+                at += 2
+            for _ in range(count):
+                at += 2 + int.from_bytes(body[at:at + 2], 'big')
+            arrays.append(f'{kind}x{count}')
+        return f'vvcC(version={body[0]},{fields}arrays={"+".join(arrays)})'
+    except IndexError:
+        return 'vvcC-short:' + body.hex()
+
+
 def normalize(data, depth=0):
     """Box tree with every box byte-exact except hvcC (format fields), iloc (item and
     extent counts) and mdat (length only when not HEVC data)."""
@@ -124,6 +166,8 @@ def normalize(data, depth=0):
             out.append(hvcc_summary(body))
         elif kind == b'avcC':
             out.append(avcc_summary(body))
+        elif kind == b'vvcC':
+            out.append(vvcc_summary(body))
         elif kind == b'mdat':
             out.append('mdat')
         elif kind == b'iloc':

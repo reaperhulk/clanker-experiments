@@ -33,6 +33,7 @@ fn main() {
         sar: None,
         effort: a[6].parse().unwrap(),
         deblocking: true,
+        fps: 25.0,
     };
     let t = std::time::Instant::now();
     let (nals, _) = encode(&input, &s).expect("encode");

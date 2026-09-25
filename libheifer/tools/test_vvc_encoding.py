@@ -7,6 +7,7 @@ import test_writing
 from test_plugin_encoding import corpus as av1_corpus
 from test_hevc_encoding import packets
 from test_hevc_limits import ue
+from test_vvc_builtin_encoding import fallback as vvc_fallback
 
 def sps(layers=1,chroma=1,depth=8,profile=1,tier=0,level=30,frame=1,multi=0,flags=0,subprofiles=(),size=(7,5),crop=None,ptl=True,gci=False,subpic=False,resample=False):
     bits='00000000'+f'{layers-1:03b}{chroma:02b}00'+str(int(ptl))
@@ -71,6 +72,8 @@ def corpus():
 if __name__=='__main__':
     test_writing.corpus=corpus
     test_writing.CLIENT='tests/plugin_encoding.c'
+    # Unsupported plugin versions fall back to the default VVC encoder.
+    test_writing.known=lambda x,y:vvc_fallback(x,y) if b'e5,2003,Unsupported plugin version' in y else None
     test_writing.__doc__=__doc__
     if '--work' not in sys.argv:sys.argv+=['--work','.build/vvc-encoding']
     if '--output' not in sys.argv:sys.argv+=['--output','.build/vvc-encoding-report.json']

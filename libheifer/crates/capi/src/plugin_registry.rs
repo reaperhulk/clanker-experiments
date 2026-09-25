@@ -54,6 +54,11 @@ impl Registry {
         self.encoders.push(Arc::new(EncoderDescriptor {
             source: EncoderSource::External(&crate::builtin_hevc_encoder::HEVC_ENCODER.0),
         }));
+        // libheif registers vvenc right after x265.
+        #[cfg(feature = "vvc")]
+        self.encoders.push(Arc::new(EncoderDescriptor {
+            source: EncoderSource::External(&crate::builtin_vvc_encoder::VVC_ENCODER.0),
+        }));
         for format in [8, 9] {
             self.encoders.push(Arc::new(EncoderDescriptor {
                 source: EncoderSource::Builtin(format),

@@ -1323,6 +1323,49 @@ pub fn reconstruct_cu_comps(
     Ok(())
 }
 
+/// Intra predictions of one component of an unsplit, single-transform
+/// coding unit for several regular modes (luma modes for component 0,
+/// chroma modes otherwise), sharing the reference samples; the encoder's
+/// mode decision. Requires no MIP, MRL, ISP or BDPCM.
+pub fn predict_modes(
+    pic: &mut Picture,
+    si: &SliceInfo,
+    cu_id: u32,
+    comp: usize,
+    modes: &[u8],
+) -> Vec<Vec<i32>> {
+    let cu = pic.cus[cu_id as usize].clone();
+    let area = cu.blk[comp];
+    let lw = cu.blk[0].w.max(1) as usize;
+    let lh = cu.blk[0].h.max(1) as usize;
+    let mut ctx = Ctx {
+        pic,
+        si,
+        cu_id,
+        cu: cu.clone(),
+        wpp: si.sps.entropy_coding_sync,
+        top_len: 0,
+        left_len: 0,
+        unfiltered: RefBuf::new(1, 1),
+        filtered: RefBuf::new(1, 1),
+        isp_base: [RefBuf::new(1, 1), RefBuf::new(1, 1)],
+        luma_pred: vec![0; lw * lh],
+        lm_stride: 0,
+    };
+    ctx.init_pattern(cu.first_tu, comp, area, comp == 0);
+    let ch = usize::from(comp != 0);
+    modes
+        .iter()
+        .map(|&m| {
+            ctx.cu.intra_dir[ch] = m;
+            let filtered = comp == 0 && use_filtered_ref(ctx.pic, si, &ctx.cu, cu_id, comp, area);
+            let mut pred = vec![0i32; (area.w * area.h) as usize];
+            ctx.pred_intra_ang(comp, &mut pred, area.w, area.h, filtered);
+            pred
+        })
+        .collect()
+}
+
 fn ctx_bd(si: &SliceInfo) -> u32 {
     si.sps.bit_depth
 }
