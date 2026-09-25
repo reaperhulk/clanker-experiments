@@ -13,6 +13,7 @@ use super::bits::{BitReader, BitWriter, escape};
 use super::cabac::{BinSink, CabacWriter, Contexts, Estimator, rem_abs_bins};
 use super::ctu::{CoeffCtx, Partitioner, SliceInfo, SliceInter, Split, intra_mpms};
 use super::ctx;
+use super::pic::SaoParam;
 use super::pic::*;
 use super::ps::{self, PicHeader, Pps, SliceHeader, Sps};
 use super::recon;
@@ -161,7 +162,7 @@ fn write_sps(s: &Settings, width: u32, height: u32) -> Vec<u8> {
             w.uvlc(dout ^ din); // sps_delta_qp_diff_val
         }
     }
-    w.flag(false); // sps_sao_enabled_flag
+    w.flag(s.deblocking); // sps_sao_enabled_flag
     w.flag(false); // sps_alf_enabled_flag
     w.flag(false); // sps_lmcs_enabled_flag
     w.flag(false); // sps_weighted_pred_flag
@@ -271,7 +272,7 @@ fn write_pps(s: &Settings, width: u32, height: u32) -> Vec<u8> {
 
 /// The slice header with the picture header in it, up to and including
 /// byte_alignment().
-fn write_slice_header() -> Vec<u8> {
+fn write_slice_header(s: &Settings) -> Vec<u8> {
     let mut w = BitWriter::default();
     w.flag(true); // sh_picture_header_in_slice_header_flag
     // picture_header_structure( )
@@ -283,6 +284,12 @@ fn write_slice_header() -> Vec<u8> {
     w.write(0, 8); // ph_pic_order_cnt_lsb
     w.flag(false); // sh_no_output_of_prior_pics_flag
     w.svlc(0); // sh_qp_delta
+    if s.deblocking {
+        w.flag(true); // sh_sao_luma_used_flag
+        if s.chroma != 0 {
+            w.flag(true); // sh_sao_chroma_used_flag
+        }
+    }
     w.trailing_bits(); // byte_alignment( )
     w.data
 }
@@ -330,7 +337,7 @@ pub fn encode(input: &Picture8, s: &Settings) -> Result<(Vec<Vec<u8>>, Vec<Vec<u
     }
     let sps_rbsp = write_sps(s, w, h);
     let pps_rbsp = write_pps(s, w, h);
-    let sh_rbsp = write_slice_header();
+    let sh_rbsp = write_slice_header(s);
     let hd = parse_headers(&sps_rbsp, &pps_rbsp, &sh_rbsp)?;
     let inter = SliceInter {
         refs: Default::default(),
@@ -374,27 +381,44 @@ pub fn encode(input: &Picture8, s: &Settings) -> Result<(Vec<Vec<u8>>, Vec<Vec<u
         rdoq: true,
     };
     let ctx0 = Contexts::new(2, hd.sh.qp);
-    let mut writer = CabacWriter::new(ctx0.clone());
     let ctu = hd.sps.ctu_size as i32;
+    let ctu_area = |addr: u32| {
+        let (cx, cy) = (addr % hd.pps.width_ctus, addr / hd.pps.width_ctus);
+        fmt.unit(cx as i32 * ctu, cy as i32 * ctu, ctu, ctu)
+    };
+    // Phase 1: decide every coding tree with estimated rates.
+    let mut trees = Vec::with_capacity(hd.sh.ctus.len());
+    let mut est = Estimator::new(ctx0.clone());
+    for &addr in &hd.sh.ctus {
+        pic.ctus[addr as usize].slice = Some(0);
+        let mut part = Partitioner::new(&pic, &si, ctu_area(addr), 0, 0);
+        trees.push(enc.search(&mut pic, &mut part, &mut est)?);
+    }
+    // In-loop filter decisions on the deblocked reconstruction.
+    let sao = if s.deblocking {
+        let mut deblocked = pic.clone();
+        super::deblock::deblock(
+            &mut deblocked,
+            &hd.sps,
+            &hd.pps,
+            &hd.ph,
+            std::slice::from_ref(&hd.sh),
+        );
+        enc.sao_decisions(&deblocked)
+    } else {
+        Vec::new()
+    };
+    // Phase 2: rebuild the picture as the decoder parses it while writing it.
+    let mut pic = Picture::new(&hd.sps, &hd.pps);
+    let mut writer = CabacWriter::new(ctx0);
     let n = hd.sh.ctus.len();
     for (i, &addr) in hd.sh.ctus.iter().enumerate() {
-        let (cx, cy) = (addr % hd.pps.width_ctus, addr / hd.pps.width_ctus);
         pic.ctus[addr as usize].slice = Some(0);
-        let area = fmt.unit(cx as i32 * ctu, cy as i32 * ctu, ctu, ctu);
-        // Phase 1: decide the coding tree with estimated rates.
-        let first_cu = pic.cus.len();
-        let first_tu = pic.tus.len();
-        let mut part = Partitioner::new(&pic, &si, area, 0, 0);
-        let mut est = Estimator::new(writer.ctx.clone());
-        let tree = enc.search(&mut pic, &mut part, &mut est)?;
-        // Phase 2: rebuild the CTU as the decoder does while writing it.
-        pic.cus.truncate(first_cu);
-        pic.tus.truncate(first_tu);
-        pic.ctus[addr as usize].num_cus = 0;
-        pic.ctus[addr as usize].num_tus = 0;
-        clear_map(&mut pic, &area);
-        let mut part = Partitioner::new(&pic, &si, area, 0, 0);
-        let mut it = tree.iter();
+        if let Some(d) = sao.get(addr as usize) {
+            write_sao(&mut writer, &pic, addr, d);
+        }
+        let mut part = Partitioner::new(&pic, &si, ctu_area(addr), 0, 0);
+        let mut it = trees[i].iter();
         enc.write_tree(&mut pic, &mut part, &mut writer, &mut it)?;
         if i == n - 1 {
             writer.term(1); // end_of_slice_one_bit
@@ -415,6 +439,289 @@ pub fn encode(input: &Picture8, s: &Settings) -> Result<(Vec<Vec<u8>>, Vec<Vec<u
         ],
         recon,
     ))
+}
+
+/// A CTU's SAO decision: merged from the left (0) or above (1) CTU, or
+/// its own parameters (Cb and Cr share the type and edge class).
+#[derive(Clone, Copy, Default)]
+struct SaoDecision {
+    merge: Option<u8>,
+    p: [SaoParam; 3],
+}
+
+/// Per-category statistics of (source - deblocked) differences.
+#[derive(Clone, Copy, Default)]
+struct SaoStats {
+    /// Edge classes 0..4 (types 1..4) by edge index 0..5; band offsets by
+    /// band 0..32.
+    eo: [[(i64, i64); 5]; 4],
+    bo: [(i64, i64); 32],
+}
+
+fn sao_stats(rec: &Plane, src: &Plane, bx: i32, by: i32, w: i32, h: i32) -> SaoStats {
+    let mut st = SaoStats::default();
+    let (pw, ph) = (rec.width as i32, rec.height as i32);
+    let r = |x: i32, y: i32| i32::from(rec.at(x, y));
+    const DIRS: [[(i32, i32); 2]; 4] = [
+        [(-1, 0), (1, 0)],
+        [(0, -1), (0, 1)],
+        [(-1, -1), (1, 1)],
+        [(1, -1), (-1, 1)],
+    ];
+    for y in by..by + h {
+        for x in bx..bx + w {
+            let v = r(x, y);
+            let d = i64::from(src.at(x, y)) - i64::from(v);
+            let b = &mut st.bo[(v >> 3) as usize];
+            b.0 += d;
+            b.1 += 1;
+            for (k, dir) in DIRS.iter().enumerate() {
+                let (ax, ay) = (x + dir[0].0, y + dir[0].1);
+                let (cx, cy) = (x + dir[1].0, y + dir[1].1);
+                if ax < 0
+                    || ay < 0
+                    || cx < 0
+                    || cy < 0
+                    || ax >= pw
+                    || cx >= pw
+                    || ay >= ph
+                    || cy >= ph
+                {
+                    continue;
+                }
+                let e = (v - r(ax, ay)).signum() + (v - r(cx, cy)).signum();
+                let c = &mut st.eo[k][(e + 2) as usize];
+                c.0 += d;
+                c.1 += 1;
+            }
+        }
+    }
+    st
+}
+
+impl<'a, 's> Enc<'a, 's> {
+    /// Distortion change and bypass bins of applying offset `o` to a
+    /// category with difference sum `sum` over `count` samples.
+    fn sao_offset(&self, sum: i64, count: i64, sign: i32, weight: f64) -> (i32, f64, u32) {
+        let mut best = (0, 0.0, 1);
+        if count == 0 {
+            return best;
+        }
+        let target = (sum as f64 / count as f64).round() as i32 * sign;
+        let mut best_cost = self.lambda / weight;
+        for o in 1..=target.clamp(0, 7) {
+            let v = f64::from(o * sign);
+            let dd = (count as f64 * v * v - 2.0 * v * sum as f64) * weight;
+            let bins = (o + 1).min(7) as u32;
+            let cost = dd + self.lambda * f64::from(bins);
+            if cost < best_cost {
+                best_cost = cost;
+                best = (o, dd, bins);
+            }
+        }
+        best
+    }
+
+    /// Cost (distortion change plus rate) and parameters of the best SAO
+    /// setting of type `ty` (0 off, 1 band, 2..=5 edge classes) for one
+    /// component.
+    fn sao_candidate(&self, st: &SaoStats, ty: usize, weight: f64) -> (f64, SaoParam) {
+        let mut p = SaoParam::default();
+        match ty {
+            0 => (0.0, p),
+            1 => {
+                let mut best = (f64::MAX, p);
+                for start in 0..32 {
+                    let mut cost = self.lambda * (1.0 + 1.0 + 5.0);
+                    let mut off = [0i32; 5];
+                    for i in 0..4 {
+                        let (sum, count) = st.bo[(start + i) % 32];
+                        let pos = self.sao_offset(sum, count, 1, weight);
+                        let neg = self.sao_offset(sum, count, -1, weight);
+                        let (o, dd, bins) = if pos.1 + self.lambda * f64::from(pos.2)
+                            <= neg.1 + self.lambda * f64::from(neg.2)
+                        {
+                            pos
+                        } else {
+                            (-neg.0, neg.1, neg.2)
+                        };
+                        off[i] = o;
+                        cost += dd + self.lambda * f64::from(bins + u32::from(o != 0));
+                    }
+                    if cost < best.0 {
+                        best = (
+                            cost,
+                            SaoParam {
+                                mode: 1,
+                                type_idc: 0,
+                                band_pos: start as u8,
+                                offset: off,
+                            },
+                        );
+                    }
+                }
+                best
+            }
+            _ => {
+                let k = ty - 2;
+                let mut cost = self.lambda * (1.0 + 1.0 + 2.0);
+                let mut off = [0i32; 5];
+                for (i, &(e, sign)) in [(0usize, 1), (1, 1), (3, -1), (4, -1)].iter().enumerate() {
+                    let (sum, count) = st.eo[k][e];
+                    let (o, dd, bins) = self.sao_offset(sum, count, sign, weight);
+                    off[if i < 2 { i } else { i + 1 }] = o * sign;
+                    cost += dd + self.lambda * f64::from(bins);
+                }
+                p = SaoParam {
+                    mode: 1,
+                    type_idc: (k + 1) as u8,
+                    band_pos: 0,
+                    offset: off,
+                };
+                (cost, p)
+            }
+        }
+    }
+
+    /// Distortion change of a component's parameters on its statistics.
+    fn sao_apply_cost(st: &SaoStats, p: &SaoParam, weight: f64) -> f64 {
+        let dd = |(sum, count): (i64, i64), o: i32| {
+            let v = f64::from(o);
+            (count as f64 * v * v - 2.0 * v * sum as f64) * weight
+        };
+        match (p.mode, p.type_idc) {
+            (0, _) => 0.0,
+            (_, 0) => (0..4)
+                .map(|i| dd(st.bo[(p.band_pos as usize + i) % 32], p.offset[i]))
+                .sum(),
+            (_, t) => (0..5)
+                .map(|e| dd(st.eo[t as usize - 1][e], p.offset[e]))
+                .sum(),
+        }
+    }
+
+    /// SAO decisions for every CTU of the deblocked picture.
+    fn sao_decisions(&self, pic: &Picture) -> Vec<SaoDecision> {
+        let size = 1i32 << pic.ctu_log2;
+        let wc = pic.width_ctus as usize;
+        let n = pic.ctus.len();
+        let mut out: Vec<SaoDecision> = Vec::with_capacity(n);
+        let ncomp = pic.fmt.num_comp();
+        for addr in 0..n {
+            let (cx, cy) = ((addr % wc) as i32, (addr / wc) as i32);
+            let stats: Vec<SaoStats> = (0..ncomp)
+                .map(|c| {
+                    let (sx, sy) = pic.fmt.scale(c);
+                    let (x0, y0) = (cx * size, cy * size);
+                    let (w, h) = (size.min(pic.width - x0), size.min(pic.height - y0));
+                    sao_stats(
+                        &pic.planes[c],
+                        &self.src[c],
+                        x0 >> sx,
+                        y0 >> sy,
+                        w >> sx,
+                        h >> sy,
+                    )
+                })
+                .collect();
+            // Luma: off, band or one of the edge classes.
+            let wl = self.weight(0);
+            let mut luma = (0.0, SaoParam::default());
+            for ty in 1..6 {
+                let c = self.sao_candidate(&stats[0], ty, wl);
+                if c.0 < luma.0 {
+                    luma = c;
+                }
+            }
+            let mut own = SaoDecision {
+                merge: None,
+                p: [luma.1, SaoParam::default(), SaoParam::default()],
+            };
+            let mut own_cost = luma.0 + self.lambda;
+            if ncomp > 1 {
+                let wc_ = self.weight(1);
+                let mut chroma = (0.0, [SaoParam::default(); 2]);
+                for ty in 1..6 {
+                    let a = self.sao_candidate(&stats[1], ty, wc_);
+                    let b = self.sao_candidate(&stats[2], ty, wc_);
+                    if a.0 + b.0 < chroma.0 {
+                        chroma = (a.0 + b.0, [a.1, b.1]);
+                    }
+                }
+                own.p[1] = chroma.1[0];
+                own.p[2] = chroma.1[1];
+                own_cost += chroma.0 + self.lambda;
+            }
+            let mut best = (own_cost, own);
+            for (m, nb) in [
+                (0u8, (cx > 0).then(|| addr - 1)),
+                (1, (cy > 0).then(|| addr - wc)),
+            ] {
+                let Some(nb) = nb else { continue };
+                let p = out[nb].p;
+                let cost: f64 = (0..ncomp)
+                    .map(|c| Self::sao_apply_cost(&stats[c], &p[c], self.weight(c)))
+                    .sum::<f64>()
+                    + self.lambda * f64::from(m + 1);
+                if cost < best.0 {
+                    best = (cost, SaoDecision { merge: Some(m), p });
+                }
+            }
+            out.push(best.1);
+        }
+        out
+    }
+}
+
+/// sao( ) for one CTU.
+fn write_sao<S: BinSink>(s: &mut S, pic: &Picture, addr: u32, d: &SaoDecision) {
+    let wc = pic.width_ctus;
+    let (cx, cy) = (addr % wc, addr / wc);
+    if cx > 0 {
+        s.bin(ctx::SAO_MERGE_FLAG, u32::from(d.merge == Some(0)));
+    }
+    if d.merge != Some(0) && cy > 0 {
+        s.bin(ctx::SAO_MERGE_FLAG, u32::from(d.merge == Some(1)));
+    }
+    if d.merge.is_some() {
+        return;
+    }
+    for c in 0..pic.fmt.num_comp() {
+        let p = d.p[c];
+        if c != 2 {
+            s.bin(ctx::SAO_TYPE_IDX, u32::from(p.mode != 0));
+            if p.mode != 0 {
+                s.ep(u32::from(p.type_idc != 0));
+            }
+        }
+        if p.mode == 0 {
+            continue;
+        }
+        let mags: [i32; 4] = if p.type_idc == 0 {
+            [p.offset[0], p.offset[1], p.offset[2], p.offset[3]]
+        } else {
+            [p.offset[0], p.offset[1], -p.offset[3], -p.offset[4]]
+        };
+        for &m in &mags {
+            let m = m.unsigned_abs();
+            for _ in 0..m {
+                s.ep(1);
+            }
+            if m < 7 {
+                s.ep(0);
+            }
+        }
+        if p.type_idc == 0 {
+            for &m in &mags {
+                if m != 0 {
+                    s.ep(u32::from(m < 0));
+                }
+            }
+            s.eps(u32::from(p.band_pos), 5);
+        } else if c != 2 {
+            s.eps(u32::from(p.type_idc) - 1, 2);
+        }
+    }
 }
 
 fn clear_map(pic: &mut Picture, area: &UnitArea) {

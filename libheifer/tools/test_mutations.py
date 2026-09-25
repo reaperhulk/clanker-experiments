@@ -64,7 +64,7 @@ MUTATIONS = [
     ('vvc_encode_profile', 'src/vvc/encoder.rs', 'if chroma <= 1 { 1 } else { 33 }', 'if chroma <= 1 { 65 } else { 33 }', 'vvc_builtin_encoding'),
     ('vvc_encode_cbf_context', 'src/vvc/encoder.rs', '    s.bin(ctx::QT_CBF0, u32::from(cbf(0)));', '    s.bin(ctx::QT_CBF0 + 1, u32::from(cbf(0)));', 'vvc_encoder_quality'),
     ('vvc_encode_rdoq_distortion', 'src/vvc/encoder.rs', '        step2: step * step / 2f64.powf(2.0 * gain),', '        step2: step * step / 2f64.powf(2.0 * gain) / 16.0,', 'vvc_encoder_quality'),
-    ('vvc_encode_chroma_weight', 'src/vvc/encoder.rs', '            2f64.powf(f64::from(self.qp - self.comp_qp(comp)) / 3.0)', '            2f64.powf(f64::from(self.qp - self.comp_qp(comp)) / 3.0) * 0.0', 'vvc_encoder_quality'),
+    ('vvc_encode_sao_edge_class', 'src/vvc/encoder.rs', '            s.eps(u32::from(p.type_idc) - 1, 2);', '            s.eps(u32::from(p.type_idc) - 1, 1);', 'vvc_encoder_quality'),
     ('hevc_encode_rounded_size', 'crates/capi/src/builtin_hevc_encoder.rs', '((s + 1) & !1).max(64)', '((s + 1) & !1).max(32)', 'hevc_builtin_encoding'),
     ('hevc_encode_bit_depths', 'crates/capi/src/builtin_hevc_encoder.rs', '    if matches!(bpp, 8 | 10 | 12) {', '    if matches!(bpp, 8 | 10) {', 'hevc_builtin_encoding'),
     ('hevc_encode_default_tu_depth', 'crates/capi/src/builtin_hevc_encoder.rs', 'set_integer(p, c"tu-intra-depth".as_ptr(), 2);', 'set_integer(p, c"tu-intra-depth".as_ptr(), 3);', 'hevc_builtin_encoding'),

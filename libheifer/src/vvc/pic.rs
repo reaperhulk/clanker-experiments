@@ -278,6 +278,7 @@ pub struct CtuData {
     pub num_tus: u32,
 }
 
+#[derive(Clone)]
 pub struct Picture {
     pub fmt: Format,
     pub width: i32,
