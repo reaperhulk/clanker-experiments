@@ -6,6 +6,7 @@ from test_decode_geometry import children
 import struct
 import sys
 import test_writing
+from test_hevc_builtin_encoding import fallback as hevc_fallback
 from test_hevc_limits import sps
 from test_plugin_encoding import corpus as av1_corpus
 
@@ -77,4 +78,7 @@ if __name__=='__main__':
     test_writing.__doc__=__doc__
     if '--work' not in sys.argv:sys.argv+=['--work','.build/hevc-encoding']
     if '--output' not in sys.argv:sys.argv+=['--output','.build/hevc-encoding-report.json']
+    # A refused plugin falls back to the default HEVC encoder: x265 in the
+    # oracle (.build/reference-x265), hpvca in the candidate.
+    test_writing.known=lambda x,y:hevc_fallback(x,y) if b'e5,2003,Unsupported plugin version' in y else None
     test_writing.main()

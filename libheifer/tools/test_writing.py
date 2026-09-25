@@ -19,6 +19,9 @@ def corpus():
     for flags in [256,257,388]:add([0x6d696631,0,2,1,0,0,0,flags])
     return cases,b''.join(data for _,data in cases)
 
+# Optional classifier (reference line, candidate line) -> known-difference kind
+# or None; set by suites whose oracle differs from the candidate by design.
+known=None
 def main():
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--reference-build',required=True);p.add_argument('--candidate',default='target/release/libheifer.so');p.add_argument('--output',default='.build/writing-report.json');p.add_argument('--work');p.add_argument('--sanitize',action='store_true');p.add_argument('--no-leak-check',action='store_true');a=p.parse_args()
     if a.no_leak_check and not a.sanitize:p.error('--no-leak-check requires --sanitize')
@@ -31,12 +34,14 @@ def main():
         if run.returncode:raise SystemExit(f'{name} exited {run.returncode}: {run.stderr.decode(errors="replace")[:3000]}')
         lines[name]=run.stdout.splitlines()
     if any(len(v)!=len(cases) for v in lines.values()):raise SystemExit(f'Incomplete transcript: {list(map(len,lines.values()))}')
-    differences=[]
+    differences=[];known_differences={}
     for i,(x,y) in enumerate(zip(lines['reference'],lines['candidate'],strict=True)):
         if x==y:continue
+        kind=known(x,y) if known else None
+        if kind:known_differences.setdefault(kind,[]).append(cases[i][0]);continue
         at=next((j for j,(a,b) in enumerate(zip(x,y)) if a!=b),min(len(x),len(y)))
         differences.append(dict(case=cases[i][0],line=i,offset=at,reference=x[max(0,at-60):at+220].decode(),candidate=y[max(0,at-60):at+220].decode()))
     if hashes!={k:hashlib.sha256(v.read_bytes()).hexdigest() for k,v in libs.items()} or client_hash!=hashlib.sha256(client.read_bytes()).hexdigest():raise SystemExit('Binaries/client changed')
-    report=dict(scope=__doc__,cases=len(cases),mismatches=len(differences),client_sanitizers=a.sanitize,leak_check=a.sanitize and not a.no_leak_check,client_sha256=client_hash,corpus_sha256=hashlib.sha256(payload).hexdigest(),differences=differences,**{k+'_sha256':v for k,v in hashes.items()});output.write_text(json.dumps(report,indent=2)+'\n');print(json.dumps({k:v for k,v in report.items() if k!='differences'},indent=2));print(json.dumps(differences[:4],indent=2))
+    report=dict(scope=__doc__,cases=len(cases),mismatches=len(differences),**({'known_differences':known_differences} if known else {}),client_sanitizers=a.sanitize,leak_check=a.sanitize and not a.no_leak_check,client_sha256=client_hash,corpus_sha256=hashlib.sha256(payload).hexdigest(),differences=differences,**{k+'_sha256':v for k,v in hashes.items()});output.write_text(json.dumps(report,indent=2)+'\n');print(json.dumps({k:v for k,v in report.items() if k!='differences'},indent=2));print(json.dumps(differences[:4],indent=2))
     if differences:raise SystemExit(1)
 if __name__=='__main__':main()

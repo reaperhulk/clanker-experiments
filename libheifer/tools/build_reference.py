@@ -16,6 +16,7 @@ OPENJPH = "8c2826fdaaac3b0334ff5bc2ed2a8ec153c99a35"  # 0.32.0
 RAV1E = "1fe82de02510767539e89b2ee6fa846920ae2686"  # v0.8.1
 VVDEC = "649f0b2fafee977c998d7e4d674f8b88d952e3a3"  # v3.2.0
 VVENC = "9428ea8636ae7f443ecde89999d16b2dfc421524"  # v1.14.0
+X265 = "1d117bed4747758b51bd2c124d738527e30392cb"  # 4.1
 
 
 def run(*args):
@@ -35,6 +36,7 @@ def main():
     p.add_argument("--rav1e", action="store_true", help="enable libheif's rav1e AV1 encoder (rav1e C API via cargo-c, no assembly)")
     p.add_argument("--htj2k", action="store_true", help="enable libheif's OpenJPH HTJ2K encoder (scalar)")
     p.add_argument("--vvc", action="store_true", help="enable libheif's vvdec VVC decoder and vvenc VVC encoder (fixture generator)")
+    p.add_argument("--x265", action="store_true", help="enable libheif's x265 HEVC encoder (scalar, no assembly; rate/distortion oracle)")
     p.add_argument("--plugins", action="store_true", help="enable native dynamic-plugin oracle with an empty default search path")
     p.add_argument("-j", default="4")
     a = p.parse_args()
@@ -155,6 +157,34 @@ def main():
             "--features", "capi,threading", f"--prefix={install}", "--libdir=lib", "--target-dir", build.parent / "rav1e-build")
         os.environ["PKG_CONFIG_PATH"] = f"{install / 'lib/pkgconfig'}:{os.environ.get('PKG_CONFIG_PATH', '')}"
         flags += ["-DWITH_RAV1E=ON", "-DWITH_RAV1E_PLUGIN=OFF"]
+    if a.x265:
+        codec = build.parent / "x265-source"
+        install = build.parent / "x265-install"
+        cbuild = build.parent / "x265-build"
+        if not codec.exists():
+            run("git", "init", codec)
+            run("git", "-C", codec, "remote", "add", "origin", "https://bitbucket.org/multicoreware/x265_git.git")
+            run("git", "-C", codec, "fetch", "--depth=1", "origin", X265)
+            run("git", "-C", codec, "checkout", "--detach", "FETCH_HEAD")
+        revision = subprocess.check_output(["git", "-C", str(codec), "rev-parse", "HEAD"], text=True).strip()
+        if revision != X265:
+            raise SystemExit("Wrong x265 reference revision")
+        # Multilib build (x265's build/linux/multilib.sh): 10- and 12-bit static
+        # libraries linked into the 8-bit shared library, as distributions ship it.
+        common = ["-DCMAKE_BUILD_TYPE=Release", "-DENABLE_ASSEMBLY=OFF", "-DENABLE_CLI=OFF",
+                  "-DCMAKE_POLICY_VERSION_MINIMUM=3.5"]
+        for depth in (10, 12):
+            dbuild = build.parent / f"x265-build-{depth}bit"
+            run(cmake, "-S", codec / "source", "-B", dbuild, *common, "-DHIGH_BIT_DEPTH=ON", "-DEXPORT_C_API=OFF",
+                "-DENABLE_SHARED=OFF", *(["-DMAIN12=ON"] if depth == 12 else []))
+            run(cmake, "--build", dbuild, "-j", a.j)
+        extra = f"{build.parent / 'x265-build-10bit/libx265.a'};{build.parent / 'x265-build-12bit/libx265.a'}"
+        run(cmake, "-S", codec / "source", "-B", cbuild, *common, f"-DCMAKE_INSTALL_PREFIX={install}",
+            "-DCMAKE_INSTALL_LIBDIR=lib", "-DENABLE_SHARED=ON", f"-DEXTRA_LIB={extra}", "-DEXTRA_LINK_FLAGS=-L.",
+            "-DLINKED_10BIT=ON", "-DLINKED_12BIT=ON")
+        run(cmake, "--build", cbuild, "-j", a.j)
+        run(cmake, "--install", cbuild)
+        os.environ["PKG_CONFIG_PATH"] = f"{install / 'lib/pkgconfig'}:{os.environ.get('PKG_CONFIG_PATH', '')}"
     if a.vvc:
         for name, pin, url in (("vvdec", VVDEC, "https://github.com/fraunhoferhhi/vvdec.git"),
                                ("vvenc", VVENC, "https://github.com/fraunhoferhhi/vvenc.git")):
@@ -208,7 +238,7 @@ def main():
         run(cmake, "--install", dbuild)
         flags += ["-DWITH_JPEG_DECODER=ON", "-DWITH_JPEG_DECODER_PLUGIN=OFF", "-DWITH_JPEG_ENCODER=ON",
                   f"-DJPEG_INCLUDE_DIR={install / 'include'}", f"-DJPEG_LIBRARY_RELEASE={install / 'lib/libjpeg.so'}"]
-    run(cmake, "-S", source, "-B", build, "-DCMAKE_BUILD_TYPE=Release", "-DBUILD_TESTING=OFF", "-DBUILD_DOCUMENTATION=OFF", "-DWITH_EXAMPLES=OFF", "-DWITH_GDK_PIXBUF=OFF", f"-DENABLE_PLUGIN_LOADING={'ON' if a.plugins else 'OFF'}", *(["-DPLUGIN_DIRECTORY="] if a.plugins else []), f"-DWITH_LIBDE265={'ON' if a.hevc else 'OFF'}", "-DWITH_X265=OFF", "-DWITH_X264=OFF", *([] if a.avc else ["-DWITH_OpenH264_DECODER=OFF"]), f"-DWITH_DAV1D={'ON' if a.av1 else 'OFF'}", "-DWITH_DAV1D_PLUGIN=OFF", "-DWITH_AOM_DECODER=OFF", "-DWITH_AOM_ENCODER=OFF", "-DWITH_LIBSHARPYUV=OFF", "-DWITH_UNCOMPRESSED_CODEC=ON", *flags)
+    run(cmake, "-S", source, "-B", build, "-DCMAKE_BUILD_TYPE=Release", "-DBUILD_TESTING=OFF", "-DBUILD_DOCUMENTATION=OFF", "-DWITH_EXAMPLES=OFF", "-DWITH_GDK_PIXBUF=OFF", f"-DENABLE_PLUGIN_LOADING={'ON' if a.plugins else 'OFF'}", *(["-DPLUGIN_DIRECTORY="] if a.plugins else []), f"-DWITH_LIBDE265={'ON' if a.hevc else 'OFF'}", f"-DWITH_X265={'ON' if a.x265 else 'OFF'}", "-DWITH_X265_PLUGIN=OFF", "-DWITH_X264=OFF", *([] if a.avc else ["-DWITH_OpenH264_DECODER=OFF"]), f"-DWITH_DAV1D={'ON' if a.av1 else 'OFF'}", "-DWITH_DAV1D_PLUGIN=OFF", "-DWITH_AOM_DECODER=OFF", "-DWITH_AOM_ENCODER=OFF", "-DWITH_LIBSHARPYUV=OFF", "-DWITH_UNCOMPRESSED_CODEC=ON", *flags)
     run(cmake, "--build", build, "-j", a.j)
 
 

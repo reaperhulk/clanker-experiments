@@ -232,6 +232,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2304e00983f87ffb38b55b444b5e3b60a884b5d30c0fca7d82fe33449bbe55ea"
 
 [[package]]
+name = "hpvca"
+version = "0.1.17"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a3f2027113243ccf52b470d216ec8e385d6feb12dd7f6d9eb3ecb4876878e239"
+
+[[package]]
 name = "itertools"
 version = "0.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -255,6 +261,7 @@ name = "libheifer"
 version = "0.1.0"
 dependencies = [
  "hayro-jpeg2000",
+ "hpvca",
  "jpeg-decoder",
  "rav1d",
  "rusty_h264-decoder",

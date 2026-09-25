@@ -48,6 +48,12 @@ struct Registry {
 }
 impl Registry {
     fn add_defaults(&mut self) {
+        // libheif registers x265 before its other encoders; equal priorities
+        // keep registration order.
+        #[cfg(feature = "hevc")]
+        self.encoders.push(Arc::new(EncoderDescriptor {
+            source: EncoderSource::External(&crate::builtin_hevc_encoder::HEVC_ENCODER.0),
+        }));
         for format in [8, 9] {
             self.encoders.push(Arc::new(EncoderDescriptor {
                 source: EncoderSource::Builtin(format),

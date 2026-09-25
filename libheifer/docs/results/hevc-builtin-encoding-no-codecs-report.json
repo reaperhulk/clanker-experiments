@@ -1,0 +1,16 @@
+{
+  "scope": "Original-header built-in HEVC encoding against libheif with its x265 plugin: errors, parameters,\nhandles and non-codec boxes exactly; HEVC configuration formats; candidate files decoded by libde265.",
+  "cases": 164,
+  "listing": "descriptors0\n",
+  "mismatches": 0,
+  "files": 164,
+  "known_differences": {},
+  "known": [],
+  "decode_mismatches": [],
+  "client_sanitizers": false,
+  "corpus_sha256": "5b22ab5596a98d90500e0061bed09b8c41b01047d2fbf5d523494fd320be6225",
+  "differences": [],
+  "client_sha256": "87a09843bcf2011b17e298e0225584b8d04cc6b60cbdecbbb60f5f04f75666ee",
+  "reference_sha256": "44e009fcef37fe6609c0c4ba59715b3285cfef62c79742f20c679cc5f856f000",
+  "candidate_sha256": "ca3a96ef227ea96e8ffc04c40ad3c4c7a4155123a8148be8456fa506d396653d"
+}

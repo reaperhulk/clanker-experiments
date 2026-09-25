@@ -7,7 +7,7 @@ resolver = "3"
 name = "libheifer"
 version = "0.1.0"
 edition = "2024"
-rust-version = "1.90"
+rust-version = "1.94"
 license = "LGPL-3.0-or-later"
 description = "Rust HEIF implementation (in development; not yet a libheif replacement)"
 
@@ -19,6 +19,7 @@ codegen-units = 1
 unsafe_code = "forbid"
 
 [dependencies]
+hpvca = { version = "=0.1.17", optional = true }
 hayro-jpeg2000 = { version = "=0.4.0", optional = true, default-features = false, features = ["std"] }
 jpeg-decoder = { version = "=0.3.2", optional = true, default-features = false, features = ["platform_independent"] }
 rav1d = { version = "=1.1.0", optional = true, default-features = false, features = ["bitdepth_8", "bitdepth_16"] }
@@ -31,7 +32,7 @@ avc = ["dep:rusty_h264-decoder"]
 jpeg2000 = ["dep:hayro-jpeg2000"]
 jpeg = ["dep:jpeg-decoder"]
 av1 = ["dep:rav1d"]
-hevc = ["dep:rusty_h265"]
+hevc = ["dep:rusty_h265", "dep:hpvca"]
 vvc = []
 hevc-profile = ["hevc", "rusty_h265/prof"]
 

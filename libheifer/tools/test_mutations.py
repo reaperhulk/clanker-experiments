@@ -48,6 +48,10 @@ MUTATIONS = [
     ('jpeg2000_encode_chroma_kind', 'crates/capi/src/builtin_jpeg2000_encoder.rs', '    name: c"chroma".as_ptr(),\n    kind: 3,', '    name: c"chroma".as_ptr(),\n    kind: 2,', 'jpeg2000_encoding'),
     ('jpeg2000_lone_97_sample', 'vendor/hayro-jpeg2000/src/j2c/idwt.rs', 'if !x0.is_multiple_of(2) && transform == WaveletTransform::Reversible53 {', 'if !x0.is_multiple_of(2) {', 'htj2k'),
     ('jpeg2000_deep_precinct_step', 'vendor/hayro-jpeg2000/src/j2c/tile.rs', '        let x_stride = 1_u64\n', '        if nl_minus_r > 16 {\n            return None;\n        }\n        let x_stride = 1_u64\n', 'htj2k'),
+    ('hevc_encode_rounded_size', 'crates/capi/src/builtin_hevc_encoder.rs', '((s + 1) & !1).max(64)', '((s + 1) & !1).max(32)', 'hevc_builtin_encoding'),
+    ('hevc_encode_bit_depths', 'crates/capi/src/builtin_hevc_encoder.rs', '    if matches!(bpp, 8 | 10 | 12) {', '    if matches!(bpp, 8 | 10) {', 'hevc_builtin_encoding'),
+    ('hevc_encode_default_tu_depth', 'crates/capi/src/builtin_hevc_encoder.rs', 'set_integer(p, c"tu-intra-depth".as_ptr(), 2);', 'set_integer(p, c"tu-intra-depth".as_ptr(), 3);', 'hevc_builtin_encoding'),
+    ('hevc_encode_x265_options', 'crates/capi/src/builtin_hevc_encoder.rs', '(n, _) if n.starts_with(b"x265:") => {', '(n, _) if n.starts_with(b"x265:-") => {', 'hevc_builtin_encoding'),
     ('av1_encode_default_speed', 'crates/capi/src/builtin_av1_encoder.rs', 'set_integer(p, c"speed".as_ptr(), 8);', 'set_integer(p, c"speed".as_ptr(), 9);', 'av1_encoding'),
     ('av1_encode_default_tiles', 'crates/capi/src/builtin_av1_encoder.rs', 'set_integer(p, c"tile-rows".as_ptr(), 4);', 'set_integer(p, c"tile-rows".as_ptr(), 1);', 'av1_encoding'),
     ('av1_encode_default_tile_cols', 'crates/capi/src/builtin_av1_encoder.rs', 'set_integer(p, c"tile-cols".as_ptr(), 4);', 'set_integer(p, c"tile-cols".as_ptr(), 1);', 'av1_encoding'),
@@ -455,6 +459,7 @@ def main():
     parser.add_argument("--avc-reference-build", default=".build/reference-avc")
     parser.add_argument("--vvc-reference-build", default=".build/reference-vvc")
     parser.add_argument("--encoders-reference-build", default=".build/reference-encoders")
+    parser.add_argument("--x265-reference-build", default=".build/reference-x265")
     parser.add_argument("--candidate", default="target/release/libheifer.so")
     parser.add_argument("--output", default=".build/mutations-report.json")
     parser.add_argument("--only", choices=[m[0] for m in MUTATIONS], action="append", help="Run selected defects; default runs the complete mutation set")
@@ -478,6 +483,9 @@ def main():
             return str(Path(args.jpeg2000_reference_build).resolve())
         if suite in ("avc", "avc_errors", "avc_plugins", "avc_limits", "avc_sequences", "plugin_sequences"):
             return str(Path(args.avc_reference_build).resolve())
+        # A refused plugin falls back to the default HEVC encoder (x265 in the oracle).
+        if suite in ("hevc_builtin_encoding", "hevc_encoding", "hevc_mini_encoding"):
+            return str(Path(args.x265_reference_build).resolve())
         if suite == "vvc":
             return str(Path(args.vvc_reference_build).resolve())
         # The encoder oracle has libheif's JPEG and OpenJPEG encoders, like the candidate.

@@ -26,6 +26,8 @@ pub mod handle_properties;
 #[cfg(feature = "hevc")]
 pub mod hevc;
 pub mod hevc_config;
+#[cfg(feature = "hevc")]
+pub mod hevc_encoder;
 pub mod image;
 pub mod input;
 pub mod items;

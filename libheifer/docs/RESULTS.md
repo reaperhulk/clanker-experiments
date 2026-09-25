@@ -1963,3 +1963,103 @@ Known differences:
   been compared systematically;
 - decoding is scalar and single-threaded: the first 720p picture of ALF_A
   takes about 0.09 s against 0.033 s for single-threaded vvdec with SIMD.
+
+## Built-in HEVC encoding (hpvca)
+
+libheif encodes HEVC with its x265 plugin. libheifer registers the pure Rust
+encoder hpvca 0.1.17, used unmodified from crates.io
+(`docs/HEVC_DEPENDENCIES.md`), as "libheifer HEVC encoder (hpvca)" (id
+`libheifer-hevc`, priority 100). It is listed first, as x265 is in libheif.
+hpvca is an independent encoder, so bitstreams cannot match x265's.
+`crates/capi/src/builtin_hevc_encoder.rs` reproduces everything around the
+bitstream from libheif's x265 plugin:
+
+- the parameter list with its defaults, ranges, valid strings and getters
+  (`quality`, `lossless`, `preset`, `tune`, `tu-intra-depth`, `complexity`,
+  `chroma`, and stored `x265:` options);
+- input checks (YCbCr or monochrome, 8/10/12 bits, equal channel depths);
+- padding to even sizes of at least 64 with
+  `heif_image_extend_padding_to_size`, and the Level 7.2 sample limit;
+- the nclx colour description in the VUI for colour and alpha images;
+- one packet per NAL unit, with parameter sets repeated in sequences only
+  when they change.
+
+The native oracle `.build/reference-x265` builds x265 4.1 without assembly as
+a multilib (8-bit shared, 10/12-bit static) into libheif
+(`tools/build_reference.py --hevc --x265`).
+
+`tools/test_hevc_builtin_encoding.py` runs `tests/encoding.c` over 164
+cases:
+
+- sizes from 1x1, odd sizes, input colorspaces and chroma, bit depths 7-16;
+- qualities 0-100, lossless;
+- 20 new x265 parameter sets (presets, tunes, TU depths, complexity, `x265:`
+  options, invalid values);
+- nclx, alpha, thumbnails, overlays, orientations and repeated encodes.
+
+A listing client (`tests/encoder_listing.c`) also compares the default
+HEVC encoder's parameters exactly: types, defaults, ranges, valid strings
+and values.
+
+Everything except the codec output is compared exactly: errors, parameter
+listings, handles, and every box outside `hvcC`, `iloc` and `mdat`. `hvcC` is
+compared on version, chroma format, bit depths and array types. Every
+candidate file is also decoded by libheif with libde265 and by the
+candidate, in two decode modes, and the outputs must agree. Results: 0
+mismatches in normal, sanitizer-client and codec-free builds, and no decode
+disagreements. There are 38 classified known differences, all listed in the
+report:
+
+- `hevc-rext-decoding` (24): the candidate's decoder cannot read its own
+  4:2:2, 4:4:4 or 12-bit output; libde265 decodes it;
+- `hpvca-monochrome-profile` (9): hpvca signals Main for 4:0:0, so libheif
+  chooses brand `heic` where x265 gives `heix`;
+- `x265-option` (2): `x265:` options are rejected by name;
+- `x265-open-failure` (2): x265 4.1 cannot be opened with preset `placebo`
+  or `tu-intra-depth=4` on 10-bit 4:4:4 input; hpvca encodes both;
+- `shared-hvcC` (1): a thumbnail's parameter sets equal the main image's,
+  so there is one fewer `hvcC`.
+
+With a built-in HEVC encoder, other suites reach it through libheif's
+fallbacks:
+
+- `test_hevc_encoding` and `test_hevc_mini_encoding` refuse plugins with
+  unsupported versions;
+- `test_encoding` encodes with the undefined compression format, which
+  selects the highest-priority encoder.
+
+These suites now use oracles with x265 (`.build/reference-x265`, and
+`.build/reference-encoders` built with `--hevc --x265`). Lines whose files
+carry HEVC are compared with the normalization above and reported as
+`builtin-hevc-fallback` or `hpvca-monochrome-profile`: 16 of 789 cases in
+each HEVC suite and 2 of 1,292 in `test_encoding`. The undefined-format
+case exposed an ordering difference: libheif keeps encoders of equal
+priority in registration order, with x265 first, so the HEVC encoder now
+precedes JPEG. The 25 other encoder, plugin and writing suites are
+unchanged.
+
+Rate/distortion (`tools/bench_hevc_encoding.py`,
+`results/hevc-rd-report.json`) was measured against x265's default `slow`
+preset with tune `ssim`, on 8 Kodak images at qualities 10-95:
+
+- mean BD-rate +5.6% (from +2.5% to +8.4%);
+- PSNR within 0.05-0.6 dB of x265 at the same quality up to quality 70;
+- above quality 80, hpvca's QP floor of 10 costs up to 5 dB;
+- encoding takes about 2.8x as long as x265 without assembly.
+
+Four deliberate defects (the padding minimum, the accepted bit depths, the
+`tu-intra-depth` default and `x265:` option rejection) are detected
+(`results/hevc-encode-mutations-report.json`; 402 mutations total). The first run also had a
+default-parameter survivor, which led to the listing client, and it exposed
+a fallback classifier that masked compact-file differences outside fallback
+cases (the existing `hevc_encoder_array` mutant survived). The classifier
+now applies only to lines where the fallback happened. Two more defects are
+not observable in these comparisons and were dropped:
+
+- the input classes that get a VUI colour description (the SPS is not
+  parsed, and decoders ignore it);
+- repeating parameter sets in every sequence sample (no suite encodes HEVC
+  sequences).
+
+Encoding is all-intra, including image sequences. HEVC sequence encoding and
+the VUI are open coverage gaps.

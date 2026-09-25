@@ -27,7 +27,7 @@ jobs:
         working-directory: libheifer
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@1.90.0
+      - uses: dtolnay/rust-toolchain@1.94.1
       - run: cargo test --locked -p libheifer --all-features
       - run: cargo build --locked --release -p libheifer-capi
       # The vendored AVC crates sit outside the workspace; their tests include the
@@ -47,7 +47,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: true
-      - uses: dtolnay/rust-toolchain@1.90.0
+      - uses: dtolnay/rust-toolchain@1.94.1
         with:
           components: rustfmt, clippy
       - run: python -m pip install libclang==18.1.1
@@ -100,7 +100,8 @@ jobs:
           python tools/build_reference.py --plugins --build .build/reference-plugins
           python tools/build_reference.py --avc --build .build/reference-avc
           python tools/build_reference.py --vvc --build .build/reference-vvc
-          python tools/build_reference.py --jpeg --jpeg2000 --htj2k --av1 --rav1e --build .build/reference-encoders
+          python tools/build_reference.py --hevc --x265 --build .build/reference-x265
+          python tools/build_reference.py --jpeg --jpeg2000 --htj2k --av1 --rav1e --hevc --x265 --build .build/reference-encoders
 
   differential:
     name: Independent C clients (${{ matrix.group }})
@@ -117,7 +118,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: true
-      - uses: dtolnay/rust-toolchain@1.90.0
+      - uses: dtolnay/rust-toolchain@1.94.1
       - uses: actions/cache/restore@v4
         with:
           path: |
@@ -148,7 +149,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: true
-      - uses: dtolnay/rust-toolchain@1.90.0
+      - uses: dtolnay/rust-toolchain@1.94.1
       - uses: actions/cache/restore@v4
         with:
           path: |
@@ -179,7 +180,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: true
-      - uses: dtolnay/rust-toolchain@1.90.0
+      - uses: dtolnay/rust-toolchain@1.94.1
       - uses: actions/cache/restore@v4
         with:
           path: |

@@ -762,5 +762,12 @@ palette or multi-layer streams, which vvdec also rejects), and libheif's
 vvdec plugin on 277 vvenc-generated items (6925 cases) and 88 `vvc1`
 sequence-track cases.
 
+HEVC encoding uses the pure Rust hpvca 0.1.17 from crates.io, unmodified
+(MSRV raised to 1.94), behind a record reproducing libheif's x265 plugin
+interface. It matches libheif with x265 4.1 on 164 encoding cases (everything
+but the codec output; 38 classified known differences), and libde265
+decodes every file as the candidate does. Mean BD-rate against x265 is
++5.6%. See `docs/RESULTS.md` and `docs/HEVC_DEPENDENCIES.md`.
+
 Next: remaining plan gates. All 465 functions remain partial; strict completion
 remains false.

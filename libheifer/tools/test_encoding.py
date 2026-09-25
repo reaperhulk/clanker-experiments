@@ -2,6 +2,7 @@
 """Original-header image encoding, retained handles, direct decoding and exact serialized image bytes."""
 import argparse,hashlib,json,os,struct,subprocess,random
 from pathlib import Path
+from test_hevc_builtin_encoding import fallback as hevc_fallback
 
 def corpus():
     cases=[]
@@ -55,12 +56,15 @@ def main():
             (work/f'{name}-failure-{mode}.stderr').write_text(stderr)
             failures.append(dict(library=name,case='encoded_uncompressed_alpha' if mode==0 else 'encoded_timestamp_ownership',exit=run.returncode,diagnostic=stderr))
             if name=='candidate' and run.returncode:raise SystemExit(f'Candidate safety probe failed: {stderr}')
-    differences=[]
+    differences=[];known_differences={}
     for i,(x,y) in enumerate(zip(lines['reference'],lines['candidate'],strict=True)):
         if x==y:continue
+        # HEVC or undefined compression: the oracle encodes with x265, the candidate with hpvca.
+        kind=hevc_fallback(x,y) if struct.unpack('=8I',cases[i][1][:32])[0]&0xff in (0,1) else None
+        if kind:known_differences.setdefault(kind,[]).append(cases[i][0]);continue
         at=next((j for j,(a,b) in enumerate(zip(x,y)) if a!=b),min(len(x),len(y)))
         differences.append(dict(case=cases[i][0],line=i,offset=at,reference=x[max(0,at-60):at+220].decode(),candidate=y[max(0,at-60):at+220].decode()))
     if hashes!={k:hashlib.sha256(v.read_bytes()).hexdigest() for k,v in libs.items()} or client_hash!=hashlib.sha256(client.read_bytes()).hexdigest():raise SystemExit('Binaries/client changed')
-    report=dict(scope=__doc__,oracle_limitations=failures,safety_probe_sha256=hashlib.sha256(probe.read_bytes()).hexdigest(),cases=len(cases),mismatches=len(differences),client_sanitizers=a.sanitize,leak_check=a.sanitize and not a.no_leak_check,client_sha256=client_hash,corpus_sha256=hashlib.sha256(payload).hexdigest(),differences=differences,**{k+'_sha256':v for k,v in hashes.items()});output.write_text(json.dumps(report,indent=2)+'\n');print(json.dumps({k:v for k,v in report.items() if k not in ('differences','oracle_limitations')},indent=2));print(json.dumps(differences[:4],indent=2))
+    report=dict(scope=__doc__,oracle_limitations=failures,safety_probe_sha256=hashlib.sha256(probe.read_bytes()).hexdigest(),cases=len(cases),mismatches=len(differences),known_differences=known_differences,client_sanitizers=a.sanitize,leak_check=a.sanitize and not a.no_leak_check,client_sha256=client_hash,corpus_sha256=hashlib.sha256(payload).hexdigest(),differences=differences,**{k+'_sha256':v for k,v in hashes.items()});output.write_text(json.dumps(report,indent=2)+'\n');print(json.dumps({k:v for k,v in report.items() if k not in ('differences','oracle_limitations')},indent=2));print(json.dumps(differences[:4],indent=2))
     if differences:raise SystemExit(1)
 if __name__=='__main__':main()
