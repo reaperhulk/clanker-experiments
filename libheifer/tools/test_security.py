@@ -11,6 +11,7 @@ def corpus():
     fixtures=[('hevc',Path('tests/upstream/fuzzing/data/corpus/colors-no-alpha.heic').read_bytes()),('metadata',synthetic(metadata=bytes(129),extra=[box(b'colr',b'prof'+bytes(65))]))]
     for depth in [8,16]:
         fixtures.append((f'mask-{depth}',item_file([dict(id=1,kind=b'mski',data=bytes(17*9*(depth//8)),props=[ispe(17,9),full(b'mskC',bytes([depth]))])])))
+    import test_decode_graphs;test_decode_graphs.inputs()
     for family in ['grid-amplification-8','grid-amplification-11','overlay-depth-4']:
         fixtures.append((family,Path('.build/decode-graphs-inputs',family+'.heic').read_bytes()))
     for name,data in fixtures:

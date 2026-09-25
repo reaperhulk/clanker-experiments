@@ -60,6 +60,8 @@ jobs:
 
   # Native oracles are test-only. They are built once per oracle revision and
   # shared with the differential and mutation jobs through the Actions cache.
+  # The key covers this workflow so that changes to the build list below
+  # (such as a new oracle) rebuild the cache.
   references:
     name: Native reference oracles
     runs-on: ubuntu-latest
@@ -73,7 +75,7 @@ jobs:
         with:
           submodules: true
       - id: key
-        run: echo "key=libheifer-oracles-encoders-${{ runner.os }}-$(git rev-parse HEAD:libheifer/tests/upstream)-${{ hashFiles('libheifer/tools/build_reference.py', 'libheifer/Cargo.lock') }}" >> "$GITHUB_OUTPUT"
+        run: echo "key=libheifer-oracles-encoders-${{ runner.os }}-$(git rev-parse HEAD:libheifer/tests/upstream)-${{ hashFiles('libheifer/tools/build_reference.py', 'libheifer/Cargo.lock', '.github/workflows/libheifer.yml') }}" >> "$GITHUB_OUTPUT"
       - id: cache
         uses: actions/cache@v4
         with:

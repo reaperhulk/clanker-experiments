@@ -10,7 +10,8 @@ from test_decode_overlay import overlay
 from item_fixtures import item_file,ispe
 
 
-def main():
+def inputs():
+    """Write the graph fixtures to .build/decode-graphs-inputs and return their paths."""
     paths=[];root=Path('.build/decode-graphs-inputs').resolve();root.mkdir(parents=True,exist_ok=True)
     def add(name,items,primary=1,miaf=False):
         path=root/(name+'.heic');path.write_bytes(item_file(items,primary,miaf));paths.append(str(path))
@@ -49,7 +50,11 @@ def main():
     # A cycle involving auxiliary and derived edges must be rejected before workers start.
     alpha=mask(3,8,True);alpha['refs']={b'auxl':[2],b'dimg':[1]}
     add('mixed-alpha-cycle',[dict(id=1,kind=b'iden',props=[ispe(8,8)],refs={b'dimg':[2]}),dict(id=2,kind=b'iden',props=[ispe(8,8)],refs={b'dimg':[3]}),alpha])
-    test_decode.FIXTURES=paths
+    return paths
+
+
+def main():
+    test_decode.FIXTURES=inputs()
     if '--output' not in sys.argv:sys.argv.extend(['--output','.build/decode-graphs-report.json'])
     if '--modes' not in sys.argv:sys.argv.extend(['--modes','25'])
     test_decode.main()
