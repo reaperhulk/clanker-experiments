@@ -2,7 +2,8 @@
 //! Deblocking filter (H.266 clause 8.8.3), following vvdec's `LoopFilter`:
 //! edge parameters are derived per coding unit into 4x4 luma-grid maps,
 //! then all vertical and afterwards all horizontal edges are filtered.
-use super::pic::{Cu, Picture, Pred, Tree, Tu};
+use super::mv::Mv;
+use super::pic::{Cu, MRG_TYPE_SUBPU_ATMVP, Picture, Pred, Tree, Tu};
 use super::ps::{I_SLICE, PicHeader, Pps, SliceHeader, Sps};
 
 const MARK: u8 = 3 << 6;
@@ -186,7 +187,9 @@ impl<'a> Ctx<'a> {
             self.virtual_boundaries(area.x << csx, area.y << csy, area.w << csx, area.h << csy);
         let crossed = !vb_ver.is_empty() || !vb_hor.is_empty();
         let (left_edge, top_edge) = self.cu_edges(id);
-        let refine = c.isp != 0;
+        let subblk = c.pred == Pred::Inter
+            && ((c.merge && c.merge_type == MRG_TYPE_SUBPU_ATMVP) || c.affine);
+        let refine = c.isp != 0 || subblk;
         let mask_x = !((1i32 << (2 - csx)) - 1);
         let mask_y = !((1i32 << (2 - csy)) - 1);
         for t in c.first_tu..c.first_tu + c.num_tu {
@@ -215,6 +218,23 @@ impl<'a> Ctx<'a> {
         }
         if !refine {
             return;
+        }
+        if subblk {
+            let b = c.blk[0];
+            let mut off = 8;
+            while off < area.w {
+                let v = !(crossed && vb_ver.contains(&(b.x + off)));
+                self.edge_inside_pu(0, b.x + off, b.y, b.h, v);
+                off += 8;
+            }
+            self.flpq_sub_blocks(0, id);
+            let mut off = 8;
+            while off < area.h {
+                let v = !(crossed && vb_hor.contains(&(b.y + off)));
+                self.edge_inside_pu(1, b.x, b.y + off, b.w, v);
+                off += 8;
+            }
+            self.flpq_sub_blocks(1, id);
         }
         let step_x = 4 >> csx;
         let step_y = 4 >> csy;
@@ -284,11 +304,82 @@ impl<'a> Ctx<'a> {
         }
     }
 
-    fn max_flpq(size_p: i32, size_q: i32) -> u8 {
+    /// vvdec's `xSetEdgeFilterInsidePu` (luma only).
+    fn edge_inside_pu(&mut self, dir: Dir, x: i32, y: i32, len: i32, bvalue: bool) {
+        let mut d = 0;
+        while d < len {
+            let (lx, ly) = if dir == 0 { (x, y + d) } else { (x + d, y) };
+            let i = self.idx(0, lx, ly);
+            let l = &mut self.maps[dir][i];
+            l.edge[0] = bvalue;
+            if bvalue && l.bs != 0 {
+                l.bs |= MARK;
+            }
+            d += 4;
+        }
+    }
+
+    /// vvdec's `xSetMaxFilterLengthPQForCodingSubBlocks`.
+    fn flpq_sub_blocks(&mut self, dir: Dir, id: u32) {
+        let b = self.cu(id).blk[0];
+        let (x_inc, y_inc) = if dir == 1 { (4, 8) } else { (8, 4) };
+        let size = perp(dir, b.w, b.h);
+        let te_at = |s: &Self, x: i32, y: i32, off: i32| -> bool {
+            let (ox, oy) = if dir == 0 {
+                (x + 4 * off, y)
+            } else {
+                (x, y + 4 * off)
+            };
+            s.maps[dir][s.idx(0, ox, oy)].side_max & 128 != 0
+        };
+        let mut y = 0;
+        while y < b.h {
+            let mut x = 0;
+            while x < b.w {
+                let (px, py) = (b.x + x, b.y + y);
+                let i = self.idx(0, px, py);
+                let perp_val = if dir == 1 { y } else { x };
+                let sm = self.maps[dir][i].side_max;
+                let mut te = 0u8;
+                let (fl_p, fl_q) = if sm & 128 != 0 {
+                    te = 128;
+                    let q = (sm & 7).min(5);
+                    let mut p = (sm >> 4) & 7;
+                    if perp_val > 0 {
+                        p = p.min(5);
+                    }
+                    (p, q)
+                } else if perp_val > 0
+                    && (te_at(self, px, py, -1) || perp_val + 4 >= size || te_at(self, px, py, 1))
+                {
+                    (1, 1)
+                } else if perp_val > 0
+                    && (perp_val == 8
+                        || te_at(self, px, py, -2)
+                        || perp_val + 8 >= size
+                        || te_at(self, px, py, 2))
+                {
+                    (2, 2)
+                } else {
+                    (3, 3)
+                };
+                self.maps[dir][i].side_max = (fl_p << 4) + fl_q + te;
+                x += x_inc;
+            }
+            y += y_inc;
+        }
+    }
+
+    fn max_flpq(size_p: i32, size_q: i32, p_affine: bool) -> u8 {
         let v = if size_p <= 4 || size_q <= 4 {
             17
         } else {
-            ((if size_p >= 32 { 7 } else { 3 }) << 4) + if size_q >= 32 { 7 } else { 3 }
+            let p = if size_p >= 32 {
+                if p_affine { 5 } else { 7 }
+            } else {
+                3
+            };
+            (p << 4) + if size_q >= 32 { 7 } else { 3 }
         };
         v + 128
     }
@@ -425,7 +516,7 @@ impl<'a> Ctx<'a> {
                             l.bs |= bs_set(1, 3);
                         }
                         if ct == 0 {
-                            l.side_max = Self::max_flpq(size_p, size_q);
+                            l.side_max = Self::max_flpq(size_p, size_q, self.cu(cu_p).affine);
                         } else {
                             l.cmfl = size_q >= 8 && size_p >= 8;
                         }
@@ -469,7 +560,7 @@ impl<'a> Ctx<'a> {
                             } else {
                                 l.bs |= bs_set(1, 3);
                             }
-                            l.side_max = Self::max_flpq(size_p, size_q);
+                            l.side_max = Self::max_flpq(size_p, size_q, self.cu(cu_p).affine);
                         }
                         self.maps[dir][i] = l;
                         if distance > inc {
@@ -593,6 +684,10 @@ impl<'a> Ctx<'a> {
         } else if pc_intra {
             lfp.bs |= bs_set(chrm_bs, 1) + bs_set(chrm_bs, 2);
         }
+        if lfp.bs & mask != 0 && (cp.ciip || cq.ciip) {
+            lfp.bs |= (bs_set(2, 0) + bs_set(2, 1) + bs_set(2, 2)) & mask;
+            return;
+        }
         let mut tmp = 0u8;
         if lfp.bs & mask != 0 {
             let cbf = tuq.cbf | tup.cbf;
@@ -605,6 +700,10 @@ impl<'a> Ctx<'a> {
         }
         if bs_get(tmp, 0) == 1 {
             lfp.bs |= tmp & mask;
+            return;
+        }
+        if cp.ciip || cq.ciip {
+            lfp.bs |= 1 & mask;
             return;
         }
         if !has_luma {
@@ -623,9 +722,46 @@ impl<'a> Ctx<'a> {
             lfp.bs |= 1 & mask;
             return;
         }
-        // Both sides use intra block copy: compare block vectors (1/16 units).
-        let (bq, bp) = (cq.bv, cp.bv);
-        let moved = (bq.0 - bp.0).abs() >= 8 || (bq.1 - bp.1).abs() >= 8;
+        if cq.pred == Pred::Ibc {
+            // Both sides use intra block copy: compare block vectors (1/16 units).
+            let (bq, bp) = (cq.bv, cp.bv);
+            let moved = (bq.0 - bp.0).abs() >= 8 || (bq.1 - bp.1).abs() >= 8;
+            lfp.bs |= (if moved { tmp + 1 } else { tmp }) & mask;
+            return;
+        }
+        let (sx, sy) = self.scale(ch);
+        let miq = self.pic.mi(x << sx, y << sy);
+        let mip = self.pic.mi(px << sx, py << sy);
+        let sq = &self.pic.slice_refs[cq.slice as usize];
+        let sp = &self.pic.slice_refs[cp.slice as usize];
+        let rf = |s: &super::dpb::SliceRefs, r: i8, l: usize| -> Option<u64> {
+            (r >= 0).then(|| s.ref_id[l][r as usize])
+        };
+        let (p0, p1) = (rf(sp, mip.ref_idx[0], 0), rf(sp, mip.ref_idx[1], 1));
+        let (q0, q1) = (rf(sq, miq.ref_idx[0], 0), rf(sq, miq.ref_idx[1], 1));
+        let far = |a: Mv, b: Mv| (a.x - b.x).abs() >= 8 || (a.y - b.y).abs() >= 8;
+        if sq.is_b() || sp.is_b() {
+            let moved = if (p0 == q0 && p1 == q1) || (p0 == q1 && p1 == q0) {
+                let pick = |r: Option<u64>, m: Mv| if r.is_some() { m } else { Mv::default() };
+                let mp = [pick(p0, mip.mv[0]), pick(p1, mip.mv[1])];
+                let mq = [pick(q0, miq.mv[0]), pick(q1, miq.mv[1])];
+                if p0 != p1 {
+                    if p0 == q0 {
+                        far(mq[0], mp[0]) || far(mq[1], mp[1])
+                    } else {
+                        far(mq[1], mp[0]) || far(mq[0], mp[1])
+                    }
+                } else {
+                    (far(mq[0], mp[0]) || far(mq[1], mp[1]))
+                        && (far(mq[1], mp[0]) || far(mq[0], mp[1]))
+                }
+            } else {
+                true
+            };
+            lfp.bs |= (u8::from(moved) + tmp) & mask;
+            return;
+        }
+        let moved = p0 != q0 || far(miq.mv[0], mip.mv[0]);
         lfp.bs |= (if moved { tmp + 1 } else { tmp }) & mask;
     }
 }

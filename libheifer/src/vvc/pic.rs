@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 //! Picture-level decoding state: sample planes, coding units, transform
 //! units and the position maps vvdec's `CodingStructure` keeps.
+use super::dpb::{DmvrRefinement, SliceRefs};
+use super::mv::{HpMvInfo, MotionInfo, Mv};
 use super::ps::{Pps, Sps};
 
 #[derive(Clone, Copy, Default, Debug, PartialEq, Eq)]
@@ -148,9 +150,35 @@ pub struct Cu {
     pub bv: (i32, i32),
     pub merge: bool,
     pub merge_idx: u8,
-    pub mvp_idx: u8,
+    pub mvp_idx: [u8; 2],
     pub imv: u8,
+    pub inter_dir: u8,
+    pub ref_idx: [i8; 2],
+    /// Motion vector differences after parsing; motion vectors (control
+    /// points for affine) after derivation.
+    pub mv: [[Mv; 3]; 2],
+    pub merge_type: u8,
+    pub mmvd: bool,
+    pub mmvd_idx: u8,
+    pub affine: bool,
+    /// 0: 4-parameter, 1: 6-parameter.
+    pub affine_type: u8,
+    pub ciip: bool,
+    pub geo: bool,
+    pub geo_split: u8,
+    pub geo_idx: [u8; 2],
+    /// vvdec's `interDirrefIdxGeo0/1`: inter direction << 4 | reference index.
+    pub geo_dir_ref: [u8; 2],
+    /// Internal BCW index (`BCW_DEFAULT` = 0).
+    pub bcw: u8,
+    pub smvd: u8,
+    /// vvdec's `sbtInfo`: index in bits 0..3, position in bits 4..5.
+    pub sbt: u8,
+    pub dmvr: bool,
 }
+
+pub const MRG_TYPE_DEFAULT_N: u8 = 0;
+pub const MRG_TYPE_SUBPU_ATMVP: u8 = 1;
 
 impl Cu {
     pub fn lw(&self) -> i32 {
@@ -268,6 +296,14 @@ pub struct Picture {
     pub ctus: Vec<CtuData>,
     /// IBC history-based block vector candidates (vvdec's `motionLutIbc`).
     pub ibc_hist: Vec<(i32, i32)>,
+    /// Motion per 4x4 luma unit (vvdec's `CtuData::motion`).
+    pub motion: Vec<MotionInfo>,
+    /// History-based motion candidates (vvdec's `motionLut`).
+    pub hmvp: Vec<HpMvInfo>,
+    /// Resolved reference lists per slice index.
+    pub slice_refs: Vec<SliceRefs>,
+    pub poc: i32,
+    pub dmvr: Vec<DmvrRefinement>,
 }
 
 pub const NONE: u32 = u32::MAX;
@@ -313,7 +349,18 @@ impl Picture {
                 n
             ],
             ibc_hist: Vec::new(),
+            motion: vec![MotionInfo::default(); map_w * map_h],
+            hmvp: Vec::new(),
+            slice_refs: Vec::new(),
+            poc: 0,
+            dmvr: Vec::new(),
         }
+    }
+
+    /// Motion of the 4x4 luma unit covering a luma position.
+    #[inline]
+    pub fn mi(&self, x: i32, y: i32) -> MotionInfo {
+        self.motion[(y >> 2) as usize * self.map_w + (x >> 2) as usize]
     }
 
     /// Picture area of a channel in its own coordinates.

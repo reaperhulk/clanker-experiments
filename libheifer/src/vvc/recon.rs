@@ -1049,9 +1049,23 @@ fn pred_dc(src: &RefBuf, w: i32, h: i32, mrl: i32) -> i32 {
 
 pub fn reconstruct_cu(pic: &mut Picture, si: &SliceInfo, cu_id: u32) -> Result<(), Error> {
     let cu = pic.cus[cu_id as usize].clone();
-    if cu.pred == Pred::Inter {
-        return Err(Error::Unsupported("inter prediction"));
-    }
+    // DecCu::predAndReco for inter coding units: motion compensation
+    let mut inter_pred: Option<super::mc::PredUnit> = if cu.pred == Pred::Inter {
+        let mut m = super::mc::McCtx::new(pic, si);
+        let u = super::mc::Mcu::from_cu(&cu);
+        let p = if cu.geo {
+            m.motion_compensation_geo(&u, cu.geo_dir_ref, cu.geo_split, [cu.mv[0][1], cu.mv[1][1]])?
+        } else {
+            m.motion_compensation(&u)?
+        };
+        if let Some(d) = m.dmvr.take() {
+            pic.dmvr.push(d);
+            pic.cus[cu_id as usize].dmvr = true;
+        }
+        Some(p)
+    } else {
+        None
+    };
     // vvdec's xIntraBlockCopy: integer block vector, chroma vectors floored.
     let ibc_pred: Vec<Vec<i32>> = if cu.pred == Pred::Ibc {
         let r = |v: i32| if v >= 0 { (v + 7) >> 4 } else { (v + 8) >> 4 };
@@ -1098,6 +1112,30 @@ pub fn reconstruct_cu(pic: &mut Picture, si: &SliceInfo, cu_id: u32) -> Result<(
         lm_stride: 0,
     };
     let num_comp = ctx.pic.fmt.num_comp();
+    if let Some(pred) = inter_pred.as_mut() {
+        // forward luma mapping of the inter prediction (Reshape::rspBufFwd)
+        let fwd = si.sh.lmcs_used && si.ph.lmcs_enabled && si.sh.slice_type != super::ps::I_SLICE;
+        let lmcs = si.lmcs;
+        let map = |pred: &mut super::mc::PredUnit| {
+            if let (true, Some(l)) = (fwd, lmcs) {
+                let bd = ctx_bd(si);
+                let shift = bd - 4;
+                for v in pred[0].data.iter_mut() {
+                    let idx = (*v >> shift) as usize;
+                    *v = (l.pivot[idx]
+                        + ((l.fwd_scale[idx] * (*v - l.input_pivot[idx]) + (1 << 10)) >> 11))
+                        .clamp(0, (1 << bd) - 1);
+                }
+            }
+        };
+        map(pred);
+        if cu.ciip {
+            ciip_blend(&mut ctx, pred)?;
+            if !cu.root_cbf {
+                map(pred);
+            }
+        }
+    }
     if num_comp > 1 {
         for t in cu.first_tu..cu.first_tu + cu.num_tu {
             let tu = ctx.pic.tus[t as usize].clone();
@@ -1130,7 +1168,17 @@ pub fn reconstruct_cu(pic: &mut Picture, si: &SliceInfo, cu_id: u32) -> Result<(
             let n = (w * h) as usize;
             let mut pred = vec![0i32; n];
             let mut use_region_pred = false;
-            if cu.pred == Pred::Ibc {
+            if let Some(ip) = inter_pred.as_ref() {
+                let b = cu.blk[comp];
+                let src = &ip[comp];
+                for y in 0..h {
+                    for x in 0..w {
+                        pred[(y * w + x) as usize] = src.data[((area.y - b.y + y) as usize)
+                            * src.stride
+                            + (area.x - b.x + x) as usize];
+                    }
+                }
+            } else if cu.pred == Pred::Ibc {
                 let b = cu.blk[comp];
                 let src = &ibc_pred[comp];
                 for y in 0..h {
@@ -1260,6 +1308,45 @@ pub fn reconstruct_cu(pic: &mut Picture, si: &SliceInfo, cu_id: u32) -> Result<(
     for t in cu.first_tu..cu.first_tu + cu.num_tu {
         let tu = &mut ctx.pic.tus[t as usize];
         tu.coeff = [Vec::new(), Vec::new(), Vec::new()];
+    }
+    Ok(())
+}
+
+fn ctx_bd(si: &SliceInfo) -> u32 {
+    si.sps.bit_depth
+}
+
+/// `IntraPrediction::predBlendIntraCiip`: planar intra prediction over the
+/// whole coding unit blended with the inter prediction.
+fn ciip_blend(ctx: &mut Ctx, pred: &mut super::mc::PredUnit) -> Result<(), Error> {
+    let cu = ctx.cu.clone();
+    let cu_id = ctx.cu_id;
+    let chroma = ctx.pic.fmt.chroma != 0 && cu.blk[1].w > 2;
+    let comps = if chroma { 3 } else { 1 };
+    for comp in 0..comps {
+        let area = cu.blk[comp];
+        let use_filter = comp == 0 && use_filtered_ref(ctx.pic, ctx.si, &cu, cu_id, 0, area);
+        ctx.init_pattern(cu.first_tu, comp, area, use_filter);
+        let mut ip = vec![0i32; (area.w * area.h) as usize];
+        ctx.pred_intra_ang(comp, &mut ip, area.w, area.h, use_filter);
+        let (lx, ly, lw, lh) = (cu.blk[0].x, cu.blk[0].y, cu.blk[0].w, cu.blk[0].h);
+        let left = ctx
+            .pic
+            .get_cu_restricted(lx - 1, ly + lh - 1, cu_id, 0, cu.left, ctx.wpp);
+        let above = ctx
+            .pic
+            .get_cu_restricted(lx + lw - 1, ly - 1, cu_id, 0, cu.above, ctx.wpp);
+        let n0 = left.is_some_and(|c| ctx.pic.cus[c as usize].pred == Pred::Intra);
+        let n1 = above.is_some_and(|c| ctx.pic.cus[c as usize].pred == Pred::Intra);
+        let w_intra = 3 - i32::from(!n0) - i32::from(!n1);
+        let w_merge = 3 - i32::from(n0) - i32::from(n1);
+        let b = &mut pred[comp];
+        for y in 0..area.h as usize {
+            for x in 0..area.w as usize {
+                let i = y * b.stride + x;
+                b.data[i] = (w_merge * b.data[i] + w_intra * ip[y * area.w as usize + x] + 2) >> 2;
+            }
+        }
     }
     Ok(())
 }
@@ -2087,11 +2174,9 @@ fn tr_types(ctx: &Ctx, tu: &Tu, comp: usize) -> (u8, u8) {
     let sps = ctx.si.sps;
     let cu = &ctx.cu;
     let luma = comp == 0;
-    if cu.pred != Pred::Intra {
-        return (0, 0);
-    }
-    let implicit = luma && sps.mts && !sps.explicit_mts_intra && cu.lfnst == 0 && !cu.mip;
-    let isp = luma && cu.isp != NOT_ISP;
+    let intra = cu.pred == Pred::Intra;
+    let implicit = intra && luma && sps.mts && !sps.explicit_mts_intra && cu.lfnst == 0 && !cu.mip;
+    let isp = intra && luma && cu.isp != NOT_ISP;
     if isp && cu.lfnst != 0 {
         return (0, 0);
     }
@@ -2104,7 +2189,32 @@ fn tr_types(ctx: &Ctx, tu: &Tu, comp: usize) -> (u8, u8) {
         let v = if (4..=16).contains(&lh) { 2 } else { 0 };
         return (h, v);
     }
-    let explicit = sps.explicit_mts_intra && luma;
+    let inter = cu.pred == Pred::Inter && luma;
+    let explicit = if intra {
+        sps.explicit_mts_intra && luma
+    } else {
+        sps.explicit_mts_inter && inter
+    };
+    if inter && cu.sbt != 0 {
+        let idx = cu.sbt & 0xf;
+        let pos0 = (cu.sbt >> 4) & 3 == 0;
+        // SBT_VER_HALF / SBT_VER_QUAD
+        return if idx == 1 || idx == 3 {
+            if lh > 32 {
+                (0, 0)
+            } else if pos0 {
+                (1, 2)
+            } else {
+                (2, 2)
+            }
+        } else if lw > 32 {
+            (0, 0)
+        } else if pos0 {
+            (2, 1)
+        } else {
+            (2, 2)
+        };
+    }
     if explicit && tu.mts[comp] > MTS_SKIP {
         let ind_h = (tu.mts[comp] - MTS_DST7_DST7) & 1;
         let ind_v = (tu.mts[comp] - MTS_DST7_DST7) >> 1;

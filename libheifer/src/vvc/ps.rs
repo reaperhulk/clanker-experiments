@@ -33,12 +33,46 @@ pub struct Ptl {
 /// Partition constraints indexed [intra luma, inter, intra chroma].
 pub type Constraints = [u32; 3];
 
+/// One `ref_pic_list_struct` entry; inter-layer entries count as long-term,
+/// as in vvdec.
+#[derive(Clone, Copy, Debug, Default)]
+pub struct RplEntry {
+    /// Short-term: POC delta; long-term: POC LSBs.
+    pub id: i32,
+    pub lt: bool,
+    pub ilrp: bool,
+    pub msb_present: bool,
+    pub msb_cycle: i32,
+}
+
 #[derive(Clone, Debug, Default)]
 pub struct RefPicList {
     pub num_entries: u32,
     pub ltrp_in_header: bool,
-    /// (delta POC or lsb, is long-term)
-    pub entries: Vec<(i32, bool)>,
+    pub entries: Vec<RplEntry>,
+}
+
+impl RefPicList {
+    /// vvdec's `ReferencePictureList::calcLTRefPOC`.
+    pub fn lt_ref_poc(&self, i: usize, cur_poc: i32, bits_for_poc: u32) -> i32 {
+        let e = &self.entries[i];
+        let cycle = 1i32 << bits_for_poc;
+        let mut poc = e.id & (cycle - 1);
+        if e.msb_present {
+            poc += cur_poc - e.msb_cycle * cycle - (cur_poc & (cycle - 1));
+        }
+        poc
+    }
+}
+
+/// vvdec's `isLTPocEqual`.
+pub fn lt_poc_equal(a: i32, b: i32, bits_for_poc: u32, msb_present: bool) -> bool {
+    if msb_present {
+        a == b
+    } else {
+        let mask = (1i32 << bits_for_poc) - 1;
+        (a & mask) == (b & mask)
+    }
 }
 
 #[derive(Clone, Debug, Default)]
@@ -155,6 +189,10 @@ pub struct Sps {
     pub vb_pos_x: Vec<u32>,
     pub vb_pos_y: Vec<u32>,
     pub field_seq: bool,
+    /// dpb_max_num_reorder_pics and dpb_max_dec_pic_buffering_minus1 + 1 of
+    /// the highest sublayer.
+    pub num_reorder_pics: u32,
+    pub max_dec_pic_buffering: u32,
 }
 
 impl Sps {
@@ -272,7 +310,11 @@ fn parse_ref_pic_list(
     for i in 0..num {
         if sps.inter_layer_pred && r.flag()? {
             r.uvlc_range(0, 64, "ilrp_idx")?;
-            rpl.entries.push((0, false));
+            rpl.entries.push(RplEntry {
+                lt: true,
+                ilrp: true,
+                ..Default::default()
+            });
             continue;
         }
         let long_term = if sps.long_term_refs {
@@ -291,14 +333,21 @@ fn parse_ref_pic_list(
             }
             delta += prev;
             prev = delta;
-            rpl.entries.push((delta, false));
+            rpl.entries.push(RplEntry {
+                id: delta,
+                ..Default::default()
+            });
         } else {
             let lsb = if !rpl.ltrp_in_header {
                 r.read(sps.bits_for_poc)? as i32
             } else {
                 0
             };
-            rpl.entries.push((lsb, true));
+            rpl.entries.push(RplEntry {
+                id: lsb,
+                lt: true,
+                ..Default::default()
+            });
         }
     }
     Ok(rpl)
@@ -679,6 +728,8 @@ pub fn parse_sps(r: &mut BitReader) -> Result<Sps, Error> {
             r.uvlc_range(0, u32::MAX - 1, "dpb_max_latency_increase_plus1")?;
             prev_buffering = buffering_minus1.wrapping_add(1);
             prev_reorder = reorder;
+            s.num_reorder_pics = reorder;
+            s.max_dec_pic_buffering = buffering_minus1.wrapping_add(1);
         }
     }
     let min_cb_minus2 = r.uvlc_range(
@@ -890,7 +941,7 @@ pub fn parse_sps(r: &mut BitReader) -> Result<Sps, Error> {
         let mut copy = s.rpl_lists[0].clone();
         if !s.long_term_refs {
             for rpl in &mut copy {
-                rpl.entries.retain(|e| !e.1);
+                rpl.entries.retain(|e| !e.lt);
             }
         }
         s.rpl_lists[1] = copy;
@@ -2293,6 +2344,15 @@ pub struct PicHeader {
     pub tc_offset_div2: [i32; 3],
     pub num_l0_weights: u32,
     pub num_l1_weights: u32,
+    /// -1 when the picture is not a GDR picture.
+    pub recovery_poc_cnt: i32,
+    pub pic_output_flag: bool,
+    pub mvd_l1_zero: bool,
+    pub dis_bdof: bool,
+    pub dis_dmvr: bool,
+    pub dis_prof: bool,
+    pub dis_frac_mmvd: bool,
+    pub max_num_affine_merge_cand: u32,
 }
 
 fn parse_pic_or_slice_rpl(
@@ -2339,19 +2399,47 @@ fn parse_pic_or_slice_rpl(
         }
         let ltrp_in_header = rpl[list].ltrp_in_header;
         for j in 0..rpl[list].entries.len() {
-            if !rpl[list].entries[j].1 {
+            if !rpl[list].entries[j].lt {
                 continue;
             }
             if ltrp_in_header {
-                rpl[list].entries[j].0 = r.read(sps.bits_for_poc)? as i32;
+                rpl[list].entries[j].id = r.read(sps.bits_for_poc)? as i32;
             }
-            if r.flag()? {
-                r.uvlc_range(0, 1 << (32 - sps.bits_for_poc), "delta_poc_msb_cycle_lt")?;
+            let present = r.flag()?;
+            rpl[list].entries[j].msb_present = present;
+            rpl[list].entries[j].msb_cycle = 0;
+            if present {
+                rpl[list].entries[j].msb_cycle =
+                    r.uvlc_range(0, 1 << (32 - sps.bits_for_poc), "delta_poc_msb_cycle_lt")? as i32;
             }
         }
     }
     Ok(())
 }
+
+/// One weighted-prediction entry (vvdec's `WPScalingParam`).
+#[derive(Clone, Copy, Debug)]
+pub struct WpParam {
+    pub present: bool,
+    pub log2_denom: u32,
+    pub weight: i32,
+    pub offset: i32,
+}
+
+impl Default for WpParam {
+    /// vvdec's `resetWpScaling` state.
+    fn default() -> Self {
+        Self {
+            present: false,
+            log2_denom: 0,
+            weight: 1,
+            offset: 0,
+        }
+    }
+}
+
+/// Weights per list, reference index and component.
+pub type WpTable = [[[WpParam; 3]; 16]; 2];
 
 fn parse_pred_weight_table(
     r: &mut BitReader,
@@ -2360,15 +2448,18 @@ fn parse_pred_weight_table(
     rpl: &[RefPicList; 2],
     num_active: [u32; 2],
     weights: Option<&mut (u32, u32)>,
+    mut table: Option<&mut WpTable>,
 ) -> Result<(), Error> {
     let chroma = sps.chroma_format_idc != 0;
     let luma_denom = r.uvlc_range(0, 7, "luma_log2_weight_denom")?;
+    let mut chroma_denom = 0u32;
     if chroma {
         let delta = r.svlc()?;
         check(
             !(0..=7).contains(&(luma_denom as i32 + delta)),
             "luma_log2_weight_denom + delta_chroma_log2_weight_denom",
         )?;
+        chroma_denom = (luma_denom as i32 + delta) as u32;
     }
     let mut sum = 0u32;
     let mut counts = (0u32, 0u32);
@@ -2400,14 +2491,39 @@ fn parse_pred_weight_table(
             }
         }
         for i in 0..num as usize {
+            let mut wp = [WpParam::default(); 3];
+            wp[0].present = luma_flags[i];
+            wp[0].log2_denom = luma_denom;
+            wp[0].weight = 1 << luma_denom;
+            wp[0].offset = 0;
             if luma_flags[i] {
-                r.svlc_range(-128, 127, "delta_luma_weight")?;
-                r.svlc_range(-128, 127, "luma_offset")?;
+                wp[0].weight += r.svlc_range(-128, 127, "delta_luma_weight")?;
+                wp[0].offset = r.svlc_range(-128, 127, "luma_offset")?;
+            }
+            for c in 1..3 {
+                wp[c].present = chroma_flags[i];
+                wp[c].log2_denom = chroma_denom;
+                wp[c].weight = 1 << chroma_denom;
+                wp[c].offset = 0;
             }
             if chroma_flags[i] {
-                for _ in 0..2 {
-                    r.svlc_range(-128, 127, "delta_chroma_weight")?;
-                    r.svlc_range(-512, 508, "delta_chroma_offset")?;
+                for c in 1..3 {
+                    wp[c].weight += r.svlc_range(-128, 127, "delta_chroma_weight")?;
+                    let delta = r.svlc_range(-512, 508, "delta_chroma_offset")?;
+                    wp[c].offset =
+                        (128 + delta - ((128 * wp[c].weight) >> chroma_denom)).clamp(-128, 127);
+                }
+            }
+            if let Some(t) = table.as_deref_mut()
+                && i < 16
+            {
+                t[list][i] = wp;
+            }
+        }
+        if let Some(t) = table.as_deref_mut() {
+            for i in num as usize..16 {
+                for c in 0..3 {
+                    t[list][i][c].present = false;
                 }
             }
         }
@@ -2428,6 +2544,9 @@ pub fn parse_picture_header(
     let mut ph = PicHeader {
         intra_allowed: true,
         rpl_idx: [-1, -1],
+        recovery_poc_cnt: -1,
+        pic_output_flag: true,
+        mvd_l1_zero: true,
         ..Default::default()
     };
     ph.gdr_or_irap = r.flag()?;
@@ -2454,7 +2573,7 @@ pub fn parse_picture_header(
     let min_cb_log2 = sps.log2_min_cb_size;
     ph.poc_lsb = r.read(sps.bits_for_poc)?;
     if ph.gdr {
-        r.uvlc_range(0, 1 << sps.bits_for_poc, "ph_recovery_poc_cnt")?;
+        ph.recovery_poc_cnt = r.uvlc_range(0, 1 << sps.bits_for_poc, "ph_recovery_poc_cnt")? as i32;
     }
     for &present in &sps.extra_ph_bits {
         if present {
@@ -2572,7 +2691,7 @@ pub fn parse_picture_header(
         }
     }
     if pps.output_flag_present && !ph.non_ref {
-        r.flag()?;
+        ph.pic_output_flag = r.flag()?;
     }
     if pps.rpl_info_in_ph {
         let mut rpl = ph.rpl.clone();
@@ -2732,26 +2851,43 @@ pub fn parse_picture_header(
                 }
             }
         }
+        ph.max_num_affine_merge_cand = if sps.affine {
+            sps.max_num_affine_merge_cand
+        } else {
+            u32::from(sps.sbtmvp && ph.temporal_mvp)
+        };
         if sps.mmvd_fullpel_only {
-            r.flag()?;
+            ph.dis_frac_mmvd = r.flag()?;
         }
         let presence = !pps.rpl_info_in_ph || ph.rpl[1].num_entries > 0;
+        ph.dis_bdof = if sps.bdof_control_in_ph {
+            true
+        } else {
+            !sps.bdof
+        };
+        ph.dis_dmvr = if sps.dmvr_control_in_ph {
+            true
+        } else {
+            !sps.dmvr
+        };
         if presence {
-            r.flag()?; // mvd_l1_zero
+            ph.mvd_l1_zero = r.flag()?;
             if sps.bdof_control_in_ph {
-                r.flag()?;
+                ph.dis_bdof = r.flag()?;
             }
             if sps.dmvr_control_in_ph {
-                r.flag()?;
+                ph.dis_dmvr = r.flag()?;
             }
         }
-        if sps.prof_control_in_ph {
-            r.flag()?;
-        }
+        ph.dis_prof = if sps.prof_control_in_ph {
+            r.flag()?
+        } else {
+            !sps.prof
+        };
         if (pps.weighted_pred || pps.weighted_bipred) && pps.wp_info_in_ph {
             let mut counts = (0, 0);
             let rpl = ph.rpl.clone();
-            parse_pred_weight_table(r, sps, pps, &rpl, [0, 0], Some(&mut counts))?;
+            parse_pred_weight_table(r, sps, pps, &rpl, [0, 0], Some(&mut counts), None)?;
             ph.num_l0_weights = counts.0;
             ph.num_l1_weights = counts.1;
         }
@@ -2856,6 +2992,15 @@ pub struct SliceHeader {
     pub entry_points: Vec<u32>,
     /// Byte offset of slice data within the NAL unit RBSP.
     pub data_offset: usize,
+    pub nal_type: u32,
+    pub no_output_of_prior_pics: bool,
+    pub rpl: [RefPicList; 2],
+    pub rpl_idx: [i32; 2],
+    pub num_ref_idx: [u32; 2],
+    pub cabac_init: bool,
+    pub col_from_l0: bool,
+    pub col_ref_idx: u32,
+    pub wp: WpTable,
 }
 
 pub const B_SLICE: u32 = 0;
@@ -2882,6 +3027,8 @@ pub fn parse_slice_header(
     let (sps, pps, ph) = (ctx.sps, ctx.pps, ctx.ph);
     let mut sh = SliceHeader {
         ph_in_sh,
+        nal_type,
+        rpl_idx: [-1, -1],
         ..Default::default()
     };
     if ph_in_sh {
@@ -2994,7 +3141,7 @@ pub fn parse_slice_header(
     )?;
     // IDR_W_RADL (7), IDR_N_LP (8), CRA (9), GDR (10)
     if (7..=10).contains(&nal_type) {
-        r.flag()?;
+        sh.no_output_of_prior_pics = r.flag()?;
     }
     // inherit from picture header
     let mut rpl = [RefPicList::default(), RefPicList::default()];
@@ -3134,22 +3281,28 @@ pub fn parse_slice_header(
             )?;
         }
     }
+    sh.col_from_l0 = if is_b { ph.col_from_l0 } else { true };
+    sh.col_ref_idx = if pps.rpl_info_in_ph {
+        ph.col_ref_idx
+    } else {
+        0
+    };
     if !intra {
         if pps.cabac_init_present {
-            r.flag()?;
+            sh.cabac_init = r.flag()?;
         }
-        let mut col_from_l0 = if is_b { ph.col_from_l0 } else { true };
         if ph.temporal_mvp && !pps.rpl_info_in_ph {
             if is_b {
-                col_from_l0 = r.flag()?;
+                sh.col_from_l0 = r.flag()?;
             }
+            let col_from_l0 = sh.col_from_l0;
             if (col_from_l0 && num_ref_idx[0] > 1) || (!col_from_l0 && num_ref_idx[1] > 1) {
                 let list = if col_from_l0 { 0 } else { 1 };
-                r.uvlc_range(0, num_ref_idx[list] - 1, "sh_collocated_ref_idx")?;
+                sh.col_ref_idx = r.uvlc_range(0, num_ref_idx[list] - 1, "sh_collocated_ref_idx")?;
             }
         }
         if !pps.wp_info_in_ph && ((pps.weighted_pred && is_p) || (pps.weighted_bipred && is_b)) {
-            parse_pred_weight_table(r, sps, pps, &rpl, num_ref_idx, None)?;
+            parse_pred_weight_table(r, sps, pps, &rpl, num_ref_idx, None, Some(&mut sh.wp))?;
         }
         if pps.wp_info_in_ph {
             check(
@@ -3166,6 +3319,9 @@ pub fn parse_slice_header(
             )?;
         }
     }
+    sh.rpl = rpl.clone();
+    sh.rpl_idx = rpl_idx;
+    sh.num_ref_idx = num_ref_idx;
     if !pps.qp_delta_info_in_ph {
         let delta = r.svlc()?;
         let qp = 26 + pps.init_qp_minus26 + delta;

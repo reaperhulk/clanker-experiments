@@ -8,7 +8,8 @@
  *   CHROMA  400, 420, 422 or 444
  *   PRESET  faster, fast, medium, slow or slower
  *   INPUT   planar 16-bit little-endian samples (Y, then Cb and Cr of
- *           vvenc_get_width_of_component x vvenc_get_height_of_component)
+ *           vvenc_get_width_of_component x vvenc_get_height_of_component),
+ *           one or more pictures; each becomes one input frame
  *   NAME=VALUE pairs go to vvenc_set_param (vvencapp option names). */
 #include <vvenc/vvenc.h>
 #include <vvenc/vvencCfg.h>
@@ -55,7 +56,17 @@ int main(int argc, char** argv) {
   /* libheif's still-image call: frame rate and scale 1/1. */
   params.m_FrameRate = 1;
   params.m_FrameScale = 1;
-  params.m_framesToBeEncoded = 1;
+  /* One frame per picture in INPUT. */
+  long frame_bytes = 0;
+  for (int c = 0; c < (format == VVENC_CHROMA_400 ? 1 : 3); c++)
+    frame_bytes += 2L * vvenc_get_width_of_component(format, width, c) * vvenc_get_height_of_component(format, height, c);
+  FILE* probe = fopen(argv[7], "rb");
+  if (!probe) return fail("cannot open input", argv[7]);
+  fseek(probe, 0, SEEK_END);
+  long input_bytes = ftell(probe);
+  fclose(probe);
+  if (input_bytes <= 0 || input_bytes % frame_bytes) return fail("input is not a whole number of pictures", argv[7]);
+  params.m_framesToBeEncoded = (int)(input_bytes / frame_bytes);
   /* Single-threaded for reproducible output. */
   params.m_numThreads = 0;
   params.m_maxParallelFrames = 0;
@@ -81,28 +92,36 @@ int main(int argc, char** argv) {
   FILE* in = fopen(argv[7], "rb");
   if (!in) return fail("cannot open input", argv[7]);
   int planes = format == VVENC_CHROMA_400 ? 1 : 3;
-  for (int c = 0; c < planes; c++) {
-    int pw = vvenc_get_width_of_component(format, width, c), ph = vvenc_get_height_of_component(format, height, c);
-    for (int y = 0; y < ph; y++)
-      for (int x = 0; x < pw; x++) {
-        int lo = fgetc(in), hi = fgetc(in);
-        if (lo < 0 || hi < 0) return fail("short input", argv[7]);
-        yuv->planes[c].ptr[y * yuv->planes[c].stride + x] = (int16_t)(lo | (hi << 8));
-      }
-  }
-  if (fgetc(in) != EOF) return fail("trailing input", argv[7]);
-  fclose(in);
-  yuv->cts = 0;
-  yuv->ctsValid = true;
-
   vvencAccessUnit* au = vvenc_accessUnit_alloc();
   vvenc_accessUnit_alloc_payload(au, 3 * width * height + 1024 * 1024);
   FILE* out = fopen(argv[8], "wb");
   if (!out) return fail("cannot open output", argv[8]);
   bool done = false;
-  int ret = vvenc_encode(encoder, yuv, au, &done);
-  if (ret != VVENC_OK) return fail("vvenc_encode", vvenc_get_last_error(encoder));
-  if (write_au(out, au)) return fail("write failed", argv[8]);
+  int ret;
+  for (int frame = 0;; frame++) {
+    int first = fgetc(in);
+    if (first == EOF) {
+      if (frame == 0) return fail("short input", argv[7]);
+      break;
+    }
+    ungetc(first, in);
+    for (int c = 0; c < planes; c++) {
+      int pw = vvenc_get_width_of_component(format, width, c), ph = vvenc_get_height_of_component(format, height, c);
+      for (int y = 0; y < ph; y++)
+        for (int x = 0; x < pw; x++) {
+          int lo = fgetc(in), hi = fgetc(in);
+          if (lo < 0 || hi < 0) return fail("short input", argv[7]);
+          yuv->planes[c].ptr[y * yuv->planes[c].stride + x] = (int16_t)(lo | (hi << 8));
+        }
+    }
+    yuv->cts = frame;
+    yuv->ctsValid = true;
+    vvenc_accessUnit_reset(au);
+    ret = vvenc_encode(encoder, yuv, au, &done);
+    if (ret != VVENC_OK) return fail("vvenc_encode", vvenc_get_last_error(encoder));
+    if (write_au(out, au)) return fail("write failed", argv[8]);
+  }
+  fclose(in);
   while (!done) {
     vvenc_accessUnit_reset(au);
     ret = vvenc_encode(encoder, NULL, au, &done);
