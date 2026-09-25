@@ -1325,16 +1325,19 @@ pub fn reconstruct_cu_comps(
 
 /// Intra predictions of one component of an unsplit, single-transform
 /// coding unit for several regular modes (luma modes for component 0,
-/// chroma modes otherwise), sharing the reference samples; the encoder's
-/// mode decision. Requires no MIP, MRL, ISP or BDPCM.
+/// chroma modes otherwise), sharing the reference samples, from luma
+/// reference line `mrl`; the encoder's mode decision. Requires no MIP, ISP
+/// or BDPCM.
 pub fn predict_modes(
     pic: &mut Picture,
     si: &SliceInfo,
     cu_id: u32,
     comp: usize,
     modes: &[u8],
+    mrl: u8,
 ) -> Vec<Vec<i32>> {
-    let cu = pic.cus[cu_id as usize].clone();
+    let mut cu = pic.cus[cu_id as usize].clone();
+    cu.mrl = mrl;
     let area = cu.blk[comp];
     let lw = cu.blk[0].w.max(1) as usize;
     let lh = cu.blk[0].h.max(1) as usize;
@@ -1362,6 +1365,45 @@ pub fn predict_modes(
             let mut pred = vec![0i32; (area.w * area.h) as usize];
             ctx.pred_intra_ang(comp, &mut pred, area.w, area.h, filtered);
             pred
+        })
+        .collect()
+}
+
+/// Luma MIP predictions of an unsplit, single-transform coding unit for
+/// several (mode, transposed) pairs, sharing the reference samples.
+pub fn predict_mip(
+    pic: &mut Picture,
+    si: &SliceInfo,
+    cu_id: u32,
+    modes: &[(u8, bool)],
+) -> Result<Vec<Vec<i32>>, Error> {
+    let cu = pic.cus[cu_id as usize].clone();
+    let area = cu.blk[0];
+    let bd = pic.bit_depth;
+    let mut ctx = Ctx {
+        pic,
+        si,
+        cu_id,
+        cu: cu.clone(),
+        wpp: si.sps.entropy_coding_sync,
+        top_len: 0,
+        left_len: 0,
+        unfiltered: RefBuf::new(1, 1),
+        filtered: RefBuf::new(1, 1),
+        isp_base: [RefBuf::new(1, 1), RefBuf::new(1, 1)],
+        luma_pred: Vec::new(),
+        lm_stride: 0,
+    };
+    ctx.init_pattern(cu.first_tu, 0, area, false);
+    ctx.cu.mip = true;
+    modes
+        .iter()
+        .map(|&(m, t)| {
+            ctx.cu.intra_dir[0] = m;
+            ctx.cu.mip_transposed = t;
+            let mut pred = vec![0i32; (area.w * area.h) as usize];
+            pred_mip(&ctx, 0, &mut pred, area.w, area.h, bd)?;
+            Ok(pred)
         })
         .collect()
 }

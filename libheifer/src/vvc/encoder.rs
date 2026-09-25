@@ -185,8 +185,8 @@ fn write_sps(s: &Settings, width: u32, height: u32) -> Vec<u8> {
     w.flag(false); // sps_gpm_enabled_flag
     w.uvlc(0); // sps_log2_parallel_merge_level_minus2
     w.flag(false); // sps_isp_enabled_flag
-    w.flag(false); // sps_mrl_enabled_flag
-    w.flag(false); // sps_mip_enabled_flag
+    w.flag(true); // sps_mrl_enabled_flag
+    w.flag(true); // sps_mip_enabled_flag
     if s.chroma != 0 {
         w.flag(true); // sps_cclm_enabled_flag
     }
@@ -439,6 +439,11 @@ enum Node {
 #[derive(Clone, Default)]
 struct CuData {
     intra_dir: [u8; 2],
+    /// Matrix intra prediction (intra_dir[0] is then the MIP mode).
+    mip: bool,
+    mip_transposed: bool,
+    /// Reference line index (0, 1 or 2 for lines 0, 1 and 3).
+    mrl: u8,
     lfnst: u8,
     cbf: u8,
     coeff: [Vec<i32>; 3],
@@ -598,8 +603,7 @@ impl<'a, 's> Enc<'a, 's> {
     /// Sets a coding unit's decided modes and coefficients and
     /// reconstructs it.
     fn apply(&self, pic: &mut Picture, cu_id: u32, d: &CuData) -> Result<(), Error> {
-        pic.cus[cu_id as usize].intra_dir = d.intra_dir;
-        pic.cus[cu_id as usize].lfnst = d.lfnst;
+        set_modes(pic, cu_id, d);
         let tu = pic.cus[cu_id as usize].first_tu as usize;
         set_coeffs(pic, tu, d.cbf, &d.coeff);
         recon::reconstruct_cu(pic, self.si, cu_id)
@@ -646,7 +650,7 @@ impl<'a, 's> Enc<'a, 's> {
                 .into_iter()
                 .filter(|m| !rough.iter().any(|r| r.1 == *m))
                 .collect();
-            let preds = recon::predict_modes(pic, self.si, cu_id, 0, &modes);
+            let preds = recon::predict_modes(pic, self.si, cu_id, 0, &modes, 0);
             for (m, pred) in modes.into_iter().zip(preds) {
                 if rough.iter().any(|r| r.1 == m) {
                     continue;
@@ -685,23 +689,95 @@ impl<'a, 's> Enc<'a, 's> {
             1 => 2,
             _ => 3,
         };
+        // Rough MIP mode decision.
+        let num_mip = mip_modes(lb.w, lb.h) as u8;
+        let mip_list: Vec<(u8, bool)> =
+            (0..num_mip).flat_map(|m| [(m, false), (m, true)]).collect();
+        let mip_preds = recon::predict_mip(pic, self.si, cu_id, &mip_list)?;
+        let mip_bits = 2.0 + f64::from(num_mip).log2();
+        let mut mip_rough: Vec<(f64, u8, bool)> = mip_list
+            .iter()
+            .zip(&mip_preds)
+            .map(|(&(m, t), pred)| {
+                let satd = satd_blk(pred, &orig, lb.w as usize, lb.h as usize) as f64;
+                (satd + sad_lambda * mip_bits, m, t)
+            })
+            .collect();
+        mip_rough.sort_by(|a, b| a.0.total_cmp(&b.0));
         // Full rate-distortion over the best candidates, luma only, chroma DM.
-        let mut best: Option<(f64, u8, CuData, Estimator)> = None;
-        let cands: Vec<u8> = rough.iter().take(n_full).map(|r| r.1).collect();
-        for &m in &cands {
-            let mut d = CuData {
-                intra_dir: [m, DM_CHROMA],
-                ..Default::default()
-            };
-            let (cost, e) = self.rd_cu(pic, cu_id, &mut d, est, fmt.chroma != 0)?;
-            if best.as_ref().is_none_or(|b| cost < b.0) {
-                best = Some((cost, m, d, e));
+        let mut cands: Vec<(f64, CuData)> = rough
+            .iter()
+            .take(n_full)
+            .map(|&(c, m)| {
+                (
+                    c,
+                    CuData {
+                        intra_dir: [m, DM_CHROMA],
+                        ..Default::default()
+                    },
+                )
+            })
+            .collect();
+        let worst = cands.last().map_or(f64::MAX, |c| c.0);
+        for &(c, m, t) in mip_rough.iter().take(n_full.min(2)) {
+            if c < worst * 1.05 {
+                cands.push((
+                    c,
+                    CuData {
+                        intra_dir: [m, DM_CHROMA],
+                        mip: true,
+                        mip_transposed: t,
+                        ..Default::default()
+                    },
+                ));
             }
         }
-        let (mut cost, luma, mut data, mut e) = best.ok_or(Error::NoPicture)?;
+        // Other reference lines, with the non-planar most probable modes.
+        if lb.y & ((1 << pic.ctu_log2) - 1) != 0 {
+            let mut mrl_best: Option<(f64, u8, u8)> = None;
+            for mrl in 1..=2u8 {
+                let preds = recon::predict_modes(pic, self.si, cu_id, 0, &mpm[1..], mrl);
+                for (i, pred) in preds.iter().enumerate() {
+                    let satd = satd_blk(pred, &orig, lb.w as usize, lb.h as usize) as f64;
+                    let c = satd + sad_lambda * (3.0 + (i + 1).min(4) as f64);
+                    if mrl_best.is_none_or(|b| c < b.0) {
+                        mrl_best = Some((c, mpm[i + 1], mrl));
+                    }
+                }
+            }
+            if let Some((c, m, mrl)) = mrl_best
+                && c < worst * 1.05
+            {
+                cands.push((
+                    c,
+                    CuData {
+                        intra_dir: [m, DM_CHROMA],
+                        mrl,
+                        ..Default::default()
+                    },
+                ));
+            }
+        }
+        let mut best: Option<(f64, CuData, Estimator)> = None;
+        for (_, mut d) in cands {
+            let (cost, e) = self.rd_cu(pic, cu_id, &mut d, est, fmt.chroma != 0)?;
+            if best.as_ref().is_none_or(|b| cost < b.0) {
+                best = Some((cost, d, e));
+            }
+        }
+        let (mut cost, mut data, mut e) = best.ok_or(Error::NoPicture)?;
+        let luma = data.intra_dir[0];
+        let with_luma = |intra_dir: [u8; 2], data: &CuData| CuData {
+            intra_dir,
+            mip: data.mip,
+            mip_transposed: data.mip_transposed,
+            mrl: data.mrl,
+            ..Default::default()
+        };
         // Chroma mode decision with the chosen luma mode.
         if fmt.chroma != 0 {
-            let luma_col = luma;
+            set_modes(pic, cu_id, &data);
+            let luma_col = recon::co_located_intra_luma_mode(pic, self.si, cu_id);
             let mut list = [PLANAR, VER, HOR, DC];
             for m in list.iter_mut() {
                 if *m == luma_col {
@@ -709,12 +785,11 @@ impl<'a, 's> Enc<'a, 's> {
                 }
             }
             let modes: Vec<u8> = std::iter::once(DM_CHROMA).chain(list).collect();
-            pic.cus[cu_id as usize].intra_dir[0] = luma;
             let mut scores = vec![0f64; modes.len()];
             for c in 1..3 {
                 let b = pic.cus[cu_id as usize].blk[c];
                 let orig = read_block(&self.src[c], &b);
-                let preds = recon::predict_modes(pic, self.si, cu_id, c, &modes);
+                let preds = recon::predict_modes(pic, self.si, cu_id, c, &modes, 0);
                 for (sc, pred) in scores.iter_mut().zip(preds) {
                     *sc += satd_blk(&pred, &orig, b.w as usize, b.h as usize) as f64;
                 }
@@ -725,7 +800,7 @@ impl<'a, 's> Enc<'a, 's> {
             let mut modes = modes;
             let tu = pic.cus[cu_id as usize].first_tu as usize;
             for lm in [LM_CHROMA, MDLM_L, MDLM_T] {
-                pic.cus[cu_id as usize].intra_dir = [luma, lm];
+                pic.cus[cu_id as usize].intra_dir[1] = lm;
                 set_coeffs(pic, tu, 0, &Default::default());
                 recon::reconstruct_cu_comps(pic, self.si, cu_id, 6)?;
                 let mut sc = 0f64;
@@ -756,10 +831,7 @@ impl<'a, 's> Enc<'a, 's> {
             }
             let cm = cbest.map_or(DM_CHROMA, |b| b.1);
             if cm != DM_CHROMA {
-                let mut d = CuData {
-                    intra_dir: [luma, cm],
-                    ..Default::default()
-                };
+                let mut d = with_luma([luma, cm], &data);
                 let (c2, e2) = self.rd_cu(pic, cu_id, &mut d, est, true)?;
                 if c2 < cost {
                     cost = c2;
@@ -771,9 +843,8 @@ impl<'a, 's> Enc<'a, 's> {
         // LFNST with the chosen modes.
         for lfnst in 1..=2 {
             let mut d = CuData {
-                intra_dir: data.intra_dir,
                 lfnst,
-                ..Default::default()
+                ..with_luma(data.intra_dir, &data)
             };
             let (c2, e2) = self.rd_cu(pic, cu_id, &mut d, est, true)?;
             if c2 < cost {
@@ -799,8 +870,7 @@ impl<'a, 's> Enc<'a, 's> {
         _chroma: bool,
     ) -> Result<(f64, Estimator), Error> {
         let tu = pic.cus[cu_id as usize].first_tu as usize;
-        pic.cus[cu_id as usize].intra_dir = d.intra_dir;
-        pic.cus[cu_id as usize].lfnst = d.lfnst;
+        set_modes(pic, cu_id, d);
         set_coeffs(pic, tu, 0, &Default::default());
         recon::reconstruct_cu(pic, self.si, cu_id)?;
         let blk = pic.tus[tu].blk;
@@ -819,7 +889,7 @@ impl<'a, 's> Enc<'a, 's> {
                 .map(|(&o, &p)| i32::from(o) - i32::from(p))
                 .collect();
             let qp = self.comp_qp(c);
-            let tr = if c == 0 && d.lfnst == 0 {
+            let tr = if c == 0 && d.lfnst == 0 && !d.mip {
                 implicit_mts(b.w, b.h)
             } else {
                 (0, 0)
@@ -829,7 +899,8 @@ impl<'a, 's> Enc<'a, 's> {
                 if b.w < 4 || b.h < 4 {
                     return Ok((f64::MAX, est.clone()));
                 }
-                fwd_lfnst(&mut tc, b.w, b.h, d.intra_dir[0], d.lfnst);
+                let mode = if d.mip { PLANAR } else { d.intra_dir[0] };
+                fwd_lfnst(&mut tc, b.w, b.h, mode, d.lfnst);
             }
             let levels = if self.rdoq {
                 let signs = tc.iter().map(|&v| v < 0);
@@ -1349,6 +1420,15 @@ fn rdoq(
     best.1.unwrap_or_else(|| vec![0; n])
 }
 
+fn set_modes(pic: &mut Picture, cu_id: u32, d: &CuData) {
+    let cu = &mut pic.cus[cu_id as usize];
+    cu.intra_dir = d.intra_dir;
+    cu.mip = d.mip;
+    cu.mip_transposed = d.mip_transposed;
+    cu.mrl = d.mrl;
+    cu.lfnst = d.lfnst;
+}
+
 fn set_coeffs(pic: &mut Picture, tu: usize, cbf: u8, coeff: &[Vec<i32>; 3]) {
     let cu = pic.tus[tu].cu as usize;
     pic.cus[cu].root_cbf = cbf != 0;
@@ -1526,6 +1606,25 @@ fn split_ok(pic: &Picture, area: &UnitArea, split: Split) -> bool {
     pic.fmt.chroma == 0 || ((w >> sx) >= 4 && (h >> sy) >= 4)
 }
 
+/// intra_luma_ref_idx, coded below the first row of a CTU.
+fn write_mrl<S: BinSink>(s: &mut S, pic: &Picture, cu: &Cu, mrl: u8) {
+    if cu.ly() & ((1 << pic.ctu_log2) - 1) != 0 {
+        s.bin(ctx::MULTI_REF_LINE_IDX, u32::from(mrl != 0));
+        if mrl != 0 {
+            s.bin(ctx::MULTI_REF_LINE_IDX + 1, u32::from(mrl == 2));
+        }
+    }
+}
+
+/// The number of MIP modes for a block size.
+fn mip_modes(w: i32, h: i32) -> u32 {
+    match super::ctu::mip_size_id(w, h) {
+        0 => 16,
+        1 => 8,
+        _ => 6,
+    }
+}
+
 /// truncated binary code (`trunc_bin`).
 fn write_trunc_bin<S: BinSink>(s: &mut S, symbol: u32, max: u32) {
     let thresh = tb_max(max);
@@ -1543,11 +1642,24 @@ fn write_cu<S: BinSink>(s: &mut S, pic: &Picture, si: &SliceInfo, cu_id: u32, d:
     let cu = &pic.cus[cu_id as usize];
     // intra_luma_mpm_flag, intra_luma_not_planar_flag, intra_luma_mpm_idx,
     // intra_luma_mpm_remainder
+    // intra_mip_flag, intra_mip_transposed_flag, intra_mip_mode
+    let mut ctx_id = usize::from(cu.left.is_some_and(|l| pic.cus[l as usize].mip))
+        + usize::from(cu.above.is_some_and(|a| pic.cus[a as usize].mip));
+    if cu.lw() > 2 * cu.lh() || cu.lh() > 2 * cu.lw() {
+        ctx_id = 3;
+    }
+    s.bin(ctx::MIP_FLAG + ctx_id, u32::from(d.mip));
     let mut mpm = intra_mpms(pic, cu_id, false);
     let mode = cu.intra_dir[0];
-    if let Some(idx) = mpm.iter().position(|&m| m == mode) {
-        s.bin(ctx::I_PRED_MODE0, 1);
-        s.bin(ctx::INTRA_LUMA_PLANAR_FLAG + 1, u32::from(idx != 0));
+    if d.mip {
+        s.ep(u32::from(d.mip_transposed));
+        write_trunc_bin(s, u32::from(mode), mip_modes(cu.lw(), cu.lh()));
+    } else if let Some(idx) = mpm.iter().position(|&m| m == mode) {
+        write_mrl(s, pic, cu, d.mrl);
+        if d.mrl == 0 {
+            s.bin(ctx::I_PRED_MODE0, 1);
+            s.bin(ctx::INTRA_LUMA_PLANAR_FLAG + 1, u32::from(idx != 0));
+        }
         if idx != 0 {
             for _ in 1..idx {
                 s.ep(1);
@@ -1557,6 +1669,7 @@ fn write_cu<S: BinSink>(s: &mut S, pic: &Picture, si: &SliceInfo, cu_id: u32, d:
             }
         }
     } else {
+        write_mrl(s, pic, cu, 0);
         s.bin(ctx::I_PRED_MODE0, 0);
         mpm.sort_unstable();
         let mut sym = u32::from(mode);
@@ -1622,7 +1735,11 @@ fn write_cu<S: BinSink>(s: &mut S, pic: &Picture, si: &SliceInfo, cu_id: u32, d:
 /// these coefficients (`residual_lfnst_mode`): no block's last significant
 /// scan position beyond the LFNST region, and one beyond DC.
 fn lfnst_signalled(pic: &Picture, cu_id: u32, d: &CuData) -> bool {
-    let tu = &pic.tus[pic.cus[cu_id as usize].first_tu as usize];
+    let cu = &pic.cus[cu_id as usize];
+    if d.mip && !(cu.lw() >= 16 && cu.lh() >= 16) {
+        return false;
+    }
+    let tu = &pic.tus[cu.first_tu as usize];
     let mut violates = false;
     let mut last_pos = false;
     for comp in 0..pic.fmt.num_comp() {

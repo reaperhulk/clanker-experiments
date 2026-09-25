@@ -70,6 +70,7 @@ SUITES = {
         'tools/test_avc_builtin_encoding.py --reference-build .build/reference-x264',
         'tools/test_vvc_encoding.py --reference-build .build/reference-vvc',
         'tools/test_vvc_builtin_encoding.py --reference-build .build/reference-vvc',
+        'tools/test_vvc_encoder_quality.py --reference-build .build/reference-vvc',
         'tools/test_plugin_encoding.py --reference-build .build/reference-av1',
         'tools/test_mini_encoding.py --reference-build .build/reference-av1',
         'tools/test_debug_writing.py --reference-build .build/reference',

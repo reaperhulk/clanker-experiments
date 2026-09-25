@@ -55,6 +55,16 @@ MUTATIONS = [
     ('avc_encode_level_frame_size', 'src/avc_encoder.rs', '(10, 99, 396, 64),', '(10, 396, 396, 64),', 'avc_builtin_encoding'),
     ('avc_encode_constraint_flags', 'src/avc_encoder.rs', 'w.bytes[1] = if baseline { 0xc0 } else { 0x40 }', 'w.bytes[1] = if baseline { 0x80 } else { 0x40 }', 'avc_builtin_encoding'),
     ('avc_encode_chroma_formats', 'crates/capi/src/builtin_avc_encoder.rs', 'if !matches!(chroma, 0 | 1) {', 'if !matches!(chroma, 0 | 1 | 2) {', 'avc_builtin_encoding'),
+    ('vvc_encode_rounded_size', 'crates/capi/src/builtin_vvc_encoder.rs', 'out_width.write(width.wrapping_add(7) & !7);', 'out_width.write(width.wrapping_add(3) & !3);', 'vvc_builtin_encoding'),
+    ('vvc_encode_bit_depth', 'crates/capi/src/builtin_vvc_encoder.rs', 'if img.plane(0).map_or(-1, |p| c_int::from(p.bit_depth)) != 8 {', 'if img.plane(0).map_or(-1, |p| c_int::from(p.bit_depth)) < 8 {', 'vvc_builtin_encoding'),
+    ('vvc_encode_quality_default', 'crates/capi/src/builtin_vvc_encoder.rs', '            default_value: 50,', '            default_value: 51,', 'vvc_builtin_encoding'),
+    ('vvc_encode_lossless_parameter', 'crates/capi/src/builtin_vvc_encoder.rs', '    } else if named(name, c"lossless") {\n        unsafe { set_lossless(p, value) }', '    } else if named(name, c"lossles") {\n        unsafe { set_lossless(p, value) }', 'vvc_builtin_encoding'),
+    ('vvc_encode_mip_mode_count', 'src/vvc/encoder.rs', '        write_trunc_bin(s, u32::from(mode), mip_modes(cu.lw(), cu.lh()));', '        write_trunc_bin(s, u32::from(mode), mip_modes(cu.lw(), cu.lh()) + 1);', 'vvc_encoder_quality'),
+    ('vvc_encode_level_sample_rate', 'src/vvc/encoder.rs', '(16, 36_864, 552_960),', '(16, 36_864, 5_529_600),', 'vvc_builtin_encoding'),
+    ('vvc_encode_profile', 'src/vvc/encoder.rs', 'if chroma <= 1 { 1 } else { 33 }', 'if chroma <= 1 { 65 } else { 33 }', 'vvc_builtin_encoding'),
+    ('vvc_encode_cbf_context', 'src/vvc/encoder.rs', '    s.bin(ctx::QT_CBF0, u32::from(cbf(0)));', '    s.bin(ctx::QT_CBF0 + 1, u32::from(cbf(0)));', 'vvc_encoder_quality'),
+    ('vvc_encode_rdoq_distortion', 'src/vvc/encoder.rs', '        step2: step * step / 2f64.powf(2.0 * gain),', '        step2: step * step / 2f64.powf(2.0 * gain) / 16.0,', 'vvc_encoder_quality'),
+    ('vvc_encode_chroma_weight', 'src/vvc/encoder.rs', '            2f64.powf(f64::from(self.qp - self.comp_qp(comp)) / 3.0)', '            2f64.powf(f64::from(self.qp - self.comp_qp(comp)) / 3.0) * 0.0', 'vvc_encoder_quality'),
     ('hevc_encode_rounded_size', 'crates/capi/src/builtin_hevc_encoder.rs', '((s + 1) & !1).max(64)', '((s + 1) & !1).max(32)', 'hevc_builtin_encoding'),
     ('hevc_encode_bit_depths', 'crates/capi/src/builtin_hevc_encoder.rs', '    if matches!(bpp, 8 | 10 | 12) {', '    if matches!(bpp, 8 | 10) {', 'hevc_builtin_encoding'),
     ('hevc_encode_default_tu_depth', 'crates/capi/src/builtin_hevc_encoder.rs', 'set_integer(p, c"tu-intra-depth".as_ptr(), 2);', 'set_integer(p, c"tu-intra-depth".as_ptr(), 3);', 'hevc_builtin_encoding'),
@@ -497,7 +507,8 @@ def main():
         # A refused plugin falls back to the default AVC encoder (x264 in the oracle).
         if suite in ("avc_builtin_encoding", "avc_encoding"):
             return str(Path(args.x264_reference_build).resolve())
-        if suite == "vvc":
+        # The VVC encoding suites fall back to (or compare with) vvenc.
+        if suite in ("vvc", "vvc_builtin_encoding", "vvc_encoding", "vvc_encoder_quality"):
             return str(Path(args.vvc_reference_build).resolve())
         # The encoder oracle has libheif's JPEG and OpenJPEG encoders, like the candidate.
         if suite in ("other_encoding", "encoding"):

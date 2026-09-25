@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Rate/distortion of a built-in encoder against libheif's native plugin (default preset and tune):
-HEVC (hpvca against x265, read back by libde265) or AVC (rusty_h264 against x264, read back by
-OpenH264). Both encode the same RGB photographs through libheif at each quality, the oracle
+HEVC (hpvca against x265, read back by libde265), AVC (rusty_h264 against x264, read back by
+OpenH264) or VVC (libheifer's encoder against vvenc, read back by vvdec). Both encode the same RGB photographs through libheif at each quality, the oracle
 decodes both, and luma PSNR against the source gives Bjontegaard rate differences. Not run in CI
 (needs network access for the Kodak test images)."""
 import os
@@ -35,14 +35,15 @@ def bd_rate(r1, p1, r2, p2):
 
 def main():
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument('--codec', choices=['hevc', 'avc'], default='hevc')
+    p.add_argument('--codec', choices=['hevc', 'avc', 'vvc'], default='hevc')
     p.add_argument('--reference-build')
     p.add_argument('--candidate', default='target/release/libheifer.so')
     p.add_argument('--work')
     p.add_argument('--output')
     a = p.parse_args()
-    native, builtin, fmt = {'hevc': ('x265', 'libheifer-hevc', 1), 'avc': ('x264', 'libheifer-avc', 2)}[a.codec]
-    a.reference_build = a.reference_build or f'.build/reference-{native}'
+    native, builtin, fmt = {'hevc': ('x265', 'libheifer-hevc', 1), 'avc': ('x264', 'libheifer-avc', 2),
+                            'vvc': ('vvenc', 'libheifer-vvc', 5)}[a.codec]
+    a.reference_build = a.reference_build or ('.build/reference-vvc' if a.codec == 'vvc' else f'.build/reference-{native}')
     a.work = a.work or f'.build/{a.codec}-rd'
     a.output = a.output or f'.build/{a.codec}-rd-report.json'
     env = dict(os.environ, RD_FORMAT=str(fmt))
