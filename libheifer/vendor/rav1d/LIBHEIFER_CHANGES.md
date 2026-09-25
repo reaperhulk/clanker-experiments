@@ -15,4 +15,9 @@ used, including the x86-64 (nasm) and AArch64 assembly.
   libdav1d in the same process. The `#[no_mangle]` data tables in
   `src/tables.rs` are kept: the assembly refers to them by name.
 
+- `src/arm/asm-offsets.h` is restored from the v1.1.0 source tree (commit
+  `782dab2135ea64a057c097088a13eb8ed3cc3320`). The published package excludes
+  `*.h`, but the AArch64 assembly includes this header, so the crates.io
+  package cannot build its ARM assembly (for example on macOS arm64).
+
 No other source is changed.
