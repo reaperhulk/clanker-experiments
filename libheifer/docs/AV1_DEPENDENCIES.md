@@ -3,14 +3,17 @@
 The AV1 decoder is rav1d 1.1.0, vendored in `vendor/rav1d` from the crates.io
 package with its default features, including the dav1d x86-64 (nasm) and
 AArch64 assembly. Upstream keeps its Rust API crate-private and exposes only a
-dav1d-compatible `extern "C"` interface, so the vendored copy carries two
+dav1d-compatible `extern "C"` interface, so the vendored copy carries these
 changes (`vendor/rav1d/LIBHEIFER_CHANGES.md`):
 
 - `api.rs` adds a safe owned Rust API over the crate's internal functions,
   copying complete active sample planes;
 - the dav1d C API functions lose `#[no_mangle]`, so the C API library does
   not export `dav1d_*` entry points that could clash with a real libdav1d.
-  The data tables the assembly refers to by name stay exported.
+  The data tables the assembly refers to by name stay exported;
+- `src/arm/asm-offsets.h`, which the published package omits (it excludes
+  `*.h`) but the AArch64 assembly includes, is restored from the v1.1.0
+  source tree.
 
 libheifer itself forbids `unsafe` code. rav1d contains its own unsafe Rust
 and assembly and is not described as entirely safe Rust. Its x86 assembly

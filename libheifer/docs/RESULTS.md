@@ -2078,8 +2078,9 @@ rav1e, av-scenechange and zlib-rs come from crates.io unmodified:
 
 Dependency assembly is allowed. rav1d is vendored from its crates.io package
 with default features, including its assembly. Its only changes are an added
-safe Rust API and the removal of its C ABI exports; upstream's Rust API is
-crate-private. libheifer again forbids `unsafe`. The C API crate links with
+safe Rust API (upstream's Rust API is crate-private), the removal of its C
+ABI exports, and restoring the AArch64 `asm-offsets.h` header that the
+published package omits. libheifer again forbids `unsafe`. The C API crate links with
 `-Bsymbolic` on ELF targets, because rav1d's assembly uses PC-relative
 references to its exported tables.
 
