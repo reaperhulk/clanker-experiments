@@ -232,6 +232,55 @@ jobs:
           include-hidden-files: true
           path: libheifer/.build/*report.json
 
+  windows-differential:
+    # The base-reference C-client suites on Windows: MSYS2 MinGW-w64 gcc clients,
+    # a MinGW-built libheif oracle (libde265, pinned brotli and zlib) and the
+    # candidate built for x86_64-pc-windows-gnu.
+    name: Independent C clients (Windows)
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+        working-directory: libheifer
+    env:
+      CMAKE_GENERATOR: Ninja
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: dtolnay/rust-toolchain@1.94.1
+        with:
+          targets: x86_64-pc-windows-gnu
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          path-type: inherit
+          install: git mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake mingw-w64-x86_64-ninja mingw-w64-x86_64-python mingw-w64-x86_64-nasm
+      - run: |
+          [ -e /mingw64/bin/cc.exe ] || cp /mingw64/bin/gcc.exe /mingw64/bin/cc.exe
+          which python cc cmake cargo
+      - id: key
+        run: echo "key=libheifer-oracle-windows-$(git rev-parse HEAD:libheifer/tests/upstream)-${{ hashFiles('libheifer/tools/build_reference.py') }}" >> "$GITHUB_OUTPUT"
+      - id: cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            libheifer/.build/reference
+            libheifer/.build/*-install
+          key: ${{ steps.key.outputs.key }}
+      - if: steps.cache.outputs.cache-hit != 'true'
+        run: python tools/build_reference.py --hevc -j 4
+      # The loader finds the oracle's and candidate's DLLs and their dependencies on PATH.
+      - run: |
+          export PATH="$PWD/target/x86_64-pc-windows-gnu/release:$PWD/.build/reference/libheif:$(ls -d $PWD/.build/*-install/bin | tr '\n' ':')$PATH"
+          python tools/ci.py windows --keep-going
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: libheifer-differential-windows
+          include-hidden-files: true
+          path: libheifer/.build/*report.json
+
   mutations:
     name: Deliberate mutations (${{ matrix.shard }}/10)
     needs: references

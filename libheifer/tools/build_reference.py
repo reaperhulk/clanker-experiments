@@ -19,7 +19,19 @@ RAV1E = "1fe82de02510767539e89b2ee6fa846920ae2686"  # v0.8.1
 VVDEC = "649f0b2fafee977c998d7e4d674f8b88d952e3a3"  # v3.2.0
 VVENC = "9428ea8636ae7f443ecde89999d16b2dfc421524"  # v1.14.0
 X264 = "b35605ace3ddf7c1a5d67a2eb553f034aef41d55"  # the AVC fixture generator revision
-SO = ".dylib" if sys.platform == "darwin" else ".so"  # shared library suffix
+SO = {"darwin": ".dylib", "win32": ".dll"}.get(sys.platform, ".so")  # shared library suffix
+
+
+def link_library(install, *names):
+    """The library to link for a dependency built into `install`: the import
+    library (lib<name>.dll.a) under MinGW, else the shared library."""
+    if sys.platform == "win32":
+        for name in names:
+            found = sorted((install / "lib").glob(f"lib{name}*.dll.a"), key=lambda p: len(p.name))
+            if found:
+                return found[0]
+        raise SystemExit(f"no import library for {names} in {install}")
+    return install / f"lib/lib{names[0]}{SO}"
 X265 = "1d117bed4747758b51bd2c124d738527e30392cb"  # 4.1
 BROTLI = "ed738e842d2fbdf2d6459e39267a633c4a9b2f5d"  # v1.1.0
 ZLIB = "51b7f2abdade71cd9bb0e7a373ef2610ec6f9daf"  # v1.3.1
@@ -103,10 +115,10 @@ def main():
     # --fp-contract asks for the platform default.
     contract = [] if a.fp_contract else ["-DCMAKE_C_FLAGS=-ffp-contract=off", "-DCMAKE_CXX_FLAGS=-ffp-contract=off"]
     flags = [*contract, "-DCMAKE_DISABLE_FIND_PACKAGE_Brotli=OFF", "-DCMAKE_REQUIRE_FIND_PACKAGE_Brotli=ON", "-DCMAKE_REQUIRE_FIND_PACKAGE_ZLIB=ON",
-             f"-DZLIB_INCLUDE_DIR={zinstall / 'include'}", f"-DZLIB_LIBRARY={zinstall / f'lib/libz{SO}'}",
+             f"-DZLIB_INCLUDE_DIR={zinstall / 'include'}", f"-DZLIB_LIBRARY={link_library(zinstall, 'z', 'zlib')}",
              f"-DBROTLI_DEC_INCLUDE_DIR={binstall / 'include'}", f"-DBROTLI_ENC_INCLUDE_DIR={binstall / 'include'}",
-             f"-DBROTLI_COMMON_LIB={binstall / f'lib/libbrotlicommon{SO}'}",
-             f"-DBROTLI_DEC_LIB={binstall / f'lib/libbrotlidec{SO}'}", f"-DBROTLI_ENC_LIB={binstall / f'lib/libbrotlienc{SO}'}",
+             f"-DBROTLI_COMMON_LIB={link_library(binstall, 'brotlicommon')}",
+             f"-DBROTLI_DEC_LIB={link_library(binstall, 'brotlidec')}", f"-DBROTLI_ENC_LIB={link_library(binstall, 'brotlienc')}",
              f"-DWITH_JPEG_DECODER={'ON' if a.jpeg else 'OFF'}", "-DWITH_JPEG_ENCODER=OFF",
              "-DWITH_JPEG_DECODER_PLUGIN=OFF", "-DWITH_JPEG_ENCODER_PLUGIN=OFF",
              f"-DWITH_OpenJPEG_DECODER={'ON' if a.jpeg2000 else 'OFF'}",
@@ -126,7 +138,7 @@ def main():
         run(cmake, "-S", decoder, "-B", dbuild, "-DCMAKE_BUILD_TYPE=Release", f"-DCMAKE_INSTALL_PREFIX={install}", "-DENABLE_SDL=OFF", "-DENABLE_ENCODER=OFF")
         run(cmake, "--build", dbuild, "-j", a.j)
         run(cmake, "--install", dbuild)
-        flags += [f"-DLIBDE265_INCLUDE_DIR={install / 'include'}", f"-DLIBDE265_LIBRARY={install / f'lib/libde265{SO}'}"]
+        flags += [f"-DLIBDE265_INCLUDE_DIR={install / 'include'}", f"-DLIBDE265_LIBRARY={link_library(install, 'de265')}"]
     if a.av1:
         decoder = build.parent / "dav1d-source"
         install = build.parent / "dav1d-install"
@@ -336,10 +348,17 @@ def main():
             if enabled and library not in needed:
                 raise SystemExit(f"libheif was built without {library}")
     if SO != ".so":
-        # The differential suites link the oracle as libheif/libheif.so.
+        # The differential suites link the oracle as libheif/libheif.so: a
+        # symlink on macOS, a copy of the DLL under MinGW (ld links DLLs directly).
         link = build / "libheif/libheif.so"
         link.unlink(missing_ok=True)
-        link.symlink_to(f"libheif{SO}")
+        if sys.platform == "win32":
+            dll = next(build.rglob("libheif*.dll"))
+            shutil.copy2(dll, link)
+            if dll.parent != link.parent:
+                shutil.copy2(dll, link.parent / dll.name)
+        else:
+            link.symlink_to(f"libheif{SO}")
 
 
 if __name__ == "__main__":
