@@ -35,6 +35,8 @@ def corpus(_source):
                     cases.append((f'brotli-corrupt-{len(data)}-{at}',rewrite(synthetic(kind=b'mime',metadata=bytes(bad)),encoding)))
                 for tail in [b'\0',b'junk']:
                     cases.append((f'brotli-trailing-{len(data)}-{tail!r}',rewrite(synthetic(kind=b'mime',metadata=payload+tail),encoding)))
+    # Decoder ring-buffer growth decides BLOCK_LENGTH_1 versus BLOCK_LENGTH_2 here.
+    cases.append(('brotli-block-length',rewrite(synthetic(kind=b'mime',metadata=brotli_fixtures.BLOCK_LENGTH_STREAM),b'br')))
     return cases
 if __name__=='__main__':
     test_context.corpus=corpus;test_context.SCOPE=__doc__

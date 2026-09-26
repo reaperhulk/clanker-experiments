@@ -51,6 +51,8 @@ def corpus():
         patterns=[bytes(length),(b'abacabadabacaba'*((length+14)//15))[:length],rng.randbytes(length),bytes(rng.randrange(8) for _ in range(length)),bytes(i%256 for i in range(length))]
         for pattern,data in enumerate(patterns):
             for method in [3,4,5]:add(f'compress-boundary-{length}-{pattern}-{method}',2,method,param=b'application/octet-stream',data=data)
+    # Inputs that each quality-11 brotli parity patch changes (brotli_fixtures).
+    for label,data in brotli_fixtures.encoder_inputs().items():add(f'compress-brotli-{label}',2,5,param=b'application/octet-stream',data=data)
     for n in range(100):
         alphabet=rng.randrange(2,257);data=bytes(rng.randrange(alphabet) for _ in range(rng.randrange(65537)))
         for method in [3,4,5]:add(f'compress-random-{n}-{method}',2,method,param=b'',data=data)
