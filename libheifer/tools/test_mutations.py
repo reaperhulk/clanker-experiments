@@ -54,7 +54,7 @@ MUTATIONS = [
     ('avc_encode_ultrafast_baseline', 'crates/capi/src/builtin_avc_encoder.rs', 'baseline: ultrafast,', 'baseline: false,', 'avc_builtin_encoding'),
     ('avc_encode_level_frame_size', 'src/avc_encoder.rs', '(10, 99, 396, 64),', '(10, 396, 396, 64),', 'avc_builtin_encoding'),
     ('avc_encode_constraint_flags', 'src/avc_encoder.rs', 'w.bytes[1] = if baseline { 0xc0 } else { 0x40 }', 'w.bytes[1] = if baseline { 0x80 } else { 0x40 }', 'avc_builtin_encoding'),
-    ('avc_encode_chroma_formats', 'crates/capi/src/builtin_avc_encoder.rs', 'if !matches!(chroma, 0 | 1) {', 'if !matches!(chroma, 0 | 1 | 2) {', 'avc_builtin_encoding'),
+    ('avc_encode_chroma_formats', 'crates/capi/src/builtin_avc_encoder.rs', 'if !matches!(chroma, 0..=3) {', 'if !matches!(chroma, 0..=2) {', 'avc_builtin_encoding'),
     ('vvc_encode_rounded_size', 'crates/capi/src/builtin_vvc_encoder.rs', 'out_width.write(width.wrapping_add(7) & !7);', 'out_width.write(width.wrapping_add(3) & !3);', 'vvc_builtin_encoding'),
     ('vvc_encode_bit_depth', 'crates/capi/src/builtin_vvc_encoder.rs', 'if img.plane(0).map_or(-1, |p| c_int::from(p.bit_depth)) != 8 {', 'if img.plane(0).map_or(-1, |p| c_int::from(p.bit_depth)) < 8 {', 'vvc_builtin_encoding'),
     ('vvc_encode_quality_range', 'crates/capi/src/builtin_vvc_encoder.rs', '            maximum: 100,', '            maximum: 99,', 'vvc_builtin_encoding'),
