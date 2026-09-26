@@ -1,0 +1,95 @@
+{
+  "scope": "8 deliberate defects; not comprehensive mutation coverage",
+  "shard": null,
+  "mutations": [
+    {
+      "mutation": "avc_high_mb_type_context",
+      "suite": "avc_high_roundtrip",
+      "source": "src/avc_high/mod.rs",
+      "before": "s.decision(3 + cond(left) + cond(top), !nxn);",
+      "after": "s.decision(3 + cond(left), !nxn);",
+      "candidate_sha256": "3bf23a6f7262af13dcbf9bda483b0eacb19e82fb2b024c7a401322d5788099c6",
+      "mismatches": 281,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "avc_high_422_dc_order",
+      "suite": "avc_high_roundtrip",
+      "source": "src/avc_high/mod.rs",
+      "before": "(2, 0),\n                (3, 0),",
+      "after": "(3, 0),\n                (2, 0),",
+      "candidate_sha256": "cf7d2a0ecff06c82e3c862f997b25d22ae02e22f070c6453e05c65074a8e3a99",
+      "mismatches": 113,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "avc_high_lossless_dpcm",
+      "suite": "avc_high_roundtrip",
+      "source": "src/avc_high/mod.rs",
+      "before": "r[y * w + x] -= r[(y - 1) * w + x];",
+      "after": "r[y * w + x] -= r[(y - 1) * w + x] / 2;",
+      "candidate_sha256": "dcabb5f22aa5251878bf5b76379db62abea672cd6ef27ab8a6938b2841921a1b",
+      "mismatches": 132,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "avc_high_8x8_filter",
+      "suite": "avc_high_roundtrip",
+      "source": "src/avc_high/intra.rs",
+      "before": "f.top[15] = (e.top[14] + 3 * e.top[15] + 2) >> 2;",
+      "after": "f.top[15] = (e.top[14] + e.top[15] + 1) >> 1;",
+      "candidate_sha256": "bbd0810adba2f5c04e273d542aa3409ce11786164d89db2a1c2d29c5f4e82285",
+      "mismatches": 52,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "avc_high_444_cbf_offset",
+      "suite": "avc_high_roundtrip",
+      "source": "src/avc_high/mod.rs",
+      "before": "_ => 1012,",
+      "after": "_ => 1013,",
+      "candidate_sha256": "161dc09faab4d8b6803d8b26ad1a41309cb30fca1fb797159c990d02bf86bcbb",
+      "mismatches": 1,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "avc_high_chroma_qp",
+      "suite": "avc_high_roundtrip",
+      "source": "src/avc_high/mod.rs",
+      "before": "let qp_chroma = chroma_qp((qp).clamp(-qp_offset, 51)) + qp_offset;",
+      "after": "let qp_chroma = chroma_qp((qp).clamp(-qp_offset, 51)) + 2 * qp_offset;",
+      "candidate_sha256": "d0b4a8f31bfe1eda9aff762a72a3c52935dedf996a5b557d36f5796eeb5a99a2",
+      "mismatches": 147,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "avc_high_profile",
+      "suite": "avc_builtin_encoding",
+      "source": "src/avc_high/mod.rs",
+      "before": "} else if bit_depth > 8 {",
+      "after": "} else if bit_depth > 10 {",
+      "candidate_sha256": "ed8c2cf81d805fe02ec9f9cda960a3a95f0a334835d1a101228b5c2ff7889479",
+      "mismatches": 3,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "avc_high_routing",
+      "suite": "avc_builtin_encoding",
+      "source": "crates/capi/src/builtin_avc_encoder.rs",
+      "before": "let high = chroma != 1 || session.bit_depth != 8 || lossless;",
+      "after": "let high = chroma != 1 || session.bit_depth != 8;",
+      "candidate_sha256": "844e3e4e817d9137d4de6eb4f36e057190038adf6cea1eb6dfb8bb66324e9de5",
+      "mismatches": 2,
+      "process_failures": [],
+      "detected": true
+    }
+  ],
+  "all_detected": true
+}

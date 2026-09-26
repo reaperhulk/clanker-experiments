@@ -1,134 +1,13 @@
 {
-  "scope": "Original-header built-in AVC encoding against libheif with its x264 plugin: errors, parameters,\nhandles and non-codec boxes exactly; AVC configuration fields; candidate files decoded by OpenH264.",
+  "scope": "Original-header built-in AVC encoding against libheif with its x264 plugin: errors, parameters,\nhandles and non-codec boxes exactly; AVC configuration fields; candidate files decoded by OpenH264\n(which, like libheif's OpenH264 decoder, fails on the High 10, 4:2:2 and 4:4:4 files of both).",
   "cases": 145,
   "listing": "descriptors1 lossy1 lossless1 e0,0,Success\nquality type1 default1 e0,0,Success range1,1,0,100 values0 e0,0,Success value50 e0,0,Success generic50\nlossless type2 default1 e0,0,Success value0 e0,0,Success generic0\npreset type3 default1 e0,0,Success strings,ultrafast,superfast,veryfast,faster,fast,medium,slow,slower,veryslow,placebo e0,0,Success valueslow e0,0,Success genericslow\ntune type3 default1 e0,0,Success strings,psnr,ssim,grain,fastdecode e0,0,Success valuessim e0,0,Success genericssim\ntu-intra-depth type1 default1 e0,0,Success range1,1,1,4 values0 e0,0,Success value2 e0,0,Success generic2\ncomplexity type1 default0 e0,0,Success range1,1,0,100 values0 e0,0,Success value0 e0,0,Success generic0\nchroma type3 default1 e0,0,Success strings,420,422,444 e0,0,Success value420 e0,0,Success generic420\n",
   "mismatches": 0,
-  "files": 125,
+  "files": 130,
   "known_differences": {
-    "rusty-h264-monochrome-as-420": 14,
-    "openh264-monochrome-decoding": 3,
-    "x264-crf0-lossless": 4,
-    "rusty-h264-10-bit": 3,
-    "rusty-h264-chroma-format": 2,
-    "x264-option": 2,
-    "shared-avcC": 1
+    "x264-option": 2
   },
   "known": [
-    {
-      "case": "2-1-1-2-0-8-1-8",
-      "line": 5,
-      "kind": "rusty-h264-monochrome-as-420"
-    },
-    {
-      "case": "2-2-3-2-0-8-1-8",
-      "line": 11,
-      "kind": "rusty-h264-monochrome-as-420"
-    },
-    {
-      "case": "2-7-5-2-0-8-1-8",
-      "line": 17,
-      "kind": "rusty-h264-monochrome-as-420"
-    },
-    {
-      "case": "2-31-40-2-0-8-1-8",
-      "line": 23,
-      "kind": "rusty-h264-monochrome-as-420"
-    },
-    {
-      "case": "2-64-48-2-0-8-1-8",
-      "line": 29,
-      "kind": "rusty-h264-monochrome-as-420"
-    },
-    {
-      "case": "2-97-70-2-0-8-1-8",
-      "line": 35,
-      "kind": "openh264-monochrome-decoding"
-    },
-    {
-      "case": "2-130-66-2-0-8-1-8",
-      "line": 41,
-      "kind": "openh264-monochrome-decoding"
-    },
-    {
-      "case": "2-192-144-2-0-8-1-8",
-      "line": 47,
-      "kind": "rusty-h264-monochrome-as-420"
-    },
-    {
-      "case": "2-400-300-2-0-8-1-8",
-      "line": 53,
-      "kind": "openh264-monochrome-decoding"
-    },
-    {
-      "case": "65538-48-40-2-0-8-1-8",
-      "line": 55,
-      "kind": "rusty-h264-monochrome-as-420"
-    },
-    {
-      "case": "131074-48-40-2-0-8-1-8",
-      "line": 57,
-      "kind": "rusty-h264-monochrome-as-420"
-    },
-    {
-      "case": "1703938-48-40-2-0-8-1-8",
-      "line": 59,
-      "kind": "rusty-h264-monochrome-as-420"
-    },
-    {
-      "case": "3342338-48-40-2-0-8-1-8",
-      "line": 61,
-      "kind": "rusty-h264-monochrome-as-420"
-    },
-    {
-      "case": "4980738-48-40-2-0-8-1-8",
-      "line": 63,
-      "kind": "rusty-h264-monochrome-as-420"
-    },
-    {
-      "case": "6553602-64-48-0-1-8-1-8",
-      "line": 64,
-      "kind": "x264-crf0-lossless"
-    },
-    {
-      "case": "6553602-48-40-2-0-8-1-8",
-      "line": 65,
-      "kind": "x264-crf0-lossless"
-    },
-    {
-      "case": "6619138-64-48-0-1-8-1-8",
-      "line": 66,
-      "kind": "x264-crf0-lossless"
-    },
-    {
-      "case": "6619138-48-40-2-0-8-1-8",
-      "line": 67,
-      "kind": "x264-crf0-lossless"
-    },
-    {
-      "case": "2-40-36-2-0-8-1-8",
-      "line": 80,
-      "kind": "rusty-h264-monochrome-as-420"
-    },
-    {
-      "case": "2-40-36-0-1-10-1-8",
-      "line": 85,
-      "kind": "rusty-h264-10-bit"
-    },
-    {
-      "case": "2-40-36-2-0-10-1-8",
-      "line": 86,
-      "kind": "rusty-h264-10-bit"
-    },
-    {
-      "case": "2-40-36-0-3-10-1-8",
-      "line": 87,
-      "kind": "rusty-h264-10-bit"
-    },
-    {
-      "case": "1224736770-70-50-0-1-8-1-8",
-      "line": 109,
-      "kind": "rusty-h264-chroma-format"
-    },
     {
       "case": "1308622850-70-50-0-1-8-1-8",
       "line": 114,
@@ -138,26 +17,6 @@
       "case": "1342177282-70-50-0-1-8-1-8",
       "line": 116,
       "kind": "x264-option"
-    },
-    {
-      "case": "520093698-70-50-0-1-8-1-8",
-      "line": 118,
-      "kind": "rusty-h264-chroma-format"
-    },
-    {
-      "case": "2-48-36-0-1-8-1-520",
-      "line": 138,
-      "kind": "shared-avcC"
-    },
-    {
-      "case": "2-48-36-1-3-8-1-520",
-      "line": 139,
-      "kind": "rusty-h264-monochrome-as-420"
-    },
-    {
-      "case": "2-48-36-2-0-8-1-520",
-      "line": 140,
-      "kind": "rusty-h264-monochrome-as-420"
     }
   ],
   "decode_mismatches": [],
@@ -166,5 +25,5 @@
   "differences": [],
   "client_sha256": "f70e276c5a527cd2d053af2f686a4f36f3aa4f511946583d51127adbe6666418",
   "reference_sha256": "6350e5ff744289c4f6519bfae56152d2ad3b2e44f9c348572c13392952754840",
-  "candidate_sha256": "b787286f1415d2435fb636ebd9668ee4b3f8d0675b69241a7f127e28c12e51e0"
+  "candidate_sha256": "da3afb8dec2f4a9eec452c3743f86c75c3002aa664f73ed2b56c3b0374c80e50"
 }

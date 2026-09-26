@@ -116,8 +116,10 @@ their feature sets, and the encoder's build script (accel cfgs only) by hash.
 `src/avc_encoder.rs` drives the encoder, and
 `crates/capi/src/builtin_avc_encoder.rs` reproduces libheif's x264 plugin
 around it: parameters, input checks, padding, packets, and the registration
-order after the JPEG encoder. Pictures are coded all-intra and 8-bit 4:2:0
-only:
+order after the JPEG encoder. rusty_h264-encoder codes the 8-bit 4:2:0
+pictures x264 codes in Main profile; everything else goes to the in-tree
+High-profile encoder below. With rusty_h264-encoder, pictures are coded
+all-intra:
 
 - Main profile with CABAC and no 8x8 transform, as
   `x264_param_apply_profile("main")` gives for 8-bit input;
@@ -129,9 +131,7 @@ only:
   x264's constraint flags;
 - quality maps to a constant QP near x264's CRF, calibrated to x264's luma
   PSNR;
-- monochrome is coded as 4:2:0 with neutral chroma;
-- 10-bit input and the `chroma` values 422/444 are rejected;
-- `x264:` options are rejected by name.
+- `x264:` options are rejected by name (by both encoders).
 
 Rate/distortion against x264 (b35605ac, no assembly, default preset `slow`
 and tune `ssim`, read back with OpenH264; `tools/bench_hevc_encoding.py
@@ -142,3 +142,71 @@ and tune `ssim`, read back with OpenH264; `tools/bench_hevc_encoding.py
 - PSNR within 0.6 dB of x264 at the same quality;
 - about 0.14 s per 768x512 image against 0.33 s for x264.
 
+
+## AVC High-profile encoding (in-tree)
+
+libheif's x264 plugin also encodes 4:0:0, 4:2:2 and 4:4:4 input, 10-bit
+input, and losslessly at quality 99 and 100 with 8-bit input (x264's CRF
+(100 - quality) / 2 then gives the integer QP 0). rusty_h264-encoder codes
+none of these (it is 8-bit 4:2:0 throughout), so `src/avc_high` is an in-tree
+all-intra encoder for them, writing the profiles x264 chooses:
+
+- High (100) for 8-bit 4:0:0, High 10 (110) for 10-bit 4:0:0 and 4:2:0,
+  High 4:2:2 (122), and High 4:4:4 Predictive (244) for 4:4:4 and every
+  lossless stream, with no constraint flags;
+- the level, VUI and SAR as for the Main-profile streams.
+
+One IDR picture per image (parameter sets repeated, idr_pic_id alternating
+in sequences), one slice, CABAC, no scaling lists, deblocking on:
+
+- macroblocks are Intra4x4, Intra8x8 (8x8 transform) or Intra16x16, and
+  chroma uses DC/horizontal/vertical/plane prediction (4:2:0 and 4:2:2) or the
+  luma modes (4:4:4);
+- decisions are rate/distortion based, with rates from a CABAC estimator
+  that follows the real context states; the quantizer is a deadzone
+  quantizer whose steps come from the decoder's own scaling and inverse
+  transforms, so the two cannot disagree;
+- lossless streams use transform bypass (qpprime_y_zero_transform_bypass,
+  QP'Y 0) with the intra residual DPCM of 8.5.15 for vertical and
+  horizontal prediction;
+- the CABAC initialization table (ctxIdx 0-1023, including the 4:4:4 Cb/Cr
+  categories) comes from FFmpeg's `h264_cabac.c`; the range and state tables
+  are rusty_h264-common's.
+
+The encoder is verified against two test-only native decoders that are
+never candidate dependencies (`tools/build_avc_decoders.py`): the JM
+reference decoder and FFmpeg's H.264 decoder (decode-only, no assembly).
+libheif's OpenH264 decoder cannot decode High 10, 4:2:2 or 4:4:4. Both were
+first checked against the JVT FRExt and professional-profile conformance
+streams: FFmpeg reproduces the reference YUV of the four High-profile streams
+that ship one, and matches JM exactly on all 14 High 10 and High 4:2:2 intra
+streams and 2 Hi422 streams. FFmpeg rejects separate-colour-plane 4:4:4
+streams, which JM decodes and which neither encoder writes.
+
+`tools/test_avc_high_roundtrip.py` decodes 792 encoder streams
+(`examples/avc_high_roundtrip.rs`: all four chroma formats, 8 and 10 bits,
+sizes 2x2 to 200x136, five patterns, QPs from the minimum to 45, with and
+without the 8x8 transform and the deblocking filter, and lossless) with both
+decoders. Without deblocking both reproduce the encoder's reconstruction
+exactly, lossless streams reproduce the input, and with deblocking the two
+decoders agree. It runs in CI.
+
+Rate/distortion against x264 (default preset `slow`, tune `ssim`) with the
+same YCbCr input (BT.601 full range from 4 Kodak images, qualities 10-95),
+both read back with FFmpeg (`tools/bench_avc_high.py`,
+`results/avc-high-rd-report.json`), luma BD-rate per format:
+
+| Format | Mean | Per image |
+|---|---|---|
+| 4:0:0 8-bit | -6.1% | -21.9% to -0.3% |
+| 4:2:2 8-bit | -5.1% | -19.4% to +0.5% |
+| 4:4:4 8-bit | -4.8% | -20.1% to +1.3% |
+| 4:2:0 10-bit | -3.6% | -14.9% to +0.7% |
+| 4:2:2 10-bit | -3.5% | -14.8% to +0.8% |
+| 4:4:4 10-bit | -3.0% | -14.6% to +1.7% |
+
+Three of the four images are within 2% of x264; the smooth kodim23 is 15-22%
+smaller. x264's default tune (`ssim`, with psychovisual rate/distortion and
+adaptive quantization) spends bits on structure rather than PSNR, which
+this comparison does not reward. Encoding takes about 1.4 to 1.5 times as
+long as x264 without assembly (0.34-0.71 s per 768x512 image).

@@ -771,11 +771,13 @@ decodes every file as the candidate does. Mean BD-rate against x265 is
 +5.6%. See `docs/RESULTS.md` and `docs/HEVC_DEPENDENCIES.md`.
 
 AVC encoding uses rusty_h264-encoder 0.16.0 from crates.io, unmodified,
-behind a record reproducing libheif's x264 plugin (all-intra, 8-bit 4:2:0).
-It matches libheif with x264 on 145 encoding cases (29 classified known
-differences), and OpenH264 decodes every file as the candidate does. Mean
-BD-rate against x264 is +3.6%. See `docs/RESULTS.md` and
-`docs/AVC_DEPENDENCIES.md`.
+for 8-bit 4:2:0 (Main profile; mean BD-rate against x264 +3.6%), and an
+in-tree all-intra High-profile encoder (`src/avc_high`) for 4:0:0, 4:2:2,
+4:4:4, 10-bit and lossless, both behind a record reproducing libheif's
+x264 plugin. They match libheif with x264 on 145 encoding cases (the only
+known differences are the 2 rejected `x264:` options). The JM reference
+decoder and FFmpeg reproduce the High-profile encoder's reconstruction on
+792 streams. See `docs/RESULTS.md` and `docs/AVC_DEPENDENCIES.md`.
 
 VVC encoding uses an in-tree all-intra encoder built on the in-tree decoder
 (QT/BT/TT partitioning, MIP, MRL, CCLM, MTS, LFNST, dependent quantization,

@@ -2,13 +2,16 @@
 //! The built-in AVC encoder as a static encoder-plugin record following
 //! libheif's x264 plugin (encoder_x264.cc): its parameter list, defaults and
 //! setter semantics, input checks, picture padding (even sizes of at least
-//! 64 samples) and one packet per NAL unit. The encoder is the pure Rust
-//! rusty_h264 crate (8-bit 4:2:0, all-intra; see `libheifer::avc_encoder`),
-//! so the bitstreams themselves are not x264's.
+//! 64 samples) and one packet per NAL unit. 8-bit 4:2:0 pictures are coded
+//! by the pure Rust rusty_h264 crate (`libheifer::avc_encoder`); 4:0:0,
+//! 4:2:2, 4:4:4, 10-bit and x264's lossless case by libheifer's High-profile
+//! encoder (`libheifer::avc_high`). Both are all-intra, so the bitstreams
+//! themselves are not x264's.
 use crate::color::{heif_image_get_nclx_color_profile, heif_nclx_color_profile_free};
 use crate::encoding_options::SequenceEncodingOptions;
 use crate::{HeifError, plugin_types::*};
 use libheifer::avc_encoder as avc;
+use libheifer::avc_high;
 use libheifer::color::NclxProfile;
 use libheifer::image::Image;
 use std::collections::VecDeque;
@@ -476,9 +479,9 @@ unsafe fn start(p: *mut c_void, image: *const Image, input_class: c_int) -> Heif
     state.session = None;
     let img = unsafe { &*image };
     let bit_depth = img.plane(0).map_or(-1, |p| c_int::from(p.bit_depth));
-    // x264 accepts 8 and 10 bits; rusty_h264-encoder codes 8 bits only.
-    if bit_depth != 8 {
-        return error(8, 4000, c"Bit depth not supported by rusty_h264");
+    // x264 encodes 8 and 10 bits.
+    if bit_depth != 8 && bit_depth != 10 {
+        return error(8, 4000, c"Bit depth not supported by x264");
     }
     let mut raw: *mut NclxProfile = ptr::null_mut();
     if unsafe { heif_image_get_nclx_color_profile(image, &mut raw) }.code != 0 {
@@ -577,6 +580,26 @@ fn plane_samples(img: &Image, channel: c_int, w: usize, h: usize) -> Vec<u8> {
     out
 }
 
+/// Samples of one padded plane of 8 or 10 bits.
+fn plane_samples16(img: &Image, channel: c_int, w: usize, h: usize) -> Vec<u16> {
+    let plane = img.plane(channel).expect("checked input");
+    let data = plane.data();
+    let mut out = Vec::with_capacity(w * h);
+    for y in 0..h {
+        let row = &data[y * plane.stride..];
+        if plane.bit_depth <= 8 {
+            out.extend(row[..w].iter().map(|&v| u16::from(v)));
+        } else {
+            out.extend(
+                row[..2 * w]
+                    .chunks_exact(2)
+                    .map(|b| u16::from_ne_bytes([b[0], b[1]])),
+            );
+        }
+    }
+    out
+}
+
 unsafe extern "C" fn encode_frame(
     p: *mut c_void,
     image: *const Image,
@@ -603,8 +626,8 @@ unsafe extern "C" fn encode_frame(
     }
     let (width, height) = (session.width, session.height);
     let chroma = if img.colorspace == 2 { 0 } else { img.chroma };
-    if !matches!(chroma, 0 | 1) {
-        return error(8, 0, c"rusty_h264 encodes only 4:2:0 and monochrome images");
+    if !matches!(chroma, 0..=3) {
+        return error(8, 0, c"Unsupported chroma format");
     }
     // The image content is unchanged; only its padding is extended.
     let err = unsafe {
@@ -618,21 +641,57 @@ unsafe extern "C" fn encode_frame(
         return err;
     }
     let img = unsafe { &*image };
-    let (cw, ch) = (width.div_ceil(2) as usize, height.div_ceil(2) as usize);
-    let y = plane_samples(img, 0, width as usize, height as usize);
-    // Monochrome is coded as 4:2:0 with neutral chroma (x264 writes 4:0:0).
-    let (cb, cr) = if chroma == 0 {
-        (vec![128; cw * ch], vec![128; cw * ch])
-    } else {
-        (plane_samples(img, 1, cw, ch), plane_samples(img, 2, cw, ch))
-    };
-    let picture = avc::Picture {
-        width,
-        height,
-        planes: [&y, &cb, &cr],
-    };
     let settings = session.settings;
-    let units = match avc::encode(&picture, &settings) {
+    // x264 codes CRF (100 - quality) / 2 with the integer QP crf + QP_BD_OFFSET,
+    // and losslessly when that QP is 0: quality 99 and 100 at 8 bits.
+    let lossless = session.bit_depth == 8 && (100 - settings.quality.clamp(0, 100)) / 2 == 0;
+    let high = chroma != 1 || session.bit_depth != 8 || lossless;
+    let result = if high {
+        let (sx, sy) = match chroma {
+            1 => (2, 2),
+            2 => (2, 1),
+            _ => (1, 1),
+        };
+        let (cw, ch) = (width.div_ceil(sx) as usize, height.div_ceil(sy) as usize);
+        let y = plane_samples16(img, 0, width as usize, height as usize);
+        let (cb, cr) = if chroma == 0 {
+            (vec![], vec![])
+        } else {
+            (
+                plane_samples16(img, 1, cw, ch),
+                plane_samples16(img, 2, cw, ch),
+            )
+        };
+        let picture = avc_high::Picture {
+            width,
+            height,
+            chroma: chroma as u8,
+            bit_depth: session.bit_depth as u8,
+            planes: [&y, &cb, &cr],
+        };
+        avc_high::encode(
+            &picture,
+            &avc_high::Settings {
+                qp: i32::from(avc::quality_to_qp(settings.quality)),
+                lossless,
+                transform_8x8: true,
+                deblocking: true,
+                idr_pic_id: (frame_nr % 2) as u32,
+                vui: settings.vui,
+            },
+        )
+    } else {
+        let (cw, ch) = (width.div_ceil(2) as usize, height.div_ceil(2) as usize);
+        let y = plane_samples(img, 0, width as usize, height as usize);
+        let (cb, cr) = (plane_samples(img, 1, cw, ch), plane_samples(img, 2, cw, ch));
+        let picture = avc::Picture {
+            width,
+            height,
+            planes: [&y, &cb, &cr],
+        };
+        avc::encode(&picture, &settings)
+    };
+    let units = match result {
         Ok(units) => units,
         Err(e) => return plugin_error(state, e),
     };

@@ -2147,7 +2147,8 @@ profile, constraint flags, level and parameter-set counts. It also compares
 the parameter listing, and checks that OpenH264 decodes every candidate file
 exactly as libheifer's decoder does. Results: 0 mismatches in normal,
 sanitizer-client and codec-free builds, and no decode disagreements. There
-are 29 classified known differences:
+were 29 classified known differences (all but the two `x264-option` ones
+are gone since the High-profile encoder below):
 
 - `rusty-h264-monochrome-as-420` (14): monochrome is coded as 4:2:0 with
   neutral chroma in Main profile, where x264 codes 4:0:0 in High profile;
@@ -2280,6 +2281,60 @@ distortion weight with no observable effect, and an RDOQ mutant that
 dependent quantization made unreachable.
 
 Reports: `results/vvc-builtin-encoding-{normal,san,no-codecs}-report.json`.
+
+## Built-in AVC High-profile encoding
+
+libheif's x264 plugin encodes 4:0:0, 4:2:2, 4:4:4 and 10-bit input, and
+codes 8-bit input losslessly at quality 99 and 100 (CRF 0.5 or 0, integer QP
+0). rusty_h264-encoder codes only 8-bit 4:2:0, so these cases were known
+differences. `src/avc_high` is an in-tree all-intra H.264 encoder for them
+(`docs/AVC_DEPENDENCIES.md`), in the profiles x264 writes: High for 8-bit
+4:0:0, High 10, High 4:2:2 and High 4:4:4 Predictive (4:4:4 and all lossless
+streams). The x264 plugin record routes every picture that is not 8-bit
+4:2:0 lossy to it.
+
+libheif's OpenH264 decoder cannot decode these profiles, so the bitstreams
+are checked with two test-only native decoders (`tools/build_avc_decoders.py`,
+cached with the other oracles in CI): the JM reference decoder and FFmpeg's
+H.264 decoder. They were first compared on the JVT conformance streams:
+FFmpeg reproduces the reference YUV of the four High-profile FRExt streams
+that ship one and agrees with JM on all 14 High 10 / High 4:2:2 intra
+professional-profile streams and 2 Hi422 streams; FFmpeg rejects the 8
+separate-colour-plane 4:4:4 streams, which JM decodes.
+
+`tools/test_avc_high_roundtrip.py` (CI, normal group) decodes 792 encoder
+streams with both: 4:0:0 to 4:4:4, 8 and 10 bits, sizes from 2x2 to 200x136,
+five content patterns, QPs from the minimum to 45, with and without the 8x8
+transform and deblocking, and lossless. Every stream without deblocking is
+reproduced exactly by both decoders, lossless streams reproduce the input,
+and with deblocking both decoders agree
+(`results/avc-high-roundtrip-report.json`). The first run had no mismatch.
+
+With the encoder behind the plugin, the builtin AVC encoding suite (145
+cases) has no mismatches and only the two `x264-option` known differences in
+normal, sanitizer-client and codec-free builds; the 14 monochrome, 4
+lossless, 3 OpenH264 4:0:0 decoding, 3 10-bit, 2 chroma-format and 1
+shared-avcC differences are gone. The High-profile files match x264's
+profile, constraint flags, level, chroma format and bit depth. In
+`test_avc_encoding` (1,344 cases) the monochrome and 10-bit
+normalizations are gone too; 22 plugin-fallback lines remain normalized.
+
+Rate/distortion against x264 with the same YCbCr input, both read back with
+FFmpeg (`tools/bench_avc_high.py`, `results/avc-high-rd-report.json`,
+4 Kodak images): mean luma BD-rate from -3.0% (10-bit 4:4:4) to -6.1% (8-bit
+4:0:0). Three images are within 2% of x264 in every format; kodim23 is 15-22%
+smaller. x264's default tune `ssim` does not optimize PSNR. Encoding takes 1.4
+to 1.5 times as long as x264 without assembly.
+
+Eight deliberate defects are detected (`results/avc-high-mutations-report.json`):
+six in the bitstream, found by the round trip (the mb_type context, the
+4:2:2 chroma DC order, the lossless DPCM, the Intra8x8 reference filter, the
+4:4:4 8x8 coded_block_flag contexts and the 10-bit chroma QP), and the
+profile choice and the lossless routing, found by the builtin suite. The
+first profile mutant (`> 9` for `> 8`) was equivalent for 10-bit input and
+survived (`results/avc-high-mutations-initial-report.json`); it was replaced.
+The 4:4:4 8x8 coded_block_flag mutant is caught by only one of the 792
+streams.
 
 ## HEVC range-extension decoding (oxideav-h265)
 

@@ -39,6 +39,8 @@ pub struct Settings {
     /// Deblocking filter in the decoder (turned off only for exact
     /// reconstruction tests).
     pub deblocking: bool,
+    /// Consecutive IDR pictures of a sequence alternate idr_pic_id.
+    pub idr_pic_id: u32,
     pub vui: VuiSignal,
 }
 
@@ -1549,7 +1551,7 @@ pub fn encode_with_reconstruction(
     sh.ue(7); // slice_type: I (all slices)
     sh.ue(0); // pic_parameter_set_id
     sh.bits(0, 4); // frame_num
-    sh.ue(0); // idr_pic_id
+    sh.ue(settings.idr_pic_id);
     sh.bit(false); // no_output_of_prior_pics_flag
     sh.bit(false); // long_term_reference_flag
     sh.se(0); // slice_qp_delta

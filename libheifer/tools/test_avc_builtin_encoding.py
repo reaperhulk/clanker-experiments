@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Original-header built-in AVC encoding against libheif with its x264 plugin: errors, parameters,
-handles and non-codec boxes exactly; AVC configuration fields; candidate files decoded by OpenH264."""
-import re
+handles and non-codec boxes exactly; AVC configuration fields; candidate files decoded by OpenH264
+(which, like libheif's OpenH264 decoder, fails on the High 10, 4:2:2 and 4:4:4 files of both)."""
 import struct
 
 import test_hevc_builtin_encoding as harness
@@ -47,41 +47,11 @@ def corpus():
     return cases, b''.join(data for _, data in cases)
 
 
-CONFIG = re.compile(r'avcC\([^)]*\)')
-
-
 def classify(reference, candidate):
     """A named, visible known difference, or None for a mismatch."""
+    # Neither encoder is x264: no x264: option can be applied.
     if 'Unsupported x264 encoder parameter:' in candidate and 'paramx264:' in candidate:
         return 'x264-option'
-    # rusty_h264-encoder codes 8 bits only; x264 also codes 10 bits.
-    if 'Bit depth not supported by x264' in candidate and 'Bit depth not supported by x264' not in reference:
-        return 'rusty-h264-10-bit'
-    # 4:2:2 and 4:4:4 (the chroma parameter, or input libheif keeps at 4:4:4).
-    if 'x264 encodes only 4:2:0 and monochrome images' in candidate:
-        return 'rusty-h264-chroma-format'
-    same = CONFIG.sub('', reference) == CONFIG.sub('', candidate)
-    head = lambda line: CONFIG.sub('', line).split(' handle', 1)[0]
-    # x264's CRF 0 (quality 99 and 100) is lossless High 4:4:4 Predictive,
-    # which the OpenH264 oracle cannot decode; rusty_h264-encoder has no
-    # lossless mode. Everything up to the decoded handle agrees.
-    if 'profile=244' in reference and 'profile=244' not in candidate and head(reference) == head(candidate):
-        return 'x264-crf0-lossless'
-    # Monochrome is coded as 4:2:0 with neutral chroma in Main profile; x264
-    # codes 4:0:0 in High profile.
-    mono = 'profile=100' in reference and 'chroma=0' in reference
-    if same and mono:
-        return 'rusty-h264-monochrome-as-420'
-    # The OpenH264 oracle fails to decode some of x264's 4:0:0 pictures.
-    size = 'e2,129,Invalid input: Invalid image size: Decoded image does not have the size signaled in the file.'
-    if mono and size in reference and size not in candidate:
-        if head(reference) == head(candidate):
-            return 'openh264-monochrome-decoding'
-    # An alpha plane coded as 4:2:0 has the colour image's parameter sets, so
-    # libheif shares one avcC property between them.
-    strip = re.compile(r' ?(avcC\([^)]*\)|ipma:[0-9a-f]*)')
-    if mono and strip.sub('', reference) == strip.sub('', candidate) and candidate.count('avcC(') < reference.count('avcC('):
-        return 'shared-avcC'
     return None
 
 

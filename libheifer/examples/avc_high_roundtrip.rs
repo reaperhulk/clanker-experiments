@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 //! Writes libheifer's High-profile AVC encoder output for synthetic pictures
-//! in every supported format: `<name>.264` (Annex B) and `<name>.rec`, the
-//! encoder's reconstruction without deblocking (or the input, lossless), as
-//! planar samples (8-bit, or 16-bit little-endian above 8 bits). Streams
+//! in every supported format: `<name>.264` (Annex B), `<name>.rec`, the
+//! encoder's reconstruction without deblocking, and `<name>.src`, the input,
+//! as planar samples (8-bit, or 16-bit little-endian above 8 bits). Streams
 //! with the deblocking filter on have no exact reconstruction to compare
 //! with; the decoders are compared with each other.
 //! tools/test_avc_high_roundtrip.py decodes the streams with test-only native
@@ -114,6 +114,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                             lossless,
                             transform_8x8: t8,
                             deblocking: label.ends_with("deblock"),
+                            idr_pic_id: 0,
                             vui: VuiSignal::default(),
                         };
                         let name = format!("c{chroma}-d{depth}-{w}x{h}-p{pattern}-{label}");
@@ -124,29 +125,26 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                             stream.extend_from_slice(&u);
                         }
                         std::fs::write(dir.join(format!("{name}.264")), &stream)?;
-                        let mut raw = Vec::new();
-                        for plane in &rec {
-                            for &v in plane {
-                                if depth > 8 {
-                                    raw.extend_from_slice(&v.to_le_bytes());
-                                } else {
-                                    raw.push(v as u8);
+                        let bytes = |planes: &[Vec<u16>]| -> Vec<u8> {
+                            let mut raw = Vec::new();
+                            for plane in planes {
+                                for &v in plane {
+                                    if depth > 8 {
+                                        raw.extend_from_slice(&v.to_le_bytes());
+                                    } else {
+                                        raw.push(v as u8);
+                                    }
                                 }
                             }
-                        }
-                        if lossless {
-                            let input: Vec<u16> = planes.iter().flatten().copied().collect();
-                            let got: Vec<u16> = rec.iter().flatten().copied().collect();
-                            assert_eq!(
-                                input, got,
-                                "{name}: lossless reconstruction differs from the input"
-                            );
-                        }
-                        std::fs::write(dir.join(format!("{name}.rec")), &raw)?;
+                            raw
+                        };
+                        std::fs::write(dir.join(format!("{name}.rec")), bytes(&rec))?;
+                        std::fs::write(dir.join(format!("{name}.src")), bytes(&planes))?;
                         writeln!(
                             manifest,
-                            "{name} {chroma} {depth} {w} {h} {}",
-                            u8::from(settings.deblocking)
+                            "{name} {chroma} {depth} {w} {h} {} {}",
+                            u8::from(settings.deblocking),
+                            u8::from(lossless)
                         )?;
                     }
                 }

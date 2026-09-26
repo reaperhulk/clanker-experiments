@@ -65,6 +65,14 @@ MUTATIONS = [
     ('vvc_encode_cbf_context', 'src/vvc/encoder.rs', '    s.bin(ctx::QT_CBF0, u32::from(cbf(0)));', '    s.bin(ctx::QT_CBF0 + 1, u32::from(cbf(0)));', 'vvc_encoder_quality'),
     ('vvc_encode_dq_levels', 'src/vvc/encoder.rs', '                let r = 2 * a - i32::from(state > 1);', '                let r = 2 * a;', 'vvc_encoder_quality'),
     ('vvc_encode_sao_edge_class', 'src/vvc/encoder.rs', '            s.eps(u32::from(p.type_idc) - 1, 2);', '            s.eps(u32::from(p.type_idc) - 1, 1);', 'vvc_encoder_quality'),
+    ('avc_high_mb_type_context', 'src/avc_high/mod.rs', 's.decision(3 + cond(left) + cond(top), !nxn);', 's.decision(3 + cond(left), !nxn);', 'avc_high_roundtrip'),
+    ('avc_high_422_dc_order', 'src/avc_high/mod.rs', '(2, 0),\n                (3, 0),', '(3, 0),\n                (2, 0),', 'avc_high_roundtrip'),
+    ('avc_high_lossless_dpcm', 'src/avc_high/mod.rs', 'r[y * w + x] -= r[(y - 1) * w + x];', 'r[y * w + x] -= r[(y - 1) * w + x] / 2;', 'avc_high_roundtrip'),
+    ('avc_high_8x8_filter', 'src/avc_high/intra.rs', 'f.top[15] = (e.top[14] + 3 * e.top[15] + 2) >> 2;', 'f.top[15] = (e.top[14] + e.top[15] + 1) >> 1;', 'avc_high_roundtrip'),
+    ('avc_high_444_cbf_offset', 'src/avc_high/mod.rs', '_ => 1012,', '_ => 1013,', 'avc_high_roundtrip'),
+    ('avc_high_chroma_qp', 'src/avc_high/mod.rs', 'let qp_chroma = chroma_qp((qp).clamp(-qp_offset, 51)) + qp_offset;', 'let qp_chroma = chroma_qp((qp).clamp(-qp_offset, 51)) + 2 * qp_offset;', 'avc_high_roundtrip'),
+    ('avc_high_profile', 'src/avc_high/mod.rs', '} else if bit_depth > 8 {', '} else if bit_depth > 10 {', 'avc_builtin_encoding'),
+    ('avc_high_routing', 'crates/capi/src/builtin_avc_encoder.rs', 'let high = chroma != 1 || session.bit_depth != 8 || lossless;', 'let high = chroma != 1 || session.bit_depth != 8;', 'avc_builtin_encoding'),
     ('hevc_rext_sample_order', 'src/hevc.rs', 'dst.copy_from_slice(&(src as u16).to_ne_bytes());', 'dst.copy_from_slice(&(src as u16).to_be_bytes());', 'hevc_rext'),
     ('rgb24_yuv_limited_luma', 'src/conversion.rs', '                clip(v * 0.85547, 219) + 16', '                clip(v * 219.0 / 256.0 + 16.0, 255)', 'hevc_rext'),
     ('hevc_encode_rounded_size', 'crates/capi/src/builtin_hevc_encoder.rs', '((s + 1) & !1).max(64)', '((s + 1) & !1).max(32)', 'hevc_builtin_encoding'),
@@ -547,6 +555,9 @@ def main():
             path.write_text(original.replace(before, after))
             try:
                 build = execute(["cargo", "build", "--locked", "--release", "-p", "libheifer-capi"], clone, env, evidence / f"{name}-build.log")
+                if not build.returncode and suite == "avc_high_roundtrip":
+                    # That suite runs the encoder through a Rust example beside the library.
+                    build = execute(["cargo", "build", "--locked", "--release", "--features", "avc", "--example", "avc_high_roundtrip"], clone, env, evidence / f"{name}-example.log")
                 if build.returncode:
                     raise SystemExit(f"Mutation did not compile: {name}")
                 library = clone / "target/release/libheifer.so"

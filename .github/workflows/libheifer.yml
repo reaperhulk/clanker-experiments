@@ -79,7 +79,7 @@ jobs:
         with:
           submodules: true
       - id: key
-        run: echo "key=libheifer-oracles-encoders-${{ runner.os }}-$(git rev-parse HEAD:libheifer/tests/upstream)-${{ hashFiles('libheifer/tools/build_reference.py', 'libheifer/Cargo.lock', '.github/workflows/libheifer.yml') }}" >> "$GITHUB_OUTPUT"
+        run: echo "key=libheifer-oracles-encoders-${{ runner.os }}-$(git rev-parse HEAD:libheifer/tests/upstream)-${{ hashFiles('libheifer/tools/build_reference.py', 'libheifer/tools/build_avc_decoders.py', 'libheifer/Cargo.lock', '.github/workflows/libheifer.yml') }}" >> "$GITHUB_OUTPUT"
       - id: cache
         uses: actions/cache@v4
         with:
@@ -109,6 +109,7 @@ jobs:
           python tools/build_reference.py --hevc --x265 --build .build/reference-x265
           python tools/build_reference.py --avc --x264 --build .build/reference-x264
           python tools/build_reference.py --jpeg --jpeg2000 --htj2k --av1 --rav1e --hevc --x265 --build .build/reference-encoders
+          python tools/build_avc_decoders.py
 
   differential:
     name: Independent C clients (${{ matrix.group }})
