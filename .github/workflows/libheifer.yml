@@ -287,6 +287,60 @@ jobs:
           include-hidden-files: true
           path: libheifer/.build/*report.json
 
+  windows-codecs:
+    # JPEG and AV1-decoding C-client suites on Windows (MSYS2 MinGW-w64):
+    # libjpeg-turbo and dav1d oracles built there. Each reference runs with its
+    # own libheif.dll on PATH.
+    name: Independent C clients (Windows codecs)
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+        working-directory: libheifer
+    env:
+      CMAKE_GENERATOR: Ninja
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: dtolnay/rust-toolchain@1.94.1
+        with:
+          targets: x86_64-pc-windows-gnu
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          path-type: inherit
+          install: git mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake mingw-w64-x86_64-ninja mingw-w64-x86_64-meson mingw-w64-x86_64-python mingw-w64-x86_64-nasm
+      - run: |
+          gcc -O2 -Wall -Werror -c tools/windows_binary.c -o /mingw64/lib/libheifer-binary-stdio.o
+          gcc -O2 -Wall -Werror -DBINARY_OBJECT="\"$(cygpath -m /mingw64/lib/libheifer-binary-stdio.o)\"" tools/windows_cc.c -o /mingw64/bin/cc.exe
+      - id: key
+        run: echo "key=libheifer-oracle-windows-codecs-$(git rev-parse HEAD:libheifer/tests/upstream)-${{ hashFiles('libheifer/tools/build_reference.py') }}" >> "$GITHUB_OUTPUT"
+      - id: cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            libheifer/.build/reference-jpeg
+            libheifer/.build/reference-av1
+            libheifer/.build/*-install
+          key: ${{ steps.key.outputs.key }}
+      - if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          python tools/build_reference.py --jpeg --build .build/reference-jpeg -j 4
+          python tools/build_reference.py --av1 --build .build/reference-av1 -j 4
+      - run: |
+          deps="$PWD/target/x86_64-pc-windows-gnu/release:$(ls -d $PWD/.build/*-install/bin | tr '\n' ':')"
+          status=0
+          PATH="$PWD/.build/reference-jpeg/libheif:$deps$PATH" python tools/ci.py windows-jpeg --keep-going || status=1
+          PATH="$PWD/.build/reference-av1/libheif:$deps$PATH" python tools/ci.py windows-av1 --keep-going --skip-build || status=1
+          exit $status
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: libheifer-differential-windows-codecs
+          include-hidden-files: true
+          path: libheifer/.build/*report.json
+
   mutations:
     name: Deliberate mutations (${{ matrix.shard }}/10)
     needs: references

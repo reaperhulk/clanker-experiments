@@ -34,6 +34,16 @@ BUILDS = {
         "cmake -E make_directory target/release",
         "cmake -E copy target/x86_64-pc-windows-gnu/release/heifer.dll target/release/libheifer.so",
     ],
+    "windows-jpeg": [
+        "cargo build --locked --release -p libheifer-capi --target x86_64-pc-windows-gnu",
+        "cmake -E make_directory target/release",
+        "cmake -E copy target/x86_64-pc-windows-gnu/release/heifer.dll target/release/libheifer.so",
+    ],
+    "windows-av1": [
+        "cargo build --locked --release -p libheifer-capi --target x86_64-pc-windows-gnu",
+        "cmake -E make_directory target/release",
+        "cmake -E copy target/x86_64-pc-windows-gnu/release/heifer.dll target/release/libheifer.so",
+    ],
     "macos-codecs": [
         "cargo build --locked --release -p libheifer-capi",
         "ln -sf libheifer.dylib target/release/libheifer.so",
@@ -464,6 +474,22 @@ SUITES = {
         'tools/test_plugin_encoding.py --reference-build .build/reference-av1',
         'tools/test_mini_encoding.py --reference-build .build/reference-av1',
         'tools/test_av1_encoding.py --reference-build .build/reference-av1',
+    ],
+    # Codec suites on Windows, one reference per group (each libheif.dll has
+    # the same name, so PATH selects one oracle per run).
+    'windows-jpeg': [
+        'tools/test_jpeg.py --reference-build .build/reference-jpeg',
+        'tools/test_jpeg_errors.py --reference-build .build/reference-jpeg',
+        'tools/test_jpeg_limits.py --reference-build .build/reference-jpeg',
+        'tools/test_jpeg_encoding.py --reference-build .build/reference-jpeg',
+    ],
+    # AV1 decoding with the dav1d oracle; the rav1e encoding suites are not yet
+    # run on Windows (libheif's rav1e plugin needs cargo-c on the MinGW target).
+    'windows-av1': [
+        'tools/test_av1.py --reference-build .build/reference-av1',
+        'tools/test_av1_errors.py --reference-build .build/reference-av1',
+        'tools/test_av1_limits.py --reference-build .build/reference-av1',
+        'tools/test_mini_reader.py --reference-build .build/reference-av1',
     ],
 }
 
