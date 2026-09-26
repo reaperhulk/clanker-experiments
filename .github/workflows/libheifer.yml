@@ -168,11 +168,23 @@ jobs:
         with:
           path: |
             libheifer/.build/reference
+            libheifer/.build/reference-fp-contract
             libheifer/.build/*-install
           key: ${{ steps.key.outputs.key }}
       - if: steps.cache.outputs.cache-hit != 'true'
-        run: python3 tools/build_reference.py --hevc -j 3
+        run: |
+          python3 tools/build_reference.py --hevc -j 3
+          python3 tools/build_reference.py --hevc --fp-contract --build .build/reference-fp-contract -j 3
       - run: python3 tools/ci.py macos --keep-going
+      # Evidence, not a gate: libheif built with clang's default multiply-add
+      # fusion rounds float colour conversion differently from the oracle above
+      # (and from its own x86-64 build). The counts are reported and archived.
+      - if: always()
+        run: |
+          for suite in hevc_rext decode component_handles; do
+            python3 tools/test_$suite.py --reference-build .build/reference-fp-contract --output .build/fp-contract-$suite-report.json > .build/fp-contract-$suite.log 2>&1 || true
+            python3 -c "import json,sys; r=json.load(open(sys.argv[1])); print(sys.argv[1], r['cases'], 'cases', r['mismatches'], 'mismatches')" .build/fp-contract-$suite-report.json || tail -5 .build/fp-contract-$suite.log
+          done
       - uses: actions/upload-artifact@v4
         if: always()
         with:

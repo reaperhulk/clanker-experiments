@@ -44,6 +44,7 @@ def main():
     p.add_argument("--x264", action="store_true", help="enable libheif's x264 AVC encoder (scalar, no assembly; built-in AVC encoder oracle)")
     p.add_argument("--x265", action="store_true", help="enable libheif's x265 HEVC encoder (scalar, no assembly; rate/distortion oracle)")
     p.add_argument("--plugins", action="store_true", help="enable native dynamic-plugin oracle with an empty default search path")
+    p.add_argument("--fp-contract", action="store_true", help="let the compiler fuse multiply-adds in libheif (its default on arm64; changes float colour-conversion rounding)")
     p.add_argument("-j", default="4")
     a = p.parse_args()
     source = Path(a.source).resolve()
@@ -87,7 +88,12 @@ def main():
         f"-DCMAKE_INSTALL_PREFIX={zinstall}", "-DINSTALL_LIB_DIR=" + str(zinstall / "lib"))
     run(cmake, "--build", build.parent / "zlib-build", "-j", a.j)
     run(cmake, "--install", build.parent / "zlib-build")
-    flags = ["-DCMAKE_DISABLE_FIND_PACKAGE_Brotli=OFF", "-DCMAKE_REQUIRE_FIND_PACKAGE_Brotli=ON", "-DCMAKE_REQUIRE_FIND_PACKAGE_ZLIB=ON",
+    # libheif's float colour conversion rounds differently when the compiler
+    # fuses multiply-adds, which GCC and clang do by default on arm64 but cannot
+    # on baseline x86-64. The oracle evaluates as written everywhere unless
+    # --fp-contract asks for the platform default.
+    contract = [] if a.fp_contract else ["-DCMAKE_C_FLAGS=-ffp-contract=off", "-DCMAKE_CXX_FLAGS=-ffp-contract=off"]
+    flags = [*contract, "-DCMAKE_DISABLE_FIND_PACKAGE_Brotli=OFF", "-DCMAKE_REQUIRE_FIND_PACKAGE_Brotli=ON", "-DCMAKE_REQUIRE_FIND_PACKAGE_ZLIB=ON",
              f"-DZLIB_INCLUDE_DIR={zinstall / 'include'}", f"-DZLIB_LIBRARY={zinstall / f'lib/libz{SO}'}",
              f"-DBROTLI_DEC_INCLUDE_DIR={binstall / 'include'}", f"-DBROTLI_ENC_INCLUDE_DIR={binstall / 'include'}",
              f"-DBROTLI_COMMON_LIB={binstall / f'lib/libbrotlicommon{SO}'}",
