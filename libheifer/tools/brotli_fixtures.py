@@ -4,7 +4,8 @@ import ctypes
 import sys
 from pathlib import Path
 
-LIBRARY = Path(__file__).resolve().parents[1] / ('.build/brotli-install/lib/libbrotlienc' + ('.dylib' if sys.platform == 'darwin' else '.so'))
+LIBRARY = Path(__file__).resolve().parents[1] / {'darwin': '.build/brotli-install/lib/libbrotlienc.dylib',
+                                                 'win32': '.build/brotli-install/bin/libbrotlienc.dll'}.get(sys.platform, '.build/brotli-install/lib/libbrotlienc.so')
 _lib = None
 
 
@@ -12,6 +13,9 @@ def compress(data, quality=11, lgwin=22):
     """BrotliEncoderCompress; quality 11 and window 22 are libheif's encoder defaults."""
     global _lib
     if _lib is None:
+        if sys.platform == 'win32':
+            import os
+            os.add_dll_directory(str(LIBRARY.parent))  # libbrotlicommon.dll
         _lib = ctypes.CDLL(str(LIBRARY))
         _lib.BrotliEncoderCompress.argtypes = [ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_size_t,
                                                ctypes.c_char_p, ctypes.POINTER(ctypes.c_size_t), ctypes.c_char_p]
