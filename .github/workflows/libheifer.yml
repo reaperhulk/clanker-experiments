@@ -195,6 +195,43 @@ jobs:
           include-hidden-files: true
           path: libheifer/.build/*report.json
 
+  macos-codecs:
+    # JPEG and AV1 C-client suites on macOS: libjpeg-turbo, dav1d (with its arm64
+    # assembly, like rav1d) and rav1e oracles built there.
+    name: Independent C clients (macOS codecs)
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: libheifer
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: dtolnay/rust-toolchain@1.94.1
+      - id: key
+        run: echo "key=libheifer-oracle-macos-codecs-$(git rev-parse HEAD:libheifer/tests/upstream)-${{ hashFiles('libheifer/tools/build_reference.py') }}" >> "$GITHUB_OUTPUT"
+      - id: cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            libheifer/.build/reference-av1
+            libheifer/.build/reference-jpeg
+            libheifer/.build/*-install
+          key: ${{ steps.key.outputs.key }}
+      - if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          python3 -m pip install --break-system-packages meson==1.12.0 ninja==1.13.2
+          cargo install cargo-c --version 0.10.23 --locked
+          python3 tools/build_reference.py --av1 --rav1e --build .build/reference-av1 -j 3
+          python3 tools/build_reference.py --jpeg --build .build/reference-jpeg -j 3
+      - run: python3 tools/ci.py macos-codecs --keep-going
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: libheifer-differential-macos-codecs
+          include-hidden-files: true
+          path: libheifer/.build/*report.json
+
   mutations:
     name: Deliberate mutations (${{ matrix.shard }}/10)
     needs: references

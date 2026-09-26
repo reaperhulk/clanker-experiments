@@ -27,6 +27,10 @@ BUILDS = {
         "cargo build --locked --release -p libheifer-capi",
         "ln -sf libheifer.dylib target/release/libheifer.so",
     ],
+    "macos-codecs": [
+        "cargo build --locked --release -p libheifer-capi",
+        "ln -sf libheifer.dylib target/release/libheifer.so",
+    ],
 }
 
 SUITES = {
@@ -378,6 +382,20 @@ SUITES = {
         'tools/test_security_lifetimes.py --reference-build .build/reference',
         'tools/test_warnings.py --reference-build .build/reference',
         'tools/test_hevc_rext.py --reference-build .build/reference',
+    ],
+    # JPEG and AV1 suites on macOS (libjpeg-turbo, dav1d and rav1e oracles built there).
+    'macos-codecs': [
+        'tools/test_jpeg.py --reference-build .build/reference-jpeg',
+        'tools/test_jpeg_errors.py --reference-build .build/reference-jpeg',
+        'tools/test_jpeg_limits.py --reference-build .build/reference-jpeg',
+        'tools/test_jpeg_encoding.py --reference-build .build/reference-jpeg',
+        'tools/test_av1.py --reference-build .build/reference-av1',
+        'tools/test_av1_errors.py --reference-build .build/reference-av1',
+        'tools/test_av1_limits.py --reference-build .build/reference-av1',
+        'tools/test_mini_reader.py --reference-build .build/reference-av1',
+        'tools/test_plugin_encoding.py --reference-build .build/reference-av1',
+        'tools/test_mini_encoding.py --reference-build .build/reference-av1',
+        'tools/test_av1_encoding.py --reference-build .build/reference-av1',
     ],
 }
 
