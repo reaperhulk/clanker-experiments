@@ -77,3 +77,7 @@ required-features = ["hevc"]
 [[example]]
 name = "hevc_sequence_yuv"
 required-features = ["hevc"]
+
+[[example]]
+name = "avc_high_roundtrip"
+required-features = ["avc"]

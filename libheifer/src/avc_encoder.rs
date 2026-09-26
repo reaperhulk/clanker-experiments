@@ -73,7 +73,7 @@ pub fn quality_to_qp(quality: i32) -> u8 {
 /// as x264 does.
 /// Also returns the level's vertical MV range, from which x264 derives the
 /// VUI's maximum MV length.
-fn level(width: u32, height: u32, dpb_frames: u32) -> (u8, bool, u32) {
+pub(crate) fn level(width: u32, height: u32, dpb_frames: u32) -> (u8, bool, u32) {
     // (level_idc, frame size in MBs, DPB in MBs, MV range)
     const LEVELS: [(u8, u32, u32, u32); 20] = [
         (10, 99, 396, 64),
@@ -212,7 +212,7 @@ fn unescape(data: &[u8]) -> Vec<u8> {
     out
 }
 
-fn escape(data: &[u8]) -> Vec<u8> {
+pub(crate) fn escape(data: &[u8]) -> Vec<u8> {
     let mut out = Vec::with_capacity(data.len() + data.len() / 64);
     let mut zeros = 0;
     for &b in data {
@@ -227,13 +227,13 @@ fn escape(data: &[u8]) -> Vec<u8> {
 }
 
 #[derive(Default)]
-struct BitWriter {
-    bytes: Vec<u8>,
-    bits: usize,
+pub(crate) struct BitWriter {
+    pub bytes: Vec<u8>,
+    pub bits: usize,
 }
 
 impl BitWriter {
-    fn bit(&mut self, bit: bool) {
+    pub fn bit(&mut self, bit: bool) {
         if self.bits.is_multiple_of(8) {
             self.bytes.push(0);
         }
@@ -242,12 +242,12 @@ impl BitWriter {
         }
         self.bits += 1;
     }
-    fn bits(&mut self, value: u32, count: u32) {
+    pub fn bits(&mut self, value: u32, count: u32) {
         for i in (0..count).rev() {
             self.bit(value >> i & 1 != 0);
         }
     }
-    fn ue(&mut self, value: u32) {
+    pub fn ue(&mut self, value: u32) {
         let v = u64::from(value) + 1;
         let length = 64 - v.leading_zeros();
         self.bits(0, length - 1);
@@ -255,40 +255,18 @@ impl BitWriter {
             self.bit(v >> i & 1 != 0);
         }
     }
+    pub fn se(&mut self, value: i32) {
+        self.ue(if value > 0 {
+            (2 * value - 1) as u32
+        } else {
+            (-2 * value) as u32
+        });
+    }
 }
 
-/// Replaces the SPS's `vui_parameters_present_flag = 0` (the last bit before
-/// the RBSP stop bit) with x264's VUI, and writes x264's profile, constraint
-/// flags and level.
-fn rewrite_sps(
-    unit: &[u8],
-    baseline: bool,
-    level_idc: u8,
-    constraint_set3: bool,
-    mv_range: u32,
-    vui: &VuiSignal,
-) -> Result<Vec<u8>, String> {
-    let rbsp = unescape(&unit[1..]);
-    let bit = |i: usize| rbsp[i / 8] >> (7 - i % 8) & 1 != 0;
-    let total = rbsp.len() * 8;
-    let stop = (0..total)
-        .rev()
-        .find(|&i| bit(i))
-        .ok_or("SPS without a stop bit")?;
-    if stop == 0 || bit(stop - 1) {
-        return Err("SPS already carries a VUI".into());
-    }
-    let mut w = BitWriter::default();
-    for i in 0..stop - 1 {
-        w.bit(bit(i));
-    }
-    // The profile and constraint byte as x264 writes them: constraint_set0
-    // for Baseline, constraint_set1 for Baseline and Main, constraint_set3
-    // for level 1b.
-    w.bytes[0] = if baseline { 66 } else { 77 };
-    w.bytes[1] = if baseline { 0xc0 } else { 0x40 } | if constraint_set3 { 0x10 } else { 0 };
-    w.bytes[2] = level_idc;
-    w.bit(true); // vui_parameters_present_flag
+/// x264's VUI: sample aspect ratio, colour signalling, the 1/25 timing of
+/// libheif's still images and bitstream restrictions for one reference frame.
+pub(crate) fn write_vui(w: &mut BitWriter, vui: &VuiSignal, mv_range: u32) {
     match vui.sar {
         Some((sw, sh)) => {
             const TABLE: [(u16, u16); 16] = [
@@ -361,6 +339,41 @@ fn rewrite_sps(
     w.ue(mv_length); // log2_max_mv_length_vertical
     w.ue(0); // max_num_reorder_frames
     w.ue(1); // max_dec_frame_buffering
+}
+
+/// Replaces the SPS's `vui_parameters_present_flag = 0` (the last bit before
+/// the RBSP stop bit) with x264's VUI, and writes x264's profile, constraint
+/// flags and level.
+fn rewrite_sps(
+    unit: &[u8],
+    baseline: bool,
+    level_idc: u8,
+    constraint_set3: bool,
+    mv_range: u32,
+    vui: &VuiSignal,
+) -> Result<Vec<u8>, String> {
+    let rbsp = unescape(&unit[1..]);
+    let bit = |i: usize| rbsp[i / 8] >> (7 - i % 8) & 1 != 0;
+    let total = rbsp.len() * 8;
+    let stop = (0..total)
+        .rev()
+        .find(|&i| bit(i))
+        .ok_or("SPS without a stop bit")?;
+    if stop == 0 || bit(stop - 1) {
+        return Err("SPS already carries a VUI".into());
+    }
+    let mut w = BitWriter::default();
+    for i in 0..stop - 1 {
+        w.bit(bit(i));
+    }
+    // The profile and constraint byte as x264 writes them: constraint_set0
+    // for Baseline, constraint_set1 for Baseline and Main, constraint_set3
+    // for level 1b.
+    w.bytes[0] = if baseline { 66 } else { 77 };
+    w.bytes[1] = if baseline { 0xc0 } else { 0x40 } | if constraint_set3 { 0x10 } else { 0 };
+    w.bytes[2] = level_idc;
+    w.bit(true); // vui_parameters_present_flag
+    write_vui(&mut w, vui, mv_range);
     w.bit(true); // rbsp_stop_one_bit
     let mut out = vec![unit[0]];
     out.extend(escape(&w.bytes));
