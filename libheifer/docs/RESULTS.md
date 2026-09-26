@@ -2442,3 +2442,13 @@ bytes before the ring buffer. With them fixed, the encoder fuzzer (`encode`,
 same crate) reproduced C's bytes on 800 fresh inputs (random, image-like,
 16-bit, text, UTF-8, repeated and mixed, empty to 1.5 MB; about 132 MB) and
 on the 30 inputs that had exposed the differences.
+
+Eleven deliberate defects cover the new paths: the decoder's error strings,
+PADDING_1 code and ring-buffer growth, the unci `brot` reader and writer, the
+`br` item encoding, method support, and four encoder patches (block-split
+iterations, population-cost log2, H10 stitching, context mode). A first run
+detected only five: the suites' payloads never reached the encoder patches.
+`tools/brotli_fixtures.py` now supplies inputs that each patch changes (short
+ASCII, image-like data, symbol counts above 65535, UTF-8 across the 256 KiB
+block boundary) and a corrupt stream where the ring-buffer size decides
+BLOCK_LENGTH_1 versus BLOCK_LENGTH_2; with them all eleven are detected.
