@@ -2492,3 +2492,38 @@ oracle cache now falls back to the previous cache and
 same pinned revisions (stamped in `REVISION` files). Windows C clients and the
 codec-specific references (AV1, JPEG, JPEG 2000, AVC, VVC, encoders) are not
 yet run on non-Linux platforms.
+
+## Independent C clients on Windows
+
+A Windows CI job (`Independent C clients (Windows)`) runs the same 58
+base-reference suites with MSYS2 MinGW-w64 gcc clients against a
+MinGW-built libheif oracle (libde265, pinned brotli 1.1.0 and zlib 1.3.1,
+`-ffp-contract=off`) and the candidate built for `x86_64-pc-windows-gnu`.
+Both DLLs are copied under the `.so` names the suites link (ld links DLLs
+directly) and their directories are put on `PATH`. All 58 match.
+
+Harness changes:
+
+- The clients stream binary payloads through stdin, which the Windows C
+  runtime opens in text mode (reads stop at 0x1A, CRLF is translated): 39
+  suites exited early. Linking MinGW's `binmode.o` did not change the
+  standard streams; the job's `cc` is now `tools/windows_cc.c`, which runs
+  gcc and links `tools/windows_binary.c`, whose constructor calls
+  `_setmode(_O_BINARY)` on stdin, stdout and stderr and sets `_fmode`. The
+  job checks that a 0x1A/CRLF payload round-trips through a client.
+- `tools/brotli_fixtures.py` loads `bin/libbrotlienc.dll` and registers its
+  directory for `libbrotlicommon.dll` (Python does not search `PATH` for DLL
+  dependencies).
+- `tests/file_input.c` prints whether unlinking the input file succeeded
+  instead of exiting when it fails.
+
+That last change exposed a real difference: all 1,031 `test_mini_file` cases
+differed. Both libraries keep the input file open for the context's
+lifetime, but Rust's `File::open` shares deletion on Windows, so the
+candidate's file could be deleted (and a later reopen by path failed), while
+libheif's `ifstream` shares only read and write access, so the delete fails
+and the reopen succeeds. `heif_context_read_from_file` now opens with that
+share mode on Windows (`OpenOptionsExt::share_mode`), and the cases match.
+
+The codec-specific references (JPEG, AV1, JPEG 2000, AVC, VVC, encoders)
+are not yet run on Windows.
