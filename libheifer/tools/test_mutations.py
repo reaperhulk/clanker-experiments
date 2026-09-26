@@ -356,12 +356,14 @@ MUTATIONS = [
     ("brand_box_truncation", "src/box_probe.rs", "matches!(read_box(&mut r, 0), Err((Failure::End, _)))", "matches!(read_box(&mut r, 0), Err((Failure::Other, _)))", "brand_boxes"),
     ("brand_optional_child", "src/box_probe.rs", "if let Err((error, false)) = read_box(r, level)", "if let Err((error, _)) = read_box(r, level)", "brand_boxes"),
     ("brand_parent_boundary", "src/box_probe.rs", "if end > r.input.len() as u64", "if end > r.end as u64", "brand_boxes"),
-    ("item_failed_add_id", "src/items.rs", "self.items.remove(&id);", "self.items.remove(&id);\n                let _ = self.mint();", "items"),
+    # item_failed_add_id was retired with Brotli support: libheif (and the
+    # candidate) can no longer fail a compressed mime-item add, so the ID a failed
+    # add consumes is unobservable.
     ("item_reference_order", "crates/capi/src/items.rs", ".filter(|r| r.from == from)\n        .nth(index as usize)", ".filter(|r| r.from == from)\n        .rev()\n        .nth(index as usize)", "items"),
     ("item_error_compression", "crates/capi/src/items.rs", "&& method == 0\n        && !compression.is_null()", "&& false\n        && !compression.is_null()", "items"),
     ("deflate_tree_tiebreak", "src/deflate_compat.rs", "nodes[a].depth <= nodes[b].depth", "nodes[a].depth < nodes[b].depth", "items"),
     ("inflate_error_cause", "src/compression.rs", "original_message(&data, method == 4).unwrap_or(m)", "m", "items"),
-    ("compressed_handle_metadata", "src/context.rs", "if !matches!(method, 0 | 3 | 4)", "if method != 0", "metadata_compression"),
+    ("compressed_handle_metadata", "src/context.rs", "if !matches!(method, 0 | 3 | 4 | 5)", "if !matches!(method, 0 | 3 | 4)", "metadata_compression"),
     ("tai_copy_version", "crates/capi/src/tai.rs", "if unsafe { dst.cast::<u8>().read() } == 0", "if unsafe { dst.cast::<u8>().read() } <= 1", "tai"),
     ("tai_typed_equality", "src/properties.rs", "p.tai == property.tai", "p.data == property.data", "tai"),
     ("tai_clock_bits", "src/tai.rs", "clock_type: data[20] >> 6", "clock_type: data[20] >> 5", "tai"),
