@@ -32,7 +32,20 @@ pub unsafe extern "C" fn heif_context_read_from_file(
     let mut state = context::lock(&ctx.shared);
     // An opening failure replaces the file model but retains old image handles.
     let _ = state.read(Arc::new(Vec::<u8>::new()));
-    let file = match std::fs::File::open(path) {
+    let mut options = std::fs::OpenOptions::new();
+    options.read(true);
+    // libheif reads through an ifstream held for the context's lifetime; the
+    // Windows C runtime opens it sharing read and write access but not deletion,
+    // so the file cannot be deleted while a context reads it (Rust's default
+    // would also share deletion).
+    #[cfg(windows)]
+    {
+        use std::os::windows::fs::OpenOptionsExt;
+        const FILE_SHARE_READ: u32 = 1;
+        const FILE_SHARE_WRITE: u32 = 2;
+        options.share_mode(FILE_SHARE_READ | FILE_SHARE_WRITE);
+    }
+    let file = match options.open(path) {
         Ok(file) => file,
         Err(error) => {
             let code = error.raw_os_error().unwrap_or(0);
