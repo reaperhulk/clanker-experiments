@@ -1,9 +1,10 @@
 """Brotli test payloads from the pinned C brotli that tools/build_reference.py
 builds for the native oracle (test-only, never a candidate dependency)."""
 import ctypes
+import sys
 from pathlib import Path
 
-LIBRARY = Path(__file__).resolve().parents[1] / '.build/brotli-install/lib/libbrotlienc.so'
+LIBRARY = Path(__file__).resolve().parents[1] / ('.build/brotli-install/lib/libbrotlienc' + ('.dylib' if sys.platform == 'darwin' else '.so'))
 _lib = None
 
 

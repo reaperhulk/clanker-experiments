@@ -148,6 +148,38 @@ jobs:
           include-hidden-files: true
           path: libheifer/.build/*report.json
 
+  macos-differential:
+    # The base-reference C-client suites on macOS: a macOS-built libheif oracle
+    # (libde265, brotli, system zlib) and clang clients against the candidate dylib.
+    name: Independent C clients (macOS)
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: libheifer
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: dtolnay/rust-toolchain@1.94.1
+      - id: key
+        run: echo "key=libheifer-oracle-macos-$(git rev-parse HEAD:libheifer/tests/upstream)-${{ hashFiles('libheifer/tools/build_reference.py') }}" >> "$GITHUB_OUTPUT"
+      - id: cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            libheifer/.build/reference
+            libheifer/.build/*-install
+          key: ${{ steps.key.outputs.key }}
+      - if: steps.cache.outputs.cache-hit != 'true'
+        run: python3 tools/build_reference.py --hevc -j 3
+      - run: python3 tools/ci.py macos --keep-going
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: libheifer-differential-macos
+          include-hidden-files: true
+          path: libheifer/.build/*report.json
+
   mutations:
     name: Deliberate mutations (${{ matrix.shard }}/10)
     needs: references

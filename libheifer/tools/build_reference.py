@@ -5,6 +5,7 @@ from pathlib import Path
 import shutil
 import os
 import subprocess
+import sys
 
 HEIF = "4e14f5942c1732ace9611b9522cc991501445463"
 DE265 = "7ba65889d3d6d8a0d99b5360b028243ba843be3a"
@@ -17,6 +18,7 @@ RAV1E = "1fe82de02510767539e89b2ee6fa846920ae2686"  # v0.8.1
 VVDEC = "649f0b2fafee977c998d7e4d674f8b88d952e3a3"  # v3.2.0
 VVENC = "9428ea8636ae7f443ecde89999d16b2dfc421524"  # v1.14.0
 X264 = "b35605ace3ddf7c1a5d67a2eb553f034aef41d55"  # the AVC fixture generator revision
+SO = ".dylib" if sys.platform == "darwin" else ".so"  # shared library suffix
 X265 = "1d117bed4747758b51bd2c124d738527e30392cb"  # 4.1
 BROTLI = "ed738e842d2fbdf2d6459e39267a633c4a9b2f5d"  # v1.1.0
 
@@ -70,8 +72,8 @@ def main():
     run(cmake, "--install", build.parent / "brotli-build")
     flags = ["-DCMAKE_DISABLE_FIND_PACKAGE_Brotli=OFF", "-DCMAKE_REQUIRE_FIND_PACKAGE_Brotli=ON", "-DCMAKE_REQUIRE_FIND_PACKAGE_ZLIB=ON",
              f"-DBROTLI_DEC_INCLUDE_DIR={binstall / 'include'}", f"-DBROTLI_ENC_INCLUDE_DIR={binstall / 'include'}",
-             f"-DBROTLI_COMMON_LIB={binstall / 'lib/libbrotlicommon.so'}",
-             f"-DBROTLI_DEC_LIB={binstall / 'lib/libbrotlidec.so'}", f"-DBROTLI_ENC_LIB={binstall / 'lib/libbrotlienc.so'}",
+             f"-DBROTLI_COMMON_LIB={binstall / f'lib/libbrotlicommon{SO}'}",
+             f"-DBROTLI_DEC_LIB={binstall / f'lib/libbrotlidec{SO}'}", f"-DBROTLI_ENC_LIB={binstall / f'lib/libbrotlienc{SO}'}",
              f"-DWITH_JPEG_DECODER={'ON' if a.jpeg else 'OFF'}", "-DWITH_JPEG_ENCODER=OFF",
              "-DWITH_JPEG_DECODER_PLUGIN=OFF", "-DWITH_JPEG_ENCODER_PLUGIN=OFF",
              f"-DWITH_OpenJPEG_DECODER={'ON' if a.jpeg2000 else 'OFF'}",
@@ -91,7 +93,7 @@ def main():
         run(cmake, "-S", decoder, "-B", dbuild, "-DCMAKE_BUILD_TYPE=Release", f"-DCMAKE_INSTALL_PREFIX={install}", "-DENABLE_SDL=OFF", "-DENABLE_ENCODER=OFF")
         run(cmake, "--build", dbuild, "-j", a.j)
         run(cmake, "--install", dbuild)
-        flags += [f"-DLIBDE265_INCLUDE_DIR={install / 'include'}", f"-DLIBDE265_LIBRARY={install / 'lib/libde265.so'}"]
+        flags += [f"-DLIBDE265_INCLUDE_DIR={install / 'include'}", f"-DLIBDE265_LIBRARY={install / f'lib/libde265{SO}'}"]
     if a.av1:
         decoder = build.parent / "dav1d-source"
         install = build.parent / "dav1d-install"
@@ -295,10 +297,16 @@ def main():
     run(cmake, "-S", source, "-B", build, "-DCMAKE_BUILD_TYPE=Release", "-DBUILD_TESTING=OFF", "-DBUILD_DOCUMENTATION=OFF", "-DWITH_EXAMPLES=OFF", "-DWITH_GDK_PIXBUF=OFF", f"-DENABLE_PLUGIN_LOADING={'ON' if a.plugins else 'OFF'}", *(["-DPLUGIN_DIRECTORY="] if a.plugins else []), f"-DWITH_LIBDE265={'ON' if a.hevc else 'OFF'}", f"-DWITH_X265={'ON' if a.x265 else 'OFF'}", "-DWITH_X265_PLUGIN=OFF", f"-DWITH_X264={'ON' if a.x264 else 'OFF'}", "-DWITH_X264_PLUGIN=OFF", *([] if a.avc else ["-DWITH_OpenH264_DECODER=OFF"]), f"-DWITH_DAV1D={'ON' if a.av1 else 'OFF'}", "-DWITH_DAV1D_PLUGIN=OFF", "-DWITH_AOM_DECODER=OFF", "-DWITH_AOM_ENCODER=OFF", "-DWITH_LIBSHARPYUV=OFF", "-DWITH_UNCOMPRESSED_CODEC=ON", *flags)
     run(cmake, "--build", build, "-j", a.j)
     # libheif silently drops an encoder CMake cannot find; the x265 oracle must have it.
-    needed = subprocess.check_output(["readelf", "-d", str(build / "libheif/libheif.so")], text=True)
-    for enabled, library in ((a.x265, "libx265"), (a.x264, "libx264")):
-        if enabled and library not in needed:
-            raise SystemExit(f"libheif was built without {library}")
+    if a.x265 or a.x264:
+        needed = subprocess.check_output(["readelf", "-d", str(build / "libheif/libheif.so")], text=True)
+        for enabled, library in ((a.x265, "libx265"), (a.x264, "libx264")):
+            if enabled and library not in needed:
+                raise SystemExit(f"libheif was built without {library}")
+    if SO != ".so":
+        # The differential suites link the oracle as libheif/libheif.so.
+        link = build / "libheif/libheif.so"
+        link.unlink(missing_ok=True)
+        link.symlink_to(f"libheif{SO}")
 
 
 if __name__ == "__main__":
