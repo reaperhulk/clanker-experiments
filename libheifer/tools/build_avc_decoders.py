@@ -6,6 +6,7 @@ candidate dependencies."""
 import argparse
 import shutil
 import subprocess
+import time
 from pathlib import Path
 
 JM = ("https://vcgit.hhi.fraunhofer.de/jvet/JM.git", "8b34eee1576952dc2a04cd2fdb52febfde4030b2")  # master, after JM 19.1
@@ -21,7 +22,12 @@ def fetch(url, pin, directory):
         directory.mkdir(parents=True, exist_ok=True)
         run("git", "init", "-q", directory)
         run("git", "-C", directory, "remote", "add", "origin", url)
-    run("git", "-C", directory, "fetch", "-q", "--depth=1", "origin", pin)
+    for attempt in range(5):  # remote hosts occasionally drop the connection
+        if subprocess.run(["git", "-C", str(directory), "fetch", "-q", "--depth=1", "origin", pin]).returncode == 0:
+            break
+        time.sleep(2 ** (attempt + 1))
+    else:
+        raise SystemExit(f"could not fetch {url}")
     run("git", "-C", directory, "checkout", "-q", "FETCH_HEAD")
     if subprocess.check_output(["git", "-C", str(directory), "rev-parse", "HEAD"], text=True).strip() != pin:
         raise SystemExit(f"wrong revision of {url}")

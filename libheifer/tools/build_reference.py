@@ -6,6 +6,7 @@ import shutil
 import os
 import subprocess
 import sys
+import time
 
 HEIF = "4e14f5942c1732ace9611b9522cc991501445463"
 DE265 = "7ba65889d3d6d8a0d99b5360b028243ba843be3a"
@@ -25,7 +26,15 @@ ZLIB = "51b7f2abdade71cd9bb0e7a373ef2610ec6f9daf"  # v1.3.1
 
 
 def run(*args, cwd=None):
-    subprocess.run(list(map(str, args)), check=True, cwd=cwd)
+    args = list(map(str, args))
+    # Source fetches from remote hosts occasionally drop the connection; retry them.
+    attempts = 5 if args[:1] == ["git"] and "fetch" in args else 1
+    for attempt in range(attempts):
+        if subprocess.run(args, cwd=cwd).returncode == 0:
+            return
+        if attempt + 1 < attempts:
+            time.sleep(2 ** (attempt + 1))
+    raise subprocess.CalledProcessError(1, args)
 
 
 def main():
