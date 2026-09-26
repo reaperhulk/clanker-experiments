@@ -2,6 +2,7 @@
 """Full-byte uncompressed generic-compression units, malformed cmpC/icef and decompression errors."""
 from pathlib import Path
 import struct,sys,zlib
+import brotli_fixtures
 import test_uncompressed_pixels as runner
 from test_uncompressed_pixels import cmpd,config
 from test_context import box,full
@@ -11,6 +12,7 @@ def corpus():
     cases=[]
     pixels=bytes((i*37+11)&255 for i in range(16))
     def compress(data,kind):
+        if kind==b'brot':return brotli_fixtures.compress(data)
         c=zlib.compressobj(wbits=15 if kind==b'zlib' else -15)
         return c.compress(data)+c.flush()
     def icef(units,offset_code=3,size_code=3,version=0,count=None):
@@ -20,7 +22,7 @@ def corpus():
         file=item_file([dict(id=1,kind=b'unci',data=data,props=[ispe(4,4),cmpd([0]),config(cols=1 if tiled else 0,rows=1 if tiled else 0),*props])])
         cases.append((name,struct.pack('=II',len(file),2)+file,required))
     def cmpc(kind,unit=0,version=0):return full(b'cmpC',kind+bytes([unit]),version)
-    for kind in [b'zlib',b'defl']:
+    for kind in [b'zlib',b'defl',b'brot']:
         data=compress(pixels,kind)
         for unit in range(256):add(f'unit-type-{kind}-{unit}',data,[cmpc(kind,unit)],required=unit<=4)
         for n in range(len(data)+1):add(f'compressed-prefix-{kind}-{n}',data[:n],[cmpc(kind)])
@@ -39,7 +41,7 @@ def corpus():
         for version in [1,2,255]:add(f'cmpc-version-{kind}-{version}',data,[cmpc(kind,version=version)]);add(f'icef-version-{kind}-{version}',data,[cmpc(kind),icef([(0,len(data))],version=version)])
     # Distinct component and tile bytes catch accidental reuse of unit zero and
     # full-item offsets on tile-local streams. Exercise every decoder layout.
-    for kind in [b'zlib',b'defl']:
+    for kind in [b'zlib',b'defl',b'brot']:
         for layout in [0,1,2,3,4]:
             for types in [(0,), (4,5,6), (4,5,6,7)]:
                 for tiled in [False,True]:

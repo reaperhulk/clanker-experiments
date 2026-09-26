@@ -38,6 +38,10 @@ jobs:
         shell: bash
       - run: cargo test --release --manifest-path vendor/rusty_h264-decoder/Cargo.toml --no-default-features --features libm,simd-detect
         shell: bash
+      # The vendored brotli decoder sits outside the workspace too; its unit tests
+      # cover the ring-buffer parity patch.
+      - run: cargo test --release --manifest-path vendor/brotli-decompressor/Cargo.toml --lib
+        shell: bash
 
   checks:
     name: Lint, unit tests and inventory

@@ -1,0 +1,21 @@
+# Test-only differential fuzzers: the vendored brotli crates against the
+# pinned C brotli 1.1.0 oracle (.build/brotli-install from
+# tools/build_reference.py). Not part of the candidate or the workspace.
+[package]
+name = "brotli-differential"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+brotli = { path = "../../vendor/brotli", default-features = false, features = ["std"] }
+brotli-decompressor = { path = "../../vendor/brotli-decompressor", default-features = false, features = ["std"] }
+
+[patch.crates-io]
+brotli-decompressor = { path = "../../vendor/brotli-decompressor" }
+
+[profile.release]
+debug-assertions = true
+overflow-checks = true
+
+[workspace]

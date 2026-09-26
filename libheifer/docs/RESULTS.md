@@ -2403,3 +2403,42 @@ profile, which routes them anyway. It was replaced.
 
 oxideav-h265 is much slower than libde265: 9 pictures of 1080p 4:2:2 10-bit
 took 12 s against libde265's 1.6 s on the same machine.
+
+## Brotli metadata and unci compression
+
+The native oracles now link google/brotli v1.1.0 (ed738e84), built by
+`tools/build_reference.py` for every reference in place of the earlier
+`CMAKE_DISABLE_FIND_PACKAGE_Brotli`. libheif uses brotli for `mime` items
+with content encoding `br` (reading, `heif_context_add_mime_item` and
+`heif_item_get_item_data`) and for unci `cmpC` type `brot` (reading and the
+unci encoder); XMP added through `heif_context_add_XMP_metadata2` with brotli
+is stored uncompressed, as libheif's `add_generic_metadata` has no brotli
+branch.
+
+Decoding uses brotli-decompressor 6.0.1 (`#![forbid(unsafe_code)]`, no FFI
+features) through libheif's streaming loop: 256 KiB output chunks, each
+charged to the security limits as "brotli decompression output", and
+`BrotliDecoderErrorString` text in the error. The crate is vendored with two
+changes (`vendor/brotli-decompressor/LIBHEIFER-PATCHES.md`): PADDING_1 for a
+bad pad after a metadata or uncompressed metablock header, and C 1.1.0's
+per-metablock ring-buffer growth, which decides whether an overlong command
+fails as BLOCK_LENGTH_1 or BLOCK_LENGTH_2. A differential fuzzer
+(`tests/brotli_differential`, `decode`; not in CI) compared result, error
+code, output and output chunking with C 1.1.0 on 330,000 truncated,
+bit-flipped, overwritten, extended and random streams with 1-300 byte and
+256 KiB output buffers: no differences after the patches
+(1,165 of the first 20,000 differed before them, all in error codes).
+
+Encoding uses brotli 9.0.0, vendored (`vendor/brotli/LIBHEIFER-PATCHES.md`)
+without its binaries and FFI module. Unpatched, it matched C at quality 11 on
+small inputs but not on image-like data above 4 KiB. Five differences from C
+were found by bisecting inputs and diffing the decoded stream structure: all
+costs in `f32` where C uses `double` outside the zopfli model and literal
+costs (and a log2 table without C's float rounding); 3 instead of 10
+block-splitting iterations at quality 11; population costs from a 16-bit log
+table indexed by truncated counts; H10 hasher stitching one position early
+across 256 KiB input blocks; and the literal context mode chosen from data two
+bytes before the ring buffer. With them fixed, the encoder fuzzer (`encode`,
+same crate) reproduced C's bytes on 800 fresh inputs (random, image-like,
+16-bit, text, UTF-8, repeated and mixed, empty to 1.5 MB; about 132 MB) and
+on the 30 inputs that had exposed the differences.

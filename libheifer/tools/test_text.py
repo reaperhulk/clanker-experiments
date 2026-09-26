@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Original-header text items, attachments, content bytes, language properties and retained lookup state."""
 import argparse,filecmp,hashlib,json,os,random,struct,subprocess,zlib
+import brotli_fixtures
 from pathlib import Path
 from test_context import box,full,synthetic
 from test_hevc import FIXTURES
@@ -41,13 +42,14 @@ def corpus():
             add(f'language-{version}-{language!r}',file=fixture(props=[box(b'elng',data)]),language=language)
     for kind in [b'zzzz',b'Exif',b'uri ']:add(f'non-mime-{kind}',file=fixture(kind=kind))
     for duplicate in [False,True]:add(f'duplicate-references-{duplicate}',file=fixture(duplicate=duplicate))
-    for encoding,window in [(b'',None),(b'identity',None),(b'compress_zlib',15),(b'deflate',-15),(b'unknown',None),(b'br',None)]:
+    for encoding,window in [(b'',None),(b'identity',None),(b'compress_zlib',15),(b'deflate',-15),(b'unknown',None),(b'br',None),(b'br','brotli')]:
         for n in [0,1,17,8191,8192,8193,20000]:
             data=(b'abcdefg'*((n+6)//7))[:n]
-            if window:
+            if window=='brotli':data=brotli_fixtures.compress(data)
+            elif window:
                 obj=zlib.compressobj(wbits=window);data=obj.compress(data)+obj.flush()
             for length in sorted(set([0,1,len(data)//2,len(data)-1,len(data)])):
-                if length>=0:add(f'compressed-{encoding!r}-{n}-{length}',file=fixture(data[:length],encoding=encoding))
+                if length>=0:add(f'compressed-{encoding!r}-{window}-{n}-{length}',file=fixture(data[:length],encoding=encoding))
     for kind in [b'mime',b'uri ',b'zzzz']:
         for value in [b'',b'A',b'ABC',b'\0',b'A\0',b'A\0x',b'A\0text/plain',b'A\0text/plain\0identity',b'A\0text/plain\0identity\0']:
             add(f'unterminated-{kind}-{value!r}',file=fixture(kind=kind,raw_info=value,as_metadata=True))

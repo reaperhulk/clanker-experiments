@@ -18,6 +18,7 @@ VVDEC = "649f0b2fafee977c998d7e4d674f8b88d952e3a3"  # v3.2.0
 VVENC = "9428ea8636ae7f443ecde89999d16b2dfc421524"  # v1.14.0
 X264 = "b35605ace3ddf7c1a5d67a2eb553f034aef41d55"  # the AVC fixture generator revision
 X265 = "1d117bed4747758b51bd2c124d738527e30392cb"  # 4.1
+BROTLI = "ed738e842d2fbdf2d6459e39267a633c4a9b2f5d"  # v1.1.0
 
 
 def run(*args, cwd=None):
@@ -50,9 +51,27 @@ def main():
     cmake = shutil.which("cmake")
     if cmake is None:
         raise SystemExit("cmake required for reference build")
-    # Keep the oracle feature set deterministic. Brotli is a separate, still-open
-    # compatibility target; do not let host package discovery change transcripts.
-    flags = ["-DCMAKE_DISABLE_FIND_PACKAGE_Brotli=ON", "-DCMAKE_REQUIRE_FIND_PACKAGE_ZLIB=ON",
+    # Keep the oracle feature set deterministic: build libheif against a pinned
+    # brotli rather than whatever the host provides.
+    brotli = build.parent / "brotli-source"
+    binstall = build.parent / "brotli-install"
+    if not brotli.exists():
+        run("git", "init", brotli)
+        run("git", "-C", brotli, "remote", "add", "origin", "https://github.com/google/brotli.git")
+        run("git", "-C", brotli, "fetch", "--depth=1", "origin", BROTLI)
+        run("git", "-C", brotli, "checkout", "--detach", "FETCH_HEAD")
+    revision = subprocess.check_output(["git", "-C", str(brotli), "rev-parse", "HEAD"], text=True).strip()
+    if revision != BROTLI:
+        raise SystemExit("Wrong brotli reference revision")
+    run(cmake, "-S", brotli, "-B", build.parent / "brotli-build", "-DCMAKE_BUILD_TYPE=Release",
+        f"-DCMAKE_INSTALL_PREFIX={binstall}", "-DCMAKE_INSTALL_LIBDIR=lib", "-DBUILD_SHARED_LIBS=ON",
+        "-DBROTLI_DISABLE_TESTS=ON")
+    run(cmake, "--build", build.parent / "brotli-build", "-j", a.j)
+    run(cmake, "--install", build.parent / "brotli-build")
+    flags = ["-DCMAKE_DISABLE_FIND_PACKAGE_Brotli=OFF", "-DCMAKE_REQUIRE_FIND_PACKAGE_Brotli=ON", "-DCMAKE_REQUIRE_FIND_PACKAGE_ZLIB=ON",
+             f"-DBROTLI_DEC_INCLUDE_DIR={binstall / 'include'}", f"-DBROTLI_ENC_INCLUDE_DIR={binstall / 'include'}",
+             f"-DBROTLI_COMMON_LIB={binstall / 'lib/libbrotlicommon.so'}",
+             f"-DBROTLI_DEC_LIB={binstall / 'lib/libbrotlidec.so'}", f"-DBROTLI_ENC_LIB={binstall / 'lib/libbrotlienc.so'}",
              f"-DWITH_JPEG_DECODER={'ON' if a.jpeg else 'OFF'}", "-DWITH_JPEG_ENCODER=OFF",
              "-DWITH_JPEG_DECODER_PLUGIN=OFF", "-DWITH_JPEG_ENCODER_PLUGIN=OFF",
              f"-DWITH_OpenJPEG_DECODER={'ON' if a.jpeg2000 else 'OFF'}",

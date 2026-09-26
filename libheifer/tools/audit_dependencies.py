@@ -43,6 +43,13 @@ REVIEWED |= {('hpvca', '0.1.17')}
 # brings serde_core, itoa and zmij (cfg-probing build scripts, hash-reviewed).
 REVIEWED |= {('oxideav-h265', '0.0.11'), ('oxideav-core', '0.1.36'), ('serde_json', '1.0.151'), ('serde_core', '1.0.229'),
              ('itoa', '1.0.18'), ('zmij', '1.0.23')}
+# Brotli metadata and unci decompression: brotli-decompressor, vendored with
+# the C 1.1.0 decoder's error codes (vendor/brotli-decompressor/LIBHEIFER-PATCHES.md),
+# and its safe allocator crates.
+REVIEWED |= {('brotli-decompressor', '6.0.1'), ('alloc-no-stdlib', '3.0.0'), ('alloc-stdlib', '0.3.0')}
+# Brotli metadata and unci compression: the brotli encoder, vendored with C
+# 1.1.0's quality-11 output (vendor/brotli/LIBHEIFER-PATCHES.md).
+REVIEWED |= {('brotli', '9.0.0')}
 # Assembly build tooling for rav1d and rav1e (nasm-rs drives nasm; cc assembles
 # AArch64 sources and archives objects). Dependency assembly is allowed.
 REVIEWED |= {('cc', '1.4.7'), ('nasm-rs', '0.3.2'), ('jobserver', '0.1.35'), ('getrandom', '0.4.3'),
@@ -133,6 +140,16 @@ def main():
                 problems.append('spin must use only the reviewed lock features')
             if any(p.suffix.lower() in ('.c', '.cc', '.cpp', '.s', '.asm') for p in root.rglob('*')) or (root / 'build.rs').exists():
                 problems.append('Native source or build script in spin')
+        if name[0] in ('brotli', 'brotli-decompressor', 'alloc-no-stdlib', 'alloc-stdlib'):
+            # Without the `unsafe`/FFI features the decoder is #![forbid(unsafe_code)];
+            # the vendored encoder has no FFI module and no unsafe code outside its tests.
+            expected = {'std', 'alloc-stdlib'} if name[0] in ('brotli', 'brotli-decompressor') else set()
+            if name[0] == 'brotli' and any('unsafe' in p.read_text() for p in (root / 'src').rglob('*.rs') if p.name != 'test.rs'):
+                problems.append('Unsafe code in the vendored brotli encoder')
+            if set(features[package['id']]) != expected:
+                problems.append(f'{name[0]} must use only the reviewed safe configuration')
+            if any(p.suffix.lower() in ('.c', '.cc', '.cpp', '.s', '.asm') for p in root.rglob('*')) or (root / 'build.rs').exists():
+                problems.append(f'Native source or build script in {name[0]}')
         if name[0] == 'jpeg-decoder':
             if set(features[package['id']]) != {'platform_independent'}:
                 problems.append('jpeg-decoder must use only the reviewed scalar Rust implementation')

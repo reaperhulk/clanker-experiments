@@ -233,6 +233,7 @@ fn encode_layout(image: &Image, compression: i32, columns: u32, rows: u32) -> Re
         let kind = match compression {
             3 => *b"defl",
             4 => *b"zlib",
+            5 => *b"brot",
             _ => {
                 return Err(ContextError::new(
                     4,

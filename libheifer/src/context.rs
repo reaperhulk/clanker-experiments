@@ -1297,7 +1297,7 @@ impl Document {
                 .items
                 .get(&item.id)
                 .map_or(0, crate::items::Item::compression);
-            if !matches!(method, 0 | 3 | 4) {
+            if !matches!(method, 0 | 3 | 4 | 5) {
                 continue;
             }
             let data = match items
@@ -1397,7 +1397,8 @@ impl Document {
         // The reference retains the context's text registry across reads, and
         // adds one registry entry per target in each ordered text reference.
         for (&id, item) in &items.items {
-            if item.kind != u32::from_be_bytes(*b"mime") || !matches!(item.compression(), 0 | 3 | 4)
+            if item.kind != u32::from_be_bytes(*b"mime")
+                || !matches!(item.compression(), 0 | 3 | 4 | 5)
             {
                 continue;
             }

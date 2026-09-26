@@ -793,5 +793,11 @@ reference MD5, and matches libheif with libde265 on 301 x265-generated items
 (7,525 cases) apart from four where libde265 misses x265's picture hash. See
 `docs/RESULTS.md` and `docs/HEVC_DEPENDENCIES.md`.
 
+Brotli: the native oracles now link pinned C brotli 1.1.0. Brotli metadata
+items (`br`) and `brot` unci data decode through brotli-decompressor 6.0.1
+and encode through brotli 9.0.0, both vendored with patches for C parity:
+the decoder's error codes (libheif prints them) and the encoder's quality-11
+output, byte for byte. See `docs/RESULTS.md`.
+
 Next: remaining plan gates. All 465 functions remain partial; strict completion
 remains false.

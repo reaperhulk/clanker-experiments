@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Original-header generic item creation, queries, payloads, references, languages and reloads."""
 import argparse,filecmp,hashlib,json,os,random,struct,subprocess,zlib
+import brotli_fixtures
 from pathlib import Path
 from test_context import box,full,synthetic
 from test_hevc import FIXTURES
@@ -36,8 +37,9 @@ def corpus():
     payloads += [rng.randbytes(n) for n in [17,257,8191,8192,8193,20000]]
     for n,data in enumerate(payloads):
         for method in range(-2,9):add(f'compress-{n}-{method}',2,method,param=b'text/plain',data=data)
-        for method,wb in [(2,15),(3,-15)]:
-            obj=zlib.compressobj(wbits=wb);encoded=obj.compress(data)+obj.flush()
+        for method,wb in [(2,15),(3,-15),(4,'brotli')]:
+            if wb=='brotli':encoded=brotli_fixtures.compress(data)
+            else:obj=zlib.compressobj(wbits=wb);encoded=obj.compress(data)+obj.flush()
             for length in sorted(set([0,1,2,3,len(encoded)//2,len(encoded)-1,len(encoded)])):
                 add(f'decompress-{n}-{method}-{length}',3,method,param=b'text/plain',data=encoded[:length])
             for block in [0,1,7,8191,8192,8193,20000]:add(f'block-{n}-{method}-{block}',3,method,param=b'text/plain',data=encoded,block=block)
@@ -45,13 +47,13 @@ def corpus():
     for encoding in range(9):
         for data in [b'',b'abc',b'\x78\x9c',b'\x78\x9c\xff\xff',bytes(range(256))]:add(f'encoding-{encoding}-{data.hex()}',3,encoding,param=b'',data=data)
     # Exact encoder bytes across symbol-buffer and sliding-window boundaries.
-    for length in [2,3,4,5,16,127,128,129,257,258,259,261,262,263,16382,16383,16384,32505,32506,32507,32767,32768,32769,65273,65274,65275,65535,65536,65537,98303,98304,131071,262144]:
+    for length in [2,3,4,5,16,127,128,129,257,258,259,261,262,263,16382,16383,16384,32505,32506,32507,32767,32768,32769,65273,65274,65275,65535,65536,65537,98303,98304,131071,262144,400000]:
         patterns=[bytes(length),(b'abacabadabacaba'*((length+14)//15))[:length],rng.randbytes(length),bytes(rng.randrange(8) for _ in range(length)),bytes(i%256 for i in range(length))]
         for pattern,data in enumerate(patterns):
-            for method in [3,4]:add(f'compress-boundary-{length}-{pattern}-{method}',2,method,param=b'application/octet-stream',data=data)
+            for method in [3,4,5]:add(f'compress-boundary-{length}-{pattern}-{method}',2,method,param=b'application/octet-stream',data=data)
     for n in range(100):
         alphabet=rng.randrange(2,257);data=bytes(rng.randrange(alphabet) for _ in range(rng.randrange(65537)))
-        for method in [3,4]:add(f'compress-random-{n}-{method}',2,method,param=b'',data=data)
+        for method in [3,4,5]:add(f'compress-random-{n}-{method}',2,method,param=b'',data=data)
     # Malformed streams keep full error text, including zlib's diagnostic.
     for wb,method in [(15,2),(-15,3)]:
         obj=zlib.compressobj(wbits=wb);encoded=obj.compress(bytes(range(256))*10)+obj.flush()

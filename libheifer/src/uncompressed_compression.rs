@@ -73,13 +73,7 @@ impl Compression {
         let method = match &self.kind {
             b"zlib" => 4,
             b"defl" => 3,
-            b"brot" => {
-                return Err(ContextError::new(
-                    4,
-                    3006,
-                    "Unsupported feature: Unsupported generic compression method: cannot decode unci item with brotli compression - not enabled",
-                ));
-            }
+            b"brot" => 5,
             _ => {
                 return Err(ContextError::new(
                     4,

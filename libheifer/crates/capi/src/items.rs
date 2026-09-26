@@ -505,5 +505,5 @@ pub unsafe extern "C" fn heif_string_release(value: *const c_char) {
 }
 #[unsafe(no_mangle)]
 pub extern "C" fn heif_metadata_compression_method_supported(method: c_int) -> c_int {
-    c_int::from(matches!(method, 0 | 1 | 3 | 4))
+    c_int::from(matches!(method, 0 | 1 | 3 | 4 | 5))
 }

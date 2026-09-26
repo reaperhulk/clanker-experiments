@@ -127,6 +127,7 @@ impl ItemStore {
         item.content_encoding = match compression {
             3 => c"deflate".into(),
             4 => c"compress_zlib".into(),
+            5 => c"br".into(),
             _ => item.content_encoding,
         };
         self.items.insert(id, item);

@@ -22,7 +22,7 @@ def corpus():
             for tw,th in [(1,1),(3,5),(7,2)]:
                 for depth in [1,7,9,10,12,16]:add([8,kind,cols,rows,tw,th,6,0,0,depth])
     for flags in [128,129,128|8192,8|16384]:
-        for compression in [0,3,4]:add([8,2,2,2,4,3,6,compression,flags,8])
+        for compression in [0,3,4,5]:add([8,2,2,2,4,3,6,compression,flags,8])
     for flags in [4096,4096|1]:add([8,2,2,2,4,3,1,0,flags,8])
     for cols,rows in [(0,1),(1,0),(65536,1),(65535,2)]:add([8,0,cols,rows,4,3,1,0,0,8])
     return cases,b''.join(data for _,data in cases)

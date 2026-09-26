@@ -435,7 +435,7 @@ impl Context {
                 .ok_or(crate::error::Error::ALLOCATION)?
                 .copy_from_slice(&data);
         } else {
-            if !matches!(*compression, 3 | 4) {
+            if !matches!(*compression, 3..=5) {
                 return Err(ContextError::new(
                     4,
                     3006,
