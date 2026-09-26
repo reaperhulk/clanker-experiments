@@ -39,23 +39,34 @@ def main():
     p.add_argument("-j", default="4")
     a = p.parse_args()
     build = Path(a.build).resolve()
-    jm = build / "jm-oracle-source"
-    fetch(*JM, jm)
-    run("cmake", "-S", jm, "-B", jm / "build", "-DCMAKE_BUILD_TYPE=Release")
-    run("cmake", "--build", jm / "build", "-j", a.j, "--target", "ldecod")
-    install = build / "jm-install/bin"
-    install.mkdir(parents=True, exist_ok=True)
-    built = next(p for p in (jm / "bin").rglob("ldecod") if p.is_file())
-    shutil.copy2(built, install / "ldecod")
-    ffmpeg = build / "ffmpeg-oracle-source"
-    fetch(*FFMPEG, ffmpeg)
-    run("./configure", f"--prefix={build / 'ffmpeg-install'}", "--disable-everything", "--disable-autodetect",
-        "--disable-asm", "--disable-doc", "--disable-network", "--disable-debug", "--enable-decoder=h264",
-        "--enable-parser=h264", "--enable-demuxer=h264", "--enable-encoder=rawvideo", "--enable-muxer=rawvideo",
-        "--enable-protocol=file", "--enable-protocol=pipe", "--enable-filter=null", "--enable-filter=format",
-        "--enable-filter=scale", cwd=ffmpeg)
-    run("make", f"-j{a.j}", cwd=ffmpeg)
-    run("make", "install", cwd=ffmpeg)
+    # Reuse an install built from the same pin (CI restores it from the previous
+    # oracle cache): the JM host intermittently truncates every transfer.
+    # Installs from before the stamp was written were built from these pins.
+    def current(install, binary, pin):
+        stamp = install / "REVISION"
+        return binary.is_file() and (not stamp.exists() or stamp.read_text().strip() == pin)
+    jm_install = build / "jm-install"
+    if not current(jm_install, jm_install / "bin/ldecod", JM[1]):
+        jm = build / "jm-oracle-source"
+        fetch(*JM, jm)
+        run("cmake", "-S", jm, "-B", jm / "build", "-DCMAKE_BUILD_TYPE=Release")
+        run("cmake", "--build", jm / "build", "-j", a.j, "--target", "ldecod")
+        (jm_install / "bin").mkdir(parents=True, exist_ok=True)
+        built = next(p for p in (jm / "bin").rglob("ldecod") if p.is_file())
+        shutil.copy2(built, jm_install / "bin/ldecod")
+    (jm_install / "REVISION").write_text(JM[1] + "\n")
+    ffmpeg_install = build / "ffmpeg-install"
+    if not current(ffmpeg_install, ffmpeg_install / "bin/ffmpeg", FFMPEG[1]):
+        ffmpeg = build / "ffmpeg-oracle-source"
+        fetch(*FFMPEG, ffmpeg)
+        run("./configure", f"--prefix={ffmpeg_install}", "--disable-everything", "--disable-autodetect",
+            "--disable-asm", "--disable-doc", "--disable-network", "--disable-debug", "--enable-decoder=h264",
+            "--enable-parser=h264", "--enable-demuxer=h264", "--enable-encoder=rawvideo", "--enable-muxer=rawvideo",
+            "--enable-protocol=file", "--enable-protocol=pipe", "--enable-filter=null", "--enable-filter=format",
+            "--enable-filter=scale", cwd=ffmpeg)
+        run("make", f"-j{a.j}", cwd=ffmpeg)
+        run("make", "install", cwd=ffmpeg)
+    (ffmpeg_install / "REVISION").write_text(FFMPEG[1] + "\n")
 
 
 if __name__ == "__main__":

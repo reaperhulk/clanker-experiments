@@ -91,6 +91,9 @@ jobs:
             libheifer/.build/reference*
             libheifer/.build/*-install
           key: ${{ steps.key.outputs.key }}
+          # Start from the previous oracle cache: references rebuild incrementally
+          # and pinned decoder installs are reused (the JM host is unreliable).
+          restore-keys: libheifer-oracles-encoders-${{ runner.os }}-
       - if: steps.cache.outputs.cache-hit != 'true'
         run: python -m pip install meson==1.12.0 ninja==1.13.2
       # The native rav1e oracle library is built with cargo-c, which needs a
