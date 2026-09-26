@@ -256,10 +256,15 @@ jobs:
           msystem: MINGW64
           path-type: inherit
           install: git mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake mingw-w64-x86_64-ninja mingw-w64-x86_64-python mingw-w64-x86_64-nasm
-      # cc: gcc plus binmode.o when linking, so the clients' stdin is binary.
+      # cc: gcc plus an object that switches stdio to binary mode, so the
+      # clients' binary stdin payloads arrive intact (checked below).
       - run: |
-          gcc -O2 -Wall -Werror -DBINMODE="\"$(cygpath -m "$(gcc -print-file-name=binmode.o)")\"" tools/windows_cc.c -o /mingw64/bin/cc.exe
+          gcc -O2 -Wall -Werror -c tools/windows_binary.c -o /mingw64/lib/libheifer-binary-stdio.o
+          gcc -O2 -Wall -Werror -DBINARY_OBJECT="\"$(cygpath -m /mingw64/lib/libheifer-binary-stdio.o)\"" tools/windows_cc.c -o /mingw64/bin/cc.exe
           which python cc cmake cargo
+          printf '#include <stdio.h>\nint main(void){char b[16];size_t n=fread(b,1,sizeof b,stdin);fwrite(b,1,n,stdout);return 0;}\n' > /tmp/echo.c
+          cc -std=c11 -O2 -Werror /tmp/echo.c -o /tmp/echo
+          python -c "import subprocess,sys; d=bytes([0x1a,13,10,65,10]); o=subprocess.run(['/tmp/echo'.replace('/tmp',sys.argv[1])],input=d,capture_output=True).stdout; print(o); sys.exit(o!=d)" "$(cygpath -m /tmp)"
       - id: key
         run: echo "key=libheifer-oracle-windows-$(git rev-parse HEAD:libheifer/tests/upstream)-${{ hashFiles('libheifer/tools/build_reference.py') }}" >> "$GITHUB_OUTPUT"
       - id: cache

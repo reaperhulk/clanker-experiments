@@ -1,8 +1,8 @@
 /* SPDX-License-Identifier: LGPL-3.0-or-later */
 /* `cc` for the Windows (MinGW-w64) C-client job: runs gcc with the given
-   arguments and, when linking, adds MinGW's binmode.o so stdin/stdout and
-   fopen default to binary mode as on POSIX (the clients stream binary
-   payloads through stdin). BINMODE is gcc -print-file-name=binmode.o. */
+   arguments and, when linking, adds the object built from
+   tools/windows_binary.c (path in BINARY_OBJECT), which switches stdio to
+   binary mode as on POSIX: the clients stream binary payloads through stdin. */
 #include <process.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -33,7 +33,7 @@ int main(int argc, char** argv) {
   int n = 0;
   args[n++] = "gcc";
   for (int i = 1; i < argc; i++) args[n++] = quote(argv[i]);
-  if (link) args[n++] = quote(BINMODE);
+  if (link) args[n++] = quote(BINARY_OBJECT);
   args[n] = NULL;
   fflush(stdout);
   intptr_t r = _spawnvp(_P_WAIT, "gcc", (const char* const*)args);
