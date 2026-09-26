@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Original-header image encoding, retained handles, direct decoding and exact serialized image bytes."""
-import argparse,hashlib,json,os,struct,subprocess,random
+import argparse,hashlib,json,os,struct,subprocess,random,sys
 from pathlib import Path
 from test_hevc_builtin_encoding import fallback as hevc_fallback
 
@@ -49,7 +49,9 @@ def main():
     probe=Path('tests/encoding_oracle_failures.c')
     for name,lib in libs.items():
         binary=work/(name+'-failures')
-        subprocess.run(['cc','-std=c11','-O1','-g','-fsanitize=address,undefined','-fno-omit-frame-pointer','-Itests/upstream/libheif/api',f'-I{inc.parent}',str(probe),str(lib),f'-Wl,-rpath,{lib.parent}','-o',str(binary)],check=True)
+        # MinGW ships no sanitizer runtimes: there the probe runs uninstrumented.
+        sanitizers=[] if sys.platform=='win32' else ['-fsanitize=address,undefined','-fno-omit-frame-pointer']
+        subprocess.run(['cc','-std=c11','-O1','-g',*sanitizers,'-Itests/upstream/libheif/api',f'-I{inc.parent}',str(probe),str(lib),f'-Wl,-rpath,{lib.parent}','-o',str(binary)],check=True)
         for mode in [0,1]:
             run=subprocess.run([str(binary),str(mode)],capture_output=True,timeout=30,env=dict(env,ASAN_OPTIONS='detect_leaks=0'))
             stderr=run.stderr.decode(errors='replace')
