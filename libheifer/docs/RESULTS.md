@@ -2452,3 +2452,43 @@ detected only five: the suites' payloads never reached the encoder patches.
 ASCII, image-like data, symbol counts above 65535, UTF-8 across the 256 KiB
 block boundary) and a corrupt stream where the ring-buffer size decides
 BLOCK_LENGTH_1 versus BLOCK_LENGTH_2; with them all eleven are detected.
+
+## Independent C clients on macOS
+
+A macOS CI job (`Independent C clients (macOS)`, arm64) builds the libheif
+oracle there with libde265, pinned brotli 1.1.0 and pinned zlib 1.3.1, then
+runs the 58 suites that use the base reference (`tools/ci.py macos`), with
+clang-compiled clients against `libheifer.dylib`. All 58 match.
+
+Getting there needed only harness changes, no candidate changes:
+
+- `tests/decode.c` used C11 `<threads.h>`, which macOS lacks; it now compares
+  the callback thread with `pthread_self`/`pthread_equal`.
+- `tests/plugins.c` defined a static `gets()` that clashes with the macOS
+  stdio declaration; renamed.
+- The macOS oracle first linked Apple's zlib, whose inflate reports "invalid
+  literal/length/distance code" where zlib reports the literal/length and
+  distance cases separately (14 `items` cases). Every oracle now builds
+  pinned zlib 1.3.1 (1.3 does not compile against the current macOS SDK).
+- The suites link `libheif.so`/`libheifer.so`; on macOS these are symlinks
+  to the dylibs, created by `tools/build_reference.py` and `tools/ci.py`.
+
+libheif itself is not platform-independent. With the compiler's default
+multiply-add fusion (GCC and clang fuse on arm64; baseline x86-64 cannot),
+its float colour conversion rounds differently. A GCC aarch64 build of the
+oracle, run under qemu, reproduces the difference against its x86-64 build,
+and `-ffp-contract=off` removes it; libheifer and libde265 decode the
+affected fixtures identically on x86-64 and aarch64. The oracles are
+therefore built with `-ffp-contract=off` (no change on x86-64), and the
+macOS job also builds a `--fp-contract` oracle and reports, without gating,
+where the platform-default libheif differs: `hevc_rext` 422 of 7,525 cases,
+`decode` 13 of 115, `component_handles` 3 of 791. These are recorded as a
+known difference of native libheif across builds; the candidate follows the
+unfused evaluation on every platform.
+
+The JM decoder host truncated every transfer during this work, so the
+oracle cache now falls back to the previous cache and
+`tools/build_avc_decoders.py` reuses JM and FFmpeg installs built from the
+same pinned revisions (stamped in `REVISION` files). Windows C clients and the
+codec-specific references (AV1, JPEG, JPEG 2000, AVC, VVC, encoders) are not
+yet run on non-Linux platforms.
