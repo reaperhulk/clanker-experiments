@@ -1,0 +1,92 @@
+{
+  "scope": "Original-header built-in HEVC encoding against libheif with its x265 plugin: errors, parameters,\nhandles and non-codec boxes exactly; HEVC configuration formats; candidate files decoded by libde265.",
+  "cases": 164,
+  "listing": "descriptors1 lossy1 lossless1 e0,0,Success\nquality type1 default1 e0,0,Success range1,1,0,100 values0 e0,0,Success value50 e0,0,Success generic50\nlossless type2 default1 e0,0,Success value0 e0,0,Success generic0\npreset type3 default1 e0,0,Success strings,ultrafast,superfast,veryfast,faster,fast,medium,slow,slower,veryslow,placebo e0,0,Success valueslow e0,0,Success genericslow\ntune type3 default1 e0,0,Success strings,psnr,ssim,grain,fastdecode e0,0,Success valuessim e0,0,Success genericssim\ntu-intra-depth type1 default1 e0,0,Success range1,1,1,4 values0 e0,0,Success value2 e0,0,Success generic2\ncomplexity type1 default0 e0,0,Success range1,1,0,100 values0 e0,0,Success value0 e0,0,Success generic0\nchroma type3 default1 e0,0,Success strings,420,422,444 e0,0,Success value420 e0,0,Success generic420\n",
+  "mismatches": 0,
+  "files": 148,
+  "known_differences": {
+    "hpvca-monochrome-profile": 9,
+    "x265-open-failure": 2,
+    "x265-option": 2,
+    "shared-hvcC": 1
+  },
+  "known": [
+    {
+      "case": "1-1-1-2-0-8-1-8",
+      "line": 5,
+      "kind": "hpvca-monochrome-profile"
+    },
+    {
+      "case": "1-2-3-2-0-8-1-8",
+      "line": 11,
+      "kind": "hpvca-monochrome-profile"
+    },
+    {
+      "case": "1-7-5-2-0-8-1-8",
+      "line": 17,
+      "kind": "hpvca-monochrome-profile"
+    },
+    {
+      "case": "1-31-40-2-0-8-1-8",
+      "line": 23,
+      "kind": "hpvca-monochrome-profile"
+    },
+    {
+      "case": "1-64-48-2-0-8-1-8",
+      "line": 29,
+      "kind": "hpvca-monochrome-profile"
+    },
+    {
+      "case": "1-97-70-2-0-8-1-8",
+      "line": 35,
+      "kind": "hpvca-monochrome-profile"
+    },
+    {
+      "case": "1-130-66-2-0-8-1-8",
+      "line": 41,
+      "kind": "hpvca-monochrome-profile"
+    },
+    {
+      "case": "1-40-36-2-0-8-1-8",
+      "line": 69,
+      "kind": "hpvca-monochrome-profile"
+    },
+    {
+      "case": "993198081-33-29-0-3-10-1-8",
+      "line": 91,
+      "kind": "x265-open-failure"
+    },
+    {
+      "case": "1093861377-33-29-0-3-10-1-8",
+      "line": 103,
+      "kind": "x265-open-failure"
+    },
+    {
+      "case": "1174405121-70-50-0-1-8-1-8",
+      "line": 112,
+      "kind": "x265-option"
+    },
+    {
+      "case": "1177747457-33-29-0-3-10-1-8",
+      "line": 113,
+      "kind": "x265-option"
+    },
+    {
+      "case": "1-48-36-2-0-8-1-520",
+      "line": 158,
+      "kind": "hpvca-monochrome-profile"
+    },
+    {
+      "case": "513-64-40-0-1-8-16-8",
+      "line": 163,
+      "kind": "shared-hvcC"
+    }
+  ],
+  "decode_mismatches": [],
+  "client_sanitizers": false,
+  "corpus_sha256": "5b22ab5596a98d90500e0061bed09b8c41b01047d2fbf5d523494fd320be6225",
+  "differences": [],
+  "client_sha256": "f70e276c5a527cd2d053af2f686a4f36f3aa4f511946583d51127adbe6666418",
+  "reference_sha256": "0293563714250c95b0a0f77ae5347b53465842cf699282f5cbd7cd56beb43e04",
+  "candidate_sha256": "bcd0711a415e8b807dc1b0cadc647be17a1cfc30a1aafafee5f92ece3510ebc9"
+}

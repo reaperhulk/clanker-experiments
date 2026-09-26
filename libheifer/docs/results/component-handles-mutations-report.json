@@ -1,0 +1,46 @@
+{
+  "scope": "4 deliberate defects; not comprehensive mutation coverage",
+  "mutations": [
+    {
+      "mutation": "component_grid_parse_order",
+      "suite": "component_handles",
+      "source": "src/context.rs",
+      "before": "b\"grid\" => coded.map(|c| (c.colorspace, c.chroma, c.luma_bits, c.chroma_bits)),",
+      "after": "b\"grid\" => coded.map(|c| (c.colorspace, c.chroma, c.luma_bits + 1, c.chroma_bits)),",
+      "candidate_sha256": "84ead10298138241ee43cdb6f9d80765176b34c24734c7e7346eae73daf166f5",
+      "mismatches": 7,
+      "detected": true
+    },
+    {
+      "mutation": "component_decode_ids",
+      "suite": "component_handles",
+      "source": "src/decoding.rs",
+      "before": "image.apply_descriptions(&document.images[&id].components);",
+      "after": "// Deliberate defect: skip component reconciliation.",
+      "candidate_sha256": "acbb35b6d6e4f42d6c097bae7996ed2da5e99e960d4045d4dbe0bce3af7d1967",
+      "mismatches": 4,
+      "detected": true
+    },
+    {
+      "mutation": "component_alpha_depth",
+      "suite": "component_handles",
+      "source": "src/components.rs",
+      "before": "if depth > 0 { depth as u16 } else { 8 }",
+      "after": "if false { depth as u16 } else { 8 }",
+      "candidate_sha256": "e0b780100de978c01733208d9c3d3203ab3bb939d352085d4746e57336d851d3",
+      "mismatches": 20,
+      "detected": true
+    },
+    {
+      "mutation": "jpeg_sof_boundary",
+      "suite": "component_handles",
+      "source": "src/jpeg_config.rs",
+      "before": "11 + 3 * count >= data.len()",
+      "after": "11 + 3 * count > data.len()",
+      "candidate_sha256": "91f5d6b538ae8b9203e46b955382b60274bd68ebc5cbf2f407d98b51bd7f8e7c",
+      "mismatches": 1,
+      "detected": true
+    }
+  ],
+  "all_detected": true
+}

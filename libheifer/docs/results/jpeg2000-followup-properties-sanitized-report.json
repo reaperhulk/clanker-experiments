@@ -1,0 +1,12 @@
+{
+  "scope": "Original-header JPEG2000 channel, palette and nested property validation.",
+  "cases": 1589,
+  "mismatches": 0,
+  "client_sanitizers": true,
+  "leak_check": false,
+  "client_sha256": "6c52fc8f2278d8f08160fca2595195239f419304f5de42489a602a8eec3269ec",
+  "corpus_sha256": "11e8a157b4e2e9a675fe0a53a0c10f8867f55eaadf8b809862cb6ac6999cf78f",
+  "differences": [],
+  "reference_sha256": "06c669d5019806baf0756a9b5c8ece9f7269f751bee7cda4e43926044c6d473e",
+  "candidate_sha256": "68a3c0ffc3d868513cc492826878bd571cb9e9f0395b5adb042eef9e6f035191"
+}

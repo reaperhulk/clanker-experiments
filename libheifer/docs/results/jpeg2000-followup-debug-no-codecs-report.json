@@ -1,0 +1,12 @@
+{
+  "scope": "Original-header exact JPEG2000 nested property diagnostics.",
+  "cases": 1572,
+  "mismatches": 0,
+  "differences": [],
+  "client_sanitizers": false,
+  "leak_check": false,
+  "client_sha256": "32df6629f0a1d6bae94d2369870d6b1208dcd3d1eee3b2513344fa5effbc388b",
+  "corpus_sha256": "11e8a157b4e2e9a675fe0a53a0c10f8867f55eaadf8b809862cb6ac6999cf78f",
+  "reference_sha256": "989cf156b940664f9ade0740e21e99d965c81219b867fc5b5618cf537cc7564c",
+  "candidate_sha256": "1ddc2d2637896f03aad8980a6052e39ff4822642f90a8aea8d57e34d09a556ee"
+}

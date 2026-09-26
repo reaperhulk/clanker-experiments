@@ -1,0 +1,73 @@
+{
+  "scope": "6 deliberate defects; not comprehensive mutation coverage",
+  "shard": null,
+  "mutations": [
+    {
+      "mutation": "jpeg_encode_quality_scale",
+      "suite": "jpeg_encoding",
+      "source": "src/jpeg_encoder.rs",
+      "before": "        200 - quality * 2\n",
+      "after": "        201 - quality * 2\n",
+      "candidate_sha256": "7c447441e5a7ce48f5afeadd8183029d6084878846ffbc3e9bc8a224d1f17976",
+      "mismatches": 131,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "jpeg_encode_reciprocal_rounding",
+      "suite": "jpeg_encoding",
+      "source": "src/jpeg_encoder.rs",
+      "before": "} else if fr <= u64::from(divisor / 2) {",
+      "after": "} else if fr < u64::from(divisor / 2) {",
+      "candidate_sha256": "79df99824a9050708bdebd463881d1df0775ed8f81f073425fa7a78867f63730",
+      "mismatches": 0,
+      "process_failures": [],
+      "detected": false
+    },
+    {
+      "mutation": "jpeg_encode_dummy_dc",
+      "suite": "jpeg_encoding",
+      "source": "src/jpeg_encoder.rs",
+      "before": "            block[0] = *prev;",
+      "after": "            block[0] = 0;",
+      "candidate_sha256": "a40e4a0ca50312769ff11421a372ccb4b861535be47ea08a39a739508ebfa22a",
+      "mismatches": 142,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "jpeg_encode_flush_padding",
+      "suite": "jpeg_encoding",
+      "source": "src/jpeg_encoder.rs",
+      "before": "let byte = ((self.buffer << (8 - self.bits)) as u8) | (0xFF >> self.bits);",
+      "after": "let byte = (self.buffer << (8 - self.bits)) as u8;",
+      "candidate_sha256": "0be53cdbad3c190ea6099509e8c8ec0248fe2c8b08339998de34705896d94e6c",
+      "mismatches": 165,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "jpeg_encode_fdct_constant",
+      "suite": "jpeg_encoding",
+      "source": "src/jpeg_encoder.rs",
+      "before": "            let tmp4 = tmp4 * 2446;",
+      "after": "            let tmp4 = tmp4 * 2447;",
+      "candidate_sha256": "dfb257b72aedc4c3b675382bf46aa740c97e08d0c405ebeabe030333e2c5193c",
+      "mismatches": 2,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "jpeg_encode_thumbnail_density",
+      "suite": "jpeg_encoding",
+      "source": "crates/capi/src/builtin_jpeg_encoder.rs",
+      "before": "matches!(input_class, 1 | 4)",
+      "after": "matches!(input_class, 1)",
+      "candidate_sha256": "0c3b3d352cc346d9dfe6a73474de17cea6b672742e2e702f5bd8d3228a8b12f7",
+      "mismatches": 0,
+      "process_failures": [],
+      "detected": false
+    }
+  ],
+  "all_detected": false
+}

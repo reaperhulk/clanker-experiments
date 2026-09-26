@@ -1,0 +1,46 @@
+{
+  "scope": "4 deliberate defects; not comprehensive mutation coverage",
+  "mutations": [
+    {
+      "mutation": "component_id_sequence",
+      "suite": "sensor",
+      "source": "src/components.rs",
+      "before": "self.next.wrapping_add(1)",
+      "after": "self.next.wrapping_add(2)",
+      "candidate_sha256": "5b4558989888a98d67879e03ea06126583fb48f180097d9e60ec85a4dcb9d72d",
+      "mismatches": 704,
+      "detected": true
+    },
+    {
+      "mutation": "component_reference_count",
+      "suite": "components",
+      "source": "crates/capi/src/components.rs",
+      "before": "i.component_ids.descriptions.len() as u32",
+      "after": "i.component_ids.descriptions.iter().filter(|d| d.has_data).count() as u32",
+      "candidate_sha256": "7b1b5105e88b2bd63c67cabb65c59da7d4be62771056606692a5007100e42f6b",
+      "mismatches": 67328,
+      "detected": true
+    },
+    {
+      "mutation": "component_typed_stride",
+      "suite": "components",
+      "source": "crates/capi/src/components.rs",
+      "before": "stride.write(plane.map_or(0, |p| p.stride / std::mem::size_of::<$ty>()));",
+      "after": "stride.write(plane.map_or(0, |p| p.stride));",
+      "candidate_sha256": "9ad70de7cd5a2af90882283ac6194d158d3ede054834c1ee57a550c22841975f",
+      "mismatches": 1674,
+      "detected": true
+    },
+    {
+      "mutation": "component_crop_datatype",
+      "suite": "components",
+      "source": "src/image.rs",
+      "before": "plane.datatype = source.datatype;",
+      "after": "plane.datatype = 0;",
+      "candidate_sha256": "17482fb1c13d0792d4db47c9560b3010eb057e2e5d83c903cd87107c82fcf7a4",
+      "mismatches": 1061,
+      "detected": true
+    }
+  ],
+  "all_detected": true
+}

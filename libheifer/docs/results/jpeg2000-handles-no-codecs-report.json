@@ -1,0 +1,13 @@
+{
+  "scope": "Original-header JPEG2000 retained components, precision and partial codestream descriptions.",
+  "descriptions_only": false,
+  "cases": 1327,
+  "mismatches": 0,
+  "client_sanitizers": false,
+  "leak_check": false,
+  "client_sha256": "8ac988e90842d28e43a1f2e5fc9688e247bff1468f3fd592394172e5d4dcc5c3",
+  "corpus_sha256": "1ea7ea9beb4ed0d96c984dee4552b79f47da0800b270ac5e6e9330fff5754987",
+  "differences": [],
+  "reference_sha256": "5cc5713a0503098f20f8a3631e370d43256ebdca0a3209e97d541e6ecf1cd917",
+  "candidate_sha256": "9b925d6790bf1fdbce897e28834e5ba629fed2664bf43fc6ea145189e5b553a5"
+}

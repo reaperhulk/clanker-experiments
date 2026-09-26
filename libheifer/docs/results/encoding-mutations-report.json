@@ -1,0 +1,106 @@
+{
+  "scope": "10 deliberate defects; not comprehensive mutation coverage",
+  "mutations": [
+    {
+      "mutation": "encode_mask_stride",
+      "suite": "encoding",
+      "source": "src/encoding.rs",
+      "before": ".get(y * plane.stride..y * plane.stride + image.width as usize)",
+      "after": ".get(0..image.width as usize)",
+      "candidate_sha256": "d720bcd08cec599c826a0286c0c7264c4c94bd1e592440bf89ab72d02d94c930",
+      "mismatches": 350,
+      "detected": true
+    },
+    {
+      "mutation": "encode_orientation",
+      "suite": "encoding",
+      "source": "src/encoding.rs",
+      "before": "6 => (3, None)",
+      "after": "6 => (1, None)",
+      "candidate_sha256": "2d4639287352884d5c00b6a5663e2c278de5e19c8afada588c0e5d059836afcf",
+      "mismatches": 115,
+      "detected": true
+    },
+    {
+      "mutation": "encode_primary_flag",
+      "suite": "encoding",
+      "source": "src/encoding.rs",
+      "before": "old.primary.store(false, Ordering::Relaxed);",
+      "after": "old.primary.store(true, Ordering::Relaxed);",
+      "candidate_sha256": "5e1d5141c4937b7ac17468fc3b9f2d22b4c845fade00de4040efb269b647af23",
+      "mismatches": 24,
+      "detected": true
+    },
+    {
+      "mutation": "encode_profile_fallback",
+      "suite": "encoding",
+      "source": "crates/capi/src/encoding.rs",
+      "before": "        image.color.nclx\n",
+      "after": "        None\n",
+      "candidate_sha256": "63f72a7fead7b2fe2cf4609670ca4fd9ed95bfd2f9d39ea60279d4306bf81d3f",
+      "mismatches": 16,
+      "detected": true
+    },
+    {
+      "mutation": "encode_unc_component_endian",
+      "suite": "encoding",
+      "source": "src/uncompressed_encode.rs",
+      "before": "if !dense && cfg!(target_endian = \"little\")",
+      "after": "if false",
+      "candidate_sha256": "b75bfa993acf07e2386fa4ada7f1755f8d594d293963b4ecd455c5d092e4e03f",
+      "mismatches": 230,
+      "detected": true
+    },
+    {
+      "mutation": "encode_unc_compression_flag",
+      "suite": "encoding",
+      "source": "src/uncompressed_encode.rs",
+      "before": "props.push((property(*b\"cmpC\", cmp), false));",
+      "after": "props.push((property(*b\"cmpC\", cmp), true));",
+      "candidate_sha256": "4b5e2ed2fd6def36e9294e71310a2ef22bec84be58b192a545cfef0a41675a5a",
+      "mismatches": 280,
+      "detected": true
+    },
+    {
+      "mutation": "encode_thumbnail_noop",
+      "suite": "encoding",
+      "source": "crates/capi/src/encoding.rs",
+      "before": "ContextError::new(0, 0, \"Success\")",
+      "after": "ContextError::new(5, 2006, \"Invalid thumbnail\")",
+      "candidate_sha256": "3c73ceb846f74721f4e908b489c9106cccd6c0554b2e51c41b02c6d120a7d7e7",
+      "mismatches": 12,
+      "detected": true
+    },
+    {
+      "mutation": "encode_thumbnail_direction",
+      "suite": "encoding",
+      "source": "crates/capi/src/encoding.rs",
+      "before": "from: image.id,\n                kind: u32::from_be_bytes(*b\"thmb\"),\n                to: vec![master.id],",
+      "after": "from: master.id,\n                kind: u32::from_be_bytes(*b\"thmb\"),\n                to: vec![image.id],",
+      "candidate_sha256": "f97b014949cda6e7371827d59cc40aa76394586f15be6b6697e8617bb7a860ce",
+      "mismatches": 14,
+      "detected": true
+    },
+    {
+      "mutation": "encode_overlay_background",
+      "suite": "encoding",
+      "source": "src/encoding.rs",
+      "before": "for n in background {",
+      "after": "for n in [0u16;4] {",
+      "candidate_sha256": "5cd0eeca86d101c9e4cadda6fc57ac90c058d66635e23f86d2cc89f285e60612",
+      "mismatches": 8,
+      "detected": true
+    },
+    {
+      "mutation": "encode_repeated_extent",
+      "suite": "encoding",
+      "source": "src/items.rs",
+      "before": "*len = bytes.len() as u64 + data.len() as u64;",
+      "after": "*len = data.len() as u64;",
+      "candidate_sha256": "23b5721c48f4bb8443becf4647929fade6f5b39c26a9b34060f37310cd92faec",
+      "mismatches": 24,
+      "detected": true
+    }
+  ],
+  "all_detected": true
+}

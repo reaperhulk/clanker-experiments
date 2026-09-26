@@ -1,0 +1,84 @@
+{
+  "scope": "7 deliberate defects; not comprehensive mutation coverage",
+  "shard": null,
+  "mutations": [
+    {
+      "mutation": "avc_encode_rounded_size",
+      "suite": "avc_builtin_encoding",
+      "source": "crates/capi/src/builtin_avc_encoder.rs",
+      "before": "((s + 1) & !1).max(64)",
+      "after": "((s + 1) & !1).max(32)",
+      "candidate_sha256": "0644c64c33e7a5c0192579883669b53c66c442d5c70958f64b50fc7fb7a31d5d",
+      "mismatches": 99,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "avc_encode_default_tu_depth",
+      "suite": "avc_builtin_encoding",
+      "source": "crates/capi/src/builtin_avc_encoder.rs",
+      "before": "set_integer(p, c\"tu-intra-depth\".as_ptr(), 2);",
+      "after": "set_integer(p, c\"tu-intra-depth\".as_ptr(), 3);",
+      "candidate_sha256": "88c26e2f962ef3545d8fd80804f589618068956fbe4bef63bab87fcf8ccd7727",
+      "mismatches": 1,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "avc_encode_x264_options",
+      "suite": "avc_builtin_encoding",
+      "source": "crates/capi/src/builtin_avc_encoder.rs",
+      "before": "(n, _) if n.starts_with(b\"x264:\") => {",
+      "after": "(n, _) if n.starts_with(b\"x264:-\") => {",
+      "candidate_sha256": "e0dffa5047b68aea2760e96b21dc4236c012740f58357da34ef1f6c63ba2afe5",
+      "mismatches": 1,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "avc_encode_ultrafast_baseline",
+      "suite": "avc_builtin_encoding",
+      "source": "crates/capi/src/builtin_avc_encoder.rs",
+      "before": "baseline: ultrafast,",
+      "after": "baseline: false,",
+      "candidate_sha256": "6f14744b7ffcc3e9dadb568036bc3149c4bb98782c081e56eefa3cae468fa93f",
+      "mismatches": 1,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "avc_encode_level_frame_size",
+      "suite": "avc_builtin_encoding",
+      "source": "src/avc_encoder.rs",
+      "before": "(10, 99, 396, 64),",
+      "after": "(10, 396, 396, 64),",
+      "candidate_sha256": "56600f6b76dc9b9f11ae847ab828d73049553d4c513d9c6ebfcef8c94aa3a32e",
+      "mismatches": 5,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "avc_encode_constraint_flags",
+      "suite": "avc_builtin_encoding",
+      "source": "src/avc_encoder.rs",
+      "before": "w.bytes[1] = if baseline { 0xc0 } else { 0x40 }",
+      "after": "w.bytes[1] = if baseline { 0x80 } else { 0x40 }",
+      "candidate_sha256": "823fb721adea632f47dbd2c85728732fd4ebd238f2ec0af65b1ba27605df2f9c",
+      "mismatches": 1,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "avc_encode_chroma_formats",
+      "suite": "avc_builtin_encoding",
+      "source": "crates/capi/src/builtin_avc_encoder.rs",
+      "before": "if !matches!(chroma, 0 | 1) {",
+      "after": "if !matches!(chroma, 0 | 1 | 2) {",
+      "candidate_sha256": "0bcd25b1f2f8e57de0b5f75623ff3cd6c507f62af1417bb8d674ed0f1c2a0655",
+      "mismatches": 1,
+      "process_failures": [],
+      "detected": true
+    }
+  ],
+  "all_detected": true
+}

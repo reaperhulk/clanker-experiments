@@ -1,0 +1,8 @@
+{
+  "scope": "Original-header sanitizer C client accepted by reference but detected candidate use-after-free before the object-buffer fix; a crash is not counted as an ordinary differential match",
+  "candidate_sha256": "b12c49a4a8b9c1d4a4b20b6249f7f4362ebf3d6c9546e6cdfd817ede4ec2f6d4",
+  "client_sha256": "c2de479c5103d64b5aebe78b1267acdef2b26d11f149522030dda8007a70dbe0",
+  "diagnostic": "AddressSanitizer: heap-use-after-free",
+  "log_sha256": "e4b7c8068e058fc76ca0faa08dec324bea45c476acc131928dd17bf914c6ce89",
+  "fixed_evidence": "error-lifetimes-sanitized-report.json"
+}

@@ -1,0 +1,12 @@
+{
+  "scope": "Independent JPEG2000 channel and nested child-count allocation limits.",
+  "cases": 2763,
+  "mismatches": 0,
+  "client_sanitizers": false,
+  "leak_check": false,
+  "client_sha256": "9b6cafe33f096a88507a0545fed6de411d22f794c392ef2b2b93de624e6c77e4",
+  "corpus_sha256": "aefd3fefa1e96da846da64f37749bba9a0c60bd36d3987270c9f0c88ded93296",
+  "reference_sha256": "989cf156b940664f9ade0740e21e99d965c81219b867fc5b5618cf537cc7564c",
+  "candidate_sha256": "1ddc2d2637896f03aad8980a6052e39ff4822642f90a8aea8d57e34d09a556ee",
+  "differences": []
+}

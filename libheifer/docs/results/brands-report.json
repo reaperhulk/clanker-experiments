@@ -1,0 +1,11 @@
+{
+  "scope": "version and brand APIs only; not whole-library compatibility",
+  "cases": 17126,
+  "seed": "0x4e14f594",
+  "corpus_sha256": "181ffd2aa98517f39b1d01ed1416b4500f9c394133e71bd2fe2c82e6ccfe693f",
+  "reference": "1.23.4",
+  "reference_sha256": "5d70927cded8be6d1b4da912971aed75d426ba079c84d0b8462785ec5b9c92f7",
+  "candidate_sha256": "b64356a1ae676bafa2b79a283b320a0d3b0576b07f8ea6c39b4b8feb6f749d8f",
+  "mismatches": 0,
+  "examples": []
+}

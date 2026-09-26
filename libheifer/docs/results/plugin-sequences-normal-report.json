@@ -1,0 +1,12 @@
+{
+  "scope": "Original-header registered decoder plugins driving image-sequence tracks: push/poll/flush order, user data, errors and output.",
+  "cases": 466,
+  "mismatches": 0,
+  "differences": [],
+  "client_sanitizers": false,
+  "leak_check": false,
+  "client_sha256": "a60c92e9eab1c5798b305e10bc16634bf5d838c9bd3ca1a61c068a40f769a4c6",
+  "corpus_sha256": "c796481784ddb15e710973ca0939ed118ed6b951ac0e1fb6eb25dd68eeb2bd33",
+  "reference_sha256": "1678e871daafebd624c78b12494a87b7f17709e1be2ee2dd7d622720b814e764",
+  "candidate_sha256": "0e4ba8a68eb1249d387430554733ee78319c68f93345e42bdd1b477dae9e50ca"
+}

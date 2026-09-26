@@ -1,0 +1,29 @@
+[package]
+name = "libheifer-capi"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.94"
+license = "LGPL-3.0-or-later"
+description = "Optional libheif C ABI for libheifer (in development)"
+
+[lib]
+name = "heifer"
+crate-type = ["cdylib", "staticlib", "rlib"]
+
+[dependencies]
+libheifer = { path = "../.." }
+# AV1 encoder with its assembly (`asm`); the binaries and other defaults are off.
+num-traits = { version = "0.2", optional = true }
+rav1e = { version = "=0.8.1", optional = true, default-features = false, features = ["asm", "capi", "threading"] }
+
+[lints.rust]
+unsafe_op_in_unsafe_fn = "deny"
+
+[features]
+default = ["hevc", "av1", "avc", "jpeg", "jpeg2000", "vvc"]
+avc = ["libheifer/avc"]
+jpeg2000 = ["libheifer/jpeg2000"]
+jpeg = ["libheifer/jpeg"]
+hevc = ["libheifer/hevc"]
+vvc = ["libheifer/vvc"]
+av1 = ["libheifer/av1", "dep:rav1e", "dep:num-traits"]

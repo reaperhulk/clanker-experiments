@@ -1,0 +1,150 @@
+{
+  "scope": "13 deliberate defects; not comprehensive mutation coverage",
+  "shard": null,
+  "mutations": [
+    {
+      "mutation": "htj2k_encode_tag_tree_alias",
+      "suite": "htj2k_encoding",
+      "source": "src/htj2k_encoder.rs",
+      "before": "self.levels[lev as usize].get(i).copied().unwrap_or(0xff)",
+      "after": "if x >= (self.width + (1 << lev) - 1) >> lev { 0xff } else { self.levels[lev as usize].get(i).copied().unwrap_or(0xff) }",
+      "candidate_sha256": "61e2b1c7f07f25b41b2317f133776ddfb01550ed9af489783ef640b36b01114b",
+      "mismatches": 2,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "htj2k_encode_lone_sample",
+      "suite": "htj2k_encoding",
+      "source": "src/htj2k_encoder.rs",
+      "before": "Plane::Float(v) => v.iter_mut().for_each(|s| *s *= 2.0),",
+      "after": "Plane::Float(v) => v.iter_mut().for_each(|s| *s *= 1.0),",
+      "candidate_sha256": "8d713c5bd96b669b83ad47bbeb62b1b141817f5666f014362dbeae016ea6f0cf",
+      "mismatches": 10,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "htj2k_encode_kappa",
+      "suite": "htj2k_encoding",
+      "source": "src/htj2k_encoder.rs",
+      "before": "const IRV_K: f32 = 1.230174104914001;",
+      "after": "const IRV_K: f32 = 1.2301741;",
+      "candidate_sha256": "2ccb2d495f3afe6228a49885221f2904acf8be245490f785acc8425c366bc0c8",
+      "mismatches": 0,
+      "process_failures": [],
+      "detected": false
+    },
+    {
+      "mutation": "htj2k_encode_largest_kmax",
+      "suite": "htj2k_encoding",
+      "source": "src/htj2k_encoder.rs",
+      "before": "                u32::from(v >> 11).wrapping_sub(1)\n            };\n            num_bits = num_bits.max(t);",
+      "after": "                u32::from(v >> 11).saturating_sub(1)\n            };\n            num_bits = num_bits.max(t);",
+      "candidate_sha256": "476ca6870554ec8055796847a69490d4081654bcdcdad11da7ded98ecea1a535",
+      "mismatches": 2,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "htj2k_encode_sign_overflow",
+      "suite": "htj2k_encoding",
+      "source": "src/htj2k_encoder.rs",
+      "before": "let mut val = (t.wrapping_add(t) & mask) >> p;",
+      "after": "let mut val = t.wrapping_add(t) >> p;",
+      "candidate_sha256": "334ab4ac0ffd60f639d0dcc7c6b5c5b5f96c3ecb4a7eabe3dccb68f5edd706f4",
+      "mismatches": 303,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "htj2k_encode_initial_uvlc",
+      "suite": "htj2k_encoding",
+      "source": "src/htj2k_encoder.rs",
+      "before": "let a = uvlc((u_q0 - 2) as usize);",
+      "after": "let a = uvlc(u_q0 as usize);",
+      "candidate_sha256": "f3acf7ad8fadbf123cedb2089e2041f3ac1dfeda16405b864006bfb6d999f058",
+      "mismatches": 268,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "htj2k_encode_step_rounding",
+      "suite": "htj2k_encoding",
+      "source": "src/htj2k_encoder.rs",
+      "before": "(delta * (1 << 11) as f32).round() as i32",
+      "after": "(delta * (1 << 11) as f32).floor() as i32",
+      "candidate_sha256": "4e2e47e91f270ead38b35b9f7273f47abc3fd1ae3deb3c58124e0fb8d7deea0f",
+      "mismatches": 156,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "htj2k_encode_default_lossy",
+      "suite": "htj2k_encoding",
+      "source": "crates/capi/src/builtin_htj2k_encoder.rs",
+      "before": "        reversible: false,\n        num_decompositions: 5,",
+      "after": "        reversible: true,\n        num_decompositions: 5,",
+      "candidate_sha256": "95661ae1a18f51b5f75ff14b35d1cb8613d4ff4c83074cc6b5cdf453c080d62f",
+      "mismatches": 156,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "htj2k_encode_default_progression",
+      "suite": "htj2k_encoding",
+      "source": "crates/capi/src/builtin_htj2k_encoder.rs",
+      "before": "progression: htj2k_encoder::RPCL,",
+      "after": "progression: htj2k_encoder::LRCP,",
+      "candidate_sha256": "63d346cbd5d797b8e34031b1689355562ab4d9b52e784e1d65664ecf53c6c180",
+      "mismatches": 263,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "htj2k_encode_parameter_kind",
+      "suite": "htj2k_encoding",
+      "source": "crates/capi/src/builtin_htj2k_encoder.rs",
+      "before": "        kind: 3,\n        value: ParameterValue {\n            string:",
+      "after": "        kind: 2,\n        value: ParameterValue {\n            string:",
+      "candidate_sha256": "21301b77a49facdc7f6c01e4dce50439ab0af8a171cb8c23146b271be1d8349d",
+      "mismatches": 118,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "jpeg2000_encode_chroma_kind",
+      "suite": "jpeg2000_encoding",
+      "source": "crates/capi/src/builtin_jpeg2000_encoder.rs",
+      "before": "    name: c\"chroma\".as_ptr(),\n    kind: 3,",
+      "after": "    name: c\"chroma\".as_ptr(),\n    kind: 2,",
+      "candidate_sha256": "2b5a3fc02efeafe0474a77288acc52913edf275d78bb9e83dddb00d545d8c48e",
+      "mismatches": 2,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "jpeg2000_lone_97_sample",
+      "suite": "htj2k",
+      "source": "vendor/hayro-jpeg2000/src/j2c/idwt.rs",
+      "before": "if !x0.is_multiple_of(2) && transform == WaveletTransform::Reversible53 {",
+      "after": "if !x0.is_multiple_of(2) {",
+      "candidate_sha256": "0485c2e9b358715981cb98c7df03c84cda517a3d28b627d9977fe43614df1d55",
+      "mismatches": 72,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "jpeg2000_deep_precinct_step",
+      "suite": "htj2k",
+      "source": "vendor/hayro-jpeg2000/src/j2c/tile.rs",
+      "before": "        let x_stride = 1_u64\n",
+      "after": "        if nl_minus_r > 16 {\n            return None;\n        }\n        let x_stride = 1_u64\n",
+      "candidate_sha256": "30aa2da218d5ba091734388a362231c9d936db448a87cafcefff54096c922ba7",
+      "mismatches": 576,
+      "process_failures": [],
+      "detected": true
+    }
+  ],
+  "all_detected": false
+}

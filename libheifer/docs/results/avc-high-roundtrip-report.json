@@ -1,0 +1,4764 @@
+{
+ "scope": "Decodes libheifer's High-profile AVC encoder output (examples/avc_high_roundtrip.rs:\n4:0:0 to 4:4:4, 8 and 10 bits, lossy and lossless, with and without deblocking) with the\ntest-only JM reference decoder and FFmpeg's H.264 decoder (tools/build_avc_decoders.py).\nWithout deblocking both must reproduce the encoder's reconstruction exactly; lossless\nstreams must reproduce the input; with deblocking the decoders must agree.\n",
+ "cases": 792,
+ "mismatches": 0,
+ "generator_failure": null,
+ "jm_mismatches": 0,
+ "ffmpeg_mismatches": 0,
+ "jm_sha256": "4558f9ca189afd76d8dd8a2dd80dea77d1128e339c43cf09ca142943078f6a2d",
+ "ffmpeg_sha256": "d2383941b07ac141575482b137a0a9d09b40fd15e8d3c3892fa713c14136f934",
+ "results": [
+  {
+   "name": "c0-d8-16x16-p4-q12",
+   "stream_sha256": "e18741c2e32752965fc8fd966be8b3ac8de284d077d9f7351ec1325c25c02a3b",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-16x16-p4-q24-deblock",
+   "stream_sha256": "17b0c1ebd3ffe5217bf9c31f5ba6a1cd8a665cdee17fcc2b596254d9c3094768",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-16x16-p4-q40-deblock",
+   "stream_sha256": "c8a05ca39ceea0c1f5489e1dbf62bc7a439be35a439aa74870d3964aef51e280",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-16x16-p4-q30",
+   "stream_sha256": "a70aef1343e168dc43c82bc55069bf3b51530c2c147d031e3016ceec30d5e2cd",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-16x16-p4-q30n8",
+   "stream_sha256": "606f5f073d19125f937dfd475ac7f98747ccc331fd19d38edd7bf837dd3386ff",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-16x16-p4-q45",
+   "stream_sha256": "7ffa71c29c203f202cb29ccea6caa6c22e427759e08e2ce054445017c8f6d6fc",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-16x16-p4-qmin",
+   "stream_sha256": "1fd1dd1f2c9f819d497668443cf1f1d6fbbe8cffd97ebe474e5931881dc24fcf",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-16x16-p4-lossless",
+   "stream_sha256": "96789d1441e5c7e76d29bfa653b64f0f2cdda095d61437a9a37aa5aea12d4645",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-16x16-p4-lossless-n8",
+   "stream_sha256": "496ab75ff2c6ceeece3920d904fb7fbc621cc2fd62c3343414bccb734deeed35",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-64x48-p0-q12",
+   "stream_sha256": "a4d002ffda30814dabd24e93d68eed70331484cfbfc179b23afd14d41855f398",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-64x48-p0-q24-deblock",
+   "stream_sha256": "8db451dc87faf328f4549bd8c02ad4db1a1a6d9a335670105da1e187ae1f7181",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-64x48-p0-q40-deblock",
+   "stream_sha256": "d9b3d47fd109cb54be95cab0df70d483a142298342b5fa7992bf1a9d035ff8a4",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-64x48-p0-q30",
+   "stream_sha256": "85b579e67812ea97cadc842b7e03067cc9cd316b5dac28398fe564cdbf787be5",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-64x48-p0-q30n8",
+   "stream_sha256": "0d7948a0b7917042d50c9f261d3aec0bf35bb05abba4f976b40cf3447862a2ec",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-64x48-p0-q45",
+   "stream_sha256": "d5cdfa5be26368acd290ea0b9f3571898f46cdbd818e91715775a7116343f969",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-64x48-p0-qmin",
+   "stream_sha256": "eab362356444361ebf461d70223627a86259e96eadb3c1849af8e682704e1078",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-64x48-p0-lossless",
+   "stream_sha256": "e29e652e9c3e59ea61d23224de1ea237c78dbbaa25d1c257723e23d7d66d66b8",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-64x48-p0-lossless-n8",
+   "stream_sha256": "0bd3e647660cf9ca41c66705fe2a5b3793de0084cddbfb18e778c2bcb5d404d6",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-64x48-p1-q12",
+   "stream_sha256": "734daed528f8b0f16245b804489acce3c0efde27f93704c31466eef5d4fd5337",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-64x48-p1-q24-deblock",
+   "stream_sha256": "7ec9eae9209db727550590e757a04ff8a7fcb3cc1f441d6d02fe26cdb27cdeeb",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-64x48-p1-q40-deblock",
+   "stream_sha256": "238b64094edbe2ad35c0cfc6a296f77753eb4226b9e533d6446a5ed673fc0827",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-64x48-p1-q30",
+   "stream_sha256": "73d68c6ae7fea2ab37522ddba05743d5fc523c1a0a22ceb916c8245df9ad8c68",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-64x48-p1-q30n8",
+   "stream_sha256": "cce415cde5af7bc7648d9a35398b4ee5673ce37dc0119f9bbf94e61fb985e50f",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-64x48-p1-q45",
+   "stream_sha256": "094d56c84b7d181b0720e0ef53a8281311ec9fae8b6f786ef6f91016a7e805e1",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-64x48-p1-qmin",
+   "stream_sha256": "23e784903d6944ee63092d3504a2517144b79335f16d2b55476982a57bfd20ad",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-64x48-p1-lossless",
+   "stream_sha256": "702f2e061932b54238c443aa885b485641b2695b0779d659bb698c4c063dba55",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-64x48-p1-lossless-n8",
+   "stream_sha256": "8ceb9d9c4d552206ad8c8287b2d59938bd77731dad28cf4185e5a65cf646550c",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-64x48-p2-q12",
+   "stream_sha256": "3f81a2f7b5c9e26c0192be472c1d70f1f03f27841e7f409fbc6f9e023141c4a1",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-64x48-p2-q24-deblock",
+   "stream_sha256": "c9da2e94b07930eba3e5fec4f52e6be93f61f86eb2134563546e747a2e8a06c3",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-64x48-p2-q40-deblock",
+   "stream_sha256": "e5ea22810469cfca0d260f9fb2176506bf6a30d97070861804eea6c978adca47",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-64x48-p2-q30",
+   "stream_sha256": "11c398e61e503cba3dcbef0ee4b33c39c82912a4eae58c972ab3c5e5c582ad43",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-64x48-p2-q30n8",
+   "stream_sha256": "fab6e80235e1ecb7105fa56cf43bba633e363eec0a01a28134966553b5546e88",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-64x48-p2-q45",
+   "stream_sha256": "f64a526029329d415d82015de2af6ab230d905550ba54bfc4eb070c379a57bcc",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-64x48-p2-qmin",
+   "stream_sha256": "64203e80b8f25430590947de7e3f44c31284c6e28906a60e0561fa6e7157b555",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-64x48-p2-lossless",
+   "stream_sha256": "47a1b7958db1b2dbe700e2bd3a5bb017ebd62f794726a374c7b673e4262f26d1",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-64x48-p2-lossless-n8",
+   "stream_sha256": "8a4650ec0ff2390ab3796d7685dfe2c443719fc1d2aaf57e8f18452223799f7a",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-64x48-p3-q12",
+   "stream_sha256": "2e056f70f103aa198b87801ba8f17b8b9177c716ce8e58d88946492c00065e65",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-64x48-p3-q24-deblock",
+   "stream_sha256": "6ade7ab51ce8292a40eb794ebf2804f322c911672d5fe36407e5945091e4fcfd",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-64x48-p3-q40-deblock",
+   "stream_sha256": "95a1e9085ae9b6a322724c9b7a97dfa172b07cf3a9c32b87f351747fb3bf9cd3",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-64x48-p3-q30",
+   "stream_sha256": "8cb9cf8291f8f541f1cb46671cc35ee709a8c2444119cfe1ebac8f5da76b8781",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-64x48-p3-q30n8",
+   "stream_sha256": "5c97b5702f6f9f78d63822bb47a3fdcd6a82d282d4d73270ab444d261d4835a7",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-64x48-p3-q45",
+   "stream_sha256": "37fb0e0ed0183ce2f06119c366688f6c1a175313ec47595986d21d676855179e",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-64x48-p3-qmin",
+   "stream_sha256": "17a14c55890dc7f95329ae65e7c40451594f9024e04fed864f87f8c3de9e43a0",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-64x48-p3-lossless",
+   "stream_sha256": "a16e25a82453cfd990b0071c8b1d0f9a52ae8e561e972265ae5a3ca91b5290ff",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-64x48-p3-lossless-n8",
+   "stream_sha256": "7e69cf3a6fac0e4aee3806eecf884ea2bc8af34f00988e6b73d51277f6b12177",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-64x48-p4-q12",
+   "stream_sha256": "b3a9759d90de2af7ef0947d9e7886e4378bccb2eabf96f6169285e3ad8ca909e",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-64x48-p4-q24-deblock",
+   "stream_sha256": "7a32b2b9955538280ac72c8510f99f1bddba2a21da8b19860f442ce1bbdb7273",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-64x48-p4-q40-deblock",
+   "stream_sha256": "4090586ae80790a2346d1c4941939ae0aaf91584bd62d8137cfcb1e6c112711a",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-64x48-p4-q30",
+   "stream_sha256": "be697462476efe5c73e1fab5d9ff9a0e24c7778b00926169ec3b14c2998d5e2c",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-64x48-p4-q30n8",
+   "stream_sha256": "2666e14648d373f7854000cbc101f2b73452c744ff42bfc9e46109e8f552d14b",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-64x48-p4-q45",
+   "stream_sha256": "47327851939d4cb4ad4d059f8948b03d2b889600d6725bb1a00e5dd96bb1dbc9",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-64x48-p4-qmin",
+   "stream_sha256": "98431215b578ae49fc0bb83ac79e2bade4de16e873136b597b27423b12d0c761",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-64x48-p4-lossless",
+   "stream_sha256": "a76ced0ec58095ce0208af290dc9d10e4a56d65250980f16b25186f8e250ecdf",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-64x48-p4-lossless-n8",
+   "stream_sha256": "40c503ffe2d3c29b28432588330e1fe02bb896f3436c9bc2a6c531636e7e0e79",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-50x38-p4-q12",
+   "stream_sha256": "f33a8c30470c8b10bec551b4ef301c60df6eca75ef1771449a7d9e044c423edc",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-50x38-p4-q24-deblock",
+   "stream_sha256": "870eb4785ccca771cad5651fd8b605550e3cdd356684e31ff6d4d10ff092ffea",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-50x38-p4-q40-deblock",
+   "stream_sha256": "413da5e234c98c3ab07e3c05c9725a9cc7071d783dacd8977f088501cc4eb7f4",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-50x38-p4-q30",
+   "stream_sha256": "0e204d15c9c479e7a2195f12da4d8853061c53435aea2e6bb88e0be5443f0db3",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-50x38-p4-q30n8",
+   "stream_sha256": "b29c2cd800a77cf92e24a8d92dcfb055eff8934fd1d9fd2e30755bbf9deb3b91",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-50x38-p4-q45",
+   "stream_sha256": "76f90fa5f3ea72b97dda4b3ab1c57e686c77bb8a95e03803616b9a7954206d2b",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-50x38-p4-qmin",
+   "stream_sha256": "a8fb3672d7bb63298c1a1d58502e73eb5219a571643a80e6b89e65e5643ff2b8",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-50x38-p4-lossless",
+   "stream_sha256": "480f1701de66fc3b5be84bcbb8c4483b405ca9a2f3fb3bc72b319cb99ca123ae",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-50x38-p4-lossless-n8",
+   "stream_sha256": "90d81bdb7cb64c7772ec38251d2d56700ccd2c920d1ace014662755d3109254a",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-130x66-p4-q12",
+   "stream_sha256": "b969c3901ec9da30e3ca788e645e8d789e9c0744f31f689410d8b90515573425",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-130x66-p4-q24-deblock",
+   "stream_sha256": "359eb5dadbe7763871d5ba04ccad1b6b6dbce5226e378bff2c37c5e6883e0d70",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-130x66-p4-q40-deblock",
+   "stream_sha256": "a21297b6f480f51bc83823f90e3ffa1dd48db916130c084a8ae46291bdbd001f",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-130x66-p4-q30",
+   "stream_sha256": "b8cfba8daf2a33bbccfbf338b037134382be6c0851160fc47143a7eefd3ef4e8",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-130x66-p4-q30n8",
+   "stream_sha256": "732aa9d9e042792bb4b0b83f3d79524abc4526083457cd02bd37054d81a34499",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-130x66-p4-q45",
+   "stream_sha256": "61204e0f36e654452ac66126ccd6b0496e935aa1c56ba4fba16aedb2db33de1c",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-130x66-p4-qmin",
+   "stream_sha256": "d1857fb9d0b43c1ae8b552731dba7057b5990ff52d8c2acd7b0cc4da60bb960f",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-130x66-p4-lossless",
+   "stream_sha256": "ad384a8cb979e54a5fad9fc27fe554f26e73bd83c4f3a79e6318b82c5ad9bf26",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-130x66-p4-lossless-n8",
+   "stream_sha256": "7bd884664b224cc490d37b5b2e481ad3744ce3e17bbaf2342e6f42caf551f2b8",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-8x8-p4-q12",
+   "stream_sha256": "62654c21f0a831ecf86455c3a20c66777a2196af3936964f2b17398d16b0cf2b",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-8x8-p4-q24-deblock",
+   "stream_sha256": "b2c10d7c94e8e581d73b082e075b0b5b6aabfe0d888fc805f0ee8f7b9451c72f",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-8x8-p4-q40-deblock",
+   "stream_sha256": "53509480a483fa1bfa0d1387f91432551fe4232b6cbc83df81f0600226977f64",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-8x8-p4-q30",
+   "stream_sha256": "3dfb5e18d0cd61766f559fb005fdde3c3931405fd9c62f283ede7303b78ec6d8",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-8x8-p4-q30n8",
+   "stream_sha256": "79db1f957a2b191afc0eb672327a0ca9f6634ed96762a58dec148f013bd6d66f",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-8x8-p4-q45",
+   "stream_sha256": "850ba9eb5951727371af62575136381bddd16ec2456ae5e96b8aed05fe486869",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-8x8-p4-qmin",
+   "stream_sha256": "cc6e41054d0ddf7193781ce316612ea0a33050828f5d8a6504c4251eaca4ab9f",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-8x8-p4-lossless",
+   "stream_sha256": "27baee44ed2543cba321cb35ef6757928ba0f7704a956fe92733538cc71c1e5c",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-8x8-p4-lossless-n8",
+   "stream_sha256": "decf444f6144a3bd987f5754d49910c2908a8831768a24e7de3326dbb4de97af",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-2x2-p4-q12",
+   "stream_sha256": "b913866cdc3cd45800bb39321dfc2e8a6c8334a109977f818fa794c2b2ac1b25",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-2x2-p4-q24-deblock",
+   "stream_sha256": "0941e14096ab29ac8be3a6fdd625686397d589ef8ea20ab097a72debd7229329",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-2x2-p4-q40-deblock",
+   "stream_sha256": "63c296fc669c0977ab3193b5c99c7062e66f271dd63f1685895bc26cac48c55e",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-2x2-p4-q30",
+   "stream_sha256": "5be0883b000026e118828156dfbd554c263379ed68aa109c9e7c0bb11d2a84f3",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-2x2-p4-q30n8",
+   "stream_sha256": "3d8b31b9478dd67457b6ca89493f3310685c1f5998df140cd35f9cfde06ae19d",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-2x2-p4-q45",
+   "stream_sha256": "933cf4b538069ca9a74a96b1907cf1c8f0bff748a1d118219f8330e2ce5b381d",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-2x2-p4-qmin",
+   "stream_sha256": "a172b2f2643985e4f8ce34d180b94f7fe87b66408cd92abeb19f04ca42d7c67f",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-2x2-p4-lossless",
+   "stream_sha256": "454ed1a1d3bc61e29b0b68f9977572d79e3002962935fa7761461ed08596d3ca",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-2x2-p4-lossless-n8",
+   "stream_sha256": "b1a2b6f2112622a09943fe2f59072161036f220698e6f9a47d345e60989b441e",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-200x136-p4-q12",
+   "stream_sha256": "f53e792d0b611bfe088836170ac07bbba18bf4b44d2a44b2a49580d3be977ae5",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-200x136-p4-q24-deblock",
+   "stream_sha256": "672b43736c6b565286748d327660b3762b4e376e05dbda21bd34927dd24afbaf",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-200x136-p4-q40-deblock",
+   "stream_sha256": "d82acc2028e883abe75e78e575ec6b8dd89cc5a1fb86a4e2e056bddc715cd21f",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-200x136-p4-q30",
+   "stream_sha256": "1c9f09b6db965d0ecfdbf260eb298398f509b32d4b0453e54ffe4621a3e18ccf",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-200x136-p4-q30n8",
+   "stream_sha256": "fe8ead786a0f68cd4e871ae2be0e95e1e3f5fbbfbbd446101e70d7c6de98ae07",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-200x136-p4-q45",
+   "stream_sha256": "56c97687e7b6a30270c6181e75c8a17f699503514239288ef3aa6d768999e312",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-200x136-p4-qmin",
+   "stream_sha256": "997889e26dd47465f2ca0ed820bc3d8f3a599b3da45aaf232d60555320016afd",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-200x136-p4-lossless",
+   "stream_sha256": "7bedf5d59c24f7f0b55b62dabd2c30ab9368a6a9f025121c58b3384a9df6b903",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d8-200x136-p4-lossless-n8",
+   "stream_sha256": "2c1efd29434068001042f2cda14219370f3f24b2053595670f589d79929943fc",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-16x16-p4-q12",
+   "stream_sha256": "23b36cde43db67e7456924c0db88846b2f44719eddd413208e59dccaf32a9363",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-16x16-p4-q24-deblock",
+   "stream_sha256": "2fb8b1d38f9f850dabdf9ab657bbfeb126bcefaa04845e9487e4d448ee5af9c1",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-16x16-p4-q40-deblock",
+   "stream_sha256": "9c1e69c7251284c41692f6c8de4923529e9bfc37b585d0c58e46203bf5f9f9ba",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-16x16-p4-q30",
+   "stream_sha256": "0826a896448865b65c9c2fc7ae7599cf35f3e6e642d7229e4ee1315cc3d878d4",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-16x16-p4-q30n8",
+   "stream_sha256": "e79904c645f07994121fbcb5ea19f6d2767ca5899881ed00135c26fef440a283",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-16x16-p4-q45",
+   "stream_sha256": "d9d2944a6deb30d8794efc6f86377becadfc4622c1f20c1fc227c7ab1712fdb2",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-16x16-p4-qmin",
+   "stream_sha256": "22df427e527f92b3d2480056d2934c1f48e3213f2175867220e1aa49ca1695f8",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-16x16-p4-lossless",
+   "stream_sha256": "9bd0f71dfd8ff07f60af907e86157fc579db951f976a7787aeda77e22e58b554",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-16x16-p4-lossless-n8",
+   "stream_sha256": "9802fea5e124d76e601dd43bcc81600ec112990a74e78463fd6938353f691574",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-64x48-p0-q12",
+   "stream_sha256": "c3ea53ce9fb2d2a99797558a3b949aa6528ede3105fbcb272199b66ea52b1409",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-64x48-p0-q24-deblock",
+   "stream_sha256": "bc81c6f524c4f05f1fe6526ddec0be76456f0e46b9f6261df028a89c04ba6408",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-64x48-p0-q40-deblock",
+   "stream_sha256": "a34e791def2865605a797ef535f07660ba76e8639f51735995cd6fd9510f7d30",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-64x48-p0-q30",
+   "stream_sha256": "96fbdb163f2c7350222e40253b74e7d159c92b9a0f361be6e980f3b52de4d014",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-64x48-p0-q30n8",
+   "stream_sha256": "c95ab4276d1eee104c26a39bb2eeec0ad96365b5cee4f6ee3dfd0a2b5e2cd483",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-64x48-p0-q45",
+   "stream_sha256": "c0cebc26dc9771b8fbc39c3ef434916a1eb792ac9029963ba2dc9d941b53c2a9",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-64x48-p0-qmin",
+   "stream_sha256": "a716d0cbc36df6b014d4c10cb8af7f4b7dcf2d0f13c28478fc5c16642f83980a",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-64x48-p0-lossless",
+   "stream_sha256": "18a7f7ae395744b4a861cbff076bb8e544e74393c2b82a0f71bbe353c61080bf",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-64x48-p0-lossless-n8",
+   "stream_sha256": "f1d9d7975742fa31da7fd7b708efb08e0b3edcbcca5491630cb5755b7b177e59",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-64x48-p1-q12",
+   "stream_sha256": "06bc8951bdcdbe68941581d2f1acbc07bb597593c48e01a6a546207e5863d18b",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-64x48-p1-q24-deblock",
+   "stream_sha256": "61b82a004884250a37cb555acd67927662b63d151d380ee7f3fe8d6abde5eb47",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-64x48-p1-q40-deblock",
+   "stream_sha256": "104e98d91a7bdd423db63c180b8c33b44d89c033bb04e6cc7540be6ac97a11b0",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-64x48-p1-q30",
+   "stream_sha256": "fe0a1d3073ff8fce682a027d8b3f011f6cf7cd867b631440daf6271e665292be",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-64x48-p1-q30n8",
+   "stream_sha256": "bb38e985dff823a0898754580ec41f74c2b4f809d5129f17be7a6756474e67fb",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-64x48-p1-q45",
+   "stream_sha256": "f63f642aed060bf759e37b01b7c4cfedd76e420dd2480fceceada81a78d7ebe9",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-64x48-p1-qmin",
+   "stream_sha256": "8eb1472aeb232e4d33fbf19eafe8fd9d2dfd68b53217cb5cbc70cceb88bec4f1",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-64x48-p1-lossless",
+   "stream_sha256": "f8714c7f422b23d13eec47cb83a612b9327cc7b78bba178aad6b01087cc27e14",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-64x48-p1-lossless-n8",
+   "stream_sha256": "9657f323f587b9f90c2f207097ae783a90b6591c55d4027e064125c82f92bc75",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-64x48-p2-q12",
+   "stream_sha256": "406a50b2e9e5aaab032b57986d879b3ab389e2bb46e8262560c6bab9d1ecf53b",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-64x48-p2-q24-deblock",
+   "stream_sha256": "ed8dea20d6df9664d2c9bb1eb322b2479edfa37e7cd85ef8b1782651b0712b92",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-64x48-p2-q40-deblock",
+   "stream_sha256": "2a8ff8db397b92eac0511a64efa83216fc5b2e4289042bd0ffe4260e1534e526",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-64x48-p2-q30",
+   "stream_sha256": "90bde468ef706e77b9fbe7b66a59a0754d4a9ac4ac26445cff86a6bfa7132ef7",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-64x48-p2-q30n8",
+   "stream_sha256": "44fc6d825281200299d3aa95341303ba72d27ab58ea1a9b1846638b0a9d19925",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-64x48-p2-q45",
+   "stream_sha256": "4c9ad9a0833e6f3da9d514c119b381609ecd5e457235dec8872a3063d0f0a566",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-64x48-p2-qmin",
+   "stream_sha256": "dd2ba0384aef143423b4bb2b390506ff361691d783d55609ffa44ea3f17cc136",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-64x48-p2-lossless",
+   "stream_sha256": "3e5b87b16fc61e83931e3c80bd5af0ede4fc1008f9a509dfd60cdb2634bc11e6",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-64x48-p2-lossless-n8",
+   "stream_sha256": "e757767f5db256aff4a2edcb2a2ad749ef147ad2201b7fe5216903b6b70d5a5c",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-64x48-p3-q12",
+   "stream_sha256": "a196e09628777acc332b8558a58408914b4e54545d030164d6bc5382214fd9a9",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-64x48-p3-q24-deblock",
+   "stream_sha256": "8c616e021d98b8bfe0c9a1f3ffab4cf8d566c979de12c31058bd28c25c046ba1",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-64x48-p3-q40-deblock",
+   "stream_sha256": "3a09f376e2b4b612fbe4a97de38da4e1323549caf75485b6d4a47752dd562e20",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-64x48-p3-q30",
+   "stream_sha256": "b67f7b95a4b800315a8ddcbbbc4c5c62d94234eaf7b965006c88bb507c8a1679",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-64x48-p3-q30n8",
+   "stream_sha256": "b1933dd27d3ccee40a40e10257f4818113ad9582d621d2287372259440771af3",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-64x48-p3-q45",
+   "stream_sha256": "c8d996e1f089e748574aa0f7742612b6feda3c2b8921a5661779c56d04087bb7",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-64x48-p3-qmin",
+   "stream_sha256": "54d90fb3204f0cf8fbf8bffb5bda44f8ee3265db71d530098dc45062a514bcaf",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-64x48-p3-lossless",
+   "stream_sha256": "bb5d6c1f58866e0ebb10a3be0632968c02be525af9e0addebf1938d94fb0c1e9",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-64x48-p3-lossless-n8",
+   "stream_sha256": "258c1bbbeb6b12157d3a70e698fda8cf4345bc8aa2fa585bd695282782e99cad",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-64x48-p4-q12",
+   "stream_sha256": "c1d39a47e359e921b883846746a2719da128a9b9cc9fdb20e1c669203d997077",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-64x48-p4-q24-deblock",
+   "stream_sha256": "119e874ba3a99b2756ae86ef42c0dc3e6d13aab1c9b44920083459666ee98b42",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-64x48-p4-q40-deblock",
+   "stream_sha256": "6d8926d9ba780ff2434019d3312feb342111ae0058d0f76e88f76cc5f768793d",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-64x48-p4-q30",
+   "stream_sha256": "5f1309702a552867a5c7cbd6e46b8ae10951caef55533a6f39ca59a4987eb165",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-64x48-p4-q30n8",
+   "stream_sha256": "61baf04099e5abf3de77aa37d0882b6c1cfb5dca2e2a9e2fb6a4cdeba36717d8",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-64x48-p4-q45",
+   "stream_sha256": "48554ae5abb4553a140cf65281c2ccb4638ad911c6f44d3f3963350ba4e66883",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-64x48-p4-qmin",
+   "stream_sha256": "eb80aa7f645e640f9989e6763ff8c7bad911aaa1c2494669c80d195bda826cee",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-64x48-p4-lossless",
+   "stream_sha256": "9779bdc7586240b8ca71083e42459f8236c0174aa1ef56b872cab3ac7ec10daf",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-64x48-p4-lossless-n8",
+   "stream_sha256": "0430ba604d71bd3a2c6269cfbde794df7b5edc6633b5b02c9e94829405cbe2dd",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-50x38-p4-q12",
+   "stream_sha256": "97346924343e9a83e26cf2dc84ec7460db0d6e1e433d01978ab1c4dc822b5ece",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-50x38-p4-q24-deblock",
+   "stream_sha256": "8134556e479f48925e1c6826053313e79cad8a9e991c5a8a3c97e88d297dfbf7",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-50x38-p4-q40-deblock",
+   "stream_sha256": "a42d81c0e10e0de8ff76553bf6f675201c31104ca5d705334050b9b76c6a7b4c",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-50x38-p4-q30",
+   "stream_sha256": "ef8d5acbb0450dabc552b67b384ff34bb0169c40f45b1190458c738be7ae5dbf",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-50x38-p4-q30n8",
+   "stream_sha256": "8eaccfd29fcea43d79d72a8f7f79fd1893608a3578784ee4b341f9cc740c0794",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-50x38-p4-q45",
+   "stream_sha256": "08d03d50e9e47a399c132f1e36aa156390cef9c47513c1764c366a88d7fd6ade",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-50x38-p4-qmin",
+   "stream_sha256": "f2c1d6b7cb8cb8d0bbac7fe4d00d64a658ff7146e9799b12e83fa4f26a25d1c9",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-50x38-p4-lossless",
+   "stream_sha256": "09daf7e36cd00a33c04a72e640de6d8ced9315769a3691ef3f38dc431f2b3457",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-50x38-p4-lossless-n8",
+   "stream_sha256": "05b6c5ce766bd4c79e489ab362e7f74849a73e073d9c8855b06342cd09f6511c",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-130x66-p4-q12",
+   "stream_sha256": "a2151ac82c01176c141cab00c42a53ba50bcb77f8574b9536423948f806d5a98",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-130x66-p4-q24-deblock",
+   "stream_sha256": "16de3350679635b40d1f671821c256517911ab1fb7882736042d603e9608ee92",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-130x66-p4-q40-deblock",
+   "stream_sha256": "a860e7071c043e64faeea942158bb22f89c22e8bc4603bd974823df201179071",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-130x66-p4-q30",
+   "stream_sha256": "11c7222e38cb57d31ed00bbaad6138fa04dddee026486023eafd1b9945bdcf8c",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-130x66-p4-q30n8",
+   "stream_sha256": "8b9248f4fc5be78ab7a19fcc4c150fe225b6df405893d7ea400cdab7030d86a2",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-130x66-p4-q45",
+   "stream_sha256": "f6b2df08d79371400d7dc2388570b7f611c776cd70e2cf2eee104ceec6a9a6f5",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-130x66-p4-qmin",
+   "stream_sha256": "cd0d55ed71c45d357fb3b5e9d4ff3562af1c69408352ccfb347c46cf103da35a",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-130x66-p4-lossless",
+   "stream_sha256": "d140c32201b553427afbfa921925998d0c30c102ed37ee3883c01f1f8c8b136a",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-130x66-p4-lossless-n8",
+   "stream_sha256": "f6cb36666213d3529d3b058d08277441d0e794d2b2015035d0129561b71921e6",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-8x8-p4-q12",
+   "stream_sha256": "fbfca17f05a33250e0073a1b42265c9f83ba0a25234d965eb6ad5ef335f1872b",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-8x8-p4-q24-deblock",
+   "stream_sha256": "4027dd4eda68bedd0689a26b1d1c8c3633791b017bce5cd12fe013ba5fcb4b89",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-8x8-p4-q40-deblock",
+   "stream_sha256": "eae1b5b0d52b032a49b89f8648dee5738323ab807c6e1f7544f75a56d9c5aa7e",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-8x8-p4-q30",
+   "stream_sha256": "212721fe06d8e539a408aace0e15411f50e65495f0c508142b59cca53ff6215a",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-8x8-p4-q30n8",
+   "stream_sha256": "f84a669b87c6003a855e9d6113ff3223dc49a6c81fe886e735086c80770410a5",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-8x8-p4-q45",
+   "stream_sha256": "8473525fdd942327f0c143b41619cc5edb188ecd74f376a04b0294425aae9a4e",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-8x8-p4-qmin",
+   "stream_sha256": "44054961d8ab065d01ed0f6e321b17ad5463fccf8d25baf3f8d7d3c3925f9fbd",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-8x8-p4-lossless",
+   "stream_sha256": "b85d6fc9a86fbdab0c42ac553b4382a23f7b64d79f9becb1d8efcd90a3390df3",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-8x8-p4-lossless-n8",
+   "stream_sha256": "3ea282c2d9633f53ed8ee6fa4e9a196d06b4e32b2005114f4a4909b3ce79635f",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-2x2-p4-q12",
+   "stream_sha256": "af3d8167a1c95422ca50f3f0bd8f19631409eefab7c961f93e2f35e2bddf4001",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-2x2-p4-q24-deblock",
+   "stream_sha256": "53df5b24b668065687a5cc5a4cc2b3b666e1ce0c55617a90f3b46901095177d6",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-2x2-p4-q40-deblock",
+   "stream_sha256": "9dc4d127e0b502f6b36fd765605788a8810fec971d2743d7d1d277926dfe43e6",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-2x2-p4-q30",
+   "stream_sha256": "9414799cb698593222f8033d59f54ba80fcb4f2f7e08a089cdbcef393af0e3b1",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-2x2-p4-q30n8",
+   "stream_sha256": "892146ac1a362674f2f4dba5b7a42da10deb330139585d936bb0f8a021e2a9a2",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-2x2-p4-q45",
+   "stream_sha256": "acb0de7e6fb8b598ac2ee15130fed09ae728bea4c44e47e68ea15138e31c9f61",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-2x2-p4-qmin",
+   "stream_sha256": "e48522773f60197ef5659414784171699465321f24a0d89277d4e5b610078d4d",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-2x2-p4-lossless",
+   "stream_sha256": "8a7b3a78c9dd9412365c9427c225ec26a44c9518ef248a39bb676246e1680c3d",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-2x2-p4-lossless-n8",
+   "stream_sha256": "4f1e3c9b435fa6357be57ba44a02510ee5a2a1feb0b692a21829c7a9be3a8b98",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-200x136-p4-q12",
+   "stream_sha256": "c061a276125bb09ab416ae580cc63e363faf3c51b53d537672183b49804c36a7",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-200x136-p4-q24-deblock",
+   "stream_sha256": "137a876daf827df5195da2187fc39631b952756f1e1f136bdc15c63e5bb507f6",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-200x136-p4-q40-deblock",
+   "stream_sha256": "a4049c1f80b184fb323e1b6933b6cf61506e2651eb0dbb753b3691235eb79dd4",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-200x136-p4-q30",
+   "stream_sha256": "2b09441727bca40e008f3a493dcf8c61517fbc597e489bf99a8bed7673896a48",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-200x136-p4-q30n8",
+   "stream_sha256": "f440ac788f4f6617519934b10039746243744ee0ddde70007d72e5614e6444c3",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-200x136-p4-q45",
+   "stream_sha256": "0e93fb35722eef2117769a4065e7f487b747aaa200e2efb96bb63db175e8cb42",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-200x136-p4-qmin",
+   "stream_sha256": "fcc5a8224992619c0f3687e953f352a9f79d8766427ceb1395da5c2b4687d2c2",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-200x136-p4-lossless",
+   "stream_sha256": "a2f1227f860586eb68c08276931669988a02660698d1ffcf7664ac007a18b0b3",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c0-d10-200x136-p4-lossless-n8",
+   "stream_sha256": "241bb71b429ec3fc07beb14e3403ee96e55fda93d6a8bf82ae36de2908b31532",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-16x16-p4-q12",
+   "stream_sha256": "117a8f527372bc3e42bfa9ac4e6d892502229a03d47703888ee3c0c14758fd23",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-16x16-p4-q24-deblock",
+   "stream_sha256": "4b7d669d7c76b66218928ba0d93f27d3b708bed8f6c4ffce9f18398ac25f8571",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-16x16-p4-q40-deblock",
+   "stream_sha256": "542859ce3497b5a16f7a71d41627cd5c34c754aebc022f77e109e1586bfd7f31",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-16x16-p4-q30",
+   "stream_sha256": "4f2d01bc7771fec14266cd7aa790f9bd8064d35dbd1c8e1ecc41698ec7789f98",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-16x16-p4-q30n8",
+   "stream_sha256": "ec5bf1cbbdbaa2c0dc5e1a2c60f9ac0a8e0968410f41518f87fff2235d69b228",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-16x16-p4-q45",
+   "stream_sha256": "62931da14c68b291392ef8ca1b4584f47d619795c2b327a0ceb1375f8c162566",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-16x16-p4-qmin",
+   "stream_sha256": "c431626e60f1562d7e226426adc91b8f1541dfce23ff9255b13f910bad0aa6ef",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-16x16-p4-lossless",
+   "stream_sha256": "fa40daddeab7c4969c8b06242ad6c2ef8e08a7e1bab7e1c2cf5a54c5232de8e3",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-16x16-p4-lossless-n8",
+   "stream_sha256": "31279131b39361793647ccbcb004401622d01df8ddd2a548ac0a3ddf9e805e4d",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-64x48-p0-q12",
+   "stream_sha256": "f32554c5d5d1e9f4cd4de90f536d73fe7b2563c8140598e6520783dfff1e57c7",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-64x48-p0-q24-deblock",
+   "stream_sha256": "c73d3bab4cb9c5b7df97283d7745b144c8ffa31ded17d034a74294c149f29e23",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-64x48-p0-q40-deblock",
+   "stream_sha256": "8be3d9c9fd6f56052e18701d8218f0e3fcaff36aca63eb3d9d0bf9fbef5243ba",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-64x48-p0-q30",
+   "stream_sha256": "65231ae14c06f0cbced099d81d334bfd18030900f5d58fa5bfbf7ed4571e8e7c",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-64x48-p0-q30n8",
+   "stream_sha256": "96302575f2119a3abf3f061e8a880b84eb6d4ea0a63116184468ee3d6d76ee28",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-64x48-p0-q45",
+   "stream_sha256": "3d309823b4b089d5fa45e5202a2386304834e2dc431c3b74ca9dabef05106f41",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-64x48-p0-qmin",
+   "stream_sha256": "706e39734b03ee254da09dc5214e74138bbc50bf20248c5ded073210f78d579e",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-64x48-p0-lossless",
+   "stream_sha256": "3e1291698629e83f683d7b329210d408518087dbc0e2523a52c68ff9bae87ab5",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-64x48-p0-lossless-n8",
+   "stream_sha256": "c987de5ae0e7c3dba92492963329ea041161875ecf77de484641570b28d71b26",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-64x48-p1-q12",
+   "stream_sha256": "9b7274525482de6291271a57b3af85f83b002833f73a47ae6cf07d5581869406",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-64x48-p1-q24-deblock",
+   "stream_sha256": "e15d8cf0badf6157f41ecf78af71260c773c3aef1d781b51645d4661ff48073a",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-64x48-p1-q40-deblock",
+   "stream_sha256": "d538b494273f0823b34c22137a1917323f64c3a6992ced004e93276d737ef636",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-64x48-p1-q30",
+   "stream_sha256": "734031b82a9b353061490b0a2c39d1611b8820f62666a56a759a9ffc1e4a113c",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-64x48-p1-q30n8",
+   "stream_sha256": "49b64cee2e1638f44c8d8cb7849f8632a2b40cb8bc4a51b8b6a86081722f44af",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-64x48-p1-q45",
+   "stream_sha256": "a28d7aa86dbf8b3ecf2eb2860d44a2a86f84352d3837ffca071ff83ac11d4959",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-64x48-p1-qmin",
+   "stream_sha256": "ab86cc7826fb37b2f15db6366c267bf7e5a7afb7c644bc06150e5344fddb1f47",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-64x48-p1-lossless",
+   "stream_sha256": "24c4c6e9e56e615b13558be522577641d84fcb9f70467dde40c58dc5f481181d",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-64x48-p1-lossless-n8",
+   "stream_sha256": "f25a3b99d66f34b5bffabe1d46321a27f9f4d7cf0ad1f6ee88846251c757eb2e",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-64x48-p2-q12",
+   "stream_sha256": "6f82b734ba80ab95a92230b23b14eb582b0eea6b257359de0e0b886b461b3af9",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-64x48-p2-q24-deblock",
+   "stream_sha256": "89e0d8977d9c364ebb95542157341d2b6aad0b4805976eac708e669a968b71b5",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-64x48-p2-q40-deblock",
+   "stream_sha256": "f12e348d77292b4d75872e9960f8b792820f6c649c7937c4401b88f55327519e",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-64x48-p2-q30",
+   "stream_sha256": "11bcd5c24fca064e710c553525d673ff704aa70792de9cf9935164e1bde1366c",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-64x48-p2-q30n8",
+   "stream_sha256": "9e071d9fafbf536a6d396a7fa82d29517067a86dea6a120aef0591dabbd48bde",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-64x48-p2-q45",
+   "stream_sha256": "db752ea1f1b06e3df77edeaa8c6e17efa69a3191974717507b74fe51ca799551",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-64x48-p2-qmin",
+   "stream_sha256": "914ed9e1d86325fd605aaee2db4cf6aa4f02ceadf891892856b09c8b2a2cb054",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-64x48-p2-lossless",
+   "stream_sha256": "06848ce55fc8ae3f820ee9818ea9002b9a75c6f7c25e6325fa42b77276cd9a07",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-64x48-p2-lossless-n8",
+   "stream_sha256": "a80694ada2651aa2271ba6e435b430033ef6e34d139f4ee5f6f1ca611fd86a40",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-64x48-p3-q12",
+   "stream_sha256": "96f8684f5ffc39fdb3e7a8a26a44f1b2e1fddc702ffe8b39051b9598c2f459d0",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-64x48-p3-q24-deblock",
+   "stream_sha256": "599d8ee5da0a668a678946d59e912a31e5d32c3aa8b6cbd9ac85cca8e54356e5",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-64x48-p3-q40-deblock",
+   "stream_sha256": "1d00e04a49f9d282a2df2940a27d9b7c358ba267781d40bd06e9c2df96b82235",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-64x48-p3-q30",
+   "stream_sha256": "7ad185fefb33c0b32b2a6298ca7455d4b6b0bd6a9d723af0e58cdad066cc7c96",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-64x48-p3-q30n8",
+   "stream_sha256": "9f5616872941a8c55a7108abe94b2baf098d6e7d56a51e98bdfd0d85b57cf02c",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-64x48-p3-q45",
+   "stream_sha256": "9a672f32a1af84253759b6998018cefebe02315382c95c7e22cd22a3eea08b1d",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-64x48-p3-qmin",
+   "stream_sha256": "0a047ec350053d02d3e3ed0b08bbffb235fef722a18e1ce4acf1b49081c5f0f0",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-64x48-p3-lossless",
+   "stream_sha256": "7e2c07922fd81fc9246e027ffa4a324060d4e75adb078526968b0fe701530deb",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-64x48-p3-lossless-n8",
+   "stream_sha256": "01574ae2095dba90dbe965a48f05bafc55957364000fc4b08f45ab7880be1699",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-64x48-p4-q12",
+   "stream_sha256": "7c635b0a2dd7663ee2b1ead029a33d9f6e97943ab9f4165735ef615987e47130",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-64x48-p4-q24-deblock",
+   "stream_sha256": "7a5029fbf9e66a6df271779ae4df698dc9babefd575031c6a7b96975e7c39a30",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-64x48-p4-q40-deblock",
+   "stream_sha256": "8e365e2b2951125520fb572726e2143e4eff66798352346d854d821e8bb7b91f",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-64x48-p4-q30",
+   "stream_sha256": "be01ce7c5f68625792435b253f3ec543e82df696605422fcc5876fadd820150d",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-64x48-p4-q30n8",
+   "stream_sha256": "273b87c9adf51ce2e101d360bfeda0dd50160eb00fd3668020f706b9dd600f7f",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-64x48-p4-q45",
+   "stream_sha256": "76b81f491a78ac50b16bc821870335b6e2d74e21b431d58868cd226789ed692f",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-64x48-p4-qmin",
+   "stream_sha256": "67f1d5b095ddee0beca3360758b6a21ed7694d21325ac123d4643f341ab2b540",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-64x48-p4-lossless",
+   "stream_sha256": "1e8f03fa08ecb655b0ad3036be21a8b935bed54cfd088e303f5847acb15233dc",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-64x48-p4-lossless-n8",
+   "stream_sha256": "3f3fd4d67978bf54ec8fe08342ea397693556ffbff7af01230e13bb39d9c67fa",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-50x38-p4-q12",
+   "stream_sha256": "10e92848db1145b173652f43ad4a06e2450d3d2995f2651df0d557c6ec0af2de",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-50x38-p4-q24-deblock",
+   "stream_sha256": "06bb9c26120aec1b1edbc1e6df8daa007eab532539438097690374cbe5584bb1",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-50x38-p4-q40-deblock",
+   "stream_sha256": "54bd34dae338c59a79fc3e8f96f50811c2d86bb05a6a66a61743bb96c88b4d85",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-50x38-p4-q30",
+   "stream_sha256": "0acb9f9029c1d33b6b58bce1951fd6e2b31bd9b50a10ac279b1bf3492be616cf",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-50x38-p4-q30n8",
+   "stream_sha256": "fb9077ae970f22f882c491fa90340e2b47ec41553e850b52adf886c37c5ae7c1",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-50x38-p4-q45",
+   "stream_sha256": "ad7be202066b74b9b531869e16110064a337453a0ddb1b848ceee4a347bca573",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-50x38-p4-qmin",
+   "stream_sha256": "a851dc7f6b6f1d6137046ccf35d129e9f51bda2a5785c55dcee736d0b41b9b8a",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-50x38-p4-lossless",
+   "stream_sha256": "914fc5b42044ff4a16974198d00be6af0fd5633b03bf2cc77366d1675071a2bd",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-50x38-p4-lossless-n8",
+   "stream_sha256": "3fa40d0a9aa67f211305a2caefc3c8916bc8692fd2441767f13c2bcbd19d51a8",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-130x66-p4-q12",
+   "stream_sha256": "11ac9940eb681d7ef199f2fb72957e97809f57d6c60f07762e1c1243b8015f2e",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-130x66-p4-q24-deblock",
+   "stream_sha256": "1733a67915e54334f5207284d796d4e9e8d22a75c6d95d06caec18a0ad1b07f3",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-130x66-p4-q40-deblock",
+   "stream_sha256": "5ed96f9e8aa610241093141d94bff1b6f1947158cbeb16e5a90db29061898a9e",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-130x66-p4-q30",
+   "stream_sha256": "f5c02d1c28702819b98e8510d8df02ce8ed156b2a2d6cf5c6a54239ca7c82c40",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-130x66-p4-q30n8",
+   "stream_sha256": "d74b297b286b5b2ed3def969aa3fb8eed6504b19bcf1fa50e6f99fedb2cffe1a",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-130x66-p4-q45",
+   "stream_sha256": "91c469135662f4e2e99f3dc15864964c3efb8678940556fbac6f20e34911e233",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-130x66-p4-qmin",
+   "stream_sha256": "1bb810f2dbff88927e9b46f3fe2a9bc370324cf96dc3c4cb5371bbae2947a9b4",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-130x66-p4-lossless",
+   "stream_sha256": "a353ac7c8f01f217c3e182c807ade7b4078f84fe8f421a478a1ce167465a0f32",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-130x66-p4-lossless-n8",
+   "stream_sha256": "6018d7fa0f9530a524596b95805607ee582e7ce2494c158bd0bea107ee365f54",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-8x8-p4-q12",
+   "stream_sha256": "b161e5b8c556bd3404435572ab10ccb40dc30badb27def379b992ccc99822e42",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-8x8-p4-q24-deblock",
+   "stream_sha256": "49cf5da2579f7d35cfc06ede818ead2badb70199705219e1ef4059b63c9cdc71",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-8x8-p4-q40-deblock",
+   "stream_sha256": "6fc876bb761322ea680da7ac689ff8b41ecd5e37fccc10cafdbe8fce102eb93e",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-8x8-p4-q30",
+   "stream_sha256": "a6101de47bbedf39cbe954e5cb5ec17f267ee3333046950ce78e7cb2d1a9ff1e",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-8x8-p4-q30n8",
+   "stream_sha256": "b0039f790f3a5986f1c6f3a66afb0ef1a82584b69b0826c7a70004bf75b65bea",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-8x8-p4-q45",
+   "stream_sha256": "6600d3ae55f30cedb7db7bf99337e763147a06f2753bcf3cc1c73b9e14e65b87",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-8x8-p4-qmin",
+   "stream_sha256": "85943a68867514b93d53e50fbb9b599d16272ad9a79b8ba4e80b32d3ec809ebb",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-8x8-p4-lossless",
+   "stream_sha256": "e3401120d411d89ce9830da61a86de279d0890fa59e6a09fa41aa87753da8d84",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-8x8-p4-lossless-n8",
+   "stream_sha256": "4af56ec404132022be22a1007addbf237e556412897dd7164829080921ce7e74",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-2x2-p4-q12",
+   "stream_sha256": "7ed1ad9265bd06858596262927c32073d373ee6bc6e3f213dc88f1c2063eb8c8",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-2x2-p4-q24-deblock",
+   "stream_sha256": "06ad24a910ace2732ea577799691830a9d3742d45c5c84905d540746cd1ade1e",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-2x2-p4-q40-deblock",
+   "stream_sha256": "694f7d1140776c20349ed49cdeeb4c8b26c860cec6a82ee05bf68b7eaf79b1d0",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-2x2-p4-q30",
+   "stream_sha256": "8a72c9f433dff22c62ff5665d7bc10a06c61407ef57f69aaf51756a5d6381ae7",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-2x2-p4-q30n8",
+   "stream_sha256": "d74d2f1452563622a0dcf3dd8f42e53b2125d1fdeb973ec7ba4777c64206ff59",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-2x2-p4-q45",
+   "stream_sha256": "ae1d0462d1e872f9df8f3d89c71709854cdab41f663f836cee46700e0fc691ef",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-2x2-p4-qmin",
+   "stream_sha256": "fbc1c514541cd64f9342202e3fd24597a9cc11685e07a859438d4ab3e60d36a4",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-2x2-p4-lossless",
+   "stream_sha256": "9a9eac08898c542da506d3ddf23bc9e06fc3d45cf4303e1e8c6b6bb727f3b925",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-2x2-p4-lossless-n8",
+   "stream_sha256": "e7d861b0b86eeb8a0bc247588b525e623c1137bacd2948b2770b5a407210b113",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-200x136-p4-q12",
+   "stream_sha256": "01d51373119996672f4fd5ba3a5e8c5199f43f81594018b5fd4cd6d441a1615b",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-200x136-p4-q24-deblock",
+   "stream_sha256": "70645fc5f2f8eab913c1a92ea7d342aca9f654c885976238118cd7790cd83cc9",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-200x136-p4-q40-deblock",
+   "stream_sha256": "96197a078a329a7e6a3f81b6fac18d382ce311e3b3c4ab8fb16df6caf1290010",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-200x136-p4-q30",
+   "stream_sha256": "cf7c20b4ac304485cf0d279a9981db0b69ad04c74fcd532a09a2e256fea3498f",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-200x136-p4-q30n8",
+   "stream_sha256": "2b078442e7b19a7d9fa708280e11897114b0bcf7d2f3a1098ee123557c683af9",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-200x136-p4-q45",
+   "stream_sha256": "f3ac337dca05a4b321283f8acedfcce571c5c3a73e3c53461763252ffbd02f96",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-200x136-p4-qmin",
+   "stream_sha256": "135a7a68dab4da9a6a402b4ccf9834c82990a91ed20c32fe9ac7af7f666574f2",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-200x136-p4-lossless",
+   "stream_sha256": "e9de748a79e4fc807b85fba4efb919d6417752f527d12ce1ecd51c0055c46eb4",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d8-200x136-p4-lossless-n8",
+   "stream_sha256": "9788f18b25b11d7d78dad456e046ec1269121976aa60c4c5b134c33efc5ff98b",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-16x16-p4-q12",
+   "stream_sha256": "3e35edc6c98c272e949adf7259a189bb4f7b79ff299c40d34d565383c26b9eef",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-16x16-p4-q24-deblock",
+   "stream_sha256": "192a7ba9eeae6a762a5e4a8f9361ea372a9d043826d0ad54c7f0e0d6358a21a8",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-16x16-p4-q40-deblock",
+   "stream_sha256": "f8b1ab9601dde7268a30106fe9bba735987f62355bd82f55004b2782ed19c9a9",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-16x16-p4-q30",
+   "stream_sha256": "c9f9060c647359436174ddb48066e44808facbc187ed5e3b8761bf7d8aed3f4d",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-16x16-p4-q30n8",
+   "stream_sha256": "f8d924e00357a916136d1c19d1b97c94546fa0514575f958fa31b7fe4d326050",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-16x16-p4-q45",
+   "stream_sha256": "e4fc594e37a8f2da62e3eb2f278be6f1ab8a5bea086bb6fa82b9a4e8421af9e9",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-16x16-p4-qmin",
+   "stream_sha256": "09692233899523c4cc320d80051344f25e8df59341c6c60005ed5facd56c8e98",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-16x16-p4-lossless",
+   "stream_sha256": "63c71cf2875705fe7b06b4f38af67c708333f0e3eed6909c8bcda05f8be9121f",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-16x16-p4-lossless-n8",
+   "stream_sha256": "d81c18361a9cb9b2ef8b456b3fa8e0a0e2bf44430987b050d61a62af8f012b06",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-64x48-p0-q12",
+   "stream_sha256": "87384a50c59d055046f441dd1a1acdd276ccbc56da1790bfeaa65449ea265bab",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-64x48-p0-q24-deblock",
+   "stream_sha256": "b739b9f63e404611d5536ded68d50f5770765200e1c1cabcaae2dc59f032980f",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-64x48-p0-q40-deblock",
+   "stream_sha256": "d98befbf99bc941631b061ef66d364f79fb6424171282e36b2864f67fdc6e163",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-64x48-p0-q30",
+   "stream_sha256": "6032c22e7385fcf053d61a19894e3c1e110c69471cf016d2cf3a9ce042b36fc1",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-64x48-p0-q30n8",
+   "stream_sha256": "df0b962fa3f945e3a5d05e38e68b1f5a1d3696abd64fa70074983151e53e5941",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-64x48-p0-q45",
+   "stream_sha256": "e210ba45c23037c46422bb4d7d0c7472d0e0f0f4f75463de60798e309c00d8c5",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-64x48-p0-qmin",
+   "stream_sha256": "3da027ad3ba5e1ead0a4779d6cfe7dd7a22c09a7dff0f0458dd35349e0155dbf",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-64x48-p0-lossless",
+   "stream_sha256": "1dc8e86f5913751e913c9a8a693c3fed51950c9cacbafe7aff27ae52f8305563",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-64x48-p0-lossless-n8",
+   "stream_sha256": "10ac9ab4ab79207c044fa9102614e4023057a84c830d5507f5fa2fe586debd74",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-64x48-p1-q12",
+   "stream_sha256": "f859b5d68ae33d110308fb6ded32f910ec32186469d02811ec3dd0d34705b156",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-64x48-p1-q24-deblock",
+   "stream_sha256": "cf4becec9333a152d068837c04766aa90a024a59abdd3edee110860985fa2ba1",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-64x48-p1-q40-deblock",
+   "stream_sha256": "36322423a56c9cf7355d19b004d75913b34c758941e60f2a0dda9b846ed66df4",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-64x48-p1-q30",
+   "stream_sha256": "929f7e7b1ada366a7adeffb5393e4d8456b8cccbc392b25b6654cbe573874d44",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-64x48-p1-q30n8",
+   "stream_sha256": "30ccccb4e1947827f723e384d46ed73f57719b8392761d4cd158b61bcbaa78f5",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-64x48-p1-q45",
+   "stream_sha256": "5ca7814a43fe1125b70d5535d1e02153104c584e2edfc79ef262eb74f59b6947",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-64x48-p1-qmin",
+   "stream_sha256": "1bef363c0eadca7ddd029e8a04cc69edd4e0db0bbd22a4fff745c8a4549d1bb8",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-64x48-p1-lossless",
+   "stream_sha256": "f3ab37e5d08d3844a2ce4e33a14fb426ca351b57fe2e6850c4ff06650fa61cad",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-64x48-p1-lossless-n8",
+   "stream_sha256": "118ea93fd91892f25bd0b41d0264be0c82101b740f6defb6ae092e4c10d5a3ec",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-64x48-p2-q12",
+   "stream_sha256": "79faf6e66d6874d40badc3aa8e4a64aa6df4f3b6f8dbc7d17cdfbbb7901dc556",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-64x48-p2-q24-deblock",
+   "stream_sha256": "5e7b56762390cb262af63d8b137152a488faa8b16663a67ff41b6b928531487d",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-64x48-p2-q40-deblock",
+   "stream_sha256": "682b4eef4380a5eca950cfefada37ab4249e226c281375c4bee06ca40dda33e7",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-64x48-p2-q30",
+   "stream_sha256": "dd8c6f7bf5445b8ab8d5312b8fb81bc03f678d0b7cbb37104f5b098f02f024d8",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-64x48-p2-q30n8",
+   "stream_sha256": "e734ef5311d08967249ca938723b090bc33fd1a96ef13a994dad2b566a0a9b9f",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-64x48-p2-q45",
+   "stream_sha256": "0c3eba6b79d37e956c1a348dc4288be4924fb95e6d1acd535a933a1c769c3f33",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-64x48-p2-qmin",
+   "stream_sha256": "cd8d3bd8a47fc01c3b3b137d9100cecf38c23fc417ae1de23f9d5289960b7521",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-64x48-p2-lossless",
+   "stream_sha256": "64c3508e2ecc661c04c544710ad9f209539eeb1b2a1185346f737b0da8575b3b",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-64x48-p2-lossless-n8",
+   "stream_sha256": "2f97713e6ce93c6c6663a1c6fd28d102912923d36f43e3ee4abd6134ea53c8c9",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-64x48-p3-q12",
+   "stream_sha256": "93c06c2b4e6d534709337aefdd442a283b41030bd3482e38463ceab925931990",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-64x48-p3-q24-deblock",
+   "stream_sha256": "ea3f356060800103733de7460d2e68f9f678677e52406f873bfccb9f9d9a8dc6",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-64x48-p3-q40-deblock",
+   "stream_sha256": "1904852560e6e578745f806687a09e82342d8092be2e59348419c53a85b8228b",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-64x48-p3-q30",
+   "stream_sha256": "164fed29f5d3ad8cab8f5841d8f205233212ad9ea325e8ce762fe7b6d2f48d35",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-64x48-p3-q30n8",
+   "stream_sha256": "12a067fe5a48e40df435ef28733c83bfba936b61f9acf592bbe77528ac66cafc",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-64x48-p3-q45",
+   "stream_sha256": "83c0a3d69fde6fd58f49d6794702631b9ce42b2494f28376af3f5a41eac80d57",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-64x48-p3-qmin",
+   "stream_sha256": "949c0868e75ed2bc4f25098ed1968c1eb665f874daab9be935f02f5a3367fd33",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-64x48-p3-lossless",
+   "stream_sha256": "21fd52fff98a98b7cce0dd39ac99b1bcd20f8810522c8fa1b9979916bc5791cf",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-64x48-p3-lossless-n8",
+   "stream_sha256": "76d26c0606b94252d17972ba41abfb264daffb7613e37558b66a3dfad391bc0c",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-64x48-p4-q12",
+   "stream_sha256": "aedad81a9ac8e9ae6afb8f86ecdce1b886b99a30d65207310b677ed32d2f1229",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-64x48-p4-q24-deblock",
+   "stream_sha256": "2e8220b458df21820e172d6adb575fab70de40742d9ce2192a41334c0216d3e3",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-64x48-p4-q40-deblock",
+   "stream_sha256": "423233065cb5781a8e19a876b7e6f7549d8868709248a1805e67f50fec6ed2f2",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-64x48-p4-q30",
+   "stream_sha256": "637067a77c6f31003bff62a6da2f3f7117dffcbb85c788099607064593a9ac8e",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-64x48-p4-q30n8",
+   "stream_sha256": "949ef69bd99e98def3b5e3e359a6d9cc68c89e7c1e0378dac17bddddbc9f0482",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-64x48-p4-q45",
+   "stream_sha256": "60c91969c4fa0f4ca163e04cb280b32488bff14d11c12fc8820fa52a17282160",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-64x48-p4-qmin",
+   "stream_sha256": "b4de92f9b59866f34335b48052dadcd237c6934fae8a69554080b5e1375ef777",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-64x48-p4-lossless",
+   "stream_sha256": "001b158f380839a4fc8056c9d64672f10e4b31e6f9b1f1a988e6c0d7f018d452",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-64x48-p4-lossless-n8",
+   "stream_sha256": "9a5c0a73fda31ba1f9b50748e4c28f1fb0defb0e747b7bc2277961fff454f80a",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-50x38-p4-q12",
+   "stream_sha256": "70306e1232fb6329eeb907e02aad075860b8961b71096d555230628cce4decbf",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-50x38-p4-q24-deblock",
+   "stream_sha256": "2d9eaa1308116ce71f2aea5c2497cf67e6dc54398a788faf9fb89a7ac05dfb6c",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-50x38-p4-q40-deblock",
+   "stream_sha256": "683a90b0d10c9a969b7c338daec4287431b0f6d418a032ad437d6eedc52e1324",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-50x38-p4-q30",
+   "stream_sha256": "c42d304a08c3974565150d5782baa14cf440d79564b4a1b4b004ea464d08bc10",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-50x38-p4-q30n8",
+   "stream_sha256": "906a2018d16a89ab49b15807500f4210ee1889edb2b7333503f878a5aaaab18c",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-50x38-p4-q45",
+   "stream_sha256": "5f9f7694d5c3d985de79b94f43516b0e91859fdc2d9aa2f0eba0b886d6c28c32",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-50x38-p4-qmin",
+   "stream_sha256": "b0d66b28a2db1bfb417688539c8e11f3d94e23a62ddefe0be51882352da34818",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-50x38-p4-lossless",
+   "stream_sha256": "8a341cb611f5c9bccffb37051a2745c14ef726e0e7dd86b4f59badc65f5f284a",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-50x38-p4-lossless-n8",
+   "stream_sha256": "8826aa7dfce3a991e6c74463186d54a7629ab4dff81ef1f29a791dc5f72f28ff",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-130x66-p4-q12",
+   "stream_sha256": "0176f5389d6cdeee7fbdd8d4f14e95be19c8728613448e5be2256c7dae83c5c4",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-130x66-p4-q24-deblock",
+   "stream_sha256": "43b3e5669f12c522eef2b6f1137614844795940bde363258914b71e8c066276e",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-130x66-p4-q40-deblock",
+   "stream_sha256": "64a209c1684f24f6b26d3ffdc2dc07a3a60974e6d500e89346bbef3652c56487",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-130x66-p4-q30",
+   "stream_sha256": "a1b7bb8c97545496edf2eb4eaf8fdf5a6041f8c9915bac2cabdfc6308ac4e7ff",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-130x66-p4-q30n8",
+   "stream_sha256": "1fdf3f4fd2586672dec1776275b6f171e5af83c7e24e916012c83a53ed52694d",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-130x66-p4-q45",
+   "stream_sha256": "72b31df99593fd96207192cc37d7921c1119a263cc2d0c9d9f4c2b37da999f59",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-130x66-p4-qmin",
+   "stream_sha256": "4ad4a126a5bf7ee92ab94a5bf322d009c2d26d0ed133982ce972509d97d4505d",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-130x66-p4-lossless",
+   "stream_sha256": "4dc823c4f8c1bb1653bef57f44035aebd29c6783720546e8b10e3c83da9cb15f",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-130x66-p4-lossless-n8",
+   "stream_sha256": "eadb638ba7cdf1a3ad33a93e3083139020c1f296aab7a1cead93e5761061965a",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-8x8-p4-q12",
+   "stream_sha256": "44085a2a993ecbd0260287f8846aa892e35d94244d713aab219d4b34a998c258",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-8x8-p4-q24-deblock",
+   "stream_sha256": "bb444e30cf2578182222df9ac148386f49be969ed4c0b9f007dd6f2e78116efa",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-8x8-p4-q40-deblock",
+   "stream_sha256": "7364db5c45b4396f42fd4e0f35e1dba1228296409b8bfbe0f7db97eaa87b0ec7",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-8x8-p4-q30",
+   "stream_sha256": "4946c1ff2442d347ef91f4be6f7547c1ca69e617b2acaf6ffc328b343001e980",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-8x8-p4-q30n8",
+   "stream_sha256": "8724a28b9c0e296e2f1f503b8353449a18601ed66690baf1725b1aaf11241c48",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-8x8-p4-q45",
+   "stream_sha256": "157c99afac63f0229b60c3f3c7c334fca1b79cfd85c37e458e5550130595c3b0",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-8x8-p4-qmin",
+   "stream_sha256": "c6c3ec3ea8a133a30f2022d9289785bae242160943b6ea102a63a2b4582a9daf",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-8x8-p4-lossless",
+   "stream_sha256": "7eef6138096f4e1e863cdadde99cf9874d59303bb45e9fe56f91b429ad4b29cc",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-8x8-p4-lossless-n8",
+   "stream_sha256": "48927022a2c3da831636d05a67632234a2d5e6b3b3aeb631aa32582c1d54410a",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-2x2-p4-q12",
+   "stream_sha256": "197e4a6546e37e3c98127a84e4602ce2ee69dd319c686ad48ded13561fa15f78",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-2x2-p4-q24-deblock",
+   "stream_sha256": "7f9cef3735344b18ef41fbf1c11d6be1a9f19c1bd9986dcc88fe87f93dbed7f9",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-2x2-p4-q40-deblock",
+   "stream_sha256": "07800127ccc521f4730b55290974293a56d866b5dc431486c19318e925a85932",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-2x2-p4-q30",
+   "stream_sha256": "39976f2b702fe01bf6fe8e397feda5e88d9e4cd2631922e9878e4231d2e9e62f",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-2x2-p4-q30n8",
+   "stream_sha256": "3d2da78bac151e09fc202db92e1069055fe491040d27f523349fc529c0132fee",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-2x2-p4-q45",
+   "stream_sha256": "051fe7f99fc3fe1d79e49b45de80e7bd27f49f3495a02ba488805f3d987ecac2",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-2x2-p4-qmin",
+   "stream_sha256": "692dc11692d7414e93037c1972ef0111ddf25f5ece314d3828d1374a610472a3",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-2x2-p4-lossless",
+   "stream_sha256": "e3eff36b6b7fb55a93597380199ef817bd7031ee24075f969b42712e64eb443e",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-2x2-p4-lossless-n8",
+   "stream_sha256": "0c3222643a2d94f09a18aeeedef0e48620ff2b19f696505adf8019b165093c46",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-200x136-p4-q12",
+   "stream_sha256": "7f0a2de65e244af22bf467a5761ee4c0611cbecd96fe78cf60bc92bedca779b1",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-200x136-p4-q24-deblock",
+   "stream_sha256": "abdc8c494c9ab181d22a28ae74a4ac6f1dcf78d115d100d997cf852859b97749",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-200x136-p4-q40-deblock",
+   "stream_sha256": "b979aaa319768a4aa93fac6ebddc083a21593fdc9fc0aeba8ff6ee3e55692471",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-200x136-p4-q30",
+   "stream_sha256": "d29c58fadfe5d6524af8543c90e4906430e99fd9729d3dfa362c92aaad7fd48e",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-200x136-p4-q30n8",
+   "stream_sha256": "0db5dccd57bf0716ea718cf4e2557e2e97e19e328a706e4080c1e76cf6c06e9b",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-200x136-p4-q45",
+   "stream_sha256": "023698323c5df971a19f4bc810ec4ee7bc7a373a576a1f7420133e71b1c71d18",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-200x136-p4-qmin",
+   "stream_sha256": "78e0debd10e7f126dbcb02359176ad539ff0ec358fc1e094e2f8aecd773e652f",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-200x136-p4-lossless",
+   "stream_sha256": "3b8694de8e678b6c0addbadf44681bbe660f7383dad2e6ac0ddaa0dafc572e9d",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c1-d10-200x136-p4-lossless-n8",
+   "stream_sha256": "5c5ff031be9671e9e291aca1ed9a392c67ddce64128a2d32a204a984599205db",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-16x16-p4-q12",
+   "stream_sha256": "cc101cd14ce7160b85b1ff85f4ff33e8d578cc0f20f88b81ca21c039db9ced43",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-16x16-p4-q24-deblock",
+   "stream_sha256": "acd326d4f1a199bd3875b5dc7e3d1f51686f197940eeb4091f1a6492d6c1c849",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-16x16-p4-q40-deblock",
+   "stream_sha256": "b5691f532de1ef836dfab8fac2b1b24090bb590d15264ffd4afc2e470299d0f1",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-16x16-p4-q30",
+   "stream_sha256": "8bf282523eba7e56db1745467e9c5bbc73b15950cc39ed7df273209ac7bcf297",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-16x16-p4-q30n8",
+   "stream_sha256": "887c948168aba244348d2c90f205d09b8ab3a63389fa54c35e2023d363060f6d",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-16x16-p4-q45",
+   "stream_sha256": "a2ed72d64182aefdf82e7e4b24a1db1f7443018a15fc1da1ccd728aa9d1f8a37",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-16x16-p4-qmin",
+   "stream_sha256": "2848e9ad3e374aec9c0141b31d95642cd0fccce110ff3ed61f1d334bf0f9c4f6",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-16x16-p4-lossless",
+   "stream_sha256": "e8c63fa1602e9dacc169f74caf4c2eb47085863c249797aa65911af49bc3d761",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-16x16-p4-lossless-n8",
+   "stream_sha256": "0ea18ac8170a7e2a80fa76e4f995f17dba03ab5e8b46369eb88c3afb7bfa310c",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-64x48-p0-q12",
+   "stream_sha256": "d1491d012365050a2213924fdfd45a912e65c929b924b32e046678f60b5f4f2c",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-64x48-p0-q24-deblock",
+   "stream_sha256": "c4024ef47da05999255d51e96814b8b392cd6013418fd83c7de0ebae20aea202",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-64x48-p0-q40-deblock",
+   "stream_sha256": "e515ca3410d5282bc619652f919177845dcd528a35625cdb632ed945450a5f0a",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-64x48-p0-q30",
+   "stream_sha256": "065c01f3683ff0356f8300aa177a52597d858baca24f79fc6edfdca690167ba6",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-64x48-p0-q30n8",
+   "stream_sha256": "f4753e75948a3797994e355ac08f641bcc2868c03b7cb4b6789b24d27a2fbee5",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-64x48-p0-q45",
+   "stream_sha256": "a9753cfefec0ea698424f0370b5f691a0f3b437eb9351125c71dc0bbee0f301b",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-64x48-p0-qmin",
+   "stream_sha256": "97d45da42d735e24b69d081424feaf42946089f2d8a3463d040e9560af72d73d",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-64x48-p0-lossless",
+   "stream_sha256": "a768ac15ef5b6a53b0ae16ab51b1cca10de19cc588c3f961744e5f3df1e597de",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-64x48-p0-lossless-n8",
+   "stream_sha256": "81abda2620467d5f27fa807b814763315ec682b074147a62e7f8f87339c940be",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-64x48-p1-q12",
+   "stream_sha256": "9586ca07c7da15d8bd747f0c457c0e6d932e2102e569d5f40f2d1e24c8861225",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-64x48-p1-q24-deblock",
+   "stream_sha256": "1facf6596f7b0b82e600c36154b054db3f4b1bbfc9dc5869fe194473ccdca1b8",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-64x48-p1-q40-deblock",
+   "stream_sha256": "7d20f765b34bf8f9dd7765a7337e11fbc5854fb628549b0c8c740d324899c9af",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-64x48-p1-q30",
+   "stream_sha256": "1d2beec0c43e9a7484c9ca1fb7ad7237e65ea76eef62b26aa8270d55f391d9ba",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-64x48-p1-q30n8",
+   "stream_sha256": "3a0174b13b34960017a7a7f40a4ae62107d68886a01167326b3c7eee90607df8",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-64x48-p1-q45",
+   "stream_sha256": "f188e5c93e1291b98582c7f2b3c439ef6373c7db85819d1acb1d79170cb2887e",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-64x48-p1-qmin",
+   "stream_sha256": "6b43305dd42478ac03be328b5d4dc13dc3a61d584d036f49c81f8dd48e611d52",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-64x48-p1-lossless",
+   "stream_sha256": "cabe292c1c1314f3c4502363c38675766fbcc8026594b80576e420a071c9c27c",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-64x48-p1-lossless-n8",
+   "stream_sha256": "5724c5588687068063bfe99f5e93d5dda45bb8144d4995ae581323043d415776",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-64x48-p2-q12",
+   "stream_sha256": "5b2bb812e5f9553dc57be36ab616a4184db3f36c7966242eadf1311ae612ef92",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-64x48-p2-q24-deblock",
+   "stream_sha256": "cd2fd5f5eb5eca9f833cbe0519f0c42db05dcd4dcf1ba39a4ba9f83975d39b27",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-64x48-p2-q40-deblock",
+   "stream_sha256": "a3e72390b45a4c8828258e87dd86d0e70fc38bbd174f0e8ae7c3e78e62cf6f2b",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-64x48-p2-q30",
+   "stream_sha256": "c4e491492e70b2c6beedaa91e3903296cd9568d987b71d8718affd6c21e55dd4",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-64x48-p2-q30n8",
+   "stream_sha256": "0fbf41942f163c040b0c89d8bce5a46739650de2ef8de6219f931b3cab59ed65",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-64x48-p2-q45",
+   "stream_sha256": "ec3e0e2e8ca86291e8b1be8a0fc9c5f9ba1e96d9fdc079776c75032902ca8420",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-64x48-p2-qmin",
+   "stream_sha256": "5e228700be52c36f9019588e2f22564ead532eb570fe1f45398a2dce7af0f2fe",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-64x48-p2-lossless",
+   "stream_sha256": "3dc04e6a5af761a48668f32a8446197f88b07fbdb8350ea77c78faa31fe33a19",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-64x48-p2-lossless-n8",
+   "stream_sha256": "a3c55358ad9d24bd6af324491e91112d769a29939e344ac55c5351713eee2dd1",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-64x48-p3-q12",
+   "stream_sha256": "926da11600062d05172ec33e458b7e932959a1d900be164966adff7dc2350712",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-64x48-p3-q24-deblock",
+   "stream_sha256": "7de5b9a4195b35262d121e6bc2670aaec24e7302a278ba8f56a280e9b79863a0",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-64x48-p3-q40-deblock",
+   "stream_sha256": "fad098b1c948fa61d7d8e7dc15e8b30911713a8b127af1ec5daa8e020050ad7f",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-64x48-p3-q30",
+   "stream_sha256": "246547cd0e0e734b6019fd32178d4486ea3149285e07bb934e51ffba75531620",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-64x48-p3-q30n8",
+   "stream_sha256": "390e95b2ef590f073d07ebfeef41771bfaddd24d949e5693eb374354f09b2734",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-64x48-p3-q45",
+   "stream_sha256": "aa3137294c38243f0bebb98a09b508f8d10df589fd0a0747a865b2ef4010e216",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-64x48-p3-qmin",
+   "stream_sha256": "50f99fe8894982491f94bbec04ce5213e83c9eeae31cfebc20f7c7b4f88a434d",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-64x48-p3-lossless",
+   "stream_sha256": "3669526f4691841fabdaecbe0f3d432445bc15f0734e6e6022dc4602a32a56f7",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-64x48-p3-lossless-n8",
+   "stream_sha256": "a4db11b7be042a937b06c7e1eda5f1c73f6a78cc0263d2b33027c1f5926c2bf0",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-64x48-p4-q12",
+   "stream_sha256": "c65433f0c5d0b18d0efd92bb6f5281018576a4f50c3aabb5d0bf3432f87f266d",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-64x48-p4-q24-deblock",
+   "stream_sha256": "434dc434e9f368d0a89223b98e7e2c5a07df6ff0de8541ce548d6ca14945c200",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-64x48-p4-q40-deblock",
+   "stream_sha256": "d7ff149251b984a692e66ffa587b18919a7a9e65f4eafc1c1c7103f8abb4cab0",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-64x48-p4-q30",
+   "stream_sha256": "a6e626a246042a2e33ffa7caa9467d0f76203310f044d82b4dc0652ec9f85fb1",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-64x48-p4-q30n8",
+   "stream_sha256": "68d6b114e5f3b52281e4c80c266983921f62f7099476f9acb1270dc8c4651aae",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-64x48-p4-q45",
+   "stream_sha256": "1839c18bbc88f30f1c1221e41a071be971a8de24e7e3ab7064e683a64c71ea42",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-64x48-p4-qmin",
+   "stream_sha256": "c0dbc08e4c8e47cec997bf29632e37c841bb902123202d82e12b9ddee80d920b",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-64x48-p4-lossless",
+   "stream_sha256": "edd6582d344f48e433b3b8af1e812f9aac0733fd50b1cfef91eb25a5be14dc30",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-64x48-p4-lossless-n8",
+   "stream_sha256": "20a596c5d27036899cf9756d17264e03dc5472b95c1c572715d3d9587a3ac9ea",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-50x38-p4-q12",
+   "stream_sha256": "d42aeab19426e21d375ef6e4073211106b9974efcb102e7191327da87b96af70",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-50x38-p4-q24-deblock",
+   "stream_sha256": "9f830cc5aa227cf6dc58f3cbd8f5fc8333a994d101e448750d1e4335f266b72d",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-50x38-p4-q40-deblock",
+   "stream_sha256": "ad72e574bdf889d88b9f5de7c622763722d981a633ba98adf7e6e36cf4db767b",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-50x38-p4-q30",
+   "stream_sha256": "7c107d0e258a70524aebd6f2e54e82f02e536686258dff35f7f87b8dfd93cd0f",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-50x38-p4-q30n8",
+   "stream_sha256": "5ca552db8046b9b79fb92456aa86da2b9c99c384ebb74f322d2cd1859f7f85da",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-50x38-p4-q45",
+   "stream_sha256": "8b359df84787f4039411a9ae269bebc72fae64efa34769398b1bf6554f86ec42",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-50x38-p4-qmin",
+   "stream_sha256": "1572bd14127bf22a366d39fb697114599b51cff137203772f75e7620c7c85086",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-50x38-p4-lossless",
+   "stream_sha256": "7f266d3173e5ae015a7129e2ffba237a51c0d5bc97e189b15d3dbd1fa55f7026",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-50x38-p4-lossless-n8",
+   "stream_sha256": "6cb7f84e88f83f3a8c25c832829b44d5e75e1d200ea205ebb31a7c7321ace139",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-130x66-p4-q12",
+   "stream_sha256": "51ded8f565beb3f0f781e93998dfe5d99fc6f6d4b6cb1dd2481504bc3dac2480",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-130x66-p4-q24-deblock",
+   "stream_sha256": "a3476f8be0190802d15b48fae3d81a49aa68399e8b3691d1f0ebae23afc1e574",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-130x66-p4-q40-deblock",
+   "stream_sha256": "9da5474e6d28e109640be773994d79d69115abfd500e9804c7037729ddaa16d5",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-130x66-p4-q30",
+   "stream_sha256": "f1dde4b369f88bb3a30a6ee7ce97916f3f23ec3110e7a863a66b3ce5e8c58b15",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-130x66-p4-q30n8",
+   "stream_sha256": "9248119f48002bbec1c2077e2aef2ecd635e382510b26740848f803218f9f8f6",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-130x66-p4-q45",
+   "stream_sha256": "811a75b91b49265aea5bf7fc1948ae45dfba6d814496fd6414200484306c15a4",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-130x66-p4-qmin",
+   "stream_sha256": "667fff8b66e9cfbd27512828902803190f3a67cb0a4fb55dda4edb1bffb80fd2",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-130x66-p4-lossless",
+   "stream_sha256": "698a6e34294fae9860a75ac09ef34edf53132f8dcca1849d33b1a392b81a68f8",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-130x66-p4-lossless-n8",
+   "stream_sha256": "937b8611d7aaa0855f923f802c292ea7e3bc15b8c14392b59683ded69434390a",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-8x8-p4-q12",
+   "stream_sha256": "c4a2237e0ed6659e623f7d260d808fadad64e8fa4161a07f42a62cc3cdc79637",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-8x8-p4-q24-deblock",
+   "stream_sha256": "2cfe46f66337fb1fa8396c69ced90b52e9a47191cac2e90df64dd0858710223c",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-8x8-p4-q40-deblock",
+   "stream_sha256": "17aacfc78f06d6576b6c3b903033a3c8f0caa34bdb3f18d46425c8f39a886f5f",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-8x8-p4-q30",
+   "stream_sha256": "c18e3309a194c3330e2064ec313b8198523790757b1863eaaf7bc52b051ee5b1",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-8x8-p4-q30n8",
+   "stream_sha256": "9f5691583f7c11bf737d2f27464a9eb39707f5b3e408fa5f7ce3b09983de3936",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-8x8-p4-q45",
+   "stream_sha256": "bbd142f577c32b3c66dcf5ef377624408f3df8a27f6f737e958b2b18c434ba81",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-8x8-p4-qmin",
+   "stream_sha256": "511ba5f5a6b79f198b1546cd1a1d9dc90ad125c10826acd3ec1044ad1c3907cf",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-8x8-p4-lossless",
+   "stream_sha256": "d7eca9f68608077ade6f20c66e4c38abb9f7fbcf2602c424ef4ff7aa2404bb5c",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-8x8-p4-lossless-n8",
+   "stream_sha256": "9864a8e5686e372a239e7a24a58a6d15f53d501ed4419ecce09bb68b22b864e3",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-2x2-p4-q12",
+   "stream_sha256": "626c3282b955f7dfe73602f2113f5533898fa98a2330b169654730adb06c7f1d",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-2x2-p4-q24-deblock",
+   "stream_sha256": "77d0b0943e3dacb94b9d4a897be161562187423159e84428dc64393395a6b6b3",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-2x2-p4-q40-deblock",
+   "stream_sha256": "16f1a9e6006cff93e487f6fbcfe7ae25fce2583d38a3f2f2174496accf9fa797",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-2x2-p4-q30",
+   "stream_sha256": "d0f693760754405362fe194d841906c54ed34f267ac012baf347fad26ef6b5c8",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-2x2-p4-q30n8",
+   "stream_sha256": "c65e185c2aea046ce5f836233f62cfc6a6d4b1a68dd8d852a4756e4080aa6ce6",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-2x2-p4-q45",
+   "stream_sha256": "eb82d12ffdd0cdae021b72fb2e2d0e6910fd7904fc1e1ac0adc58a94c1a85d77",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-2x2-p4-qmin",
+   "stream_sha256": "79016f05a111815dae9e2ee1cdb554e7f8da59760c4075279e9262e26bb3c6c6",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-2x2-p4-lossless",
+   "stream_sha256": "91e6049cf176201a26fab07f68ad4e9c7da366004156c5e7d48cd0e2b1182d9f",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-2x2-p4-lossless-n8",
+   "stream_sha256": "7040edf87117c29a1a42b363b7348874944279b97514dd6319abe52fa7fa1d0f",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-200x136-p4-q12",
+   "stream_sha256": "6c314d100fb2d02045d49126a4867734405d7d754463f4b31e9a0fe14cfa2f29",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-200x136-p4-q24-deblock",
+   "stream_sha256": "a19e3971751eeb23f4516161a50e30f86f267d0d798a980e5893a05d1a032a4a",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-200x136-p4-q40-deblock",
+   "stream_sha256": "62d174326c2a5ade020f84dfa6f6969839283deb2c03e3d2c8b982c1ed7996b4",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-200x136-p4-q30",
+   "stream_sha256": "6f9654c2e6737a8ac257acf19c6860341f12a0a9dd3171cc879c15d8ba10dc90",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-200x136-p4-q30n8",
+   "stream_sha256": "caab93684464c24cbf6241fddcca1ba5f47f1de9b4e8d55156eec6207a788220",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-200x136-p4-q45",
+   "stream_sha256": "c8d1d4d13d595ed1c223040da12db6e56438daf1548885a2df1640475cedcaea",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-200x136-p4-qmin",
+   "stream_sha256": "277c443b482b25ca6ed3ed9901c5ae1149feea438e25e50486fa8808ab68a35e",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-200x136-p4-lossless",
+   "stream_sha256": "f0ff0885d89637d79f24d1db1c68a3ea255d62d33b371c34323fd526cf9e8ef2",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d8-200x136-p4-lossless-n8",
+   "stream_sha256": "d81afe4339ecee02bc3e0ee0ded49b15d18071a30639c20e5400c5fcf4d385f1",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-16x16-p4-q12",
+   "stream_sha256": "5130a904490d4e27fb7da1308d9a97c1e1725da08955809d262651c4b12e5ba7",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-16x16-p4-q24-deblock",
+   "stream_sha256": "6e7a7dc36f259926480bbb8c5d907c50db2fa83dbbf8c7d17b11c74a994febb1",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-16x16-p4-q40-deblock",
+   "stream_sha256": "13bc12ed8ca4fea323c87a8245db57015c8c62f82cebab80a50c8a6408bf2600",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-16x16-p4-q30",
+   "stream_sha256": "c4c5b96e46700994110589d180c123b845d89d8e5f58dacbec448c896e2d2c90",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-16x16-p4-q30n8",
+   "stream_sha256": "68cdf15f73ce2d3e23d8cf41e9055ac512a42c468c108de69459cc3925486db9",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-16x16-p4-q45",
+   "stream_sha256": "c836c4fd7baa4fddf8c71c4b0f2804c0a21d4485a500596ffbe7c82b4403210e",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-16x16-p4-qmin",
+   "stream_sha256": "14a16736115c30c8217a5000ce75ba45adc075b32ea9e3cd57c758e4438682f5",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-16x16-p4-lossless",
+   "stream_sha256": "7f93ab9e0f0eca7da87678d8434ee4577766391d897a9b1f86087f6aa4f8afc6",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-16x16-p4-lossless-n8",
+   "stream_sha256": "5705f23a50d047396db678acb6a8b038cf445e857cf791c94d3f692d7805e27b",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-64x48-p0-q12",
+   "stream_sha256": "0aeb8e6a77ae82a83c5e37ec68f4ee8d00d43f381d9e33047434eca8ffb07e93",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-64x48-p0-q24-deblock",
+   "stream_sha256": "110fdc5129a63b210e47f1ae01d6c194c3a298f702be951d6cff6497e7640116",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-64x48-p0-q40-deblock",
+   "stream_sha256": "82d17a41071ee1e70b4f9d563cd3455085f9adacb490b3d7432c338ab8ad356e",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-64x48-p0-q30",
+   "stream_sha256": "5a3b69cc0201f4cf3b3721bdf23144ab2932cf3a359172ccab48ad36ec6af8f8",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-64x48-p0-q30n8",
+   "stream_sha256": "df71b0398b788dcc8cb0f344880a8ff046c15aefda64dcb823119ace063ceb23",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-64x48-p0-q45",
+   "stream_sha256": "4d03573d68a9b2576752d1cc85e0ed03d17d9df3fea6864b2579fb92a302ade9",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-64x48-p0-qmin",
+   "stream_sha256": "329932a75642c494d6d9ad7bab1feac1cad99822b77b37de2cf6049afffc6473",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-64x48-p0-lossless",
+   "stream_sha256": "08488a4a352c39d0bea24127847669395cdd60690cd3108048170eef0a4fea71",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-64x48-p0-lossless-n8",
+   "stream_sha256": "a17049d9bfc0d784be17f36ae494b7d4021e13ec1a7fc93af831012cb2880470",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-64x48-p1-q12",
+   "stream_sha256": "9fdc7c398db907c9346d1415149f9939e12c909e4df07d66fa10305cf967bb0f",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-64x48-p1-q24-deblock",
+   "stream_sha256": "3e88dac01ae8690e2e5ff5de6b64e75bb11d004003923ac6451b573738f475af",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-64x48-p1-q40-deblock",
+   "stream_sha256": "ba40f9667b30d1e3ba5a79be8a1858b116c5d4ebbe8070a5dc1b594e829f8519",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-64x48-p1-q30",
+   "stream_sha256": "5bdce5747c89c9ae375182a6cd1df1d3ac72585d90c3376dffc85117b6658228",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-64x48-p1-q30n8",
+   "stream_sha256": "56fbeb26656b5aea8b3ec0608cd1f50b2d77f1c3f0e5413ece4d6d0d29eefc93",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-64x48-p1-q45",
+   "stream_sha256": "0e009e076f43e03af4d07fe0c8027480c8b1516b957307d8b48b888ac17b76a2",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-64x48-p1-qmin",
+   "stream_sha256": "4de2ef0d14ad99d12fa2d3ac7779b8d243569d4c45b533e1426abeda2e95085a",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-64x48-p1-lossless",
+   "stream_sha256": "7ba6ac68916cf27daf1a21af42ec80db30e42fdb78c07b89f0a7ce1338a0326f",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-64x48-p1-lossless-n8",
+   "stream_sha256": "b3cb7c4540c3c5ede8cb4cc5d08b2d379e40437ef873276a5bdb3bb0701c9074",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-64x48-p2-q12",
+   "stream_sha256": "d0765ba2da5d49965dbfdf9d6263d376a47cc99e3ed54451b70c1c6214a68e9a",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-64x48-p2-q24-deblock",
+   "stream_sha256": "4e03163a8460957b6be36a7e8c1d9edee9d5e8db158ff4e33b9e02f6a316130c",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-64x48-p2-q40-deblock",
+   "stream_sha256": "7f11007e1853132942f8475d8ed6e6bc799f523a4df7d5a9e585052cd26e4a48",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-64x48-p2-q30",
+   "stream_sha256": "d167a58a48ed06e643fc539b4c3ac141683d116ab99fc8075c8dd4eded11e99f",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-64x48-p2-q30n8",
+   "stream_sha256": "0317a89a216681616a0b0438e7e41a5d93d304ef472e0383719c8a415f1b6f7f",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-64x48-p2-q45",
+   "stream_sha256": "928f77f18433167a79dccde89add82ea41661371151d1673d57982ab7140095d",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-64x48-p2-qmin",
+   "stream_sha256": "e9403924d24eb002a58249c5d0fb68539f7d7faf22d11eb3f4f433976261e8b5",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-64x48-p2-lossless",
+   "stream_sha256": "f9125cca61402b1f71873e65a10cf8c1d53f007a84c44b15bc8c8c9c73f9c82a",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-64x48-p2-lossless-n8",
+   "stream_sha256": "4ea4092689bd6e8c3b422421728f04cb4a1c1bcd6bf1ee1f28cecaa5e0c8277c",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-64x48-p3-q12",
+   "stream_sha256": "f4b7d68c6028e635c7ea44a589d38a9b94063b0d2f16bd92424041b9801fd978",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-64x48-p3-q24-deblock",
+   "stream_sha256": "1a8ff409ab4792d01a0b5c92382c0123392fcc3271c72a79a5e48a5a8700a09b",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-64x48-p3-q40-deblock",
+   "stream_sha256": "450aa4727acb7df81022d7bcc62517d257a86af69327fa0af3ee74c8d34991a7",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-64x48-p3-q30",
+   "stream_sha256": "1a480d4f20b93b7be3d30b09f08a351b78bbc1bb0ff73c4df7499a7a739f48e0",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-64x48-p3-q30n8",
+   "stream_sha256": "e419c8c96cd20c43f7b10d6ab7fd6d02cf11ebce92a3d717ce05e8b6d722f6d9",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-64x48-p3-q45",
+   "stream_sha256": "8207e88cc0b36aff1e938de77534dafb8f1b46915e21e04e9f4e21ca523bb212",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-64x48-p3-qmin",
+   "stream_sha256": "e3381a4c0c88567d579e404e81a8c467075eb5a95761a33327c27090be16fc8c",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-64x48-p3-lossless",
+   "stream_sha256": "14fce6160ca513e50f1e7b98e62a0c4afa05af9d6f342e7eb984fa6594d3cd0b",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-64x48-p3-lossless-n8",
+   "stream_sha256": "18080aa2ba61c60b479040e7eb69c90542df7e29781277c4658a8d2ab5969fdb",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-64x48-p4-q12",
+   "stream_sha256": "8184338b55396f4a6206b81f562a7a941ab705a52bdd709e9e73d4f081607991",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-64x48-p4-q24-deblock",
+   "stream_sha256": "00e99c2c653903612350fd58c510ad12744e589c79a74b3a6f77133602d30a32",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-64x48-p4-q40-deblock",
+   "stream_sha256": "d7ca04a50345ae3e874628cd86973f02ea7c0b198dea9bca2775398626873f7e",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-64x48-p4-q30",
+   "stream_sha256": "bdb0cb1db7958235f5d94770dea05efe6c040251a87d86b07b7ab1e45ea1a48a",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-64x48-p4-q30n8",
+   "stream_sha256": "32008d4f4a6f251d57fb165c082cba57e81835e5886b00a30863f1c42bfd8416",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-64x48-p4-q45",
+   "stream_sha256": "8193e9afdf547cf7423c49250c961bf98fe65934ba8ad53339b6fe8b38514814",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-64x48-p4-qmin",
+   "stream_sha256": "9184408d511292c3512209be8cbb6389d530f0d6451248abe4402c409b413c0f",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-64x48-p4-lossless",
+   "stream_sha256": "ec9696624988b876c170378dcd8dfe03d8ed83a1aa3572753b963460568d5724",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-64x48-p4-lossless-n8",
+   "stream_sha256": "708d98bee534565f6f45ad4eb36ebcdb1bb46826297b3046d377f992e98bf193",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-50x38-p4-q12",
+   "stream_sha256": "b84daaf9aab3f8b73072a8bae476935ae4fbcc80cda29aa4dcdbdd29be006a04",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-50x38-p4-q24-deblock",
+   "stream_sha256": "052eeb649bbd406bc76e96718452485d88d990f3cde46882169f9774255f8fdd",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-50x38-p4-q40-deblock",
+   "stream_sha256": "46daa2aaafb9718b081e89d47c1e2ec0771a891398d7a259ddfb1661614510bd",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-50x38-p4-q30",
+   "stream_sha256": "6caf7dd95df1372bc9ffcbf63d8a490dfabd8025c13dcbafae3644f2773e5cf1",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-50x38-p4-q30n8",
+   "stream_sha256": "9035c8b86ef15ce8ab560e97de59fa61df42fc3a38ef704ab64c8fefaee56061",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-50x38-p4-q45",
+   "stream_sha256": "4ed2ee7b6693ff9d7a384e15a2f7642bf6c8775f1ecf4ce80bfc339f704e49c9",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-50x38-p4-qmin",
+   "stream_sha256": "61d38a78d1b07de0706643f215284cacd1045b27fd3ab74f429b35c10894581f",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-50x38-p4-lossless",
+   "stream_sha256": "08d2c5f7af465e9124dd1d690bc436d16cd927cd5c7f19c0dc71cf8ca2749dba",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-50x38-p4-lossless-n8",
+   "stream_sha256": "1f9dcbc8f30156271e465090e0695a90be2a30284aa276abefd1d04039eb5603",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-130x66-p4-q12",
+   "stream_sha256": "dfb891065d89639b9c12a954ec75a691af821d70510d60d02229e9b59acaac46",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-130x66-p4-q24-deblock",
+   "stream_sha256": "99bbe81a521758d51647b4496c1a613b203c80cfe76c0901ffd7593562a88cd0",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-130x66-p4-q40-deblock",
+   "stream_sha256": "f0da9b43a6bde51306a119e58659c7d2c3d3e39fe28093b74090a2cf0c3c85b6",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-130x66-p4-q30",
+   "stream_sha256": "27678e2ddb81d8017050f820a1791dddeb62933541b6c80ae5c265cb3ab5fed6",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-130x66-p4-q30n8",
+   "stream_sha256": "622e07549556a19e5405b92a24dcd5555af0eeb099eba20f21259068530854e0",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-130x66-p4-q45",
+   "stream_sha256": "060c03cecbcbfd8eb6e5b52a83e21ab9a72f56aa5605ae9455f4e72b6820bf49",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-130x66-p4-qmin",
+   "stream_sha256": "c9dfb794f143cb83727c3c1d3978c923b3d012fa5404c37764c6fbf017ae80bf",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-130x66-p4-lossless",
+   "stream_sha256": "a51c47813daaae1c92cb0bba4f24ee29e0b7ce0c943d9639d8b580750cbf54be",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-130x66-p4-lossless-n8",
+   "stream_sha256": "528ecac7cb8d2765316b98fcc07e194dd5ba315299bc80cc445534d8a311bb7f",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-8x8-p4-q12",
+   "stream_sha256": "7f70dfeae0b67157e856512af0e224f32bed28a185a31e9d93ee19e308dac393",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-8x8-p4-q24-deblock",
+   "stream_sha256": "c1ef31a2ddc3688fc068e93d2655f77918bfe4f243d75c98f7cc6baf0cc00593",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-8x8-p4-q40-deblock",
+   "stream_sha256": "0b1f1678ff4a7c26f286c164f4db035b044462c5a0fbbee4e5d7161112f4c037",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-8x8-p4-q30",
+   "stream_sha256": "7d17574ed08d91306d7d8c15d366be9035a98dbec6652a2ddc0dda219b5a1b22",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-8x8-p4-q30n8",
+   "stream_sha256": "3d743d8adad51a7649b306d521e2e2973fd5cb758165f900ed9b87870b627760",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-8x8-p4-q45",
+   "stream_sha256": "673d2e086202fa53c4c4c581bc0ccff8f125bb7132accc75364e8dd6c5140803",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-8x8-p4-qmin",
+   "stream_sha256": "a9a4600ec0b8ece1d7f9d9b4b84a23bcf053ec8f4379d2a05fe263b6c1ab8e18",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-8x8-p4-lossless",
+   "stream_sha256": "82eb8d7d11cfa4f22e57936f3eb5589a049bfab8adb1fb02243e576a69448f51",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-8x8-p4-lossless-n8",
+   "stream_sha256": "4878a10b8c6b7ad97efc1a138086111be8b7190b1a55947cf7065a8ccfdea0c1",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-2x2-p4-q12",
+   "stream_sha256": "e17c2c5fca57e62e9a6eae375ea73d31d5a238edc61c79d72f8f468a82918d63",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-2x2-p4-q24-deblock",
+   "stream_sha256": "595b3ff26644a3188c3d6e6a2a5ca6d04d937f5dea7f4b8b1386b431d7c7f624",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-2x2-p4-q40-deblock",
+   "stream_sha256": "a87a6b7e90a04d701f350e025e504d28681b744f9c48edb608cb4d4d7bce0ca9",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-2x2-p4-q30",
+   "stream_sha256": "5bcbf439b3e21e4bfe9070de6868f5d4d37a742c72a836b8955e879760597cc4",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-2x2-p4-q30n8",
+   "stream_sha256": "32b7d727395b1e000049ae9c836245f668732334b4d63a3216e4bffc0036c71e",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-2x2-p4-q45",
+   "stream_sha256": "59ff2ed12042db0c5594675a8f06af148a7f3ab123c040ba07f888ca87d7a5da",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-2x2-p4-qmin",
+   "stream_sha256": "ad8f6280a00c7b71f3268f48bd66ff7453dc44d611dfa50159a19da0e4ca400e",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-2x2-p4-lossless",
+   "stream_sha256": "d7e0810156441ad0c8170f8ac42b718b0f6e17660f0d205c7698b35ee84b0bb7",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-2x2-p4-lossless-n8",
+   "stream_sha256": "bac8c143a7d4a44bf3797058c2df02bd010b6189f1dc5406dd0ae70503bdac01",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-200x136-p4-q12",
+   "stream_sha256": "7fed82ac1ca600183840a0f0bf4b4192f7032f4e376fa2568c265c7657c29578",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-200x136-p4-q24-deblock",
+   "stream_sha256": "9ac8e5f2c04f2c91587a76195c37984b28c8274a5591b641350bc58a9ada94f8",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-200x136-p4-q40-deblock",
+   "stream_sha256": "a6cdbfff51721e2942b1520dd217d54edd5df74d72253025280c0c01b9d02f3d",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-200x136-p4-q30",
+   "stream_sha256": "f51529d646b244526b8aa42607a3ed918642b34f34ce061f9d14f5f0895a8c4b",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-200x136-p4-q30n8",
+   "stream_sha256": "9977f6d3eee8ceffb88c841721829154b1634ace7af0c3717481318d08e93384",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-200x136-p4-q45",
+   "stream_sha256": "7f29e1bcbd72296ef767b4d21c5c5ff7cba1252a35b33d1be47887deef6637ec",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-200x136-p4-qmin",
+   "stream_sha256": "8a95a9f3a3d542757b2bd9ac805d12139eb933c529c0b576795f76622d83f516",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-200x136-p4-lossless",
+   "stream_sha256": "4550a618d42b7763e2ae8e1d175ea1996cf929cd5cabaa26f042e0fed9b0fbd4",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c2-d10-200x136-p4-lossless-n8",
+   "stream_sha256": "6bdeffeeb6cd38c977f35ba64860ee5855431959728bdc1b213c2a79004ccd74",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-16x16-p4-q12",
+   "stream_sha256": "9ced370962f82d51015d1c6e733b4f3a6b06397f2f6ba89974cada358b7e7823",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-16x16-p4-q24-deblock",
+   "stream_sha256": "73bb44f96ef6d6f29d04ceb54ed2f9541fcc820a0133eb49ee49ccd748c18322",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-16x16-p4-q40-deblock",
+   "stream_sha256": "809bc4ab45c1d3375dd650a51abf7254c825d623a5be8099ff3af971b52bc16f",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-16x16-p4-q30",
+   "stream_sha256": "2ccc9fa87c89e9d1c2a05ade1a0dd5b7a2b35bf9bedfc548dc9f52ca3c125269",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-16x16-p4-q30n8",
+   "stream_sha256": "35231f82c733112dc96c57bcd1ec6783cacb0d87210791e1035aa7763b082024",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-16x16-p4-q45",
+   "stream_sha256": "5e316e4b1994c871b712b428ab610aea4cc62c1dee9bd69a79b81fc9690e7f21",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-16x16-p4-qmin",
+   "stream_sha256": "e0aab982671145c5667270cd209e455fbbb6e3e93be0fe55eda386f519f067b1",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-16x16-p4-lossless",
+   "stream_sha256": "edc26026f7ee8bee04043aad4abb60f1aa602d55f86043b6da560d270c9121db",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-16x16-p4-lossless-n8",
+   "stream_sha256": "5856eca55496b467385d377341fcf9d3c123d0d1b09628ee9ece3d6c250dc9e6",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-64x48-p0-q12",
+   "stream_sha256": "2773bf11ac46f2884bb1abefd27cea1197b54e334f5f2da877e158bc305ac603",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-64x48-p0-q24-deblock",
+   "stream_sha256": "f272652b0aa49603d3ffc64c0c907ff80e90b13ed62382ddd925c526bec62454",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-64x48-p0-q40-deblock",
+   "stream_sha256": "314b8517b6130eda65a75870fe4724181190687d75f8b090e3016770b4aa40ce",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-64x48-p0-q30",
+   "stream_sha256": "5e8de56f9d19e77012dd01e1b411f6f428719f478e0c2d2e14f9ddb01e8a5fdc",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-64x48-p0-q30n8",
+   "stream_sha256": "b28c9e25a2f604221c8e5f8ba5cc47a170ead6caabec4bf2a0f146e0709bd22d",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-64x48-p0-q45",
+   "stream_sha256": "ea57a357b6ee0e74034a6830e7bc900a9b77bedeb9abbdbcb062f52cf30b9180",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-64x48-p0-qmin",
+   "stream_sha256": "f0b59add169de08f40c9632ef65c800454063a687239d038628a8cda09fb3fcb",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-64x48-p0-lossless",
+   "stream_sha256": "1e2fc4188daae77afb186ba8f2105d484383cab554736bb3eca79f76d6826372",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-64x48-p0-lossless-n8",
+   "stream_sha256": "7a37888db2b1da41e4f897d0903a45eebfcc432c0e7c522bb585ed898d99c4cf",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-64x48-p1-q12",
+   "stream_sha256": "128966550e77e8d5adc24f1bc4ffa9fecf48eb7fc408c451afbe9398fd1a9114",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-64x48-p1-q24-deblock",
+   "stream_sha256": "dbe541521245bcd1e33ad48be4539a8a3c76dce0713ee50dc3201a5ff49f9a22",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-64x48-p1-q40-deblock",
+   "stream_sha256": "d46c07d23132e9fe56c7e8ef738cd83e0e026bdbc88b317c1b91c2af2bc3dc0a",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-64x48-p1-q30",
+   "stream_sha256": "db45bcf4dc641b73fd74099c345bdb3f1daa084b7cea96d8d0155461a0b265ec",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-64x48-p1-q30n8",
+   "stream_sha256": "e3951dc01c7a2990d957d9ae86d40cff56bc9c5370477a1f0102f9cb16157f3c",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-64x48-p1-q45",
+   "stream_sha256": "00223c2459366b4c73a517ee2153cfc64110103bd4f839d4b07425915f884656",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-64x48-p1-qmin",
+   "stream_sha256": "e0686e51e3abe4bd1e984418a262389d4c072192245ef6f7b311756a4e98c2a7",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-64x48-p1-lossless",
+   "stream_sha256": "abca06074475081836943b50792932ce30c875e7ace98ecd598d877995c0f123",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-64x48-p1-lossless-n8",
+   "stream_sha256": "982b14f0dd59ffa9858a38f9637cf025075306b2ad54e6da445035d9a0b3a190",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-64x48-p2-q12",
+   "stream_sha256": "eebbc6bb4fd06d1f08ec5882d300ffd498a861c17d30eefe8c13f4b0771132b1",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-64x48-p2-q24-deblock",
+   "stream_sha256": "c3f296b1845fdafd541ffae895313a12c637bfdc965afeedd7e92607a4a0f209",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-64x48-p2-q40-deblock",
+   "stream_sha256": "b4b35ac8fb00cb88c21f09f6ecaf882ed80f6e2f2c165e49d700c1d14605c107",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-64x48-p2-q30",
+   "stream_sha256": "54c2f66b54e97f514b3f6e61831a63f6f6d4e2259346ec6829628d8204895891",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-64x48-p2-q30n8",
+   "stream_sha256": "07cf1c00d9eb97bb90b2c673cf89769e9575667e7e02949edf0c76c22f745bf3",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-64x48-p2-q45",
+   "stream_sha256": "92cc82e5e06d16d000932cc526707e750e87bb8eb70d5774bdd77fca83fc29ed",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-64x48-p2-qmin",
+   "stream_sha256": "b6bb1f1b4e63cb2e3094dae68474019af587c9ff882f601893d65899cc9471a0",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-64x48-p2-lossless",
+   "stream_sha256": "0941e164f0ff8bcd855507a8057eaa0cf0542c546831daf5e2483e72483104b7",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-64x48-p2-lossless-n8",
+   "stream_sha256": "093399b2b24a7072f7fc8a848455cc807f69d0370ff71a2a5f3ad7f6c88f752d",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-64x48-p3-q12",
+   "stream_sha256": "1f6f8e96a179b3f09cf93a3c615d832abd0f51823f2a80661c2fc94ce0e36f2f",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-64x48-p3-q24-deblock",
+   "stream_sha256": "99e4d77b5e92843476c4d6fa493e5e71a3084139d96629af641c0f3c9ff56949",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-64x48-p3-q40-deblock",
+   "stream_sha256": "ad3ae8c6b0c6bc777b21ec654e9ea449e581b035aa8682639716085a75511532",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-64x48-p3-q30",
+   "stream_sha256": "fbe337548ffd74453143efdc6ec76afcf53d2e5557325d8735d17bebc72d114e",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-64x48-p3-q30n8",
+   "stream_sha256": "4ff60156aab849071308405abc2d62a0b21afda89ab00180f97417e7bd63bba9",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-64x48-p3-q45",
+   "stream_sha256": "695be168c8078059165d534da056d14bd8217f025102eaea42bb46f2d6863097",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-64x48-p3-qmin",
+   "stream_sha256": "388a3999441520d6aca37794cab11ef50360cc01a29051de0c958662deafe2b2",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-64x48-p3-lossless",
+   "stream_sha256": "3974d9cd430b1847b7205d3f99feb90f06ba2becb33badfa8cea91a836091150",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-64x48-p3-lossless-n8",
+   "stream_sha256": "0b8cd5bed895f798b679e2756b1ac929840c763600b8e928edc07225af11de64",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-64x48-p4-q12",
+   "stream_sha256": "f046942c2274e61ae5b78a459c1d200662babac017c1885b7a74761a881e9fb2",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-64x48-p4-q24-deblock",
+   "stream_sha256": "29cde124a296ba8992504aafeb57ae4bd18ddb6b611d6266c55a4d276d1edff0",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-64x48-p4-q40-deblock",
+   "stream_sha256": "4113e7f544e9dd0d892788c0fc137ccaf0418c0f5129f0e9f8d7718c0f5dd61b",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-64x48-p4-q30",
+   "stream_sha256": "05cdb985cfc967e30f30d33e36293d02d87494a68e5198963e7b7b0261071122",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-64x48-p4-q30n8",
+   "stream_sha256": "e25b125eb45cb2c75d629fb61ca3e5aad09f4a0f7d363a5e0df71eafea6ae1d9",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-64x48-p4-q45",
+   "stream_sha256": "73ca61964bfa763344fad868666d3305bff47ba2fab5c1721280ef8c5a9a981f",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-64x48-p4-qmin",
+   "stream_sha256": "80a4c1a57e82acbd36bf734f563d8065627476d81e1bf6a69562efe7f80ff4c2",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-64x48-p4-lossless",
+   "stream_sha256": "591ac9bd941ae5de57a5a66c73d6b9b4fe1f567206e734640e38da345618ce9e",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-64x48-p4-lossless-n8",
+   "stream_sha256": "29cbb616a41afc5d44607a52cbf9f5c6acce3f9fcbb7e72250a361507428dcf7",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-50x38-p4-q12",
+   "stream_sha256": "6c98c114b19da1e43774625a99385d5c9f29ae19ae18d0f07791bc913b5a45b2",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-50x38-p4-q24-deblock",
+   "stream_sha256": "5b2ae8435d3c2083ec4256b09b87b510c8cb4cfaf1119b04a8c91fd824dcd2d5",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-50x38-p4-q40-deblock",
+   "stream_sha256": "4d7d8402bbdad3c7b6fc1db3a596ff1da28b86e0930f5f2cfdc1c60a5832e371",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-50x38-p4-q30",
+   "stream_sha256": "461f37bf4ae02c0ea4ecc0953b4c5d6ff730156aefff394b316b91251be2fb49",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-50x38-p4-q30n8",
+   "stream_sha256": "ee03c45c7145b7a2601077a1fab788faceaede7ea08c4f95623c0b03222f2fa5",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-50x38-p4-q45",
+   "stream_sha256": "e0d2976271473cd548ab46aa7ee5dc27246acd53c063f4ec96bca3cc07a02123",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-50x38-p4-qmin",
+   "stream_sha256": "cb80a8d148bb52bc0d79fe2a9e36e1c094870a73540dcfc0d4b3588318448d0a",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-50x38-p4-lossless",
+   "stream_sha256": "302a8a10ad1b7ff9cc5b00715c214fd0cb55b34c771529c7dab187b5b4ae21d3",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-50x38-p4-lossless-n8",
+   "stream_sha256": "433ba578372e026e769fff6156ada0fc3d8847f2ce002251116143f2285f8157",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-130x66-p4-q12",
+   "stream_sha256": "5a5a95f34e92b87b94976c822b8eb5a2cceb76cec5fb09e07418bff573142a91",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-130x66-p4-q24-deblock",
+   "stream_sha256": "ac3ce8a9c191dfac06d637191e77e4fe8106ef7f177c054fa183eb55e4a2aba3",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-130x66-p4-q40-deblock",
+   "stream_sha256": "4d208a09a85879194a4b20330d901b896db7a3d778bf371f23246d8eb1efe5e9",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-130x66-p4-q30",
+   "stream_sha256": "d55cfa64cb141ab006f7f144eaa3f350a5f72f2d008be55c292ce44ae5502044",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-130x66-p4-q30n8",
+   "stream_sha256": "e8b4b359c7cdcbd4af79093eace8f275f7c9371d487b121658eb08922fb0aa69",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-130x66-p4-q45",
+   "stream_sha256": "84428f8082f662955537e01e6d3f3cd6fb15884dd1472fa3d0976d7ad53a288a",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-130x66-p4-qmin",
+   "stream_sha256": "b96e4ce9deaa9ee20d752b667ec4e050fd6d5bb2fa56e9c204ee0928ffaf117b",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-130x66-p4-lossless",
+   "stream_sha256": "99b2ec3d766084e5e4d7ec7ecf838b05622b5a5c393d1b22818bcbf681999e51",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-130x66-p4-lossless-n8",
+   "stream_sha256": "2668c23070384fa5d7f57634dbbff5e0bbf56429ebc6cf5ef096391807cbef11",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-8x8-p4-q12",
+   "stream_sha256": "b0061d90f0de9956dddf0e1f9603d3eb71e54874d2ae71dace08ac3f1f50c582",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-8x8-p4-q24-deblock",
+   "stream_sha256": "77fdec7ef969c2a5193626bba351da8a217bce6011be4558967a202744b8fa8e",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-8x8-p4-q40-deblock",
+   "stream_sha256": "f0416d400aabc61124c0357b3f7ada221d875e2bd6b06bfec215e630807b128e",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-8x8-p4-q30",
+   "stream_sha256": "217fd4a969779f8b4c21653c9851f9f0dc2b73cb1510c67b1b2212792d4b3507",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-8x8-p4-q30n8",
+   "stream_sha256": "c551b30557e65da555a72837ae71939977c4dc75e637156098c2777996310a01",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-8x8-p4-q45",
+   "stream_sha256": "6fe0668837dad43e588ed608eff91e10cdc0024060873c97a8630e57641bf595",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-8x8-p4-qmin",
+   "stream_sha256": "331b244fa2833191c0f468dc73977b9f018253b50e238a44c5981aeecbe392af",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-8x8-p4-lossless",
+   "stream_sha256": "08a9ee210904c9ef34b806f78bd06374b07d6fa8809d8a7d3243ccb302b356b8",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-8x8-p4-lossless-n8",
+   "stream_sha256": "26a333163eae06edc9b17ef3c4a5732d6fbdd7ceeb8ca6c5c5b9238a8a0e45c6",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-2x2-p4-q12",
+   "stream_sha256": "9dcc524b020786b18396f1afe13a793e6f125c2618aae2c3e1ca47d71ad5b9ef",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-2x2-p4-q24-deblock",
+   "stream_sha256": "44b9f346d2360fc7103e3eae8f6e6469b8f48b0f48d5641dcae8bbb67371096c",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-2x2-p4-q40-deblock",
+   "stream_sha256": "88d39496a982f6c2d69ed2f87ea1f13415c49cf176a54a826abf982a143e6730",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-2x2-p4-q30",
+   "stream_sha256": "25bd3f298536e4697e0ad01eb3219d6c1960349cdc4f5f6195581edd65146d7c",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-2x2-p4-q30n8",
+   "stream_sha256": "fbf3f34725d8727bab425e166f5869ad85e2df2ba4de86676bcefd200c533e4e",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-2x2-p4-q45",
+   "stream_sha256": "7ff82eaad0e1848b2af314f3bed46f2cdce10e1961ec2475eb7c65e59810fe27",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-2x2-p4-qmin",
+   "stream_sha256": "3768f80016b976076cfd5cbc283c56b9641aa1026e4f5ddac655c971851c04fe",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-2x2-p4-lossless",
+   "stream_sha256": "c33692503a227f2058bc134c5ab8a3826fafd2723e5736b87764768c01ad681d",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-2x2-p4-lossless-n8",
+   "stream_sha256": "7f7fe3883223e81a045b5a2fadd13c84ec1bdc2e18226a2662d2ed9d35e98236",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-200x136-p4-q12",
+   "stream_sha256": "1296f7403afcd497505e8efbf29e4b14b5e608d093ff1a520549b9645125fc79",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-200x136-p4-q24-deblock",
+   "stream_sha256": "d61a2c3cb958d45390a77391b655b51a696f8fdaf5d95febfc36999247882eb9",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-200x136-p4-q40-deblock",
+   "stream_sha256": "c4eb8c12db4abc19238a8c8f979e6c1bc2da785dabb738dec6144c815b614ff4",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-200x136-p4-q30",
+   "stream_sha256": "9cb27b05bd724d0bf6ec1aedcad5e7c6898f31d29c87674f60ff10aa27ec5365",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-200x136-p4-q30n8",
+   "stream_sha256": "ac9466383b781ab1f1dfcd1d0b7628c1ce55aa4d27c44073b5f10ab5325c301f",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-200x136-p4-q45",
+   "stream_sha256": "a14637a9a36dd9ca107c6cea6b06ebd4b9a7a681b58df0ed6da3d8cf962474de",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-200x136-p4-qmin",
+   "stream_sha256": "54ae4e5beda1f4b41dbc5ee69e8b3b30b9872ea99672dafe84828894a5a052a6",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-200x136-p4-lossless",
+   "stream_sha256": "ff578ae210fb60b2c7c51772eeac9e6cb58b026de4d002aae0aabec2533df103",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d8-200x136-p4-lossless-n8",
+   "stream_sha256": "c3da28d474937212c7faf022d57a308cc545b60cd83f36dcc739891b31f8def0",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-16x16-p4-q12",
+   "stream_sha256": "ef765e0c2d74f17db1f4b49d0fbe4eff6bbc7b0c177eac0e7c38a53054e0d6a6",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-16x16-p4-q24-deblock",
+   "stream_sha256": "f4f08f285ac87168802f89549d2641c890a29f31f57e3e7a8f4518d42f9572e8",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-16x16-p4-q40-deblock",
+   "stream_sha256": "4f309e2edecb4c8767c9be2b373011012fd2c49e3e1a5992b74e8597d86dad24",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-16x16-p4-q30",
+   "stream_sha256": "26bc6df0b16bf3900b790dad00b72160030bd68f6b0efa98ce605b966b0991e6",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-16x16-p4-q30n8",
+   "stream_sha256": "a51b0ba81bac8bf25cfd4b9f551485ad7c52dc633286b79b35236465888841b6",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-16x16-p4-q45",
+   "stream_sha256": "31b75b483cf604c3e9b74670c96484be09480905c6dffff859d0676c22b37500",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-16x16-p4-qmin",
+   "stream_sha256": "4d99e68cef4fd5d77999bddbb906559d6917239ec498165727f4eef8d3f43c95",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-16x16-p4-lossless",
+   "stream_sha256": "dbb21c7ac3226f1fe435c9385a5d2f5c0f3948e7dd040dc1663278f805b61c22",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-16x16-p4-lossless-n8",
+   "stream_sha256": "861163598b09e3b3b33c38755499b342d53b55d42673f0ffdde138a7fcd235b8",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-64x48-p0-q12",
+   "stream_sha256": "fb395b2bdb8e351497574aeec2136310e361aaaadc6a5787848b6256f5ddcafd",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-64x48-p0-q24-deblock",
+   "stream_sha256": "e551fbe1ef1959a1f87dbf38cf9bf00d4312405d55eca7a51a4ec4b87b391b37",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-64x48-p0-q40-deblock",
+   "stream_sha256": "1b3649553a6e898275ac17313daf6dde3e5d36eb8b0349ba2ec2bc4956e838f3",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-64x48-p0-q30",
+   "stream_sha256": "b0359f117b2d0917f5c9883c56736a74e5f74b93b3d44bdeec11910bd9bdc183",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-64x48-p0-q30n8",
+   "stream_sha256": "6b8bb39d75ca5bd147864bfc0ad744a1313d2e892f1ca71f00f7e6f6abd5d8d2",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-64x48-p0-q45",
+   "stream_sha256": "2811d3764bd15c18aee05abceaee3fe2937771984b2e2aa6c933e3880a0f9f83",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-64x48-p0-qmin",
+   "stream_sha256": "73f611fa11029dcc42a3670925489af4520a6d03af4df6a30ce46348ac93cd0e",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-64x48-p0-lossless",
+   "stream_sha256": "0d0b0d61a4fc0cb012c8860a4d459edb470f28ae092b1b41d9e6036e149a0664",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-64x48-p0-lossless-n8",
+   "stream_sha256": "d4c55e4b548dcab16d4fb848e03cc8f3ce273901ff6cabe7de9299272c9590ed",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-64x48-p1-q12",
+   "stream_sha256": "7116460e4048daa1f93e8cdc303706d17da0c9fc431f6e745abe2b352304cc04",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-64x48-p1-q24-deblock",
+   "stream_sha256": "5c3c19f7013fd53bd6c7a282e076368b13c11d1d1bded13019ff88cb654aa48d",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-64x48-p1-q40-deblock",
+   "stream_sha256": "c309a98ceae024f7fe5bcf05b60eac6258b2e9ab425cd0d0c6cc997820a41a00",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-64x48-p1-q30",
+   "stream_sha256": "abe32888dbb804db07b6260a296a24aeb24c876a950ea9310588eeaef7e93c76",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-64x48-p1-q30n8",
+   "stream_sha256": "9b217a1ee31331eb348d2fd2c72244ab88f2bffcb8d22ec96ae174c83c56105b",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-64x48-p1-q45",
+   "stream_sha256": "4901c1eed29e790fb0e016c2af5d876e13a372f6670593811607792b95886fd8",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-64x48-p1-qmin",
+   "stream_sha256": "b100e432d1e32783e046cb17fb580eb305cc8cb564cb9be322b99a74846d75f1",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-64x48-p1-lossless",
+   "stream_sha256": "75d427217000b756ddba6a98a44c07db7c02f08afd5919dd39db9e00e82313da",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-64x48-p1-lossless-n8",
+   "stream_sha256": "60968213478f87873115c39815a41a5b0afe0ebd8aa9e87f6c0fe5ac61919fe8",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-64x48-p2-q12",
+   "stream_sha256": "c5f13aa2fc629df53fa6085622aa4f6b0bd35a55250a335d6555e8abd19d1802",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-64x48-p2-q24-deblock",
+   "stream_sha256": "94a91d408cc44da79ff4fa1a3c3bdc05d64c5b02f6ed2a1e09f385306cf1b7fe",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-64x48-p2-q40-deblock",
+   "stream_sha256": "4b8a7ec93ab12626726f5dc0a288a02518dac02e087b6de71ecb5d64a57ff142",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-64x48-p2-q30",
+   "stream_sha256": "d289b9093350ad61af3a36d79a40d8b5814953cc65e64be8834db3fe75a5a7bf",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-64x48-p2-q30n8",
+   "stream_sha256": "8996502624f8ec97d18f44f60ba24d2926aa69884d3e24ed40e9e65a4ab6896e",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-64x48-p2-q45",
+   "stream_sha256": "bca26f4eb7f870fca8c01b2f2ced230fbe8b70ad9f8349af89f88d09eb5af108",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-64x48-p2-qmin",
+   "stream_sha256": "76729a256c7d47ede94c64dacfacbb5b12b1438a2963c8b6daad5eb3fa8dc63a",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-64x48-p2-lossless",
+   "stream_sha256": "333ab19d969ede084e84a65a9cb795e71c6e01b786d777ce209349e6704e1e09",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-64x48-p2-lossless-n8",
+   "stream_sha256": "bef6cf05e7372d6af04f373e57a3f619111e422b6fd1dacf9feda48ee698948d",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-64x48-p3-q12",
+   "stream_sha256": "1fc810c361bb7da0befd2d2d9abd2278194ce8d5f71827ced3a8fbf0646ff1e2",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-64x48-p3-q24-deblock",
+   "stream_sha256": "6dbaa257c2e4a07877acd5dbd9bc6bf5da964e9a0b7f978efb9889d3e70c8437",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-64x48-p3-q40-deblock",
+   "stream_sha256": "0f28f42b2c0ce7ac40cb6b9387c719d2d6cfaf511678c61b5694cdf6868eeed7",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-64x48-p3-q30",
+   "stream_sha256": "d750dc0aa70e1f29ca3a8b279c6a3d54341e31114a8941720f19083232bfbcfd",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-64x48-p3-q30n8",
+   "stream_sha256": "d8728d64a6e2d637b632b0e2870b42414c26ab730a7f9baae7300aaef639e915",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-64x48-p3-q45",
+   "stream_sha256": "242a9b9869801ddf82e7989b1d2958619fa0bd6e8b9d7a965f7fcb80e16d6abb",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-64x48-p3-qmin",
+   "stream_sha256": "4c7dc498280c36129788cb0359901f25f869a9d1ab47022772ba058e78f74f2e",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-64x48-p3-lossless",
+   "stream_sha256": "536338dfa3a4b9ec44852da82eedaec15106de085ef43f07bc96b9e47fda1f8b",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-64x48-p3-lossless-n8",
+   "stream_sha256": "f9230cc89ba7e45d48ea7eec889e3502b9ebbbfd0d0e8a40bb88cf14bdfe581f",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-64x48-p4-q12",
+   "stream_sha256": "24a6a0dad49fc0988507bd622a90946fccc80741b0a444d9024aa14e454e7540",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-64x48-p4-q24-deblock",
+   "stream_sha256": "0cc9110a1250d7485374e79ce3ca61f594544d645e34104f8d13d2c345bf8c09",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-64x48-p4-q40-deblock",
+   "stream_sha256": "ededd5a162f2af0db794b3619533aa4583415270a8aa5331e2a02248fa6594b4",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-64x48-p4-q30",
+   "stream_sha256": "62494e5fb3ece47a6dcf6703a9bd91ace78a072815427e899b8d7620fa9cee38",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-64x48-p4-q30n8",
+   "stream_sha256": "103231cf2abb57054d1f0a0819d97edac86b5cb401306119f8c6edf2badff734",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-64x48-p4-q45",
+   "stream_sha256": "794ada97a48034df6b221f235d22deb9b2ca369f83b123c036a4b1f74695fca6",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-64x48-p4-qmin",
+   "stream_sha256": "e804976e000629a8f115bbc9d5aca0b0a89fd1f6542aa17f1fce9f5ef9ea1406",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-64x48-p4-lossless",
+   "stream_sha256": "33cd1c24c30fd860e4c18da533a9408f5221908b3664fb7e4dc7f30de4cac7e9",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-64x48-p4-lossless-n8",
+   "stream_sha256": "289324ff20d1446fd0c485019d92c990da9d2243646dc647ee261b89774caa60",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-50x38-p4-q12",
+   "stream_sha256": "415fa63ee62ec01101ef38a39728f3749ec6a402245e69104c3f28d9c45e2212",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-50x38-p4-q24-deblock",
+   "stream_sha256": "19b3cde6e1a00ba06771ab60705df859bc1b41c8ab3684c66b99aa40b0199708",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-50x38-p4-q40-deblock",
+   "stream_sha256": "de38ff4560c25773a4dbcfc7fef6b5d0e988bb333015ce3e0a61414aba55b063",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-50x38-p4-q30",
+   "stream_sha256": "66f7761a32b473107b4e66c5b3bd85bdd3f7bbbec2224b5914192e001b1ac307",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-50x38-p4-q30n8",
+   "stream_sha256": "0c00952811b85d322013d04a14e36e94dc9b68d18e88123dd7808b35e6509319",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-50x38-p4-q45",
+   "stream_sha256": "76c18438b306433fa06f4a92ab7992ad68a8a6dab934135ddb1d627d3b22e01a",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-50x38-p4-qmin",
+   "stream_sha256": "cbed2c620e6577206a94acbe7710cd5492b66a4078202dc49b62aeb08d01f9d6",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-50x38-p4-lossless",
+   "stream_sha256": "64cfab27c1ed4487b398f2a16da146dcec5789fd6126a81aa72e1e5bedbd8ffd",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-50x38-p4-lossless-n8",
+   "stream_sha256": "160cf32baa0ff99fe9afe4659a04b8b9bec661464420d50166ecefae612977ea",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-130x66-p4-q12",
+   "stream_sha256": "8b7db12016cf7d4fc68f7f7754a4ed6da449defe30176bfb3585a65937795b2f",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-130x66-p4-q24-deblock",
+   "stream_sha256": "575f786646e137491decf7e7a872186bbacc9e887d81d1bd1324d89873f8b415",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-130x66-p4-q40-deblock",
+   "stream_sha256": "1ed2c7b8135328959d5ccd3f16a4b35f1f3dd091fc4eb162ab3ba466ca6bd89f",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-130x66-p4-q30",
+   "stream_sha256": "cbfdf2e48f61187a2a2173a799b3a88da401e184ab7b8d5f27f4b43a2a8698f2",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-130x66-p4-q30n8",
+   "stream_sha256": "de5b4932e2f475febc5f95acdadb494d65330d2e005d4281834031196d92cea5",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-130x66-p4-q45",
+   "stream_sha256": "9d346318694d9ac0c48d0fe1f5dc6e68203a573d141c242859fc5e279bc3c450",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-130x66-p4-qmin",
+   "stream_sha256": "d9c88109e18ed6df6a34acf9d1beff27e8231c9ae503828ca9cfe5611153b65b",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-130x66-p4-lossless",
+   "stream_sha256": "3384ec3b3a826304e209730ad04231f80abf00bf969faef8fbb2da57aa999325",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-130x66-p4-lossless-n8",
+   "stream_sha256": "b4c3115c83dda78ad6b5a2ebb511e2a07e5350f5e54c98dd40dcd0ac0f896310",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-8x8-p4-q12",
+   "stream_sha256": "853c551ea51542a08878e65486d6df9b92fc4fdfab9c588a942dd80305430436",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-8x8-p4-q24-deblock",
+   "stream_sha256": "f166a9e855caf331e52f89c16301214f67532b31a5996fae99675ed3cdcc446b",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-8x8-p4-q40-deblock",
+   "stream_sha256": "6fc274d9dbb9aaedf78f97c7ae30116344368a898983c661bdf274d1859d87f9",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-8x8-p4-q30",
+   "stream_sha256": "6180a210a81cb3911fbafb18f576eaee8b1b8a2ef58be0877c926ad3ea800553",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-8x8-p4-q30n8",
+   "stream_sha256": "3dc8624769bfeb0ee442a0bf05f971a8ff4096e025ca85e73cd824a7ea01288f",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-8x8-p4-q45",
+   "stream_sha256": "699b067229d7a6a804ca4cb07ad58e52ff69d30f46c95d0379c3b74b6b154969",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-8x8-p4-qmin",
+   "stream_sha256": "269616bf833a93b2273662551079d6e9f24f84222420e45fcd13809a39e6e6c2",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-8x8-p4-lossless",
+   "stream_sha256": "4887721e5fc42619044953b4f32f1827ce13759004e1ed13e611cfab8494df13",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-8x8-p4-lossless-n8",
+   "stream_sha256": "4ea97f36e867287e05474e14b7d3aba5181e849684a0ca626876c19912891b29",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-2x2-p4-q12",
+   "stream_sha256": "a8bc2a7d0991baa4c362e825dfff6ef046d483bd8ab17e2969ed3c74a2126599",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-2x2-p4-q24-deblock",
+   "stream_sha256": "e1692ed90802155b989d194a649fabae3dca4270c03ac2eb60a67be47c333aa7",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-2x2-p4-q40-deblock",
+   "stream_sha256": "9ab4175e8bb9ef5b3331a133229140aafc8841f48d44d54b45340ccd02515abe",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-2x2-p4-q30",
+   "stream_sha256": "9986889c3fe8fe658c61470e922e04a8cf99c9d157cc6617e5113f421ae26934",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-2x2-p4-q30n8",
+   "stream_sha256": "d927392b57d65a45651bcded9158370a6d12d19f4aef177bf8b14ca6bad2416f",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-2x2-p4-q45",
+   "stream_sha256": "b3bb16d37613b9e4176870f29278db7d838fd2759681f4c4ca45ab9d7bfdf665",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-2x2-p4-qmin",
+   "stream_sha256": "f9c5484b61475fd37c52f50f4263bbfe9e496986652ce40bcc0c22e4294a4f0d",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-2x2-p4-lossless",
+   "stream_sha256": "c0eadcddcc61a7c8a06e4e5f62f1403a4718e9e3dfca6f1f053774564108a45a",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-2x2-p4-lossless-n8",
+   "stream_sha256": "7f63321b712432744a75d0e98f99bf97e0f8e794d5637cc54064296df0b60a8b",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-200x136-p4-q12",
+   "stream_sha256": "c0b7ddc81bc2355c075787f74258ffd94997d3f3a314734992d51ba3b7fdc6bb",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-200x136-p4-q24-deblock",
+   "stream_sha256": "9ce39d623c2081ca75f2c235f7a2c94ff5052b974452c0c0741db3a67e5b54bc",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-200x136-p4-q40-deblock",
+   "stream_sha256": "724868ab60df8960ab6ff2d04f3c380227e93df455bd1f76ea005dad7be8922f",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-200x136-p4-q30",
+   "stream_sha256": "87e38accca7059b6ae2dd45c59510c0d90470a6c043453ee266e6e8f62a871f4",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-200x136-p4-q30n8",
+   "stream_sha256": "aff30003c8582466a6a45f4e69cf14d1dc29f36af8f8567e8fa9dce352fda7df",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-200x136-p4-q45",
+   "stream_sha256": "41d8de68c5dd2f7530ab3a54a64fb977c434c08b730ef72897e72c3c484d16db",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-200x136-p4-qmin",
+   "stream_sha256": "ecee53f5538afc660afa284705563f966ae70b6abbec7c9c066b922c09152a08",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-200x136-p4-lossless",
+   "stream_sha256": "0043512dd823d4253363246e37381c6d20079ba103a158074e35fc11338171f1",
+   "jm": true,
+   "ffmpeg": true
+  },
+  {
+   "name": "c3-d10-200x136-p4-lossless-n8",
+   "stream_sha256": "fc88ae3253787e173d741bb078cca0fbf585c136cedc6b4dc2e63d39dbbe4df9",
+   "jm": true,
+   "ffmpeg": true
+  }
+ ]
+}

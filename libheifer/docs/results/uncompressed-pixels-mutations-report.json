@@ -1,0 +1,66 @@
+{
+  "scope": "6 deliberate defects; not comprehensive mutation coverage",
+  "mutations": [
+    {
+      "mutation": "unc_pixel_value",
+      "suite": "uncompressed_pixels",
+      "source": "src/uncompressed_decode.rs",
+      "before": "let bytes = value.to_ne_bytes();",
+      "after": "let bytes = (value ^ 1).to_ne_bytes();",
+      "candidate_sha256": "3ecdc6126f4c1bbd23474f954baa83191fc5790cf13f0b1ba0cea9faea0b5a9e",
+      "mismatches": 1130,
+      "detected": true
+    },
+    {
+      "mutation": "unc_row_alignment",
+      "suite": "uncompressed_pixels",
+      "source": "src/uncompressed_decode.rs",
+      "before": "bits.align(u64::from(align), start);",
+      "after": "bits.align(0, start);",
+      "candidate_sha256": "d56e7e073be50ce83ee27a0feeb5a1d732c255abd199c36d754968ca86adf767",
+      "mismatches": 126,
+      "detected": true
+    },
+    {
+      "mutation": "unc_block_padding",
+      "suite": "uncompressed_pixels",
+      "source": "src/uncompressed_decode.rs",
+      "before": "let v = (value >> shift) & ((1u64 << n) - 1);",
+      "after": "let v = (value >> shift) & ((1u64 << n) - 2);",
+      "candidate_sha256": "ac9c6df81fa8e23f67c6bdee65f776ddd69035f9ba55b2420b45463ae7adcb0c",
+      "mismatches": 134,
+      "detected": true
+    },
+    {
+      "mutation": "unc_component_format",
+      "suite": "uncompressed_pixels",
+      "source": "src/uncompressed.rs",
+      "before": "desc.datatype = i32::from(c.format);",
+      "after": "desc.datatype = 0;",
+      "candidate_sha256": "b6437a4733280068371c2b3365fd36c144b80554296c07758ea74f38168915a2",
+      "mismatches": 378,
+      "detected": true
+    },
+    {
+      "mutation": "unc_preferred_chroma_output",
+      "suite": "uncompressed_pixels",
+      "source": "crates/capi/src/context.rs",
+      "before": "if !chroma.is_null() && !preserve_chroma {",
+      "after": "if !chroma.is_null() { let _ = preserve_chroma;",
+      "candidate_sha256": "0b53ac92c7e54ec00ec990e8f33ede87e683bde7c14a55a810920fd5f4742cc0",
+      "mismatches": 52,
+      "detected": true
+    },
+    {
+      "mutation": "subbyte_rgb_replication",
+      "suite": "uncompressed_pixels",
+      "source": "src/conversion.rs",
+      "before": "((v as u32 * factor) >> 8) as i32",
+      "after": "((v as u32 * factor) >> 9) as i32",
+      "candidate_sha256": "986ef7c3092bda5c46bf8113cd8bc3e94dba090d1e05328ad1f5396d3ae71f3e",
+      "mismatches": 44,
+      "detected": true
+    }
+  ],
+  "all_detected": true
+}

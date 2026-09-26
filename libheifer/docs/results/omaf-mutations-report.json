@@ -1,0 +1,56 @@
+{
+  "scope": "5 deliberate defects; not comprehensive mutation coverage",
+  "mutations": [
+    {
+      "mutation": "omaf_projection_width",
+      "suite": "omaf",
+      "source": "src/omaf.rs",
+      "before": ".map(|v| i32::from(v & 31))",
+      "after": ".map(|v| i32::from(v & 15))",
+      "candidate_sha256": "dd789f61df1721ffc1ecba06bddf290e89de7907431dc6b5e0a4cb72e934d19d",
+      "mismatches": 255,
+      "detected": true
+    },
+    {
+      "mutation": "omaf_latest_property",
+      "suite": "omaf",
+      "source": "src/omaf.rs",
+      "before": ".find(|p| !p.raw && p.kind == *b\"prfr\")",
+      "after": ".rfind(|p| !p.raw && p.kind == *b\"prfr\")",
+      "candidate_sha256": "abac644a041f400a202bce9132263563a75181b7d5de459c0df7238c278fa756",
+      "mismatches": 25,
+      "detected": true
+    },
+    {
+      "mutation": "omaf_description_value",
+      "suite": "omaf",
+      "source": "src/omaf.rs",
+      "before": "self.projection.store(value, Ordering::Relaxed);",
+      "after": "self.projection.store(value & 31, Ordering::Relaxed);",
+      "candidate_sha256": "a626bfe81ae383b8fde47fcbbac435fe57c496f4e3f746ff639c61e8312007ff",
+      "mismatches": 1678,
+      "detected": true
+    },
+    {
+      "mutation": "omaf_setter_property_range",
+      "suite": "omaf",
+      "source": "src/omaf.rs",
+      "before": "if !(0..32).contains(&value)",
+      "after": "if !(0..31).contains(&value)",
+      "candidate_sha256": "a65e7137d8146110c27d8335df812989f8f6947fe5622fe1c4fceadae700e080",
+      "mismatches": 29,
+      "detected": true
+    },
+    {
+      "mutation": "omaf_decoded_property",
+      "suite": "omaf",
+      "source": "src/decoding.rs",
+      "before": "image.projection = projection;",
+      "after": "image.projection = crate::omaf::FLAT; let _ = projection;",
+      "candidate_sha256": "5caf6fc8f6d53fc137473bf01b96f03b68e091f4cf2ccf079306921d68c33430",
+      "mismatches": 510,
+      "detected": true
+    }
+  ],
+  "all_detected": true
+}

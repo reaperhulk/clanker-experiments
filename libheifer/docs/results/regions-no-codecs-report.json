@@ -1,0 +1,12 @@
+{
+  "scope": "Original-header region geometry, parsing, transforms, masks, errors and retained object lifetimes.",
+  "cases": 2396,
+  "mismatches": 0,
+  "client_sanitizers": false,
+  "leak_check": false,
+  "client_sha256": "6b30eeae0520045fed75b25ec83f2cab6f7bc33221c0b62a28e248235331aef3",
+  "corpus_sha256": "a0787c1ab20e713a806184a5c17c32c6ae8e1bcf5b0dd2a7ee01ebd2c9bbc998",
+  "differences": [],
+  "reference_sha256": "5d70927cded8be6d1b4da912971aed75d426ba079c84d0b8462785ec5b9c92f7",
+  "candidate_sha256": "77f1072fd4090d36ff79d885e2853260f4cb071d832c56006b0214763949673f"
+}

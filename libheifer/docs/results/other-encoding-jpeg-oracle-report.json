@@ -1,0 +1,12 @@
+{
+  "scope": "Original-header JPEG, JPEG2000 and HTJ2K encoder callbacks and exact container output.",
+  "cases": 2382,
+  "mismatches": 0,
+  "client_sanitizers": false,
+  "leak_check": false,
+  "client_sha256": "0cf5bffff6f56a94ee9f567b857aadf419caf1411d23acbe36a201b6f1fc9a67",
+  "corpus_sha256": "fafa9c3899d5f0256b93663fb7213107c6430e5e582dc60d4e35e1f0caada81d",
+  "differences": [],
+  "reference_sha256": "75e9768d5d58bcdffdbad370305e79034b58f7159b656111001e242d74b62eca",
+  "candidate_sha256": "b8fba83b434969d0e7a1dd6aef4876eda42de738b72e570c6c05dde475edaa7e"
+}

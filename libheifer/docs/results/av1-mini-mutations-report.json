@@ -1,0 +1,105 @@
+{
+  "scope": "9 deliberate defects; not comprehensive mutation coverage",
+  "mutations": [
+    {
+      "mutation": "av1_pixel_copy",
+      "suite": "av1",
+      "source": "src/av1.rs",
+      "before": ".copy_from_slice(&frame.planes[channel][y * row..y * row + row]);",
+      "after": ".copy_from_slice(&frame.planes[channel][y * row..y * row + row]);\n            plane.data_mut()[y * stride] ^= 1;",
+      "candidate_sha256": "188e199914d90849b615def2546b37dd25ae423756e79a99c36f58e4ddd96acf",
+      "mismatches": 1063,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "av1_matrix",
+      "suite": "av1",
+      "source": "src/av1.rs",
+      "before": "matrix: u16::from(frame.matrix_coefficients),",
+      "after": "matrix: 2,",
+      "candidate_sha256": "17243d87f8c8ec289eadfda50b180c0a48645f4b68403c27c57d9f5138022e45",
+      "mismatches": 729,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "color_mismatch_warning",
+      "suite": "av1",
+      "source": "src/decoding.rs",
+      "before": "let mismatch = |a, b| a != 2 && b != 2 && a != b;",
+      "after": "let mismatch = |a, b| a != 2 && b != 2 && a == b;",
+      "candidate_sha256": "bafefd552851aa89b6ef8205e11e9c07742b771156c1e321ceea144e74ff0ae0",
+      "mismatches": 440,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "color_warning_persistence",
+      "suite": "av1",
+      "source": "src/decoding.rs",
+      "before": "let range = |full| if full { \"full\" } else { \"limited\" };",
+      "after": "warnings.clear();\n            let range = |full| if full { \"full\" } else { \"limited\" };",
+      "candidate_sha256": "c38b094d1f7ce67425043f2816874558f27dbd53d88661843e8cf5c671ea7a68",
+      "mismatches": 18,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "color_full_range_correction",
+      "suite": "av1",
+      "source": "src/decoding.rs",
+      "before": "options.autocorrect_broken_input && bitstream.full_range && !profile.full_range",
+      "after": "false && options.autocorrect_broken_input && bitstream.full_range && !profile.full_range",
+      "candidate_sha256": "eff528ee43e58e895a7755c13e15a4f822fb5d8603f2e0522eef20512a25996f",
+      "mismatches": 15,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "mini_orientation",
+      "suite": "mini",
+      "source": "src/mini.rs",
+      "before": "match self.orientation {",
+      "after": "match 1 {",
+      "candidate_sha256": "f83d33b79dc93452c7c565f5a3c66a32b814ff955bb70d41600b804766ee17a8",
+      "mismatches": 64,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "mini_payload_offset",
+      "suite": "mini",
+      "source": "src/mini.rs",
+      "before": "extents.push((id, offset + at as u64, size));",
+      "after": "extents.push((id, offset + at as u64 + 1, size));",
+      "candidate_sha256": "20d57d43c8bf5e3fd40eb0495c7088699ea4e683ae64f207baa6ecfe7174b2cc",
+      "mismatches": 32,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "mini_alpha_configuration",
+      "suite": "mini",
+      "source": "src/mini.rs",
+      "before": "} else if alpha_config_size == 0 {\n            config",
+      "after": "} else if alpha_config_size == 0 {\n            &[]",
+      "candidate_sha256": "4006bba1a994b23ab1bdfd83710d78fbef24f5242d96c2426aec386c26389ae9",
+      "mismatches": 0,
+      "process_failures": [],
+      "detected": false
+    },
+    {
+      "mutation": "mini_nclx_range",
+      "suite": "mini",
+      "source": "src/mini.rs",
+      "before": "nclx.push(u8::from(full_range) << 7);",
+      "after": "nclx.push(u8::from(!full_range) << 7);",
+      "candidate_sha256": "150a81a1a293ebdf7d470d66eab8324152d4557536152e969df31e1a8cc8b751",
+      "mismatches": 592,
+      "process_failures": [],
+      "detected": true
+    }
+  ],
+  "all_detected": false
+}

@@ -1,0 +1,12 @@
+{
+  "scope": "Original-header HEVC encoder NAL configuration, callbacks, alpha and exact files.",
+  "cases": 762,
+  "mismatches": 0,
+  "client_sanitizers": false,
+  "leak_check": false,
+  "client_sha256": "0cf5bffff6f56a94ee9f567b857aadf419caf1411d23acbe36a201b6f1fc9a67",
+  "corpus_sha256": "0a44a894dd2e2226ff41b8d1ea0a5750a575dbb3f9ff6b94e82eb7b622e42fb4",
+  "differences": [],
+  "reference_sha256": "5cc5713a0503098f20f8a3631e370d43256ebdca0a3209e97d541e6ecf1cd917",
+  "candidate_sha256": "f17ac4ff9d50c0937af0bf625ec40833228999b4bfa34cebc7194ecfb95e151f"
+}

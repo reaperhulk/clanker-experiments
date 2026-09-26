@@ -1,0 +1,12 @@
+{
+  "scope": "Exact minimized box diagnostics through original-header memory/file clients.",
+  "cases": 1372,
+  "mismatches": 0,
+  "differences": [],
+  "client_sanitizers": false,
+  "leak_check": false,
+  "client_sha256": "32df6629f0a1d6bae94d2369870d6b1208dcd3d1eee3b2513344fa5effbc388b",
+  "corpus_sha256": "bd28b8759e703218c24e60e3b016bf3b6a3a01203a6bec2fb0d5e16087359428",
+  "reference_sha256": "5cc5713a0503098f20f8a3631e370d43256ebdca0a3209e97d541e6ecf1cd917",
+  "candidate_sha256": "65fee8e15cf004855aefeb9bbab2866cee884efb0fe8562d79c590c1c4b72ee0"
+}

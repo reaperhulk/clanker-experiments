@@ -1,0 +1,13 @@
+{
+  "scope": "Original-header TAI timestamps, clock properties, versioned copies, ownership and decoded propagation.",
+  "without_hevc": false,
+  "cases": 67745,
+  "mismatches": 0,
+  "client_sanitizers": false,
+  "leak_check": false,
+  "client_sha256": "fe734ef676a6cdb001be9411496439a367107b8181943d5b81c1ddb782778cf0",
+  "corpus_sha256": "76577e94fa70f0e1bbde300f669fc1ba10a4f4e25ccf5ea34720687e1f7c3cea",
+  "differences": [],
+  "reference_sha256": "5cc5713a0503098f20f8a3631e370d43256ebdca0a3209e97d541e6ecf1cd917",
+  "candidate_sha256": "22ed59718825286a6ee513de14fbe194e1aef0d84074678888d6bd3fbd239621"
+}

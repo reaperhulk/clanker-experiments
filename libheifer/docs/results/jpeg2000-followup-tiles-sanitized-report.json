@@ -1,0 +1,13 @@
+{
+  "scope": "Independent decoded samples from mixed per-tile JPEG2000 transforms.",
+  "cases": 3424,
+  "mismatches": 0,
+  "client_sanitizers": true,
+  "leak_check": false,
+  "client_sha256": "c7cb0444757eb1d323d165c8e0803e2ffff7aabc0c0cbd247c18342dd830311a",
+  "reference_sha256": "06c669d5019806baf0756a9b5c8ece9f7269f751bee7cda4e43926044c6d473e",
+  "candidate_sha256": "68a3c0ffc3d868513cc492826878bd571cb9e9f0395b5adb042eef9e6f035191",
+  "full_report": "jpeg2000-followup-tiles-sanitized-full.json.gz",
+  "full_report_sha256": "93fe46c242854283a1cab794854965ec7c17907c281fce08ebb5b6911aa99b18",
+  "compressed_report_sha256": "cd1d48a367d20db21dbb1972a36c5e6c4f421df9012bb8056608c4bdc7cfa489"
+}

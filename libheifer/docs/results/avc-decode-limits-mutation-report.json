@@ -1,0 +1,18 @@
+{
+  "scope": "1 deliberate defects; not comprehensive mutation coverage",
+  "shard": null,
+  "mutations": [
+    {
+      "mutation": "avc_ispe_padding",
+      "suite": "avc_limits",
+      "source": "src/avc.rs",
+      "before": "(u64::from(info.ispe.0) + 16).checked_mul(u64::from(info.ispe.1) + 16)",
+      "after": "(u64::from(info.ispe.0) + 32).checked_mul(u64::from(info.ispe.1) + 16)",
+      "candidate_sha256": "dea924de468275aff1795cc928a0df4f23826baf0493a26a47569b55cd016fa4",
+      "mismatches": 24,
+      "process_failures": [],
+      "detected": true
+    }
+  ],
+  "all_detected": true
+}

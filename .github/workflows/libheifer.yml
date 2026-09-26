@@ -1,0 +1,258 @@
+name: libheifer development and completion gates
+on:
+  pull_request:
+    paths: ['libheifer/**', '.github/workflows/libheifer.yml', '.gitmodules']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: libheifer-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_INCREMENTAL: 0
+  CARGO_TERM_COLOR: always
+
+jobs:
+  rust:
+    name: Rust build (${{ matrix.os }})
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: libheifer
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.94.1
+      # nasm assembles rav1d's and rav1e's x86-64 assembly.
+      - uses: ilammy/setup-nasm@v1
+      - run: cargo test --locked -p libheifer --all-features
+      - run: cargo build --locked --release -p libheifer-capi
+      # The vendored AVC crates sit outside the workspace; their tests include the
+      # SIMD-against-scalar deblocking oracle, run here on each runner's SIMD level.
+      - run: cargo test --release --manifest-path vendor/rusty_h264-common/Cargo.toml --no-default-features --features libm,simd-detect
+        shell: bash
+      - run: cargo test --release --manifest-path vendor/rusty_h264-decoder/Cargo.toml --no-default-features --features libm,simd-detect
+        shell: bash
+      # The vendored brotli decoder sits outside the workspace too; its unit tests
+      # cover the ring-buffer parity patch.
+      - run: cargo test --release --manifest-path vendor/brotli-decompressor/Cargo.toml --lib
+        shell: bash
+
+  checks:
+    name: Lint, unit tests and inventory
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: libheifer
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: dtolnay/rust-toolchain@1.94.1
+        with:
+          components: rustfmt, clippy
+      # nasm assembles rav1d's and rav1e's x86-64 assembly.
+      - uses: ilammy/setup-nasm@v1
+      - run: python -m pip install libclang==18.1.1
+      - run: cargo fmt --all --check
+      - run: cargo clippy --locked --workspace --all-targets --all-features -- -D warnings
+      - run: cargo test --locked --workspace --no-default-features
+      - run: cargo test --locked --workspace --all-features
+      - run: python tools/inventory.py --check
+      - run: python tools/audit_dependencies.py
+
+  # Native oracles are test-only. They are built once per oracle revision and
+  # shared with the differential and mutation jobs through the Actions cache.
+  # The key covers this workflow so that changes to the build list below
+  # (such as a new oracle) rebuild the cache.
+  references:
+    name: Native reference oracles
+    runs-on: ubuntu-latest
+    outputs:
+      key: ${{ steps.key.outputs.key }}
+    defaults:
+      run:
+        working-directory: libheifer
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - id: key
+        run: echo "key=libheifer-oracles-encoders-${{ runner.os }}-$(git rev-parse HEAD:libheifer/tests/upstream)-${{ hashFiles('libheifer/tools/build_reference.py', 'libheifer/tools/build_avc_decoders.py', 'libheifer/Cargo.lock', '.github/workflows/libheifer.yml') }}" >> "$GITHUB_OUTPUT"
+      - id: cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            libheifer/.build/reference*
+            libheifer/.build/*-install
+          key: ${{ steps.key.outputs.key }}
+      - if: steps.cache.outputs.cache-hit != 'true'
+        run: python -m pip install meson==1.12.0 ninja==1.13.2
+      # The native rav1e oracle library is built with cargo-c, which needs a
+      # newer toolchain than the project's; it is not a candidate dependency.
+      - if: steps.cache.outputs.cache-hit != 'true'
+        uses: dtolnay/rust-toolchain@1.94.1
+      - if: steps.cache.outputs.cache-hit != 'true'
+        uses: ilammy/setup-nasm@v1
+      - if: steps.cache.outputs.cache-hit != 'true'
+        run: cargo install cargo-c --version 0.10.23 --locked
+      - if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          python tools/build_reference.py --hevc
+          python tools/build_reference.py --av1 --rav1e --build .build/reference-av1
+          python tools/build_reference.py --jpeg --build .build/reference-jpeg
+          python tools/build_reference.py --jpeg2000 --htj2k --build .build/reference-jpeg2000
+          python tools/build_reference.py --plugins --build .build/reference-plugins
+          python tools/build_reference.py --avc --build .build/reference-avc
+          python tools/build_reference.py --vvc --build .build/reference-vvc
+          python tools/build_reference.py --hevc --x265 --build .build/reference-x265
+          python tools/build_reference.py --avc --x264 --build .build/reference-x264
+          python tools/build_reference.py --jpeg --jpeg2000 --htj2k --av1 --rav1e --hevc --x265 --build .build/reference-encoders
+          python tools/build_avc_decoders.py
+
+  differential:
+    name: Independent C clients (${{ matrix.group }})
+    needs: references
+    strategy:
+      fail-fast: false
+      matrix:
+        group: [normal, sanitized, no-codecs]
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: libheifer
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: dtolnay/rust-toolchain@1.94.1
+      # nasm assembles rav1d's and rav1e's x86-64 assembly.
+      - uses: ilammy/setup-nasm@v1
+      - uses: actions/cache/restore@v4
+        with:
+          path: |
+            libheifer/.build/reference*
+            libheifer/.build/*-install
+          key: ${{ needs.references.outputs.key }}
+          fail-on-cache-miss: true
+      - run: python tools/ci.py ${{ matrix.group }} --keep-going
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: libheifer-differential-${{ matrix.group }}
+          include-hidden-files: true
+          path: libheifer/.build/*report.json
+
+  macos-differential:
+    # The base-reference C-client suites on macOS: a macOS-built libheif oracle
+    # (libde265, brotli, system zlib) and clang clients against the candidate dylib.
+    name: Independent C clients (macOS)
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: libheifer
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: dtolnay/rust-toolchain@1.94.1
+      - id: key
+        run: echo "key=libheifer-oracle-macos-$(git rev-parse HEAD:libheifer/tests/upstream)-${{ hashFiles('libheifer/tools/build_reference.py') }}" >> "$GITHUB_OUTPUT"
+      - id: cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            libheifer/.build/reference
+            libheifer/.build/reference-fp-contract
+            libheifer/.build/*-install
+          key: ${{ steps.key.outputs.key }}
+      - if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          python3 tools/build_reference.py --hevc -j 3
+          python3 tools/build_reference.py --hevc --fp-contract --build .build/reference-fp-contract -j 3
+      - run: python3 tools/ci.py macos --keep-going
+      # Evidence, not a gate: libheif built with clang's default multiply-add
+      # fusion rounds float colour conversion differently from the oracle above
+      # (and from its own x86-64 build). The counts are reported and archived.
+      - if: always()
+        run: |
+          for suite in hevc_rext decode component_handles; do
+            python3 tools/test_$suite.py --reference-build .build/reference-fp-contract --output .build/fp-contract-$suite-report.json > .build/fp-contract-$suite.log 2>&1 || true
+            python3 -c "import json,sys; r=json.load(open(sys.argv[1])); print(sys.argv[1], r['cases'], 'cases', r['mismatches'], 'mismatches')" .build/fp-contract-$suite-report.json || tail -5 .build/fp-contract-$suite.log
+          done
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: libheifer-differential-macos
+          include-hidden-files: true
+          path: libheifer/.build/*report.json
+
+  mutations:
+    name: Deliberate mutations (${{ matrix.shard }}/10)
+    needs: references
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: libheifer
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: dtolnay/rust-toolchain@1.94.1
+      # nasm assembles rav1d's and rav1e's x86-64 assembly.
+      - uses: ilammy/setup-nasm@v1
+      - uses: actions/cache/restore@v4
+        with:
+          path: |
+            libheifer/.build/reference*
+            libheifer/.build/*-install
+          key: ${{ needs.references.outputs.key }}
+          fail-on-cache-miss: true
+      - run: cargo build --locked --release -p libheifer-capi
+      - run: python tools/test_mutations.py --reference-build .build/reference --shard ${{ matrix.shard }}/10 --output .build/mutations-${{ matrix.shard }}-report.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: libheifer-mutations-${{ matrix.shard }}
+          include-hidden-files: true
+          path: |
+            libheifer/.build/mutations-*-report.json
+            libheifer/.build/mutations/*.json
+            libheifer/.build/mutations/*.log
+
+  completion:
+    name: Coverage and completion gates
+    needs: [references, checks, differential, mutations]
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: libheifer
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: dtolnay/rust-toolchain@1.94.1
+      # nasm assembles rav1d's and rav1e's x86-64 assembly.
+      - uses: ilammy/setup-nasm@v1
+      - uses: actions/cache/restore@v4
+        with:
+          path: |
+            libheifer/.build/reference*
+            libheifer/.build/*-install
+          key: ${{ needs.references.outputs.key }}
+          fail-on-cache-miss: true
+      - run: cargo build --locked --release -p libheifer-capi
+      - run: python tools/check_coverage.py --reference .build/reference/libheif/libheif.so --development
+      # Intentionally fail until the complete contract is implemented. Passing
+      # the preceding development tests must never imply a compatible replacement.
+      - name: Full API completion (expected to fail during implementation)
+        run: python tools/check_coverage.py

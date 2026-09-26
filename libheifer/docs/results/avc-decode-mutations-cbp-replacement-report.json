@@ -1,0 +1,18 @@
+{
+  "scope": "1 deliberate defects; not comprehensive mutation coverage",
+  "shard": null,
+  "mutations": [
+    {
+      "mutation": "avc_mono_intra_cbp",
+      "suite": "avc",
+      "source": "vendor/rusty_h264-decoder/src/mb16.rs",
+      "before": "const T: [u8; 16] = [15, 0, 7, 11, 13, 14, 3, 5, 10, 12, 1, 2, 4, 8, 6, 9];",
+      "after": "const T: [u8; 16] = [15, 7, 0, 11, 13, 14, 3, 5, 10, 12, 1, 2, 4, 8, 6, 9];",
+      "candidate_sha256": "6889a86961d3117a8f5fcccff8a94478f1b69cf52e849c2b2eb7b4d28f0c7212",
+      "mismatches": 70,
+      "process_failures": [],
+      "detected": true
+    }
+  ],
+  "all_detected": true
+}

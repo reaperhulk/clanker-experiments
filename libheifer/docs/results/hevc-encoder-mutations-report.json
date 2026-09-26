@@ -1,0 +1,83 @@
+{
+  "scope": "7 deliberate defects; not comprehensive mutation coverage",
+  "mutations": [
+    {
+      "mutation": "hevc_encoder_crop",
+      "suite": "hevc_encoding",
+      "source": "src/hevc_config.rs",
+      "before": "width -= crop_x as u32;",
+      "after": "width -= 0;",
+      "candidate_sha256": "7dd7f0797752f6b960e9a76c37af029ba4189e700c1d6d7016419224e6f8a9db",
+      "mismatches": 8,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "hevc_encoder_profile",
+      "suite": "hevc_encoding",
+      "source": "src/hevc_config.rs",
+      "before": "self.header[1] = bits.get(8) as u8;",
+      "after": "self.header[1] = bits.get(8) as u8 ^ 1;",
+      "candidate_sha256": "9a5c29e149cdd24b01c01a6e614ee6fbd7836fda8a35a34913d5a79fca7d7c16",
+      "mismatches": 708,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "hevc_encoder_dedup",
+      "suite": "hevc_encoding",
+      "source": "src/hevc_config.rs",
+      "before": "if existing[..common] == nal[..common] {",
+      "after": "if false && existing[..common] == nal[..common] {",
+      "candidate_sha256": "bb179562d37ff46c7a3f4a16ca036dba8973c79e7c372a275bcfa78b0adab6f6",
+      "mismatches": 24,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "hevc_encoder_length",
+      "suite": "hevc_encoding",
+      "source": "crates/capi/src/plugin_encoding.rs",
+      "before": "data.extend_from_slice(&(size as u32).to_be_bytes());",
+      "after": "data.extend_from_slice(&((size + 1) as u32).to_be_bytes());",
+      "candidate_sha256": "49d5c8fb2889f56378fbad62af7380bee1d44d39d7b435b1538caa943292f34b",
+      "mismatches": 706,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "hevc_encoder_aux_type",
+      "suite": "hevc_encoding",
+      "source": "src/encoding.rs",
+      "before": "b\"urn:mpeg:hevc:2015:auxid:1\\0\".as_slice()",
+      "after": "b\"urn:mpeg:hevc:2015:auxid:2\\0\".as_slice()",
+      "candidate_sha256": "fe0442f59be451048f04fb96bce058e9bba9357c5fb120b6798f3982cf5c36b2",
+      "mismatches": 51,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "hevc_encoder_brand",
+      "suite": "hevc_encoding",
+      "source": "src/writing.rs",
+      "before": "flags & 0x50 != 0",
+      "after": "flags & 0x50 == 0",
+      "candidate_sha256": "55da226b6e5e0b7ed298041596fd25b41329f1fd78b50256facb93ccb73114c0",
+      "mismatches": 660,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "hevc_encoder_array",
+      "suite": "hevc_mini_encoding",
+      "source": "src/hevc_config.rs",
+      "before": "bytes.push(64 | kind);",
+      "after": "bytes.push(128 | kind);",
+      "candidate_sha256": "c41bde80b10ed719b1891361606b46906864f1c4f0e1c126053d03b7c23959f6",
+      "mismatches": 708,
+      "process_failures": [],
+      "detected": true
+    }
+  ],
+  "all_detected": true
+}

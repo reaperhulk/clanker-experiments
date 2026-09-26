@@ -1,0 +1,29 @@
+{
+  "scope": "Original-header built-in AVC encoding against libheif with its x264 plugin: errors, parameters,\nhandles and non-codec boxes exactly; AVC configuration fields; candidate files decoded by OpenH264.",
+  "cases": 145,
+  "listing": "descriptors1 lossy1 lossless1 e0,0,Success\nquality type1 default1 e0,0,Success range1,1,0,100 values0 e0,0,Success value50 e0,0,Success generic50\nlossless type2 default1 e0,0,Success value0 e0,0,Success generic0\npreset type3 default1 e0,0,Success strings,ultrafast,superfast,veryfast,faster,fast,medium,slow,slower,veryslow,placebo e0,0,Success valueslow e0,0,Success genericslow\ntune type3 default1 e0,0,Success strings,psnr,ssim,grain,fastdecode e0,0,Success valuessim e0,0,Success genericssim\ntu-intra-depth type1 default1 e0,0,Success range1,1,1,4 values0 e0,0,Success value2 e0,0,Success generic2\ncomplexity type1 default0 e0,0,Success range1,1,0,100 values0 e0,0,Success value0 e0,0,Success generic0\nchroma type3 default1 e0,0,Success strings,420,422,444 e0,0,Success value420 e0,0,Success generic420\n",
+  "mismatches": 0,
+  "files": 130,
+  "known_differences": {
+    "x264-option": 2
+  },
+  "known": [
+    {
+      "case": "1308622850-70-50-0-1-8-1-8",
+      "line": 114,
+      "kind": "x264-option"
+    },
+    {
+      "case": "1342177282-70-50-0-1-8-1-8",
+      "line": 116,
+      "kind": "x264-option"
+    }
+  ],
+  "decode_mismatches": [],
+  "client_sanitizers": true,
+  "corpus_sha256": "a7b4e64057b8b82506f19f16e4a80a862ddba71d476cbec2552574d28e79237b",
+  "differences": [],
+  "client_sha256": "f70e276c5a527cd2d053af2f686a4f36f3aa4f511946583d51127adbe6666418",
+  "reference_sha256": "6350e5ff744289c4f6519bfae56152d2ad3b2e44f9c348572c13392952754840",
+  "candidate_sha256": "da3afb8dec2f4a9eec452c3743f86c75c3002aa664f73ed2b56c3b0374c80e50"
+}

@@ -1,0 +1,39 @@
+{
+  "scope": "3 deliberate defects; not comprehensive mutation coverage",
+  "mutations": [
+    {
+      "mutation": "mini_alpha_configuration",
+      "suite": "mini_properties",
+      "source": "src/mini.rs",
+      "before": "} else if alpha_config_size == 0 {\n            config",
+      "after": "} else if alpha_config_size == 0 {\n            &[]",
+      "candidate_sha256": "3f2b1fd3dd122a1815cbacec47f8e2e39c790d04ebd20629724997e2cb6b0b5f",
+      "mismatches": 86,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "mini_diffuse_white",
+      "suite": "mini_properties",
+      "source": "src/mini.rs",
+      "before": "data.extend([0; 4]); // ndwt is a version-zero FullBox.",
+      "after": "// deliberately omit the FullBox header",
+      "candidate_sha256": "6678c91b3405ede6ce7c7ae86aa852186493ad1a7d74f4de2da02807f594233c",
+      "mismatches": 132,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "mini_context_table_limit",
+      "suite": "av1_limits",
+      "source": "src/mini.rs",
+      "before": "max_items: 0,",
+      "after": "max_items: limits.max_items,",
+      "candidate_sha256": "2254416f3597e127b27535c588f111570611b0fdab527fe4a76050e7d2394474",
+      "mismatches": 4,
+      "process_failures": [],
+      "detected": true
+    }
+  ],
+  "all_detected": true
+}

@@ -1,0 +1,12 @@
+{
+  "scope": "Original-header reader input: historical table prefixes, callback result ABI, range failures/message ownership and retained table/userdata. Read-call granularity is not compared.",
+  "cases": 4712,
+  "mismatches": 0,
+  "differences": [],
+  "client_sanitizers": false,
+  "leak_check": false,
+  "client_sha256": "dc7613edae23bd9ebbf8ed1f6287dda90b12f26406c8b8f8a094fb85a6e43d01",
+  "corpus_sha256": "79fb587572eb959873cd9000fb332ed250c4592f82d81ab716d52c1312d9b2b2",
+  "reference_sha256": "5cc5713a0503098f20f8a3631e370d43256ebdca0a3209e97d541e6ecf1cd917",
+  "candidate_sha256": "1a51e50ba3ba49bddeb28005827c90c0754efa737127e1d89c4d94dfbea12981"
+}

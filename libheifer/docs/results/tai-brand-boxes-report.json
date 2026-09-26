@@ -1,0 +1,14 @@
+{
+  "scope": "First-box parsing through brand queries, including nested malformed boxes. Finite coverage of 26 box types and camera UUID aliases, not the complete box factory.",
+  "cases": 93398,
+  "seed": "0x626f7873",
+  "corpus_sha256": "ab9d82b00c38322ec7dacba5d64a4815c7af7c1ec0cda41a693a793637775160",
+  "reference": "1.23.4",
+  "reference_sha256": "5d70927cded8be6d1b4da912971aed75d426ba079c84d0b8462785ec5b9c92f7",
+  "candidate_sha256": "bf701dc3997cc7ce867744726b1d7479e42ea23b50e93683b4e703cb1f3f539f",
+  "client_sha256": "22fd81507a8ae9f0a27c26c4a786b6d4f2741487d250537af5f6770eda4c42b6",
+  "client_sanitizers": false,
+  "leak_check": false,
+  "mismatches": 0,
+  "examples": []
+}

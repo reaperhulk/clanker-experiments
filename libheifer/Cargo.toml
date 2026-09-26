@@ -1,0 +1,87 @@
+[workspace]
+members = ["crates/capi"]
+exclude = ["vendor/rav1d", "vendor/rusty_h264-decoder", "vendor/rusty_h264-common", "vendor/rusty_h265", "vendor/jpeg-decoder", "vendor/hayro-jpeg2000", "vendor/brotli-decompressor", "vendor/brotli", "tests/brotli_differential"]
+resolver = "3"
+
+[package]
+name = "libheifer"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.94"
+license = "LGPL-3.0-or-later"
+description = "Rust HEIF implementation (in development; not yet a libheif replacement)"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[dependencies]
+hpvca = { version = "=0.1.17", optional = true }
+hayro-jpeg2000 = { version = "=0.4.0", optional = true, default-features = false, features = ["std"] }
+jpeg-decoder = { version = "=0.3.2", optional = true, default-features = false, features = ["platform_independent"] }
+rav1d = { version = "=1.1.0", optional = true }
+rusty_h264-common = { version = "=0.16.0", optional = true, default-features = false, features = ["libm"] }
+rusty_h264-encoder = { version = "=0.16.0", optional = true, default-features = false, features = ["libm"] }
+rusty_h264-decoder = { version = "=0.16.0", optional = true, default-features = false, features = ["libm", "simd-detect"] }
+rusty_h265 = { version = "=0.6.0", optional = true }
+oxideav-h265 = { version = "=0.0.11", optional = true }
+brotli = { version = "=9.0.0", default-features = false, features = ["std"] }
+brotli-decompressor = { version = "=6.0.1", default-features = false, features = ["std"] }
+zlib-rs = { version = "=0.6.8", default-features = false, features = ["std"] }
+
+[features]
+avc = ["dep:rusty_h264-common", "dep:rusty_h264-encoder", "dep:rusty_h264-decoder"]
+jpeg2000 = ["dep:hayro-jpeg2000"]
+jpeg = ["dep:jpeg-decoder"]
+av1 = ["dep:rav1d"]
+hevc = ["dep:rusty_h265", "dep:oxideav-h265", "dep:hpvca"]
+vvc = []
+hevc-profile = ["hevc", "rusty_h265/prof"]
+
+[[example]]
+name = "hevc_probe"
+required-features = ["hevc"]
+
+[[example]]
+name = "bench_hevc"
+required-features = ["hevc"]
+
+[[example]]
+name = "profile_hevc"
+required-features = ["hevc-profile"]
+
+[patch.crates-io]
+rav1d = { path = "vendor/rav1d" }
+hayro-jpeg2000 = { path = "vendor/hayro-jpeg2000" }
+jpeg-decoder = { path = "vendor/jpeg-decoder" }
+rusty_h264-decoder = { path = "vendor/rusty_h264-decoder" }
+rusty_h265 = { path = "vendor/rusty_h265" }
+brotli-decompressor = { path = "vendor/brotli-decompressor" }
+brotli = { path = "vendor/brotli" }
+
+[[example]]
+name = "vvc_decode"
+required-features = ["vvc"]
+
+[[example]]
+name = "vvc_encode"
+required-features = ["vvc"]
+
+[[example]]
+name = "inspect_hevc"
+required-features = ["hevc"]
+
+[[example]]
+name = "dump_hevc"
+required-features = ["hevc"]
+
+[[example]]
+name = "hevc_sequence_yuv"
+required-features = ["hevc"]
+
+[[example]]
+name = "avc_high_roundtrip"
+required-features = ["avc"]

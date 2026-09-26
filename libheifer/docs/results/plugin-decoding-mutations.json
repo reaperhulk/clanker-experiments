@@ -1,0 +1,94 @@
+{
+  "scope": "8 deliberate defects; not comprehensive mutation coverage",
+  "mutations": [
+    {
+      "mutation": "plugin_decode_threads",
+      "suite": "plugin_decoding",
+      "source": "crates/capi/src/plugin_decoding.rs",
+      "before": "num_threads: options.num_codec_threads,",
+      "after": "num_threads: options.num_codec_threads + 1,",
+      "candidate_sha256": "218f1866bf224ec0de9fd8e80bd968e21f73948c285dbd70151d7d4d19e66d26",
+      "mismatches": 507,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "plugin_decode_strict",
+      "suite": "plugin_decoding",
+      "source": "crates/capi/src/plugin_decoding.rs",
+      "before": "strict_decoding: options.plugin_strict,",
+      "after": "strict_decoding: i32::from(options.strict),",
+      "candidate_sha256": "bb37097e82e0e40c97f4d6aa1ee581f3a2ac8dda93561027314e43e091dbee83",
+      "mismatches": 16,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "plugin_decode_poll_limit",
+      "suite": "plugin_decoding",
+      "source": "crates/capi/src/plugin_decoding.rs",
+      "before": "for _ in 0..50 {",
+      "after": "for _ in 0..49 {",
+      "candidate_sha256": "dcc17cb021656f486331277f54061671ff88febd85c30ea8176e8c5a8fd9d3bb",
+      "mismatches": 6,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "plugin_decode_release",
+      "suite": "plugin_decoding",
+      "source": "crates/capi/src/plugin_decoding.rs",
+      "before": "unsafe { f(self.state) }",
+      "after": "let _ = f;",
+      "candidate_sha256": "986c8013f9bb771f777e3efa3b8885ff58d3912e54724c7a939829b9932584be",
+      "mismatches": 507,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "plugin_decode_error_unpack",
+      "suite": "plugin_decoding",
+      "source": "crates/capi/src/plugin_decoding.rs",
+      "before": "if unpack && let Some(rest) = detail.strip_prefix(code) {",
+      "after": "if !unpack && let Some(rest) = detail.strip_prefix(code) {",
+      "candidate_sha256": "14b3caef2a620b9dc8ec1f00e0ebe0e0c8e0f69d60a7673f35b4329e6491b067",
+      "mismatches": 30,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "plugin_decode_cached_selection",
+      "suite": "plugin_decoding",
+      "source": "src/decoding.rs",
+      "before": "if let Some(cached) = cached {",
+      "after": "if let Some(cached) = cached.filter(|_| false) {",
+      "candidate_sha256": "ee28edd178f562dea7bf9f106112fcac39c1579a4eb8269f039d3aae11b53285",
+      "mismatches": 539,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "plugin_decode_empty_nal",
+      "suite": "plugin_decoding",
+      "source": "src/decoding.rs",
+      "before": "if !nal.is_empty() {",
+      "after": "if true {",
+      "candidate_sha256": "303c8faf8f66ddfb268871f8d652a683152b38928d67521288a6090726b06db7",
+      "mismatches": 8,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "av1_handle_depth",
+      "suite": "plugin_decoding",
+      "source": "src/context.rs",
+      "before": "} else if flags & 32 != 0 {",
+      "after": "} else if flags & 32 == 0 {",
+      "candidate_sha256": "d5e1643b994b33966b85881d0c46ded1bcec12b980c14fdb4b25c3c4e575f651",
+      "mismatches": 128,
+      "process_failures": [],
+      "detected": true
+    }
+  ],
+  "all_detected": true
+}
