@@ -21,7 +21,7 @@ X264 = "b35605ace3ddf7c1a5d67a2eb553f034aef41d55"  # the AVC fixture generator r
 SO = ".dylib" if sys.platform == "darwin" else ".so"  # shared library suffix
 X265 = "1d117bed4747758b51bd2c124d738527e30392cb"  # 4.1
 BROTLI = "ed738e842d2fbdf2d6459e39267a633c4a9b2f5d"  # v1.1.0
-ZLIB = "09155eaa2f9270dc4ed1fa13e2b4b2613e6e4851"  # v1.3
+ZLIB = "51b7f2abdade71cd9bb0e7a373ef2610ec6f9daf"  # v1.3.1
 
 
 def run(*args, cwd=None):
