@@ -1,18 +1,19 @@
 /* SPDX-License-Identifier: LGPL-3.0-or-later */
+#define _POSIX_C_SOURCE 200809L
 #include <libheif/heif.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <threads.h>
+#include <pthread.h>
 static FILE* output;
 static unsigned starts,progresses,ends,cancels,event_count;
 static uint32_t events[32768][4];
-static thrd_t caller_thread;
+static pthread_t caller_thread;
 static unsigned callback_cookie;
 static void event(uint32_t kind,int step,int value,void* p){
   if(p!=&callback_cookie || event_count>=32768)abort();
-  events[event_count][0]=kind;events[event_count][1]=(uint32_t)step;events[event_count][2]=(uint32_t)value;events[event_count++][3]=!thrd_equal(caller_thread,thrd_current());
+  events[event_count][0]=kind;events[event_count][1]=(uint32_t)step;events[event_count][2]=(uint32_t)value;events[event_count++][3]=!pthread_equal(caller_thread,pthread_self());
 }
 static void start(heif_progress_step step,int n,void* p){event(0,step,n,p);starts++;}
 static void progress(heif_progress_step step,int n,void* p){event(1,step,n,p);progresses++;}
@@ -23,7 +24,7 @@ static int cancel(void* p){if(p!=&callback_cookie)abort();cancels++;return 1;}
 static void number(uint32_t n){for(int i=0;i<4;i++){fputc(n&255,output);n>>=8;}}
 static void error(heif_error e){number(e.code);number(e.subcode);size_t n=e.message?strlen(e.message):0;number(n);if(n)fwrite(e.message,1,n,output);}
 static void decode(const heif_image_handle* handle,int mode){
-  caller_thread=thrd_current();
+  caller_thread=pthread_self();
   heif_decoding_options* options=heif_decoding_options_alloc();
   options->output_image_nclx_profile_passthrough=mode!=0;
   options->ignore_transformations=mode==1;

@@ -21,6 +21,7 @@ X264 = "b35605ace3ddf7c1a5d67a2eb553f034aef41d55"  # the AVC fixture generator r
 SO = ".dylib" if sys.platform == "darwin" else ".so"  # shared library suffix
 X265 = "1d117bed4747758b51bd2c124d738527e30392cb"  # 4.1
 BROTLI = "ed738e842d2fbdf2d6459e39267a633c4a9b2f5d"  # v1.1.0
+ZLIB = "09155eaa2f9270dc4ed1fa13e2b4b2613e6e4851"  # v1.3
 
 
 def run(*args, cwd=None):
@@ -70,7 +71,24 @@ def main():
         "-DBROTLI_DISABLE_TESTS=ON")
     run(cmake, "--build", build.parent / "brotli-build", "-j", a.j)
     run(cmake, "--install", build.parent / "brotli-build")
+    # zlib too: host zlib builds differ (Apple's reports "invalid
+    # literal/length/distance code" where zlib reports the two cases apart).
+    zlib = build.parent / "zlib-source"
+    zinstall = build.parent / "zlib-install"
+    if not zlib.exists():
+        run("git", "init", zlib)
+        run("git", "-C", zlib, "remote", "add", "origin", "https://github.com/madler/zlib.git")
+        run("git", "-C", zlib, "fetch", "--depth=1", "origin", ZLIB)
+        run("git", "-C", zlib, "checkout", "--detach", "FETCH_HEAD")
+    revision = subprocess.check_output(["git", "-C", str(zlib), "rev-parse", "HEAD"], text=True).strip()
+    if revision != ZLIB:
+        raise SystemExit("Wrong zlib reference revision")
+    run(cmake, "-S", zlib, "-B", build.parent / "zlib-build", "-DCMAKE_BUILD_TYPE=Release",
+        f"-DCMAKE_INSTALL_PREFIX={zinstall}", "-DINSTALL_LIB_DIR=" + str(zinstall / "lib"))
+    run(cmake, "--build", build.parent / "zlib-build", "-j", a.j)
+    run(cmake, "--install", build.parent / "zlib-build")
     flags = ["-DCMAKE_DISABLE_FIND_PACKAGE_Brotli=OFF", "-DCMAKE_REQUIRE_FIND_PACKAGE_Brotli=ON", "-DCMAKE_REQUIRE_FIND_PACKAGE_ZLIB=ON",
+             f"-DZLIB_INCLUDE_DIR={zinstall / 'include'}", f"-DZLIB_LIBRARY={zinstall / f'lib/libz{SO}'}",
              f"-DBROTLI_DEC_INCLUDE_DIR={binstall / 'include'}", f"-DBROTLI_ENC_INCLUDE_DIR={binstall / 'include'}",
              f"-DBROTLI_COMMON_LIB={binstall / f'lib/libbrotlicommon{SO}'}",
              f"-DBROTLI_DEC_LIB={binstall / f'lib/libbrotlidec{SO}'}", f"-DBROTLI_ENC_LIB={binstall / f'lib/libbrotlienc{SO}'}",
