@@ -65,7 +65,7 @@ def main():
     p.add_argument("--x264", action="store_true", help="enable libheif's x264 AVC encoder (scalar, no assembly; built-in AVC encoder oracle)")
     p.add_argument("--x265", action="store_true", help="enable libheif's x265 HEVC encoder (scalar, no assembly; rate/distortion oracle)")
     p.add_argument("--plugins", action="store_true", help="enable native dynamic-plugin oracle with an empty default search path")
-    p.add_argument("--fp-contract", action="store_true", help="let the compiler fuse multiply-adds in libheif (its default on arm64; changes float colour-conversion rounding)")
+    p.add_argument("--fp-contract", action="store_true", help="let the compiler fuse multiply-adds in libheif and its CMake-built libraries (the default on arm64; changes float rounding)")
     p.add_argument("-j", default="4")
     a = p.parse_args()
     source = Path(a.source).resolve()
@@ -76,6 +76,14 @@ def main():
     cmake = shutil.which("cmake")
     if cmake is None:
         raise SystemExit("cmake required for reference build")
+    # libheif's float colour conversion and OpenJPH's irreversible quantization
+    # round differently when the compiler fuses multiply-adds, which GCC and
+    # clang do by default on arm64 but cannot on baseline x86-64. The oracle and
+    # the CMake-built libraries it calls evaluate as written everywhere unless
+    # --fp-contract asks for the platform default. Both settings are explicit:
+    # dependency build directories are shared between oracle builds.
+    unfused = "" if a.fp_contract else "-ffp-contract=off"
+    contract = [f"-DCMAKE_C_FLAGS={unfused}", f"-DCMAKE_CXX_FLAGS={unfused}"]
     # Keep the oracle feature set deterministic: build libheif against a pinned
     # brotli rather than whatever the host provides.
     brotli = build.parent / "brotli-source"
@@ -88,7 +96,7 @@ def main():
     revision = subprocess.check_output(["git", "-C", str(brotli), "rev-parse", "HEAD"], text=True).strip()
     if revision != BROTLI:
         raise SystemExit("Wrong brotli reference revision")
-    run(cmake, "-S", brotli, "-B", build.parent / "brotli-build", "-DCMAKE_BUILD_TYPE=Release",
+    run(cmake, "-S", brotli, "-B", build.parent / "brotli-build", "-DCMAKE_BUILD_TYPE=Release", *contract,
         f"-DCMAKE_INSTALL_PREFIX={binstall}", "-DCMAKE_INSTALL_LIBDIR=lib", "-DBUILD_SHARED_LIBS=ON",
         "-DBROTLI_DISABLE_TESTS=ON")
     run(cmake, "--build", build.parent / "brotli-build", "-j", a.j)
@@ -105,15 +113,10 @@ def main():
     revision = subprocess.check_output(["git", "-C", str(zlib), "rev-parse", "HEAD"], text=True).strip()
     if revision != ZLIB:
         raise SystemExit("Wrong zlib reference revision")
-    run(cmake, "-S", zlib, "-B", build.parent / "zlib-build", "-DCMAKE_BUILD_TYPE=Release",
+    run(cmake, "-S", zlib, "-B", build.parent / "zlib-build", "-DCMAKE_BUILD_TYPE=Release", *contract,
         f"-DCMAKE_INSTALL_PREFIX={zinstall}", "-DINSTALL_LIB_DIR=" + str(zinstall / "lib"))
     run(cmake, "--build", build.parent / "zlib-build", "-j", a.j)
     run(cmake, "--install", build.parent / "zlib-build")
-    # libheif's float colour conversion rounds differently when the compiler
-    # fuses multiply-adds, which GCC and clang do by default on arm64 but cannot
-    # on baseline x86-64. The oracle evaluates as written everywhere unless
-    # --fp-contract asks for the platform default.
-    contract = [] if a.fp_contract else ["-DCMAKE_C_FLAGS=-ffp-contract=off", "-DCMAKE_CXX_FLAGS=-ffp-contract=off"]
     flags = [*contract, "-DCMAKE_DISABLE_FIND_PACKAGE_Brotli=OFF", "-DCMAKE_REQUIRE_FIND_PACKAGE_Brotli=ON", "-DCMAKE_REQUIRE_FIND_PACKAGE_ZLIB=ON",
              f"-DZLIB_INCLUDE_DIR={zinstall / 'include'}", f"-DZLIB_LIBRARY={link_library(zinstall, 'z', 'zlib')}",
              f"-DBROTLI_DEC_INCLUDE_DIR={binstall / 'include'}", f"-DBROTLI_ENC_INCLUDE_DIR={binstall / 'include'}",
@@ -135,7 +138,7 @@ def main():
         revision = subprocess.check_output(["git", "-C", str(decoder), "rev-parse", "HEAD"], text=True).strip()
         if revision != DE265:
             raise SystemExit("Wrong libde265 reference revision")
-        run(cmake, "-S", decoder, "-B", dbuild, "-DCMAKE_BUILD_TYPE=Release", f"-DCMAKE_INSTALL_PREFIX={install}", "-DENABLE_SDL=OFF", "-DENABLE_ENCODER=OFF")
+        run(cmake, "-S", decoder, "-B", dbuild, "-DCMAKE_BUILD_TYPE=Release", *contract, f"-DCMAKE_INSTALL_PREFIX={install}", "-DENABLE_SDL=OFF", "-DENABLE_ENCODER=OFF")
         run(cmake, "--build", dbuild, "-j", a.j)
         run(cmake, "--install", dbuild)
         flags += [f"-DLIBDE265_INCLUDE_DIR={install / 'include'}", f"-DLIBDE265_LIBRARY={link_library(install, 'de265')}"]
@@ -172,7 +175,7 @@ def main():
         revision = subprocess.check_output(["git", "-C", str(decoder), "rev-parse", "HEAD"], text=True).strip()
         if revision != OPENJPEG:
             raise SystemExit("Wrong OpenJPEG reference revision")
-        run(cmake, "-S", decoder, "-B", dbuild, "-DCMAKE_BUILD_TYPE=Release", f"-DCMAKE_INSTALL_PREFIX={install}",
+        run(cmake, "-S", decoder, "-B", dbuild, "-DCMAKE_BUILD_TYPE=Release", *contract, f"-DCMAKE_INSTALL_PREFIX={install}",
             "-DCMAKE_INSTALL_LIBDIR=lib", "-DBUILD_CODEC=ON", "-DBUILD_SHARED_LIBS=ON", "-DBUILD_TESTING=OFF")
         run(cmake, "--build", dbuild, "-j", a.j)
         run(cmake, "--install", dbuild)
@@ -189,7 +192,7 @@ def main():
         revision = subprocess.check_output(["git", "-C", str(encoder), "rev-parse", "HEAD"], text=True).strip()
         if revision != OPENJPH:
             raise SystemExit("Wrong OpenJPH reference revision")
-        run(cmake, "-S", encoder, "-B", ebuild, "-DCMAKE_BUILD_TYPE=Release", f"-DCMAKE_INSTALL_PREFIX={install}",
+        run(cmake, "-S", encoder, "-B", ebuild, "-DCMAKE_BUILD_TYPE=Release", *contract, f"-DCMAKE_INSTALL_PREFIX={install}",
             "-DCMAKE_INSTALL_LIBDIR=lib", "-DBUILD_SHARED_LIBS=ON", "-DOJPH_DISABLE_SIMD=ON",
             "-DOJPH_BUILD_EXECUTABLES=OFF", "-DOJPH_ENABLE_TIFF_SUPPORT=OFF")
         run(cmake, "--build", ebuild, "-j", a.j)
@@ -242,7 +245,7 @@ def main():
             raise SystemExit("Wrong x265 reference revision")
         # Multilib build (x265's build/linux/multilib.sh): 10- and 12-bit static
         # libraries linked into the 8-bit shared library, as distributions ship it.
-        common = ["-DCMAKE_BUILD_TYPE=Release", "-DENABLE_ASSEMBLY=OFF", "-DENABLE_CLI=OFF",
+        common = ["-DCMAKE_BUILD_TYPE=Release", *contract, "-DENABLE_ASSEMBLY=OFF", "-DENABLE_CLI=OFF",
                   "-DCMAKE_POLICY_VERSION_MINIMUM=3.5"]
         for depth in (10, 12):
             dbuild = build.parent / f"x265-build-{depth}bit"
@@ -300,7 +303,7 @@ def main():
             revision = subprocess.check_output(["git", "-C", str(codec), "rev-parse", "HEAD"], text=True).strip()
             if revision != pin:
                 raise SystemExit(f"Wrong {name} reference revision")
-            run(cmake, "-S", codec, "-B", cbuild, "-DCMAKE_BUILD_TYPE=Release", f"-DCMAKE_INSTALL_PREFIX={install}",
+            run(cmake, "-S", codec, "-B", cbuild, "-DCMAKE_BUILD_TYPE=Release", *contract, f"-DCMAKE_INSTALL_PREFIX={install}",
                 "-DCMAKE_INSTALL_LIBDIR=lib", "-DBUILD_SHARED_LIBS=ON", f"-D{name.upper()}_ENABLE_LINK_TIME_OPT=OFF",
                 f"-D{name.upper()}_LIBRARY_ONLY=ON")
             run(cmake, "--build", cbuild, "-j", a.j)
@@ -333,13 +336,13 @@ def main():
         revision = subprocess.check_output(["git", "-C", str(decoder), "rev-parse", "HEAD"], text=True).strip()
         if revision != JPEG:
             raise SystemExit("Wrong libjpeg-turbo reference revision")
-        run(cmake, "-S", decoder, "-B", dbuild, "-DCMAKE_BUILD_TYPE=Release", f"-DCMAKE_INSTALL_PREFIX={install}",
+        run(cmake, "-S", decoder, "-B", dbuild, "-DCMAKE_BUILD_TYPE=Release", *contract, f"-DCMAKE_INSTALL_PREFIX={install}",
             "-DCMAKE_INSTALL_LIBDIR=lib", "-DWITH_SIMD=OFF", "-DWITH_TURBOJPEG=OFF", "-DENABLE_SHARED=ON", "-DENABLE_STATIC=OFF")
         run(cmake, "--build", dbuild, "-j", a.j)
         run(cmake, "--install", dbuild)
         flags += ["-DWITH_JPEG_DECODER=ON", "-DWITH_JPEG_DECODER_PLUGIN=OFF", "-DWITH_JPEG_ENCODER=ON",
                   f"-DJPEG_INCLUDE_DIR={install / 'include'}", f"-DJPEG_LIBRARY_RELEASE={link_library(install, 'jpeg')}"]
-    run(cmake, "-S", source, "-B", build, "-DCMAKE_BUILD_TYPE=Release", "-DBUILD_TESTING=OFF", "-DBUILD_DOCUMENTATION=OFF", "-DWITH_EXAMPLES=OFF", "-DWITH_GDK_PIXBUF=OFF", f"-DENABLE_PLUGIN_LOADING={'ON' if a.plugins else 'OFF'}", *(["-DPLUGIN_DIRECTORY="] if a.plugins else []), f"-DWITH_LIBDE265={'ON' if a.hevc else 'OFF'}", f"-DWITH_X265={'ON' if a.x265 else 'OFF'}", "-DWITH_X265_PLUGIN=OFF", f"-DWITH_X264={'ON' if a.x264 else 'OFF'}", "-DWITH_X264_PLUGIN=OFF", *([] if a.avc else ["-DWITH_OpenH264_DECODER=OFF"]), f"-DWITH_DAV1D={'ON' if a.av1 else 'OFF'}", "-DWITH_DAV1D_PLUGIN=OFF", "-DWITH_AOM_DECODER=OFF", "-DWITH_AOM_ENCODER=OFF", "-DWITH_LIBSHARPYUV=OFF", "-DWITH_UNCOMPRESSED_CODEC=ON", *flags)
+    run(cmake, "-S", source, "-B", build, "-DCMAKE_BUILD_TYPE=Release", *contract, "-DBUILD_TESTING=OFF", "-DBUILD_DOCUMENTATION=OFF", "-DWITH_EXAMPLES=OFF", "-DWITH_GDK_PIXBUF=OFF", f"-DENABLE_PLUGIN_LOADING={'ON' if a.plugins else 'OFF'}", *(["-DPLUGIN_DIRECTORY="] if a.plugins else []), f"-DWITH_LIBDE265={'ON' if a.hevc else 'OFF'}", f"-DWITH_X265={'ON' if a.x265 else 'OFF'}", "-DWITH_X265_PLUGIN=OFF", f"-DWITH_X264={'ON' if a.x264 else 'OFF'}", "-DWITH_X264_PLUGIN=OFF", *([] if a.avc else ["-DWITH_OpenH264_DECODER=OFF"]), f"-DWITH_DAV1D={'ON' if a.av1 else 'OFF'}", "-DWITH_DAV1D_PLUGIN=OFF", "-DWITH_AOM_DECODER=OFF", "-DWITH_AOM_ENCODER=OFF", "-DWITH_LIBSHARPYUV=OFF", "-DWITH_UNCOMPRESSED_CODEC=ON", *flags)
     run(cmake, "--build", build, "-j", a.j)
     # libheif silently drops an encoder CMake cannot find; the x265 oracle must have it.
     if a.x265 or a.x264:

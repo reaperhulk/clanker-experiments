@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Original-header registered decoder callback dispatch, ownership, errors, polling, historical records and complete output pixels."""
-import argparse,hashlib,json,os,struct,subprocess
+import argparse,hashlib,json,os,re,struct,subprocess
 from pathlib import Path
 from test_context import corpus,box,full
 from item_fixtures import item_file,ispe
@@ -66,11 +66,24 @@ def main():
         if r.returncode:raise SystemExit(f'{name} exited {r.returncode}: {r.stderr.decode(errors="replace")[:2000]}')
         lines[name]=r.stdout.splitlines()
     if len(lines['reference'])!=len(tests) or len(lines['candidate'])!=len(tests):raise SystemExit('Incomplete transcripts')
-    diffs=[]
+    diffs=[];known={}
     for i,(x,y) in enumerate(zip(lines['reference'],lines['candidate'],strict=True)):
+        # The client's " order" token lists the other decoders for the format,
+        # each marked < when the client's record lies below theirs: layout, not
+        # behaviour, and the decoder names differ by design, so it is compared
+        # apart. Both libraries give equal priorities to the lower record address
+        # (libheif's std::set order); where the two processes lay the record out
+        # on opposite sides of the same number of decoders (macOS interleaves heap
+        # and images), a tie can resolve differently, and such cases are listed.
+        ox,oy=re.search(rb' order(\S*)',x),re.search(rb' order(\S*)',y)
+        if ox and oy:
+            fx,fy=re.sub(rb'[^<>]',b'',ox[1]),re.sub(rb'[^<>]',b'',oy[1])
+            x,y=x[:ox.start()]+x[ox.end():],y[:oy.start()]+y[oy.end():]
+            if x!=y and len(fx)==len(fy) and fx!=fy:
+                known.setdefault('record-address-order',[]).append(tests[i][0]);continue
         if x!=y:
             at=next((j for j,(u,v) in enumerate(zip(x,y)) if u!=v),min(len(x),len(y)));diffs.append(dict(case=tests[i][0],index=i,offset=at,reference=x[max(0,at-30):at+400].decode(errors='replace'),candidate=y[max(0,at-30):at+400].decode(errors='replace')))
     assert hashes=={k:hashlib.sha256(v.read_bytes()).hexdigest() for k,v in libs.items()}
-    report=dict(scope=__doc__,cases=len(tests),mismatches=len(diffs),differences=diffs,client_sanitizers=a.sanitize,leak_check=a.sanitize and not a.no_leak_check,client_sha256=hashlib.sha256(b''.join(p.read_bytes() for p in clients)).hexdigest(),corpus_sha256=hashlib.sha256(payload).hexdigest(),**{k+'_sha256':v for k,v in hashes.items()});Path(a.output).write_text(json.dumps(report,indent=2)+'\n');print(json.dumps({k:v for k,v in report.items() if k!='differences'},indent=2));print(json.dumps(diffs[:8],indent=2))
+    report=dict(scope=__doc__,cases=len(tests),mismatches=len(diffs),known_differences=known,differences=diffs,client_sanitizers=a.sanitize,leak_check=a.sanitize and not a.no_leak_check,client_sha256=hashlib.sha256(b''.join(p.read_bytes() for p in clients)).hexdigest(),corpus_sha256=hashlib.sha256(payload).hexdigest(),**{k+'_sha256':v for k,v in hashes.items()});Path(a.output).write_text(json.dumps(report,indent=2)+'\n');print(json.dumps({k:v for k,v in report.items() if k!='differences'},indent=2));print(json.dumps(diffs[:8],indent=2))
     if diffs:raise SystemExit(1)
 if __name__=='__main__':main()
