@@ -1,0 +1,17 @@
+{
+  "scope": "1 deliberate defects; not comprehensive mutation coverage",
+  "mutations": [
+    {
+      "mutation": "jpeg2000_transform_tail",
+      "suite": "jpeg2000_tiles",
+      "source": "vendor/hayro-jpeg2000/src/j2c/mct.rs",
+      "before": "let tail = s0.len() / 8 * 8;",
+      "after": "let tail = s0.len();",
+      "candidate_sha256": "1f797cbf527ccdf63a78b3f458f4ce247195d4ea98d0c5090bc5e3ccf51979de",
+      "mismatches": 1728,
+      "process_failures": [],
+      "detected": true
+    }
+  ],
+  "all_detected": true
+}

@@ -1,0 +1,66 @@
+{
+  "scope": "6 deliberate defects; not comprehensive mutation coverage",
+  "mutations": [
+    {
+      "mutation": "unc_compression_wrapper",
+      "suite": "uncompressed_units",
+      "source": "src/uncompressed_compression.rs",
+      "before": "b\"zlib\" => 4,",
+      "after": "b\"zlib\" => 3,",
+      "candidate_sha256": "6d9ab9310bdff0bb66d8461fc8f7e685d4002f41ceaca5f53e6a84a000e0264b",
+      "mismatches": 552,
+      "detected": true
+    },
+    {
+      "mutation": "unc_unit_type",
+      "suite": "uncompressed_units",
+      "source": "src/uncompressed_compression.rs",
+      "before": "if unit > 4 {",
+      "after": "if unit > 3 {",
+      "candidate_sha256": "62ea4409da9796a28bc2d03faaee6974c97acb9db430ededb73bee2a1e2ef2cd",
+      "mismatches": 236,
+      "detected": true
+    },
+    {
+      "mutation": "unc_unit_index",
+      "suite": "uncompressed_units",
+      "source": "src/uncompressed_compression.rs",
+      "before": ".get(tile as usize)",
+      "after": ".get(0)",
+      "candidate_sha256": "fa3105e7826bba76820235d90e9cee16227a25a160cab898a1cb81bd9b3204df",
+      "mismatches": 100,
+      "detected": true
+    },
+    {
+      "mutation": "unc_implied_offset",
+      "suite": "uncompressed_units",
+      "source": "src/uncompressed_compression.rs",
+      "before": "implied += size;",
+      "after": "implied += 0;",
+      "candidate_sha256": "5f24654468095791431f2de7f29bbe4052353b3fe7840bbc2a431a36b5aed7d6",
+      "mismatches": 50,
+      "detected": true
+    },
+    {
+      "mutation": "unc_unit_overflow",
+      "suite": "uncompressed_units",
+      "source": "src/uncompressed_compression.rs",
+      "before": "size >= u64::MAX - offset",
+      "after": "size > u64::MAX - offset",
+      "candidate_sha256": "5d3b79ce72fca8afa37de4df6762dc8c5cee417bf56d9c35385c23f94cbcabe7",
+      "mismatches": 3,
+      "detected": true
+    },
+    {
+      "mutation": "unc_range_origin",
+      "suite": "uncompressed_units",
+      "source": "src/uncompressed_compression.rs",
+      "before": "data.copy_within(start as usize..(start + size) as usize, 0);",
+      "after": "data.copy_within(0..size as usize, 0);",
+      "candidate_sha256": "7a381b42b3779310aeed9a5e67153e637ec11af193cd9f7362fb466da9ba705c",
+      "mismatches": 574,
+      "detected": true
+    }
+  ],
+  "all_detected": true
+}

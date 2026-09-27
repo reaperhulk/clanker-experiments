@@ -1,0 +1,92 @@
+{
+  "anyhow@1.0.104": {
+    "build.rs": "89d1baedcff59822ed692d3a33f131c211a213bdec33c83f68b54110d9c64223"
+  },
+  "av-scenechange@0.14.1": {
+    "build.rs": "ac91ff305fd1b0ab4607c3b6c4ad152b63563bbd8e6e4076aff47c837a9fda3e"
+  },
+  "crossbeam-deque@0.8.8": {
+    "build.rs": "c8c35fc536a2e6481549bc13979293cb51244cd9c72d4ed9e35c22a1d70fa9ae"
+  },
+  "crossbeam-epoch@0.9.21": {
+    "build.rs": "c8c35fc536a2e6481549bc13979293cb51244cd9c72d4ed9e35c22a1d70fa9ae"
+  },
+  "crossbeam-utils@0.8.23": {
+    "build.rs": "79cc5363313f77ab76e2de4779e384c672a747fbcd4b96647a79286568714807"
+  },
+  "getrandom@0.4.3": {
+    "build.rs": "662faa06d7b2a9c5bea2c17a127a90e00b9f9b31105b0360da516e47cf816e95"
+  },
+  "libc@0.2.189": {
+    "build.rs": "e47f4a6762799b6e69cefc7acdb3291df828010e4de20609f7378f9c94ea29e6"
+  },
+  "libheifer-capi@0.1.0": {
+    "build.rs": "48b2be68764ad92c2fb1b71f1bacc91d81127007ecd049ef690b480e19bfa36b"
+  },
+  "libheifer-rusty_h264-common@0.16.0": {
+    "build.rs": "f105ccb828180d10fbb4ccad374d5c06e13416d1cef5d92ee95849402a4e74da"
+  },
+  "libm@0.2.16": {
+    "build.rs": "85dfa93693f40e282ecf2d9a3115280d8f508f056063862add9e529b8143b71b",
+    "configure.rs": "884fa9c05c600d03450b15651665848e88b09cf602f86c843e55e5e1ee0a4772"
+  },
+  "num-traits@0.2.19": {
+    "build.rs": "d3969209fc1c9d201c66ed11820d0b328600d75b3971f8ceebeab04900bc0587"
+  },
+  "parking_lot_core@0.9.12": {
+    "build.rs": "3698c936b75f8332d9b6b30a8a6838ea116c1ff0a819a025c9ea9696e4d8ce72"
+  },
+  "paste@1.0.15": {
+    "build.rs": "dba46ae4291317fb644ba2143f44eaf54a8ab946ba1367a33d055d694715f68a"
+  },
+  "portable-atomic@1.15.0": {
+    "build.rs": "9d0b1e071715580497aadb918d4b3b124ee366ba66f15ac05a3d8045f0bc2cf0",
+    "version.rs": "25c4e742d5a9e49ee16793b607157e181fd79eeafcbcbf0aa389f31b8d5514d1"
+  },
+  "proc-macro2@1.0.107": {
+    "build.rs": "baeb20b52f6b536be8657a566591a507bb2e34a45cf8baa42b135510a0c3c729",
+    "src/probe/proc_macro_span.rs": "53853f0c70170c9695294b8867821664d9b8f1c901957b003003a3c26987abbe",
+    "src/probe/proc_macro_span_file.rs": "e7fb4cf8852d9d589bfa3321d8d5cdc8cccb45606ec816a6b8a08f73e416b9ce",
+    "src/probe/proc_macro_span_location.rs": "e022386204b6e042b3c55a6c809923849a2f915199bcbf3be72d0b7c8ffa7f83"
+  },
+  "quote@1.0.47": {
+    "build.rs": "cd6808c02e476b09a520105e2c6f6d325cccb1ecd542cbbcc836a0ae6f6fb0f1"
+  },
+  "rav1d@1.1.0": {
+    "build.rs": "a7b17c3c9498d98835197a9654b1fe1f41f745e62e9fc9bf2fd27f7840a68c58"
+  },
+  "rav1e@0.8.1": {
+    "build.rs": "762a52a53ca01a04d5c173619555391ec0d4029377d43e31a177d14bb0562add"
+  },
+  "rayon-core@1.13.0": {
+    "build.rs": "fa31cb198b772600d100a7c403ddedccef637d2e6b2da431fa7f02ca41307fc6"
+  },
+  "rustversion@1.0.23": {
+    "build/build.rs": "4438b108d5b198ca43ef0a78509da89861020674abd05166addd1c3058afbfa6",
+    "build/rustc.rs": "faf67033ec831d968406f5a66c475df337f7221e9d1ab3477fed3a629e1ec5bc"
+  },
+  "rusty_h264-common@0.16.0": {
+    "build.rs": "f105ccb828180d10fbb4ccad374d5c06e13416d1cef5d92ee95849402a4e74da"
+  },
+  "rusty_h264-encoder@0.16.0": {
+    "build.rs": "f105ccb828180d10fbb4ccad374d5c06e13416d1cef5d92ee95849402a4e74da"
+  },
+  "serde_core@1.0.229": {
+    "build.rs": "7bc6b1eec8913ff4cd8e4b9b92cd04a82a4f38beb30a0b73a64c1e6e49f07b5f"
+  },
+  "serde_json@1.0.151": {
+    "build.rs": "a681e754be844c7dbef957f5d2d00b01f37c5dca160ef1055a8d8f975697a881"
+  },
+  "thiserror@2.0.21": {
+    "build.rs": "ccc38283604f99237ad2333bbe395259e29fdf2ff4e04a60a95de9e4499c09a3"
+  },
+  "wasm-bindgen-shared@0.2.128": {
+    "build.rs": "2ad2b0d08ef35c6a9013b5488bdf568630f0fc517d10b47f3851ad5c6ef10da4"
+  },
+  "wasm-bindgen@0.2.128": {
+    "build.rs": "33c90a6eb1745c53f9047e0ecde135b249b0ea3d9e1a2a40c9610a33f225e6c9"
+  },
+  "zmij@1.0.23": {
+    "build.rs": "ad320bc635887879bdbbf1b9322da4a157ec2c5a4243bd7c2cf9b6884a3b2a41"
+  }
+}

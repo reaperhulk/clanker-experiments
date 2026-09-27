@@ -1,0 +1,12 @@
+{
+  "scope": "Original-header exact debug dump bytes, file/memory input, fresh/failed contexts, repeated calls and borrowed descriptor ownership.",
+  "cases": 901,
+  "mismatches": 0,
+  "differences": [],
+  "client_sanitizers": false,
+  "leak_check": false,
+  "client_sha256": "32df6629f0a1d6bae94d2369870d6b1208dcd3d1eee3b2513344fa5effbc388b",
+  "corpus_sha256": "9317fe65178a2985141e96093befe0c4a1e11c1494f84b0f602a9ef5fac0d8c8",
+  "reference_sha256": "5cc5713a0503098f20f8a3631e370d43256ebdca0a3209e97d541e6ecf1cd917",
+  "candidate_sha256": "8f3021643bd5b0e1c8183675c6464b1e983bc09f1e0a006af38c756e3c1c5f95"
+}

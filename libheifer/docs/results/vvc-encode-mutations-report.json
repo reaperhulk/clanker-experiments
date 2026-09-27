@@ -1,0 +1,194 @@
+{
+  "scope": "17 deliberate defects; not comprehensive mutation coverage",
+  "shard": null,
+  "mutations": [
+    {
+      "mutation": "vvc_encode_rounded_size",
+      "suite": "vvc_builtin_encoding",
+      "source": "crates/capi/src/builtin_vvc_encoder.rs",
+      "before": "out_width.write(width.wrapping_add(7) & !7);",
+      "after": "out_width.write(width.wrapping_add(3) & !3);",
+      "candidate_sha256": "17f602bce633cc9d7b555eb6f7e786379a6c93d183d801ea2cfaa0415920a52d",
+      "mismatches": 20,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "vvc_encode_bit_depth",
+      "suite": "vvc_builtin_encoding",
+      "source": "crates/capi/src/builtin_vvc_encoder.rs",
+      "before": "if img.plane(0).map_or(-1, |p| c_int::from(p.bit_depth)) != 8 {",
+      "after": "if img.plane(0).map_or(-1, |p| c_int::from(p.bit_depth)) < 8 {",
+      "candidate_sha256": "0a3a654b3cb8568af7f546343a7609b6fa99503f4264ba17c7823516e1c7f935",
+      "mismatches": 12,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "vvc_encode_quality_range",
+      "suite": "vvc_builtin_encoding",
+      "source": "crates/capi/src/builtin_vvc_encoder.rs",
+      "before": "            maximum: 100,",
+      "after": "            maximum: 99,",
+      "candidate_sha256": "be1dfdf0c2dd30ac5e6012cd54711ab813ee06599238dd1b5b608dd87a2801dc",
+      "mismatches": 1,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "vvc_encode_lossless_parameter",
+      "suite": "vvc_builtin_encoding",
+      "source": "crates/capi/src/builtin_vvc_encoder.rs",
+      "before": "    } else if named(name, c\"lossless\") {\n        unsafe { set_lossless(p, value) }",
+      "after": "    } else if named(name, c\"lossles\") {\n        unsafe { set_lossless(p, value) }",
+      "candidate_sha256": "4ceffaa934abf1a76187dd960a0bd1554b8a34ba428963c61043218aaf137482",
+      "mismatches": 1,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "vvc_encode_mip_mode_count",
+      "suite": "vvc_encoder_quality",
+      "source": "src/vvc/encoder.rs",
+      "before": "        write_trunc_bin(s, u32::from(mode), mip_modes(cu.lw(), cu.lh()));",
+      "after": "        write_trunc_bin(s, u32::from(mode), mip_modes(cu.lw(), cu.lh()) + 1);",
+      "candidate_sha256": "a67e05a47839cdf98d15e91f510acfbab009468c1279922efe917f11ce859c69",
+      "mismatches": 2,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "vvc_encode_level_sample_rate",
+      "suite": "vvc_builtin_encoding",
+      "source": "src/vvc/encoder.rs",
+      "before": "(16, 36_864, 552_960),",
+      "after": "(16, 36_864, 5_529_600),",
+      "candidate_sha256": "8749696a47e53cf112bc977868721d7d36339e9214418cf67e24efa77358ec5f",
+      "mismatches": 5,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "vvc_encode_profile",
+      "suite": "vvc_builtin_encoding",
+      "source": "src/vvc/encoder.rs",
+      "before": "if chroma <= 1 { 1 } else { 33 }",
+      "after": "if chroma <= 1 { 65 } else { 33 }",
+      "candidate_sha256": "690ec850797a38093b3dae2bc9a1a447dd8b11817abcd1d764f326d3d536c98b",
+      "mismatches": 104,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "vvc_encode_cbf_context",
+      "suite": "vvc_encoder_quality",
+      "source": "src/vvc/encoder.rs",
+      "before": "    s.bin(ctx::QT_CBF0, u32::from(cbf(0)));",
+      "after": "    s.bin(ctx::QT_CBF0 + 1, u32::from(cbf(0)));",
+      "candidate_sha256": "4c63222269c55651e7b7af3a15bff43d59795f25e7c58ada5cb178153ec661a9",
+      "mismatches": 3,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "vvc_encode_dq_levels",
+      "suite": "vvc_encoder_quality",
+      "source": "src/vvc/encoder.rs",
+      "before": "                let r = 2 * a - i32::from(state > 1);",
+      "after": "                let r = 2 * a;",
+      "candidate_sha256": "97f8cc5243c3e7b4906747c5eebc2e6ca2c0ad5196aa1fced005ba775d87befb",
+      "mismatches": 3,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "vvc_encode_sao_edge_class",
+      "suite": "vvc_encoder_quality",
+      "source": "src/vvc/encoder.rs",
+      "before": "            s.eps(u32::from(p.type_idc) - 1, 2);",
+      "after": "            s.eps(u32::from(p.type_idc) - 1, 1);",
+      "candidate_sha256": "085b21abfcc1efd504c8d1bdf6cd9e6a714402545fab52268744e5e63be9bff6",
+      "mismatches": 3,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "vvc_profile",
+      "suite": "vvc_encoding",
+      "source": "src/vvc_config.rs",
+      "before": "self.profile = b.get(7) as u8;",
+      "after": "self.profile = b.get(7) as u8 ^ 1;",
+      "candidate_sha256": "48ab456f60678128979f4fb6e466493d30814bbb3bc0acff042da36154691a67",
+      "mismatches": 1406,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "vvc_configuration_reset",
+      "suite": "vvc_encoding",
+      "source": "src/vvc_config.rs",
+      "before": "self.config = Configuration::default();",
+      "after": "// omit SPS reset",
+      "candidate_sha256": "552534e5d29b485e6d4c270b67768a67730c41dfd139f1fe229fdeed1f026da9",
+      "mismatches": 27,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "vvc_sublayer_order",
+      "suite": "vvc_encoding",
+      "source": "src/vvc_config.rs",
+      "before": "out.push(c.levels[i]);",
+      "after": "out.push(c.levels[i] ^ 1);",
+      "candidate_sha256": "7fa4bc70adeaa8cd62fe7a94e4e10a4bc151517a0da5bff23848d318186d01db",
+      "mismatches": 288,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "vvc_dimensions",
+      "suite": "vvc_encoding",
+      "source": "src/vvc_config.rs",
+      "before": "out.extend_from_slice(&c.width.to_be_bytes());",
+      "after": "out.extend_from_slice(&c.height.to_be_bytes());",
+      "candidate_sha256": "5562b0bb2fad3d9a04215f9cb5a5b2b9b9a5f2dfcea6637ace0b540fe0d44994",
+      "mismatches": 1377,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "vvc_parameter_count",
+      "suite": "vvc_encoding",
+      "source": "src/vvc_config.rs",
+      "before": "u16::try_from(units.len())",
+      "after": "u16::try_from(units.len() + 1)",
+      "candidate_sha256": "ec4f37d1ec367f1590232643c845fe85a3d6247915ac0158624b797488e91e68",
+      "mismatches": 1411,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "vvc_array_completeness",
+      "suite": "vvc_encoding",
+      "source": "src/vvc_config.rs",
+      "before": "out.push(128 | kind);",
+      "after": "out.push(*kind);",
+      "candidate_sha256": "001b65b9215da70f2061aee18ab9ee0a26950f18749a43b0956fa472d7cef3b8",
+      "mismatches": 1401,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "vvc_brand",
+      "suite": "vvc_encoding",
+      "source": "src/writing.rs",
+      "before": "b\"vvc1\" => Some(*b\"vvic\"),",
+      "after": "b\"vvc1\" => Some(*b\"vvis\"),",
+      "candidate_sha256": "a9b25b04220e66950582c7c06cb52de359e7c8f89c031ff8575c29cd3ad1878b",
+      "mismatches": 1377,
+      "process_failures": [],
+      "detected": true
+    }
+  ],
+  "all_detected": true
+}

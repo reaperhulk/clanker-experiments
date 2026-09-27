@@ -1,0 +1,106 @@
+{
+  "scope": "9 deliberate defects; not comprehensive mutation coverage",
+  "shard": null,
+  "mutations": [
+    {
+      "mutation": "jpeg2000_encode_zc_orient",
+      "suite": "jpeg2000_encoding",
+      "source": "src/jpeg2000_encoder.rs",
+      "before": "if self.orient == 1 {\n            core::mem::swap",
+      "after": "if self.orient == 2 {\n            core::mem::swap",
+      "candidate_sha256": "bf25700c28c4e59b42b0ca59c41ce38aa9ef220eccb861b5c185ab45666a079d",
+      "mismatches": 131,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "jpeg2000_encode_pass_rate",
+      "suite": "jpeg2000_encoding",
+      "source": "src/jpeg2000_encoder.rs",
+      "before": "t1.mqc.numbytes().wrapping_add(3)",
+      "after": "t1.mqc.numbytes().wrapping_add(2)",
+      "candidate_sha256": "914593ce7459fab637f96190a2f22a89ef5b9f06f1b2979482fc6de0aa30c5d7",
+      "mismatches": 66,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "jpeg2000_encode_trailing_ff",
+      "suite": "jpeg2000_encoding",
+      "source": "src/jpeg2000_encoder.rs",
+      "before": "data.get(pass.rate as usize - 1) == Some(&0xff)",
+      "after": "data.get(pass.rate as usize - 1) == Some(&0xfe)",
+      "candidate_sha256": "464da8ce8ef267cf9d4d654e3041ce4fce8ca4d1a90ef64671c12dbd08246ae7",
+      "mismatches": 18,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "jpeg2000_encode_rate_floor",
+      "suite": "jpeg2000_encoding",
+      "source": "src/jpeg2000_encoder.rs",
+      "before": "if rate < 30.0 {\n            rate = 30.0;",
+      "after": "if rate < 20.0 {\n            rate = 20.0;",
+      "candidate_sha256": "83e2669c8c01459f8ec0d38ff988154c71b57a720d1f7a81658c04b4b059a357",
+      "mismatches": 15,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "jpeg2000_encode_tile_budget",
+      "suite": "jpeg2000_encoding",
+      "source": "src/jpeg2000_encoder.rs",
+      "before": "* 1.4 / 8.0) as u64 + 500;",
+      "after": "* 1.4 / 8.0) as u64 + 5000;",
+      "candidate_sha256": "49cbe9949279c8d7fc9677284859130d8e674d808ea451f3afd72339186d2f73",
+      "mismatches": 1,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "jpeg2000_encode_min_size",
+      "suite": "jpeg2000_encoding",
+      "source": "src/jpeg2000_encoder.rs",
+      "before": "if width < 1 << (NUM_RESOLUTIONS - 1) || height",
+      "after": "if width < 1 << (NUM_RESOLUTIONS - 2) || height",
+      "candidate_sha256": "c101e34dcac7e43a9835b0152bdf68969e9d8a1561dc2f67aa5d3e8941692f2c",
+      "mismatches": 12,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "jpeg2000_encode_quality",
+      "suite": "jpeg2000_encoding",
+      "source": "crates/capi/src/builtin_jpeg2000_encoder.rs",
+      "before": "quality: 70,",
+      "after": "quality: 75,",
+      "candidate_sha256": "e1973d0d97d00d9d200356899edddcbe82cc6a6c19dee6867cf47a01c5710245",
+      "mismatches": 39,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "jpeg2000_encode_lossless_default",
+      "suite": "jpeg2000_encoding",
+      "source": "crates/capi/src/builtin_jpeg2000_encoder.rs",
+      "before": "quality: 70,\n        irreversible: false,",
+      "after": "quality: 70,\n        irreversible: true,",
+      "candidate_sha256": "8f7cb1e9ea2dc2cc0d47adc33518e998842f56d5986459e604a6eb54c8a9966f",
+      "mismatches": 61,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "jpeg2000_encode_chroma",
+      "suite": "jpeg2000_encoding",
+      "source": "crates/capi/src/builtin_jpeg2000_encoder.rs",
+      "before": "chroma.write(3);",
+      "after": "chroma.write(1);",
+      "candidate_sha256": "e4b8d9884e49da5b891976ac07773aa3ebcebbbd38f6de595ba6c298af583250",
+      "mismatches": 0,
+      "process_failures": [],
+      "detected": false
+    }
+  ],
+  "all_detected": false
+}

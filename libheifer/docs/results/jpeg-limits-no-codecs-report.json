@@ -1,0 +1,12 @@
+{
+  "scope": "Original-header JPEG allocation and dimension limit boundaries at read and decode.",
+  "cases": 2297,
+  "mismatches": 0,
+  "client_sanitizers": false,
+  "leak_check": false,
+  "client_sha256": "9b6cafe33f096a88507a0545fed6de411d22f794c392ef2b2b93de624e6c77e4",
+  "corpus_sha256": "81f077d55e8cafa56e650c9196a648cafbbc30b53d9ebfd4295fb7fe7ef635b2",
+  "reference_sha256": "5cc5713a0503098f20f8a3631e370d43256ebdca0a3209e97d541e6ecf1cd917",
+  "candidate_sha256": "a02b40f0d2ab4921aa304d69aab8085611aa3064484423d317bcac7aa3fd99a0",
+  "differences": []
+}

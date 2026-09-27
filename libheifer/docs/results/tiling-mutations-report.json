@@ -1,0 +1,116 @@
+{
+  "scope": "11 deliberate defects; not comprehensive mutation coverage",
+  "mutations": [
+    {
+      "mutation": "tiling_coded_width",
+      "suite": "tiling",
+      "source": "src/tiling.rs",
+      "before": "t.tile_width = w;",
+      "after": "t.tile_width = w.wrapping_add(1);",
+      "candidate_sha256": "26a1a52c0fcb8f99114317564353114ce4e03b47d806152c2e7e8ba2e2d10a4c",
+      "mismatches": 1242,
+      "detected": true
+    },
+    {
+      "mutation": "tiling_inverse_rotation",
+      "suite": "tiling",
+      "source": "src/tiling.rs",
+      "before": "1 => (self.num_rows - 1 - y, x),",
+      "after": "1 => (y, x),",
+      "candidate_sha256": "0c123d568be7614511f8237748b892053312e7911c3adf6aaecf721604ff0c2e",
+      "mismatches": 236,
+      "detected": true
+    },
+    {
+      "mutation": "tiling_crop_offset",
+      "suite": "tiling",
+      "source": "src/tiling.rs",
+      "before": "left = left.wrapping_add(l);",
+      "after": "left = left.wrapping_add(l+1);",
+      "candidate_sha256": "cc739041e277ae40cd9c630f86acee4c1ee23c2ca25dad673eadbfa664dbeac9",
+      "mismatches": 154,
+      "detected": true
+    },
+    {
+      "mutation": "tile_decode_output_sentinel",
+      "suite": "tiling",
+      "source": "crates/capi/src/decoding.rs",
+      "before": "if tile.is_none() {\n        unsafe {",
+      "after": "if true {\n        unsafe {",
+      "candidate_sha256": "348123dd68f11e5620b07ce5310ce72e1d34d89cfbdaf43f818a3b78aee08ae8",
+      "mismatches": 4241,
+      "detected": true
+    },
+    {
+      "mutation": "tile_decode_payload_index",
+      "suite": "tiling",
+      "source": "src/uncompressed_decode.rs",
+      "before": "u64::from((ty as u32).wrapping_mul(c.columns).wrapping_add(tx as u32))",
+      "after": "u64::from((ty as u32).wrapping_mul(c.columns))",
+      "candidate_sha256": "76f52e14a19f51af260b6ce7fcb226028f003b17d489318b76dad136e2c967fe",
+      "mismatches": 1600,
+      "detected": true
+    },
+    {
+      "mutation": "grid_tile_hidden",
+      "suite": "tile_encoding",
+      "source": "src/tile_encoding.rs",
+      "before": "self.items.items.get_mut(&tile.id).unwrap().hidden = true;",
+      "after": "self.items.items.get_mut(&tile.id).unwrap().hidden = false;",
+      "candidate_sha256": "352a18d8a2d09f20a52da3b807b87268e90aee4c7495493993baee08c1bc407c",
+      "mismatches": 350,
+      "detected": true
+    },
+    {
+      "mutation": "grid_orientation",
+      "suite": "tile_encoding",
+      "source": "src/tile_encoding.rs",
+      "before": "self.add_orientation(grid.id, orientation)?;",
+      "after": "self.add_orientation(grid.id, 1)?;",
+      "candidate_sha256": "f8117b9179c0a293fd21f7b5493f3008ea7166a705ae415171e57f15f7896b97",
+      "mismatches": 256,
+      "detected": true
+    },
+    {
+      "mutation": "unci_tile_compression_essential",
+      "suite": "tile_encoding",
+      "source": "src/tile_encoding.rs",
+      "before": "self.retained_property(&info, property(*b\"cmpC\", d), true)?;",
+      "after": "self.retained_property(&info, property(*b\"cmpC\", d), false)?;",
+      "candidate_sha256": "5ac107c36558de9a3754652a1f7fa48469344e2496fd8d1f2d6f0ab7920104c2",
+      "mismatches": 23,
+      "detected": true
+    },
+    {
+      "mutation": "unci_tile_unit_offset",
+      "suite": "tile_encoding",
+      "source": "src/tile_encoding.rs",
+      "before": "units[index] = (*next_offset, size);",
+      "after": "units[index] = (0, size);",
+      "candidate_sha256": "e0a07deff9d96d72373675e5e3f53dd1190cfb86d96d13ecef2bfeab7eae197e",
+      "mismatches": 14,
+      "detected": true
+    },
+    {
+      "mutation": "unci_tile_replace_offset",
+      "suite": "tile_encoding",
+      "source": "src/tile_encoding.rs",
+      "before": "let start = index * *tile_size;",
+      "after": "let start = 0 * *tile_size;",
+      "candidate_sha256": "209649ff340ab09c3aff4474176447c853adb0ff043005df22fb209c7f34b273",
+      "mismatches": 128,
+      "detected": true
+    },
+    {
+      "mutation": "unci_tile_incomplete_properties",
+      "suite": "tile_encoding",
+      "source": "src/writing.rs",
+      "before": "incomplete = true;",
+      "after": "incomplete = false;",
+      "candidate_sha256": "9f805443d575774bdaeca23cc1d784255a08cb6e6fd64aef990ca086bb1a5f1a",
+      "mismatches": 6,
+      "detected": true
+    }
+  ],
+  "all_detected": true
+}

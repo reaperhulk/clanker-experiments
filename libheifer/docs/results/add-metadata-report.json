@@ -1,0 +1,17 @@
+{
+  "scope": "Original-header metadata writers: Exif offsets, XMP compression, URI behavior, references and handle visibility.",
+  "cases": 2187,
+  "mismatches": 0,
+  "full_payload_bytes_equal": true,
+  "payload_sha256": {
+    "reference": "b0e076c79432122bbeefb69d44416e8dbd39af17d3a3c5d1f13ee5d4f98a3c93",
+    "candidate": "b0e076c79432122bbeefb69d44416e8dbd39af17d3a3c5d1f13ee5d4f98a3c93"
+  },
+  "client_sanitizers": false,
+  "leak_check": false,
+  "client_sha256": "6358fe58ce46f90f46224785be5d9779955877d8c07ce2cb9c7b2231bc6d24e8",
+  "corpus_sha256": "24fc014e4ac28b660e1f3885f5a9342248f1a10da6a234aab90140386a2305a5",
+  "differences": [],
+  "reference_sha256": "5d70927cded8be6d1b4da912971aed75d426ba079c84d0b8462785ec5b9c92f7",
+  "candidate_sha256": "36355f381eebe03caa5a07fc2859892cb9582944e91ecdd32068552d2e9cbeb0"
+}

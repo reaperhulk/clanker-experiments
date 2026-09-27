@@ -1,0 +1,29 @@
+{
+  "scope": "2 deliberate defects; not comprehensive mutation coverage",
+  "shard": null,
+  "mutations": [
+    {
+      "mutation": "vvc_ccalf_tap",
+      "suite": "vvc",
+      "source": "src/vvc/alf.rs",
+      "before": "sum += c(1) * (luma.g(lx - 1, ly) - cur);",
+      "after": "sum += c(1) * (luma.g(lx + 1, ly) - cur);",
+      "candidate_sha256": "be643f901049b3f3e384fe5c5b4373134771896c8fd9bf57d152b9abe8f8ac39",
+      "mismatches": 92,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "vvc_lmcs_chroma_rounding",
+      "suite": "vvc",
+      "source": "src/vvc/recon.rs",
+      "before": "((abs * scale + (1 << 10)) >> 11)",
+      "after": "((abs * scale + (1 << 9)) >> 11)",
+      "candidate_sha256": "e64ba6438e314179746b2883fdaf5a46dd94abb2c5d931d0b31bdc317f9993ae",
+      "mismatches": 23,
+      "process_failures": [],
+      "detected": true
+    }
+  ],
+  "all_detected": true
+}

@@ -1,0 +1,12 @@
+{
+  "scope": "Generated grid, identity, overlay and mask handle queries and lifetimes; fixture hashes verified against decode manifests",
+  "client_sanitizers": false,
+  "leak_check": false,
+  "cases": 606,
+  "mismatches": 0,
+  "corpus_sha256": "f57d4775478f3a8fbe9eb71e10d45807010ba8935817a06dc748c455552a2d11",
+  "client_sha256": "298161b132c1ac7a48f3a5b0944920faf06fae11ee347586f4fe7daf36ce1e3a",
+  "reference_sha256": "5d70927cded8be6d1b4da912971aed75d426ba079c84d0b8462785ec5b9c92f7",
+  "candidate_sha256": "4d78a5e8e0e1006a124999a49a21cd8bc5928d3257101168da2ab20f417549a9",
+  "examples": []
+}

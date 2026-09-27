@@ -1,0 +1,83 @@
+{
+  "scope": "7 deliberate defects; not comprehensive mutation coverage",
+  "mutations": [
+    {
+      "mutation": "vvc_profile",
+      "suite": "vvc_encoding",
+      "source": "src/vvc_config.rs",
+      "before": "self.profile = b.get(7) as u8;",
+      "after": "self.profile = b.get(7) as u8 ^ 1;",
+      "candidate_sha256": "c8031b366ac6e104bae56bc8b2abda0e8fe53877edad4ef70cbe66dde97f8522",
+      "mismatches": 1394,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "vvc_configuration_reset",
+      "suite": "vvc_encoding",
+      "source": "src/vvc_config.rs",
+      "before": "self.config = Configuration::default();",
+      "after": "// omit SPS reset",
+      "candidate_sha256": "43802b36a6df47fa4ec6a57a1a094dc08e31dda9f3da997514bf14034519d353",
+      "mismatches": 27,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "vvc_sublayer_order",
+      "suite": "vvc_encoding",
+      "source": "src/vvc_config.rs",
+      "before": "out.push(c.levels[i]);",
+      "after": "out.push(c.levels[i] ^ 1);",
+      "candidate_sha256": "54d34aa52ddfaea998341c821eaca31f32b40dbf07282d5fd751ce2081da71c1",
+      "mismatches": 288,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "vvc_dimensions",
+      "suite": "vvc_encoding",
+      "source": "src/vvc_config.rs",
+      "before": "out.extend_from_slice(&c.width.to_be_bytes());",
+      "after": "out.extend_from_slice(&c.height.to_be_bytes());",
+      "candidate_sha256": "8934104f6303727d82efce697a9458419983d8bbde25dbc8ca9bdbe07621db5a",
+      "mismatches": 1377,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "vvc_parameter_count",
+      "suite": "vvc_encoding",
+      "source": "src/vvc_config.rs",
+      "before": "u16::try_from(units.len())",
+      "after": "u16::try_from(units.len() + 1)",
+      "candidate_sha256": "4610e83663eba2a84de1705d8ca85f0292f2abad3081bd3b3e71b109ef145336",
+      "mismatches": 1399,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "vvc_array_completeness",
+      "suite": "vvc_encoding",
+      "source": "src/vvc_config.rs",
+      "before": "out.push(128 | kind);",
+      "after": "out.push(*kind);",
+      "candidate_sha256": "dd7c1612aa9c480821d706dfb78bf48364845171df1fd29526d2706792e99224",
+      "mismatches": 1401,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "vvc_brand",
+      "suite": "vvc_encoding",
+      "source": "src/writing.rs",
+      "before": "b\"vvc1\" => Some(*b\"vvic\"),",
+      "after": "b\"vvc1\" => Some(*b\"vvis\"),",
+      "candidate_sha256": "9eae5e630e0f45eae0521d177a7e9565c7bcba0405414bb4c13647aa94d30f1a",
+      "mismatches": 1365,
+      "process_failures": [],
+      "detected": true
+    }
+  ],
+  "all_detected": true
+}

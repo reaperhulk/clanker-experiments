@@ -1,0 +1,13 @@
+{
+  "scope": "Independent native sequence fixtures read through file input.",
+  "cases": 2117,
+  "mismatches": 0,
+  "process_failures": [],
+  "differences": [],
+  "client_sanitizers": false,
+  "leak_check": false,
+  "client_sha256": "2d1f24dfdf66dd0cd1dbc7a9aeea4290cf58d52d4a7ce1b04989eca65e24cbf3",
+  "corpus_sha256": "87a4c971c595e1bee50ab56d542a168f9f50856e96ddf7a74c3b89359d7b166d",
+  "reference_sha256": "5cc5713a0503098f20f8a3631e370d43256ebdca0a3209e97d541e6ecf1cd917",
+  "candidate_sha256": "0b97a3766f0eb05cfb83a66a479cb006408f2c4e3a495462f74021c79778518c"
+}

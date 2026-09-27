@@ -1,0 +1,10 @@
+{
+  "scope": "Independent resource accounting across decoder caching, releases and file reloads.",
+  "cases": 276,
+  "mismatches": 0,
+  "client_sha256": "59ceb887160cf06bdfe91962829050ca0fe3780ec1c7d39d4fd8a39a71f7d863",
+  "corpus_sha256": "2e3c14898cd5546e0ba383378a8f0bcf854092042ceb2d547588ded7cdadd683",
+  "reference_sha256": "5d70927cded8be6d1b4da912971aed75d426ba079c84d0b8462785ec5b9c92f7",
+  "candidate_sha256": "b64356a1ae676bafa2b79a283b320a0d3b0576b07f8ea6c39b4b8feb6f749d8f",
+  "differences": []
+}

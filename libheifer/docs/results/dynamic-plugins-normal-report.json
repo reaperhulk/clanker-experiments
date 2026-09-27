@@ -1,0 +1,30 @@
+{
+  "scope": "Original-header dynamic module ABI, paths, repeated loading, versions, registry callbacks, bulk limits and initialization errors.",
+  "candidate_safety_probes": [
+    {
+      "kind": 0,
+      "returncode": 0,
+      "stdout": " e0,0,Success I0 e0,0,Success C1 e0,0,Success inventory0,0 deinit inventory0,0\n",
+      "stderr": ""
+    },
+    {
+      "kind": 1,
+      "returncode": 0,
+      "stdout": " e0,0,Success I0 e0,0,Success e0,0,Success inventory0,1 Ddynamic-decoder C0 deinit inventory0,0\n",
+      "stderr": ""
+    }
+  ],
+  "oracle_undefined_behavior": [
+    "Modules are pinned for oracle comparisons: native unload can dereference module data after dlclose, and decoder records remain registered. Unpinned candidate safety probes are separate and not parity counts."
+  ],
+  "cases": 425,
+  "mismatches": 0,
+  "process_failures": [],
+  "differences": [],
+  "client_sanitizers": false,
+  "leak_check": false,
+  "client_sha256": "efc99fa02468e44f64e76659438285d84e0410ad1674d108f11c708ae0eae2e1",
+  "corpus_sha256": "43341d0da2f3bdff7f4cc755a0e70f2884b1fde34cf1710c03753a141b93f77d",
+  "reference_sha256": "d9441cc137717ab2edbe93f1179ed5e7cbbe60bf30d8681d5b3c83f734afc077",
+  "candidate_sha256": "5672d128b1ef46b48eb70ca6dfa7fac93f4996160d9627684798590847621325"
+}

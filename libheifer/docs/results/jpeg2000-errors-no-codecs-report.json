@@ -1,0 +1,13 @@
+{
+  "scope": "Independent JPEG2000 complete byte prefixes and malformed marker fields.",
+  "cases": 5880,
+  "mismatches": 0,
+  "client_sanitizers": false,
+  "leak_check": false,
+  "client_sha256": "c7cb0444757eb1d323d165c8e0803e2ffff7aabc0c0cbd247c18342dd830311a",
+  "reference_sha256": "5cc5713a0503098f20f8a3631e370d43256ebdca0a3209e97d541e6ecf1cd917",
+  "candidate_sha256": "9b925d6790bf1fdbce897e28834e5ba629fed2664bf43fc6ea145189e5b553a5",
+  "full_report": "jpeg2000-errors-no-codecs-full.json.gz",
+  "full_report_sha256": "e0ee424bec53f09feb5408e587cfca5c74c866f38c538f3b54e9f4881109d072",
+  "compressed_report_sha256": "59b77e4ef1314bc032806408e6f860f70ad5affacb403b74fa3ae99e0566f442"
+}

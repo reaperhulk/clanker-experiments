@@ -1,0 +1,46 @@
+{
+  "scope": "4 deliberate defects; not comprehensive mutation coverage",
+  "mutations": [
+    {
+      "mutation": "encoding_option_default",
+      "suite": "encoding_options",
+      "source": "crates/capi/src/encoding_options.rs",
+      "before": "version: 8,\n            save_alpha_channel: 1,",
+      "after": "version: 8,\n            save_alpha_channel: 0,",
+      "candidate_sha256": "aecdbf6ecb2467e1bff23db9715c752fd4f9dc6d52986ed5bb4d9748e43c1f8b",
+      "mismatches": 2242,
+      "detected": true
+    },
+    {
+      "mutation": "encoding_option_future_version",
+      "suite": "encoding_options",
+      "source": "crates/capi/src/encoding_options.rs",
+      "before": "!(1..=$max).contains(&version)",
+      "after": "!(1..=255).contains(&version)",
+      "candidate_sha256": "6a0414d1208ce4bad348db36275bc88c0713afdb6b26af42a8640e3df8ff4b08",
+      "mismatches": 1539,
+      "detected": true
+    },
+    {
+      "mutation": "encoding_option_copy_boundary",
+      "suite": "encoding_options",
+      "source": "crates/capi/src/encoding_options.rs",
+      "before": "version >= $version",
+      "after": "version > $version",
+      "candidate_sha256": "cea04524bbf1142ed9f1ff5585c9b99eb87ca0af1f458e8112a8572eee2fa990",
+      "mismatches": 1861,
+      "detected": true
+    },
+    {
+      "mutation": "orientation_composition_order",
+      "suite": "encoding_options",
+      "source": "src/geometry.rs",
+      "before": "TABLE[first as usize - 1][second as usize - 1]",
+      "after": "TABLE[second as usize - 1][first as usize - 1]",
+      "candidate_sha256": "00d600c48aa95b9a7c2886258a0083be02e919cb743f2053d67369da90f719ec",
+      "mismatches": 258,
+      "detected": true
+    }
+  ],
+  "all_detected": true
+}

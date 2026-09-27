@@ -1,0 +1,117 @@
+{
+  "scope": "10 deliberate defects; not comprehensive mutation coverage",
+  "mutations": [
+    {
+      "mutation": "jpeg2000_absent_tile",
+      "suite": "jpeg2000_handles",
+      "source": "src/jpeg2000.rs",
+      "before": "if !component.is_present(x as u32 * dx, y as u32 * dy) {",
+      "after": "if false && !component.is_present(x as u32 * dx, y as u32 * dy) {",
+      "candidate_sha256": "fd59b22894d99805c821c6914d6b59b3264ef1be74d2b8425141d688701732cc",
+      "mismatches": 7,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "jpeg2000_tile_order",
+      "suite": "jpeg2000_errors",
+      "source": "src/jpeg2000.rs",
+      "before": "if *next != u16::from(record[6]) {",
+      "after": "if false && *next != u16::from(record[6]) {",
+      "candidate_sha256": "d5bf35700e9246069511dd6dbc80f4b10ea9e1edb7577ab92805360922d11705",
+      "mismatches": 54,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "jpeg2000_wavelet_normalization",
+      "suite": "jpeg2000_pixels",
+      "source": "vendor/hayro-jpeg2000/src/j2c/decode.rs",
+      "before": "if irreversible { 0 } else { log_gain }",
+      "after": "log_gain",
+      "candidate_sha256": "d9a41a7bfe460b1663992836aa2f7b1ec125e5a612b66ea74fd0c34f6a1107cc",
+      "mismatches": 383,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "jpeg2000_round_before_shift",
+      "suite": "jpeg2000_pixels",
+      "source": "src/jpeg2000.rs",
+      "before": "(sample.round_ties_even() as i64 + offset)",
+      "after": "((sample + offset as f32).round_ties_even() as i64)",
+      "candidate_sha256": "7bef65d5c636ef62f85ff3bee90aea7bc53e09efb90a043ca945d0f2b70b483c",
+      "mismatches": 6,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "jpeg2000_signed_level",
+      "suite": "jpeg2000_pixels",
+      "source": "src/jpeg2000.rs",
+      "before": "let offset = if c.signed { 0 } else { 1i64 << (c.depth - 1) };",
+      "after": "let offset = 1i64 << (c.depth - 1);",
+      "candidate_sha256": "9b89fd8c795afdb71459010e7af430529508fdf1899d6472ef966a42a1938548",
+      "mismatches": 320,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "jpeg2000_chroma_sample",
+      "suite": "jpeg2000_pixels",
+      "source": "src/jpeg2000.rs",
+      "before": "x * dx as usize",
+      "after": "x",
+      "candidate_sha256": "803eb51b8617cf02bb84056c8f6318cb4dd8b29818444fc2b03bef4f98f21d81",
+      "mismatches": 72,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "jpeg2000_siz_length",
+      "suite": "jpeg2000_errors",
+      "source": "src/jpeg2000.rs",
+      "before": "!= 38 + 3 * h.components.len()",
+      "after": "< 38 + 3 * h.components.len()",
+      "candidate_sha256": "6bb8f27841f573dcdf9dfce13827155c951ac80da7ae3f80160aabc4772a8de7",
+      "mismatches": 90,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "jpeg2000_end_marker",
+      "suite": "jpeg2000_errors",
+      "source": "src/jpeg2000.rs",
+      "before": "if end + 2 > data.len() {\n                    return Err(error(\"opj_decode()\"));\n                }",
+      "after": "if end + 2 > data.len() {\n                    return Ok(());\n                }",
+      "candidate_sha256": "e6f6c47ad16ea46400cc28cd16778cdbcaa52ea9d2e5887475fa25f7574172cb",
+      "mismatches": 18,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "jpeg2000_decode_memory",
+      "suite": "jpeg2000_limits",
+      "source": "src/jpeg2000.rs",
+      "before": "estimated = estimated.saturating_mul(3);",
+      "after": "estimated = estimated.saturating_mul(2);",
+      "candidate_sha256": "2da3c35c50dc463c81d36d5fce1754df37a8398efa1c2d92cc809beb4520f402",
+      "mismatches": 8,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "jpeg2000_handle_precision",
+      "suite": "jpeg2000_handles",
+      "source": "src/jpeg2000_config.rs",
+      "before": "depth: (c[0] & 127) + 1,",
+      "after": "depth: (c[0] & 127) + 2,",
+      "candidate_sha256": "a2596a93c0cc44b925f29e38a8349e422781245bddb7f2a2c9e6be66ceb8d9de",
+      "mismatches": 1118,
+      "process_failures": [],
+      "detected": true
+    }
+  ],
+  "all_detected": true,
+  "note": "Combined completed runs: nine detected defects from the initial run plus the corrected non-redundant end-marker defect. The initial predicate-only survivor and its full comparison report are retained separately."
+}

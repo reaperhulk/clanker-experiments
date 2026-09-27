@@ -1,0 +1,36 @@
+{
+  "scope": "3 deliberate defects; not comprehensive mutation coverage",
+  "mutations": [
+    {
+      "mutation": "polarization_match_order",
+      "suite": "sensor",
+      "source": "src/sensor.rs",
+      "before": ".position(|p|",
+      "after": ".rposition(|p|",
+      "candidate_sha256": "6c340115c29019cadb22ae0721414a316c48957710263abfdd1e53e29f3f7ea2",
+      "mismatches": 704,
+      "detected": true
+    },
+    {
+      "mutation": "polarization_nan_bits",
+      "suite": "sensor",
+      "source": "crates/capi/src/sensor.rs",
+      "before": "value.to_bits() == u32::MAX",
+      "after": "value.to_bits() == u32::MAX - 1",
+      "candidate_sha256": "beaaa71e1a7cbde213f9a38b2b576110901fa050c99169ee11ce892f9a434d0c",
+      "mismatches": 2,
+      "detected": true
+    },
+    {
+      "mutation": "component_id_sequence",
+      "suite": "sensor",
+      "source": "src/sensor.rs",
+      "before": "self.next.wrapping_add(1)",
+      "after": "self.next.wrapping_add(2)",
+      "candidate_sha256": "6784320a06725ed4567f320363c675a871510d74b71319315ca6ab32ea58a29b",
+      "mismatches": 704,
+      "detected": true
+    }
+  ],
+  "all_detected": true
+}

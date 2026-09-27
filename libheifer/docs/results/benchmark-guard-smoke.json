@@ -1,0 +1,104 @@
+{
+  "scope": "memory parse + all top-level HEVC native YUV decode + teardown; I/O and output serialization excluded; one corpus file; no transforms/profile conversion/alpha",
+  "limitation": "Candidate lacks most libheif behavior. This does not establish whole-library performance or memory efficiency.",
+  "platform": "Linux-6.18.44-x86_64-with-glibc2.39",
+  "cpu": "Intel(R) Xeon(R) Platinum 8272CL CPU @ 2.60GHz",
+  "rustc": "rustc 1.90.0 (1159e78c4 2025-09-14)",
+  "reference": "libheif 1.23.4, libde265 1.0.16, Release",
+  "candidate": "libheifer Release, rusty_h265 0.6.0, Rust SIMD default",
+  "build_command": [
+    "cargo",
+    "build",
+    "--locked",
+    "--release",
+    "--features",
+    "hevc",
+    "--example",
+    "bench_hevc",
+    "--example",
+    "hevc_probe"
+  ],
+  "fixture": "examples/example.heic",
+  "fixture_sha256": "7f8b363e4936c0666a25f64f3a92fda10bd8e5453be4592530b65a55dd98f3f2",
+  "reference_sha256": "5d70927cded8be6d1b4da912971aed75d426ba079c84d0b8462785ec5b9c92f7",
+  "candidate_sha256": "84c1ea632e1decaabe9fb62a34779ab5f6d60ef653c3613106475cab612b5fa2",
+  "candidate_probe_sha256": "d5790338a57680ae2944a1a92a8cd9d730a15ce893e918b29b274bd275f060c5",
+  "reference_client_sha256": "b69371ea88babd53435133040890104be01b3a80adfc1a08aca962ebc93ee9f0",
+  "output_evidence_sha256": "544f2fc4fdfc5289b64f78996e57bb02feea65536a1149764aa5e0d98eb19437",
+  "source_hashes": {
+    "Cargo.lock": "2f0988e568c36bce31c32b5bcf1cd99d06be04c04b2097ee2da3b7e7e42fc7fa",
+    "Cargo.toml": "e0c03228219e4c2c0e89d742c83a877acad8f865804440d8a81dd9b40c93ce31",
+    "crates/capi/Cargo.toml": "e744d944200f76a357f13c80d7f6a9af0d0bb634ad39182d42609249e5900678",
+    "crates/capi/src/color.rs": "a05267375e1c0ca2255fc65c759dbff9f468200d90f963934d5ae17577e50328",
+    "crates/capi/src/image.rs": "5bd78bfd0264c5068cf8222927c45082c8d1e7043ccfe5e2dffb5a624d4e4d36",
+    "crates/capi/src/lib.rs": "31c3e05f6c06b11d738970c9a9f4cfa0e1bfcf9225e6ac91d6476cb633cd4962",
+    "crates/capi/tests/abi.rs": "b24aec4b2736cd3fbb4f730ed3edf00096e4ff6d19044bdd82c0191eaf948762",
+    "examples/bench_hevc.rs": "e2f9a1b30c927acfcaf9a152c0cc5e5e18ea58a9bf87ff8e71012e1e60d64af2",
+    "examples/hevc_probe.rs": "4c6a7a652c791710385ed57cc9bd1a3177575e654d6b25d38408b5db64d5e3c1",
+    "examples/profile_hevc.rs": "2141823c9b16341e6961a6e3e5e554e9e8bc8b70b92ce124f731626712639df7",
+    "src/brands.rs": "482fded3eba99f079df873ca15f33d592ac6cc03723e842992b7718fcd9058d5",
+    "src/color.rs": "d1e42d8d50cd6048153117f7332332a16bca95740c47d8e8aa1e7bb33a692d62",
+    "src/container.rs": "c300d5c9b525e69e6e854d597d03fb5d8bc25af18a0b99bb5bc943957f0d1472",
+    "src/error.rs": "c9a28a8718dfc1e87ddfcc104f0979b3043b1f68c735393759ef655dbf23a926",
+    "src/hevc.rs": "3e0f726860081b61896a836e9e4a58aa57ab3d95950516e79460c83613a16f12",
+    "src/image.rs": "905e2f408961818c10d47aacf49c35d9ea38f066b628d1aceb51f221c1a101d5",
+    "src/lib.rs": "e721df2df64907ce7eaaabff4957e0657ba7b7d493ad884870eba26dde320996",
+    "tests/bench_hevc.c": "c3d097f69144e7a8571989b216105768c1a58ee603c73127a0b7d0530401b961",
+    "tests/hevc_reference.c": "929dd5f8f8cc89ec389eb300b1f23fb27bf89d9c4b81b8ab2dd4830d92eccae3",
+    "tools/bench_hevc.py": "3bb9ca42257162518ed198d86cc75bbba66e43247e948b51935bccc2b4be51af",
+    "tools/test_hevc.py": "9b30e2532f27f23b6d12fdeba91be8550b76522533a5c7d055920c90ac503c6a"
+  },
+  "summary": {
+    "reference": {
+      "median_ms": 237.619689,
+      "min_ms": 237.276381,
+      "max_ms": 298.106618,
+      "stdev_ms": 35.02166989572333
+    },
+    "candidate": {
+      "median_ms": 300.480708,
+      "min_ms": 296.207072,
+      "max_ms": 416.054924,
+      "stdev_ms": 67.99408184747782
+    },
+    "elapsed_reduction_percent": -26.454465648256953
+  },
+  "samples": [
+    {
+      "reference": {
+        "ns": 237276381,
+        "iterations": 1,
+        "checksum": 432
+      },
+      "candidate": {
+        "ns": 300480708,
+        "iterations": 1,
+        "checksum": 432
+      }
+    },
+    {
+      "candidate": {
+        "ns": 416054924,
+        "iterations": 1,
+        "checksum": 432
+      },
+      "reference": {
+        "ns": 237619689,
+        "iterations": 1,
+        "checksum": 432
+      }
+    },
+    {
+      "reference": {
+        "ns": 298106618,
+        "iterations": 1,
+        "checksum": 432
+      },
+      "candidate": {
+        "ns": 296207072,
+        "iterations": 1,
+        "checksum": 432
+      }
+    }
+  ]
+}

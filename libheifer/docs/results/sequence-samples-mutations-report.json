@@ -1,0 +1,66 @@
+{
+  "scope": "6 deliberate defects; not comprehensive mutation coverage",
+  "mutations": [
+    {
+      "mutation": "sample_payload_copy",
+      "suite": "sequence_samples",
+      "source": "src/sequence_sample.rs",
+      "before": "self.data.extend_from_slice(data);",
+      "after": "self.data.extend(data.iter().map(|v| v ^ 1));",
+      "candidate_sha256": "3d6e9e696a7da907e40c2b5a55c2f6c54044e83e01eaba857e202390d7e403c3",
+      "mismatches": 688,
+      "detected": true
+    },
+    {
+      "mutation": "sample_empty_storage",
+      "suite": "sequence_samples",
+      "source": "src/sequence_sample.rs",
+      "before": "self.data.capacity() != 0",
+      "after": "!self.data.is_empty()",
+      "candidate_sha256": "3ea36fc0e82c3e3603bdd7db20f826a177921f1be47abe82cfa2b5899f73eb2f",
+      "mismatches": 688,
+      "detected": true
+    },
+    {
+      "mutation": "sample_duration",
+      "suite": "sequence_samples",
+      "source": "crates/capi/src/sequence_sample.rs",
+      "before": "v.$field.duration = duration;",
+      "after": "v.$field.duration = duration.wrapping_add(1);",
+      "candidate_sha256": "d0553fe6e1e34d61b7dd3028c5a3477d640b1ac62eb555194dae058b97dcdf4f",
+      "mismatches": 712,
+      "detected": true
+    },
+    {
+      "mutation": "sample_timestamp_presence",
+      "suite": "sequence_samples",
+      "source": "crates/capi/src/sequence_sample.rs",
+      "before": "sample.timestamp = Some(copy);",
+      "after": "sample.timestamp = None; let _ = copy;",
+      "candidate_sha256": "fe61f7cd35931a68d9529f551b9f8ed5be19b6d92957bed6a576c4ca763d55d6",
+      "mismatches": 713,
+      "detected": true
+    },
+    {
+      "mutation": "sample_id_empty",
+      "suite": "sequence_samples",
+      "source": "crates/capi/src/sequence_sample.rs",
+      "before": "if $empty_null && v.$field.content_id.is_empty()",
+      "after": "if v.$field.content_id.is_empty()",
+      "candidate_sha256": "63b7fa6e50a25c9f64d5d9a0d5120f975644a649e0cc061ee7bf200899191722",
+      "mismatches": 713,
+      "detected": true
+    },
+    {
+      "mutation": "sample_transform_metadata",
+      "suite": "sequence_samples",
+      "source": "src/image.rs",
+      "before": "out.sample = self.sample.clone();\n        out.tai_timestamp = self.tai_timestamp;\n        out.pixel_aspect_ratio = self.pixel_aspect_ratio;\n        out.premultiplied_alpha = self.premultiplied_alpha;\n        for p in &self.planes {",
+      "after": "out.sample = crate::sequence_sample::SampleMetadata::default();\n        out.tai_timestamp = self.tai_timestamp;\n        out.pixel_aspect_ratio = self.pixel_aspect_ratio;\n        out.premultiplied_alpha = self.premultiplied_alpha;\n        for p in &self.planes {",
+      "candidate_sha256": "23f114c43884989294e20b27c3571e86062b53a7b6ad2721899a5c121a38cc65",
+      "mismatches": 0,
+      "detected": false
+    }
+  ],
+  "all_detected": false
+}

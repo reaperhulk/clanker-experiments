@@ -1,0 +1,62 @@
+{
+  "scope": "5 deliberate defects; not comprehensive mutation coverage",
+  "shard": null,
+  "mutations": [
+    {
+      "mutation": "avc_mono_chroma",
+      "suite": "avc",
+      "source": "vendor/rusty_h264-decoder/src/mb16.rs",
+      "before": "let mut u = vec![128u8; cdw * cdh];",
+      "after": "let mut u = vec![127u8; cdw * cdh];",
+      "candidate_sha256": "4d27694b08f33f2a235e1121bc015d4cd35bf4cc4873f2c15ecf8316b21e1a30",
+      "mismatches": 23,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "avc_level_prefix_limit",
+      "suite": "avc",
+      "source": "vendor/rusty_h264-common/src/cavlc.rs",
+      "before": "if level_prefix > 15 {",
+      "after": "if level_prefix > 16 {",
+      "candidate_sha256": "9ae7e31d039bbb660d6e89c7f6757fc48eaa146afa0dfff4a770dca4c7e7dda0",
+      "mismatches": 48,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "avc_profile_gate",
+      "suite": "avc",
+      "source": "src/avc.rs",
+      "before": "!matches!(profile, 66 | 77 | 83 | 86 | 88 | 100)",
+      "after": "!matches!(profile, 66 | 77 | 83 | 86 | 88 | 100 | 244)",
+      "candidate_sha256": "b352ff229c4f36eaa673e832fbdd9b1a90e7dfd5264798c8389958937238a8be",
+      "mismatches": 24,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "avc_mono_intra_cbp",
+      "suite": "avc",
+      "source": "vendor/rusty_h264-decoder/src/mb16.rs",
+      "before": "const T: [u8; 16] = [15, 0, 7, 11, 13, 14, 3, 5, 10, 12, 1, 2, 4, 8, 6, 9];",
+      "after": "const T: [u8; 16] = [15, 0, 7, 11, 13, 14, 3, 5, 10, 12, 1, 2, 4, 8, 9, 6];",
+      "candidate_sha256": "19a529b58d07391deefbfb376c3aed4dbcc0caff3080dbef640abebacd2a2c97",
+      "mismatches": 0,
+      "process_failures": [],
+      "detected": false
+    },
+    {
+      "mutation": "avc_decoder_error_text",
+      "suite": "avc",
+      "source": "src/avc.rs",
+      "before": "plugin_error(0, \"OpenH264 decoder error\")",
+      "after": "plugin_error(0, \"OpenH264 decoding error\")",
+      "candidate_sha256": "c680aad7b5cee74f6b40c9317e94a0e1773f70304cc392bbcc1dbc3a295d9d64",
+      "mismatches": 192,
+      "process_failures": [],
+      "detected": true
+    }
+  ],
+  "all_detected": false
+}

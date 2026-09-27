@@ -1,0 +1,12 @@
+{
+  "scope": "Original-header component definition/configuration parsing, profile expansion, limits and owned type URIs.",
+  "cases": 2364,
+  "mismatches": 0,
+  "client_sanitizers": false,
+  "leak_check": false,
+  "client_sha256": "7895922f657a82e054f4d4a2f5fd3741d1a1f36f3ba8633a3cd9304eb177a805",
+  "corpus_sha256": "544edfe65c193800f4cc62bf7be8523c34fd04531c3d6ed48cfd9fbcbe1871c3",
+  "differences": [],
+  "reference_sha256": "5d70927cded8be6d1b4da912971aed75d426ba079c84d0b8462785ec5b9c92f7",
+  "candidate_sha256": "24809685085886cbc4ce4166d889b6d6d15cf1eb06b66f75fcab2184e454497a"
+}

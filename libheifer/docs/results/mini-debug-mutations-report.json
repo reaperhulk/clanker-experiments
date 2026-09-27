@@ -1,0 +1,50 @@
+{
+  "scope": "4 deliberate defects; not comprehensive mutation coverage",
+  "mutations": [
+    {
+      "mutation": "mini_debug_gain_depth",
+      "suite": "mini_debug",
+      "source": "src/mini.rs",
+      "before": "value!(\"gainmap_bit_depth\", bits.depth(gain_float, true)?);",
+      "after": "value!(\"gainmap_bit_depth\", bits.depth(gain_float, true)? + 1);",
+      "candidate_sha256": "5c64b03fd0cf0a8207352ec235c11e8645786a7a40e8ca1a020660aa3f7f71ec",
+      "mismatches": 424,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "mini_debug_hdr_primaries",
+      "suite": "mini_debug",
+      "source": "src/mini.rs",
+      "before": "bits.get(32) as i32",
+      "after": "bits.get(32) as i64",
+      "candidate_sha256": "2bf440a779ad4bd767822f6106adbb6c28f8e44bf6b6375fc0cfd8a205d0edcd",
+      "mismatches": 296,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "mini_debug_failed_expansion",
+      "suite": "mini_debug",
+      "source": "src/context.rs",
+      "before": "if let Some(error) = expansion_error {",
+      "after": "if let Some(error) = expansion_error { self.debug_loaded = 0;",
+      "candidate_sha256": "dc66db841f9328e4d9d990754bac169ffd4594c787084e87c0c16c22c364d195",
+      "mismatches": 3,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "mini_debug_config_inheritance",
+      "suite": "mini_debug",
+      "source": "src/mini.rs",
+      "before": "\"gainmap_item_codec_config size\",",
+      "after": "\"gainmap_item_code_config size\",",
+      "candidate_sha256": "6f073cb8945f38ef5ec0cda64630cc03254e2fad12737d4701fe5180e88e2069",
+      "mismatches": 424,
+      "process_failures": [],
+      "detected": true
+    }
+  ],
+  "all_detected": true
+}

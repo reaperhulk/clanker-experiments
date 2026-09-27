@@ -1,0 +1,73 @@
+{
+  "scope": "6 deliberate defects; not comprehensive mutation coverage",
+  "shard": null,
+  "mutations": [
+    {
+      "mutation": "hevc_encode_rounded_size",
+      "suite": "hevc_builtin_encoding",
+      "source": "crates/capi/src/builtin_hevc_encoder.rs",
+      "before": "((s + 1) & !1).max(64)",
+      "after": "((s + 1) & !1).max(32)",
+      "candidate_sha256": "259f1d4709d2c43decdd246bbab231f7414796ba70d97436fac9a6b88c1a43eb",
+      "mismatches": 132,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "hevc_encode_bit_depths",
+      "suite": "hevc_builtin_encoding",
+      "source": "crates/capi/src/builtin_hevc_encoder.rs",
+      "before": "    if matches!(bpp, 8 | 10 | 12) {",
+      "after": "    if matches!(bpp, 8 | 10) {",
+      "candidate_sha256": "eeab6aed9730405dddba6587acc1a6a3e7970adf7352b5323c6feaa2891693ab",
+      "mismatches": 8,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "hevc_encode_default_tu_depth",
+      "suite": "hevc_builtin_encoding",
+      "source": "crates/capi/src/builtin_hevc_encoder.rs",
+      "before": "set_integer(p, c\"tu-intra-depth\".as_ptr(), 2);",
+      "after": "set_integer(p, c\"tu-intra-depth\".as_ptr(), 3);",
+      "candidate_sha256": "d6490b15194196409847fea7d9e361bf16bc60a3a6b7ba6ffb374175a54bb49a",
+      "mismatches": 1,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "hevc_encode_x265_options",
+      "suite": "hevc_builtin_encoding",
+      "source": "crates/capi/src/builtin_hevc_encoder.rs",
+      "before": "(n, _) if n.starts_with(b\"x265:\") => {",
+      "after": "(n, _) if n.starts_with(b\"x265:-\") => {",
+      "candidate_sha256": "0ee5c52a9009350444752d06f3825d2ac95a2b88196d8aa483c46ef5cbd45ab5",
+      "mismatches": 2,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "hevc_encoder_brand",
+      "suite": "hevc_encoding",
+      "source": "src/writing.rs",
+      "before": "flags & 0x50 != 0",
+      "after": "flags & 0x50 == 0",
+      "candidate_sha256": "7d72a3cb02ac7f67e1201e7958283210cc846f7784f4200bc888e4bd2c354786",
+      "mismatches": 695,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "hevc_encoder_array",
+      "suite": "hevc_mini_encoding",
+      "source": "src/hevc_config.rs",
+      "before": "bytes.push(64 | kind);",
+      "after": "bytes.push(128 | kind);",
+      "candidate_sha256": "c526f3adb2a355b11de6ff2c20fd759be5c26515e5479e8bedb2491a49b3dbdd",
+      "mismatches": 735,
+      "process_failures": [],
+      "detected": true
+    }
+  ],
+  "all_detected": true
+}

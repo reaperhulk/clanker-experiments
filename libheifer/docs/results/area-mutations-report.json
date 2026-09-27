@@ -1,0 +1,56 @@
+{
+  "scope": "5 deliberate defects; not comprehensive mutation coverage",
+  "mutations": [
+    {
+      "mutation": "extract_chroma_origin",
+      "suite": "image_area",
+      "source": "src/image_area.rs",
+      "before": "(x.div_ceil(sx), y.div_ceil(sy))",
+      "after": "(x / sx, y / sy)",
+      "candidate_sha256": "effc889a7b5fce9a49949507ea90616e9497f7f6a6414a072dea9ab2f8265da1",
+      "mismatches": 60,
+      "detected": true
+    },
+    {
+      "mutation": "padding_reallocated_dimensions",
+      "suite": "image_area",
+      "source": "src/image_area.rs",
+      "before": "*p = dest;",
+      "after": "*p = dest;\n                if !zero { p.width = old_w; p.height = old_h; }",
+      "candidate_sha256": "252c50cc63c4dcbf4771add238a0e92f3ac6c4c3a3383479f27d233a89bcce7e",
+      "mismatches": 147,
+      "detected": true
+    },
+    {
+      "mutation": "zero_chroma_neutral",
+      "suite": "image_area",
+      "source": "src/image_area.rs",
+      "before": "                128\n",
+      "after": "                127\n",
+      "candidate_sha256": "7c33b77c7c52e7526fb9b7eed04db58245383a7cb09aa0243c98fadee1609696",
+      "mismatches": 102,
+      "detected": true
+    },
+    {
+      "mutation": "extract_next_component_id",
+      "suite": "image_area",
+      "source": "src/image_area.rs",
+      "before": "out.component_ids = self.component_ids.clone();",
+      "after": "out.component_ids = self.component_ids.clone();\n        out.component_ids.next = 1;",
+      "candidate_sha256": "ac33aed530fb40ec97c5b73f084c2bea0693c7a650f1aa6beb06e1914b4ab912",
+      "mismatches": 1021,
+      "detected": true
+    },
+    {
+      "mutation": "extract_extension_budget",
+      "suite": "image_area",
+      "source": "src/image_area.rs",
+      "before": "out.extend_area(width, height, true, budget.as_ref())?;",
+      "after": "out.extend_area(width, height, true, None)?;",
+      "candidate_sha256": "bf21569e183fda0d039efdd542cf6e7ade2adcab84a466b26fb11ac442b98be1",
+      "mismatches": 32,
+      "detected": true
+    }
+  ],
+  "all_detected": true
+}

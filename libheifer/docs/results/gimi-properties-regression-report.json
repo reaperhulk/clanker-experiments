@@ -1,0 +1,12 @@
+{
+  "scope": "Original-header item-property IDs, raw/UUID bytes, descriptions, transforms and insertion.",
+  "cases": 960,
+  "mismatches": 0,
+  "client_sanitizers": false,
+  "leak_check": false,
+  "client_sha256": "6c52fc8f2278d8f08160fca2595195239f419304f5de42489a602a8eec3269ec",
+  "corpus_sha256": "e5d7cc8b2af7bdbb6874b2fbe7fa9f68feb3c00572456b6eaf7de6b089c7f82a",
+  "differences": [],
+  "reference_sha256": "5d70927cded8be6d1b4da912971aed75d426ba079c84d0b8462785ec5b9c92f7",
+  "candidate_sha256": "9394f74bd7a71caafa1d180834d76169ed78f4664e706422fac306a2e6921e82"
+}

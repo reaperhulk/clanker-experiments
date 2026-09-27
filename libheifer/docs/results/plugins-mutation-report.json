@@ -1,0 +1,126 @@
+{
+  "scope": "12 deliberate defects; not comprehensive mutation coverage",
+  "mutations": [
+    {
+      "mutation": "plugin_encoder_priority",
+      "suite": "plugins",
+      "source": "crates/capi/src/plugin_registry.rs",
+      "before": "Self::External(p) => field!(p, priority)",
+      "after": "Self::External(p) => -field!(p, priority)",
+      "candidate_sha256": "c054870764e0e89d0502d3b0c68b9c47436ceef9a28f3a49e2bc23bfdaa8acea",
+      "mismatches": 164,
+      "detected": true
+    },
+    {
+      "mutation": "plugin_decoder_negative_priority",
+      "suite": "plugins",
+      "source": "crates/capi/src/plugin_registry.rs",
+      "before": "if priority != 0 {",
+      "after": "if priority > 0 {",
+      "candidate_sha256": "cfa8163768327b1c6107bb978f3964ba07dbcc69f2aa2636e139626339a56601",
+      "mismatches": 166,
+      "detected": true
+    },
+    {
+      "mutation": "plugin_decoder_duplicate",
+      "suite": "plugins",
+      "source": "crates/capi/src/plugin_registry.rs",
+      "before": "if !r\n        .decoders",
+      "after": "if true || !r\n        .decoders",
+      "candidate_sha256": "a35fee994052bd7d2ca30b3e74730aa01b9de8a6f6cee128b1aab4a6e907c863",
+      "mismatches": 208,
+      "detected": true
+    },
+    {
+      "mutation": "plugin_cleanup_order",
+      "suite": "plugins",
+      "source": "crates/capi/src/plugin_registry.rs",
+      "before": "    REGISTRY.lock().unwrap().decoders.clear();",
+      "after": "    // deliberate: leave decoders until after encoder cleanup",
+      "candidate_sha256": "fb69f8d3459d06e9178b16c6ef4b0299414c2d12f7b55900cf09a9e565e68367",
+      "mismatches": 142,
+      "detected": true
+    },
+    {
+      "mutation": "plugin_decoder_count",
+      "suite": "plugins",
+      "source": "crates/capi/src/plugin_registry.rs",
+      "before": "let n = count.min(found.len() as c_int);",
+      "after": "let n = count.max(0).min(found.len() as c_int);",
+      "candidate_sha256": "ab70806afba36e9261f7a81eea799e65a1eb63334fa97a504832e2093c286265",
+      "mismatches": 224,
+      "detected": true
+    },
+    {
+      "mutation": "encoder_duplicate_constraints",
+      "suite": "plugins",
+      "source": "crates/capi/src/encoder.rs",
+      "before": "for p in unsafe { matching(e, name) } {",
+      "after": "for p in unsafe { matching(e, name) }.take(1) {",
+      "candidate_sha256": "9efc1bac7803039e6de6ff055200ec06ca2fffb07f46f535cdca354ebc4cfe67",
+      "mismatches": 203,
+      "detected": true
+    },
+    {
+      "mutation": "encoder_range_boundary",
+      "suite": "plugins",
+      "source": "crates/capi/src/encoder.rs",
+      "before": "value < min",
+      "after": "value <= min",
+      "candidate_sha256": "d92ae96120a428c9dc0849af51f0bba46599af17b372294fa23681d3e9981eb6",
+      "mismatches": 203,
+      "detected": true
+    },
+    {
+      "mutation": "encoder_allowed_values",
+      "suite": "plugins",
+      "source": "crates/capi/src/encoder.rs",
+      "before": "if count > 0",
+      "after": "if count > 100",
+      "candidate_sha256": "461335c3903ed5dc3bff9a6cc2a5f5aeb06f695069c68fd77d4974b8f93be359",
+      "mismatches": 203,
+      "detected": true
+    },
+    {
+      "mutation": "encoder_boolean_spelling",
+      "suite": "plugins",
+      "source": "crates/capi/src/encoder.rs",
+      "before": "b\"true\" | b\"1\"",
+      "after": "b\"true\" | b\"1\" | b\"TRUE\"",
+      "candidate_sha256": "bba53d5b5c81a469ed1ce36f4ac1caaf4c0a51251d9661bae14b3f87ad2b9662",
+      "mismatches": 203,
+      "detected": true
+    },
+    {
+      "mutation": "encoder_old_default",
+      "suite": "plugins",
+      "source": "crates/capi/src/encoder.rs",
+      "before": "if field!(p, version) < 2 {\n            1",
+      "after": "if field!(p, version) < 2 {\n            0",
+      "candidate_sha256": "bc87aac2aa8ecdf05ee73b39765f7f8c24420aff4370991455ece6e088f179c1",
+      "mismatches": 203,
+      "detected": true
+    },
+    {
+      "mutation": "encoder_output_terminator",
+      "suite": "plugins",
+      "source": "crates/capi/src/encoder.rs",
+      "before": "out.add(n).write(0)",
+      "after": "out.add(n).write(32)",
+      "candidate_sha256": "0547252145cd4e2ff29e90c36c396c872c31922b52a85b6d8fe0b8b0cfc867a0",
+      "mismatches": 139,
+      "detected": true
+    },
+    {
+      "mutation": "encoder_unknown_fallback",
+      "suite": "plugins",
+      "source": "crates/capi/src/encoder.rs",
+      "before": "unsafe { heif_encoder_set_parameter_string(e, name, value) }\n    }\n}",
+      "after": "unsupported()\n    }\n}",
+      "candidate_sha256": "899f46bceffa3e860988994d6abb99451a43ec5c3e2e991f17bb4e91aa540c6b",
+      "mismatches": 203,
+      "detected": true
+    }
+  ],
+  "all_detected": true
+}

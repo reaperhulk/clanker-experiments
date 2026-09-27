@@ -1,0 +1,12 @@
+{
+  "scope": "Original-header encoder parameter records, historical prefixes, borrowed arrays, raw range flags, optional and aliased outputs.",
+  "cases": 2020,
+  "mismatches": 0,
+  "client_sanitizers": false,
+  "leak_check": false,
+  "client_sha256": "2bf6ab2f3927cfad1d473346c628bd269eaa777e448b6ff0713741e5b7ac7ce9",
+  "corpus_sha256": "12dd6793599085181dcc8678f229b54e06d15f372b2f979b048b248417325fe5",
+  "differences": [],
+  "reference_sha256": "5d70927cded8be6d1b4da912971aed75d426ba079c84d0b8462785ec5b9c92f7",
+  "candidate_sha256": "152ec2b1c6a375bd2e1a88a43619d62ca4351ef8410265b8f933ffb30d3ee364"
+}

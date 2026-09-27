@@ -1,0 +1,56 @@
+{
+  "scope": "5 deliberate defects; not comprehensive mutation coverage",
+  "mutations": [
+    {
+      "mutation": "entity_group_id",
+      "suite": "entity_groups",
+      "source": "crates/capi/src/entity_groups.rs",
+      "before": "entity_group_id: g.id,",
+      "after": "entity_group_id: g.id.wrapping_add(1),",
+      "candidate_sha256": "bdff52499ebeba5c0d344470eb7b76794da6dcb08c8268500ad2b44d23e43fc5",
+      "mismatches": 1162,
+      "detected": true
+    },
+    {
+      "mutation": "entity_group_filter",
+      "suite": "entity_groups",
+      "source": "crates/capi/src/entity_groups.rs",
+      "before": "g.entities.contains(&item_filter)",
+      "after": "g.entities.first() == Some(&item_filter)",
+      "candidate_sha256": "b879ce76ed15bd55a93404893d2d3bc209f55cb46c358ce953095cd5773fc40d",
+      "mismatches": 1158,
+      "detected": true
+    },
+    {
+      "mutation": "entity_group_empty_result",
+      "suite": "entity_groups",
+      "source": "crates/capi/src/entity_groups.rs",
+      "before": "if groups.children == 0 {",
+      "after": "if groups.groups.is_empty() {",
+      "candidate_sha256": "a983f938cd4deeb484b5977d981260ce0b1d6f187d31853d2906dc20a711fb06",
+      "mismatches": 48,
+      "detected": true
+    },
+    {
+      "mutation": "entity_group_pyramid_error",
+      "suite": "entity_groups",
+      "source": "src/entity_groups.rs",
+      "before": "Err(_) if kind == *b\"pymd\" => Ok(None),",
+      "after": "Err(_) if kind == *b\"altr\" => Ok(None),",
+      "candidate_sha256": "2910e4c699d67bf8883a8b4bf312b2f18dcb4ebe465d4ade77959a567b2ecfc1",
+      "mismatches": 81,
+      "detected": true
+    },
+    {
+      "mutation": "entity_group_member_order",
+      "suite": "entity_groups",
+      "source": "src/entity_groups.rs",
+      "before": "(0..count as usize).map(|i| read(12 + 4 * i))",
+      "after": "(0..count as usize).rev().map(|i| read(12 + 4 * i))",
+      "candidate_sha256": "24e32847e396bfbbeee1441a567888fede86a3e1ea361d7d976852925613551e",
+      "mismatches": 1158,
+      "detected": true
+    }
+  ],
+  "all_detected": true
+}

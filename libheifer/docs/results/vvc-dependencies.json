@@ -1,0 +1,271 @@
+{
+  "packages": [
+    {
+      "name": "assert_matches",
+      "version": "1.5.0",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "features": []
+    },
+    {
+      "name": "atomig",
+      "version": "0.4.3",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "features": [
+        "atomig-macro",
+        "derive"
+      ]
+    },
+    {
+      "name": "atomig-macro",
+      "version": "0.4.0",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "features": []
+    },
+    {
+      "name": "bitflags",
+      "version": "2.13.2",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "features": []
+    },
+    {
+      "name": "byteorder",
+      "version": "1.5.0",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "features": []
+    },
+    {
+      "name": "cfg-if",
+      "version": "1.0.5",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "features": []
+    },
+    {
+      "name": "heck",
+      "version": "0.5.0",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "features": []
+    },
+    {
+      "name": "jpeg-decoder",
+      "version": "0.3.2",
+      "source": null,
+      "features": [
+        "platform_independent"
+      ]
+    },
+    {
+      "name": "libc",
+      "version": "0.2.189",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "features": [
+        "default",
+        "std"
+      ]
+    },
+    {
+      "name": "libheifer",
+      "version": "0.1.0",
+      "source": null,
+      "features": [
+        "av1",
+        "hevc",
+        "hevc-profile",
+        "jpeg"
+      ]
+    },
+    {
+      "name": "libheifer-capi",
+      "version": "0.1.0",
+      "source": null,
+      "features": [
+        "av1",
+        "default",
+        "hevc",
+        "jpeg"
+      ]
+    },
+    {
+      "name": "lock_api",
+      "version": "0.4.14",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "features": [
+        "atomic_usize",
+        "default"
+      ]
+    },
+    {
+      "name": "parking_lot",
+      "version": "0.12.5",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "features": [
+        "default"
+      ]
+    },
+    {
+      "name": "parking_lot_core",
+      "version": "0.9.12",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "features": []
+    },
+    {
+      "name": "paste",
+      "version": "1.0.15",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "features": []
+    },
+    {
+      "name": "proc-macro2",
+      "version": "1.0.107",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "features": [
+        "default",
+        "proc-macro"
+      ]
+    },
+    {
+      "name": "quote",
+      "version": "1.0.47",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "features": [
+        "default",
+        "proc-macro"
+      ]
+    },
+    {
+      "name": "rav1d",
+      "version": "1.1.0",
+      "source": null,
+      "features": [
+        "bitdepth_16",
+        "bitdepth_8"
+      ]
+    },
+    {
+      "name": "raw-cpuid",
+      "version": "11.6.0",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "features": []
+    },
+    {
+      "name": "redox_syscall",
+      "version": "0.5.18",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "features": [
+        "default",
+        "userspace"
+      ]
+    },
+    {
+      "name": "rustversion",
+      "version": "1.0.23",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "features": []
+    },
+    {
+      "name": "rusty_h265",
+      "version": "0.6.0",
+      "source": null,
+      "features": [
+        "default",
+        "prof",
+        "simd"
+      ]
+    },
+    {
+      "name": "rusty_h265-accel",
+      "version": "0.6.0",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "features": [
+        "simd"
+      ]
+    },
+    {
+      "name": "scopeguard",
+      "version": "1.2.0",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "features": []
+    },
+    {
+      "name": "smallvec",
+      "version": "1.16.1",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "features": []
+    },
+    {
+      "name": "strum",
+      "version": "0.26.3",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "features": [
+        "default",
+        "derive",
+        "std",
+        "strum_macros"
+      ]
+    },
+    {
+      "name": "strum_macros",
+      "version": "0.26.4",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "features": []
+    },
+    {
+      "name": "syn",
+      "version": "2.0.119",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "features": [
+        "clone-impls",
+        "default",
+        "derive",
+        "extra-traits",
+        "parsing",
+        "printing",
+        "proc-macro"
+      ]
+    },
+    {
+      "name": "to_method",
+      "version": "1.1.0",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "features": []
+    },
+    {
+      "name": "unicode-ident",
+      "version": "1.0.26",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "features": []
+    },
+    {
+      "name": "windows-link",
+      "version": "0.2.1",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "features": []
+    },
+    {
+      "name": "zerocopy",
+      "version": "0.7.35",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "features": [
+        "byteorder",
+        "default",
+        "derive",
+        "zerocopy-derive"
+      ]
+    },
+    {
+      "name": "zerocopy-derive",
+      "version": "0.7.35",
+      "source": "registry+https://github.com/rust-lang/crates.io-index",
+      "features": []
+    },
+    {
+      "name": "zlib-rs",
+      "version": "0.6.8",
+      "source": null,
+      "features": [
+        "rust-allocator",
+        "std"
+      ]
+    }
+  ],
+  "problems": []
+}

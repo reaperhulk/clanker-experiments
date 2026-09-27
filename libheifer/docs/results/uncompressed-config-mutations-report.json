@@ -1,0 +1,46 @@
+{
+  "scope": "4 deliberate defects; not comprehensive mutation coverage",
+  "mutations": [
+    {
+      "mutation": "cmpd_count_limit",
+      "suite": "uncompressed_config",
+      "source": "src/uncompressed.rs",
+      "before": "count > max_components",
+      "after": "count >= max_components",
+      "candidate_sha256": "ab86f72a31b37d1e28b5755a0032c1693c46db95f7c01ddaf71763ac7041baee",
+      "mismatches": 8,
+      "detected": true
+    },
+    {
+      "mutation": "cmpd_uri_terminator",
+      "suite": "uncompressed_config",
+      "source": "src/uncompressed.rs",
+      "before": ".unwrap_or(self.data.len().saturating_sub(1))",
+      "after": ".unwrap_or(self.data.len())",
+      "candidate_sha256": "cf0280c091cde7f0b76a11620c738bae9843217a787b75ac8b7564bd977d1d44",
+      "mismatches": 27,
+      "detected": true
+    },
+    {
+      "mutation": "uncc_pixel_limit_version",
+      "suite": "uncompressed_config",
+      "source": "src/uncompressed.rs",
+      "before": "limits.version >= 4",
+      "after": "true",
+      "candidate_sha256": "d10236d24dfaeccb563715df1e730e389b989dffd89b7c6902455cc5e4232e87",
+      "mismatches": 30,
+      "detected": true
+    },
+    {
+      "mutation": "uncc_profile_components",
+      "suite": "uncompressed_config",
+      "source": "src/uncompressed.rs",
+      "before": "b\"rgb3\" => (&[4, 5, 6],",
+      "after": "b\"rgb3\" => (&[6, 5, 4],",
+      "candidate_sha256": "1469600a16ff25704592cb94adc71fa1f0ce31edd594688b5699b20db00da3e6",
+      "mismatches": 3,
+      "detected": true
+    }
+  ],
+  "all_detected": true
+}

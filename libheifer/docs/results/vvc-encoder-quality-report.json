@@ -1,0 +1,169 @@
+{
+  "scope": "Built-in VVC encoder quality against libheif with vvenc: deterministic synthetic RGB images are\nencoded through libheif by both at several qualities, the oracle (vvdec) decodes both, and luma PSNR\nagainst the source gives a piecewise-linear Bjontegaard rate difference per image, which must stay\nunder a bound. Catches encoder changes that keep files decodable but lose quality.",
+  "qualities": [
+    10,
+    25,
+    40,
+    55,
+    70
+  ],
+  "expected_bd_rate_percent": {
+    "smooth": -3.6,
+    "texture": 10.1,
+    "blocks": 40.8
+  },
+  "margin": 10.0,
+  "images": {
+    "smooth": {
+      "bd_rate_percent": -3.1661347578923804,
+      "points": {
+        "reference": [
+          [
+            705,
+            45.21989434045145
+          ],
+          [
+            854,
+            49.71879159616851
+          ],
+          [
+            1252,
+            53.69407439087995
+          ],
+          [
+            2337,
+            55.391216245109874
+          ],
+          [
+            9052,
+            57.20774335821762
+          ]
+        ],
+        "candidate": [
+          [
+            425,
+            29.53669147839273
+          ],
+          [
+            488,
+            36.10914280367667
+          ],
+          [
+            587,
+            43.24773835771194
+          ],
+          [
+            786,
+            49.04415407840836
+          ],
+          [
+            1234,
+            53.274277562506555
+          ]
+        ]
+      }
+    },
+    "texture": {
+      "bd_rate_percent": 10.044943395033034,
+      "points": {
+        "reference": [
+          [
+            683,
+            31.864326356826535
+          ],
+          [
+            881,
+            34.90942972395922
+          ],
+          [
+            1343,
+            36.1209791692163
+          ],
+          [
+            6909,
+            44.069378542528696
+          ],
+          [
+            14562,
+            51.122485878896704
+          ]
+        ],
+        "candidate": [
+          [
+            400,
+            26.809553445345394
+          ],
+          [
+            635,
+            31.001714893046845
+          ],
+          [
+            905,
+            34.62514770493197
+          ],
+          [
+            1356,
+            35.987727746459356
+          ],
+          [
+            8784,
+            44.2636063157247
+          ]
+        ]
+      }
+    },
+    "blocks": {
+      "bd_rate_percent": 40.93703059092684,
+      "points": {
+        "reference": [
+          [
+            836,
+            20.828320955004372
+          ],
+          [
+            1813,
+            26.41365787948753
+          ],
+          [
+            3621,
+            35.85931937257174
+          ],
+          [
+            5620,
+            41.86819727409098
+          ],
+          [
+            8259,
+            45.248159897115016
+          ]
+        ],
+        "candidate": [
+          [
+            452,
+            17.30696396301306
+          ],
+          [
+            1043,
+            21.477153869722507
+          ],
+          [
+            2999,
+            28.797475526609894
+          ],
+          [
+            6066,
+            36.759494853881364
+          ],
+          [
+            11043,
+            43.55074819164428
+          ]
+        ]
+      }
+    }
+  },
+  "failures": [],
+  "mismatches": 0,
+  "reference_sha256": "97079f422eb42769cb9cfc52f74c37e3a687b3730052bd429d6e7f1a23657900",
+  "candidate_sha256": "bcd0711a415e8b807dc1b0cadc647be17a1cfc30a1aafafee5f92ece3510ebc9"
+}

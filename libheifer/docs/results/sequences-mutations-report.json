@@ -1,0 +1,136 @@
+{
+  "scope": "13 deliberate defects; not comprehensive mutation coverage",
+  "mutations": [
+    {
+      "mutation": "sequence_default_timescale",
+      "suite": "sequences",
+      "source": "src/sequences.rs",
+      "before": "timescale: 90000,",
+      "after": "timescale: 90001,",
+      "candidate_sha256": "839d61ede467535ebf29a142c0f77c4ffd2f867802d7f3e01e5744399a0d46a0",
+      "mismatches": 18,
+      "detected": true
+    },
+    {
+      "mutation": "sequence_fresh_handler",
+      "suite": "sequences",
+      "source": "src/sequences.rs",
+      "before": "reported_handler: 0,",
+      "after": "reported_handler: handler,",
+      "candidate_sha256": "9f4dadcff54a6600185320fe3d0623cf32df494fde789f58cd24b0713f53fdf7",
+      "mismatches": 571,
+      "detected": true
+    },
+    {
+      "mutation": "sequence_reference_order",
+      "suite": "sequences",
+      "source": "src/sequences.rs",
+      "before": "            ids.push(id);",
+      "after": "            ids.insert(0,id);",
+      "candidate_sha256": "527ab2a8cd8b599f256b12d51ac71ca4c324aa53ed526df79a50ac848c389b78",
+      "mismatches": 9,
+      "detected": true
+    },
+    {
+      "mutation": "sequence_sample_duration",
+      "suite": "sequences",
+      "source": "src/sequences.rs",
+      "before": "self.durations.push(sample.metadata.duration);",
+      "after": "self.durations.push(sample.metadata.duration.wrapping_add(1));",
+      "candidate_sha256": "16b1287f9f54512a8d7bc8b70895362ba5bd5b46324c1b87c50d40029fb5b000",
+      "mismatches": 300,
+      "detected": true
+    },
+    {
+      "mutation": "sequence_optional_tai",
+      "suite": "sequences",
+      "source": "src/sequences.rs",
+      "before": "} else if self.options.tai_presence == 1 {",
+      "after": "} else if self.options.tai_presence == 2 {",
+      "candidate_sha256": "7c32a64ab3dd9197d8aea67675bac5012295a504503c507604b726f477046679",
+      "mismatches": 10,
+      "detected": true
+    },
+    {
+      "mutation": "sequence_infinite_duration",
+      "suite": "sequences",
+      "source": "src/sequences.rs",
+      "before": "t.movie_duration = if self.repetitions == 0 {",
+      "after": "t.movie_duration = if self.repetitions == u32::MAX {",
+      "candidate_sha256": "a13820e2d3d1b741b2b26640b40f022ba8eddd224af48765274aef806c53aacb",
+      "mismatches": 73,
+      "detected": true
+    },
+    {
+      "mutation": "sequence_sample_offset",
+      "suite": "sequences",
+      "source": "src/sequences.rs",
+      "before": "let (offset, size) = self.ranges[idx];",
+      "after": "let (offset, size) = self.ranges[idx];\n        let offset=offset+1;",
+      "candidate_sha256": "307d8bf2dee914a6e546ebf88e701524fd11ddae7797d825975519c9532577b3",
+      "mismatches": 244,
+      "detected": true
+    },
+    {
+      "mutation": "sequence_clock_copy",
+      "suite": "sequences",
+      "source": "src/sequences.rs",
+      "before": "t.first_clock = Some(Box::new(c));",
+      "after": "let mut c=c; c.clock_resolution=c.clock_resolution.wrapping_add(1); t.first_clock = Some(Box::new(c));",
+      "candidate_sha256": "25ae82f6e047d5c7ba0361e8837c13805f0831fa52eaba9fc66afc8c6ef5e921",
+      "mismatches": 4,
+      "detected": true
+    },
+    {
+      "mutation": "sequence_decoder_duration",
+      "suite": "sequences",
+      "source": "src/sequences.rs",
+      "before": "self.durations[self.next as usize % self.durations.len()]",
+      "after": "self.durations[self.next.wrapping_sub(1) as usize % self.durations.len()]",
+      "candidate_sha256": "9534ca92979788cb1cb61735ee292b33a11c7dc591ffb1972524a41a4b3df953",
+      "mismatches": 6,
+      "detected": true
+    },
+    {
+      "mutation": "sequence_raw_output_sentinel",
+      "suite": "sequences",
+      "source": "crates/capi/src/sequences.rs",
+      "before": "let result = track.track.lock().unwrap().next_raw();",
+      "after": "unsafe{out.write(ptr::null_mut())};\n    let result = track.track.lock().unwrap().next_raw();",
+      "candidate_sha256": "c8052aa8e01cadbe60890b83d7b09a95161eb39275f52c92850e9328e38e0285",
+      "mismatches": 571,
+      "detected": true
+    },
+    {
+      "mutation": "sequence_coding_constraints",
+      "suite": "sequences",
+      "source": "src/sequences.rs",
+      "before": "full(*b\"ccst\", 0, 0, &[0x80, 0, 0, 0])",
+      "after": "full(*b\"ccst\", 0, 0, &[0, 0, 0, 0])",
+      "candidate_sha256": "6d57640b4657eda360177741d3277c54ffdcb1e2370950c3f1cbcb7adeb1d1d3",
+      "mismatches": 156,
+      "detected": true
+    },
+    {
+      "mutation": "sequence_movie_validation",
+      "suite": "sequence_reading",
+      "source": "src/sequences.rs",
+      "before": "validate_sequence_boxes(movie, &self.limits.read().unwrap())?;",
+      "after": "// deliberately skip sequence box validation",
+      "candidate_sha256": "421671df4d0d448c0a94e2d079571af1950791d1b6e8abf9cb7f0e466c184ed0",
+      "mismatches": 111,
+      "detected": true
+    },
+    {
+      "mutation": "writer_mdat_base",
+      "suite": "writing",
+      "source": "src/writing.rs",
+      "before": "out.len() as u64 + meta_size as u64 + moov_size as u64 + 8",
+      "after": "out.len() as u64 + meta_size as u64 + moov_size as u64 + 9",
+      "candidate_sha256": "89d6ed0b7f26def2513825fe59ad6aa5883d4847cad926306dd5a2f77638d652",
+      "mismatches": 198,
+      "detected": true
+    }
+  ],
+  "all_detected": true
+}

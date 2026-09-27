@@ -1,0 +1,32 @@
+{
+  "scope": "Test-only libheif observation: 40 repeated default-four-worker decodes of each mixed-failure grid; no candidate-equivalence claim.",
+  "reference_sha256": "5d70927cded8be6d1b4da912971aed75d426ba079c84d0b8462785ec5b9c92f7",
+  "client_sha256": "80dc4be190dfd71481d741f6b2a42e4e2edfad770867e7898256eced8748c8da",
+  "mode": 10,
+  "results": [
+    {
+      "fixture": "grid-invalid-identity-10.heic",
+      "fixture_sha256": "ed69c3f2a12fa13147ad3495d462ca5f4812d2bc69f7f266e2f1f743e9015873",
+      "error_code_subcode_counts": {
+        "(2, 0)": 34,
+        "(11, 0)": 6
+      }
+    },
+    {
+      "fixture": "grid-invalid-identity-11.heic",
+      "fixture_sha256": "d9ae1320e5066b8c80445232d46f72d0a259b002bcbf1ca1e902ad7fa1dfdfc4",
+      "error_code_subcode_counts": {
+        "(11, 0)": 19,
+        "(2, 0)": 21
+      }
+    },
+    {
+      "fixture": "grid-invalid-identity-13.heic",
+      "fixture_sha256": "94dcdf7f999c9aa4e0c7b38b3eb2fb21dc547adab2b5475d280333798e1ba4e2",
+      "error_code_subcode_counts": {
+        "(11, 0)": 38,
+        "(2, 0)": 2
+      }
+    }
+  ]
+}

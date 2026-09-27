@@ -1,0 +1,66 @@
+{
+  "scope": "6 deliberate defects; not comprehensive mutation coverage",
+  "mutations": [
+    {
+      "mutation": "writer_mdat_base",
+      "suite": "writing",
+      "source": "src/writing.rs",
+      "before": "out.len() as u64 + first.len() as u64 + 8",
+      "after": "out.len() as u64 + first.len() as u64 + 9",
+      "candidate_sha256": "41109540769f9e4f2f9fd241931db1c1b527b08c4b717c452dbf26d8584bde3a",
+      "mismatches": 198,
+      "detected": true
+    },
+    {
+      "mutation": "writer_brand_dedup",
+      "suite": "writing",
+      "source": "src/writing.rs",
+      "before": "if !self.brands.contains(&brand) {",
+      "after": "if true {",
+      "candidate_sha256": "68bb9aa386affe0bcd7d0d3b9ac4579d689ebc6e88d5923381039c14b85138c4",
+      "mismatches": 265,
+      "detected": true
+    },
+    {
+      "mutation": "writer_uuid_bytes",
+      "suite": "writing",
+      "source": "src/writing.rs",
+      "before": "p.extend(prop.uuid.unwrap_or([0; 16]));",
+      "after": "p.extend([0; 16]);",
+      "candidate_sha256": "50278fa5ce9b944a87683d042c7bedddfacb0c416161c73c4dc7ca83de8bd7ae",
+      "mismatches": 18,
+      "detected": true
+    },
+    {
+      "mutation": "writer_large_property_index",
+      "suite": "writing",
+      "source": "src/writing.rs",
+      "before": "any(|i| *i >= 127)",
+      "after": "any(|i| *i >= 128)",
+      "candidate_sha256": "78515b516343fcac6b3c47b56bb56e173aa6de6b11c51b3ee26489f2716594b7",
+      "mismatches": 3,
+      "detected": true
+    },
+    {
+      "mutation": "writer_userdata",
+      "suite": "writing",
+      "source": "crates/capi/src/writing.rs",
+      "before": "data.len(), userdata)",
+      "after": "data.len(), ptr::null_mut())",
+      "candidate_sha256": "ae97d3d1664375845f2bf3bbad01043d7013b2084ed447e835ad1c6be934129f",
+      "mismatches": 265,
+      "detected": true
+    },
+    {
+      "mutation": "writer_success_message",
+      "suite": "writing",
+      "source": "crates/capi/src/writing.rs",
+      "before": "error.message = SUCCESS.message;",
+      "after": "error.message = c\"Wrong success\".as_ptr();",
+      "candidate_sha256": "65aafbc51a7888d285765e8d39e7779ec4c8141662e2f8e23b8d59132623b637",
+      "mismatches": 50,
+      "detected": true
+    }
+  ],
+  "all_detected": true
+}

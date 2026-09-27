@@ -1,0 +1,83 @@
+{
+  "scope": "7 deliberate defects; not comprehensive mutation coverage",
+  "mutations": [
+    {
+      "mutation": "reader_initial_range",
+      "suite": "reader_input",
+      "source": "src/input.rs",
+      "before": "let mut available = source.request_range(0, 1024);",
+      "after": "let mut available = source.request_range(0, 31);",
+      "candidate_sha256": "cacfa1bda5b75d48b7b46ce75464f6013584bbdb5361d670159dd0e44b467c20",
+      "mismatches": 4444,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "reader_message_release",
+      "suite": "reader_input",
+      "source": "crates/capi/src/input.rs",
+      "before": "unsafe { release(result.reader_error_msg) };",
+      "after": "let _ = release;",
+      "candidate_sha256": "3bfdef62a184beb50f19e3c81db5b296e94a1df3b92893167696d41c36c76020",
+      "mismatches": 366,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "reader_payload_origin",
+      "suite": "reader_input",
+      "source": "crates/capi/src/input.rs",
+      "before": "        Ok(Cow::Owned(data))\n    }\n    fn read_range",
+      "after": "        if let Some(first) = data.first_mut() { *first ^= 1; }\n        Ok(Cow::Owned(data))\n    }\n    fn read_range",
+      "candidate_sha256": "2e8922537cb55990f805b4add896c77913b46f90764709525ec4ad08ea8495b6",
+      "mismatches": 1844,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "reader_idat_wait",
+      "suite": "reader_input",
+      "source": "crates/capi/src/input.rs",
+      "before": "if status == 1 || status == 2 {",
+      "after": "if status == 0 || status == 2 {",
+      "candidate_sha256": "72e6e578b95c1f1f3ebfb73164319da40f75b83c699a739f61ee2d3890bbb666",
+      "mismatches": 1876,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "reader_initial_timeout",
+      "suite": "reader_input",
+      "source": "crates/capi/src/input.rs",
+      "before": "1 => 0,",
+      "after": "1 => end,",
+      "candidate_sha256": "3e5d80a0861afdf14fabf3b01900325f343bf2e106ec86555f4dcf81c2e060c9",
+      "mismatches": 52,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "sequence_short_movie",
+      "suite": "sequence_reading",
+      "source": "src/context.rs",
+      "before": "151,\n                    \"No 'moov' box: Cannot read full moov box\"",
+      "after": "100,\n                    \"No 'moov' box: Cannot read full moov box\"",
+      "candidate_sha256": "f61b2fa69ea08be843b00d9dafa8c2f392fb7390f55459a0703ccbecec0eea67",
+      "mismatches": 1659,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "sequence_failed_frame_advance",
+      "suite": "sequence_reading",
+      "source": "src/sequences.rs",
+      "before": "self.decode_failed = u64::from(self.next) >= self.output_count;",
+      "after": "self.next = self.next.wrapping_sub(1);\n                    self.decode_failed = u64::from(self.next) >= self.output_count;",
+      "candidate_sha256": "19be82c8659d91772136f0b5d79661176dc481e3ffcea2f946f5e5bf830465dd",
+      "mismatches": 44,
+      "process_failures": [],
+      "detected": true
+    }
+  ],
+  "all_detected": true
+}

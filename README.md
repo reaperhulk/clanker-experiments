@@ -8,3 +8,5 @@ Browse the [pull requests](https://github.com/reaperhulk/clanker-experiments/pul
 to see the experiments.
 
 Inspired by [alex/claude-experiments](https://github.com/alex/claude-experiments).
+
+Current experiment: [libheifer](libheifer/), a pure Rust libheif implementation in progress.

@@ -1,0 +1,62 @@
+{
+  "scope": "Interrupted first HEVC encoder mutation run; five semantic detections completed before workspace removal. This is not a passing seven-mutation report. Recovered sources/client/corpora were rebuilt and the entire targeted run was restarted.",
+  "complete": false,
+  "mutations": [
+    {
+      "mutation": "hevc_encoder_crop",
+      "suite": "hevc_encoding",
+      "source": "src/hevc_config.rs",
+      "before": "width -= crop_x as u32;",
+      "after": "width -= 0;",
+      "candidate_sha256": "eed35e5c0c98f81b8819212703fc3459abce0b779c76176dfb0e203e87567c1f",
+      "mismatches": 8,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "hevc_encoder_profile",
+      "suite": "hevc_encoding",
+      "source": "src/hevc_config.rs",
+      "before": "self.header[1] = bits.get(8) as u8;",
+      "after": "self.header[1] = bits.get(8) as u8 ^ 1;",
+      "candidate_sha256": "3fd13a60c797006dd29ef14fbc5d401e2950ae19738a271eff617c971890de49",
+      "mismatches": 708,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "hevc_encoder_dedup",
+      "suite": "hevc_encoding",
+      "source": "src/hevc_config.rs",
+      "before": "if existing[..common] == nal[..common] {",
+      "after": "if false && existing[..common] == nal[..common] {",
+      "candidate_sha256": "5363fba48961144100e10deb57259d357a4c7249a0875bc0807ac66ddf3d650c",
+      "mismatches": 24,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "hevc_encoder_length",
+      "suite": "hevc_encoding",
+      "source": "crates/capi/src/plugin_encoding.rs",
+      "before": "data.extend_from_slice(&(size as u32).to_be_bytes());",
+      "after": "data.extend_from_slice(&((size + 1) as u32).to_be_bytes());",
+      "candidate_sha256": "b987d9639f4f7642252b03f825e85aeba202cae7a364d6a18e0a5c3d2d08b051",
+      "mismatches": 706,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "hevc_encoder_aux_type",
+      "suite": "hevc_encoding",
+      "source": "src/encoding.rs",
+      "before": "b\"urn:mpeg:hevc:2015:auxid:1\\0\".as_slice()",
+      "after": "b\"urn:mpeg:hevc:2015:auxid:2\\0\".as_slice()",
+      "candidate_sha256": "38add27f797407ea3f37ef3247c20b152b454e61dcdb0f347ea659ef872e05c3",
+      "mismatches": 51,
+      "process_failures": [],
+      "detected": true
+    }
+  ],
+  "interruption": "Source and evidence directories disappeared during hevc_encoder_brand build; FileNotFoundError, not counted as mutation detection."
+}

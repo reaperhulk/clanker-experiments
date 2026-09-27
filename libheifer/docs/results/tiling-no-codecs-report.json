@@ -1,0 +1,12 @@
+{
+  "scope": "Original-header tile geometry, ordered transformations, displayed coordinates, security limits and output sentinels.",
+  "cases": 11602,
+  "mismatches": 0,
+  "client_sanitizers": false,
+  "leak_check": false,
+  "client_sha256": "92536bd3ae957da2022b374d33da91f5f6b87d3a1ab1b7686b6495791026b679",
+  "corpus_sha256": "a6ed7abc63e6aa44b31f71a7612d19f92a3faae39b198057225a9ad3398b099d",
+  "differences": [],
+  "reference_sha256": "5cc5713a0503098f20f8a3631e370d43256ebdca0a3209e97d541e6ecf1cd917",
+  "candidate_sha256": "f4c64f36bf5a4d0f7aba588dee61c52b6169b41481a472f3bd384e528d80007e"
+}

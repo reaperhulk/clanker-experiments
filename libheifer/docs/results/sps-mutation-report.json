@@ -1,0 +1,16 @@
+{
+  "scope": "1 deliberate defects; not comprehensive mutation coverage",
+  "mutations": [
+    {
+      "mutation": "coded_size_limit",
+      "suite": "hevc_limits",
+      "source": "src/decoding.rs",
+      "before": ".max(65536)",
+      "after": ".max(65535)",
+      "candidate_sha256": "73f901f04b9bb653ba63c31cc434e9a6ca79040b687e92e434971acf38ac8633",
+      "mismatches": 138,
+      "detected": true
+    }
+  ],
+  "all_detected": true
+}

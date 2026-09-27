@@ -1,0 +1,72 @@
+{
+  "scope": "6 deliberate defects; not comprehensive mutation coverage",
+  "mutations": [
+    {
+      "mutation": "jpeg_encoder_forced_profile",
+      "suite": "other_encoding",
+      "source": "crates/capi/src/plugin_encoding.rs",
+      "before": "primaries: 6,",
+      "after": "primaries: 7,",
+      "candidate_sha256": "5a0ce9bb9633d773b3c47a221582be0feec3965209f821a6cbbc0732d7efedaf",
+      "mismatches": 752,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "j2k_encoder_channel_count",
+      "suite": "other_encoding",
+      "source": "crates/capi/src/plugin_encoding.rs",
+      "before": "0 | 1 => 3,",
+      "after": "0 | 1 => 2,",
+      "candidate_sha256": "e751d738ba6d0fb0d5c17d5c4be8d0ef52159f628fa1cb87174f298ebf26ee9f",
+      "mismatches": 1300,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "j2k_encoder_channel_association",
+      "suite": "other_encoding",
+      "source": "crates/capi/src/plugin_encoding.rs",
+      "before": "data.extend_from_slice(&(i + 1).to_be_bytes());",
+      "after": "data.extend_from_slice(&i.to_be_bytes());",
+      "candidate_sha256": "7c79407849ddb92830c5dec541b67972549bc44549deda62b07aa8a11b89a3ed",
+      "mismatches": 1400,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "j2k_encoder_container_dedup",
+      "suite": "other_encoding",
+      "source": "src/properties.rs",
+      "before": "p.kind != *b\"j2kH\"",
+      "after": "true",
+      "candidate_sha256": "501b6d7afd54ddd54396922cb171efb341abc734f639f5ce63dce4387a817220",
+      "mismatches": 88,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "j2k_encoder_error_prefix",
+      "suite": "other_encoding",
+      "source": "crates/capi/src/plugin_encoding.rs",
+      "before": "                matches!(encoder.source.format(), 7 | 10),\n            ));\n        }\n        if packet.is_null()",
+      "after": "                false,\n            ));\n        }\n        if packet.is_null()",
+      "candidate_sha256": "acd5738d9038dbfa8163f60541024180345f72509ccea7530b3dc22f2a12d19a",
+      "mismatches": 2,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "jpeg_encoder_brand",
+      "suite": "other_encoding",
+      "source": "src/writing.rs",
+      "before": "b\"jpeg\" => Some(*b\"jpeg\"),",
+      "after": "b\"jpeg\" => Some(*b\"jpgx\"),",
+      "candidate_sha256": "1eb9eff1c7d82c90a17dfd636aece02551e681e733010f1e6754eb4120c81156",
+      "mismatches": 648,
+      "process_failures": [],
+      "detected": true
+    }
+  ],
+  "all_detected": true
+}

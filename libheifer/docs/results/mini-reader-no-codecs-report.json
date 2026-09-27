@@ -1,0 +1,12 @@
+{
+  "scope": "Compact-container reader callbacks, late AV1 decoding, range failures and source offsets.",
+  "cases": 4655,
+  "mismatches": 0,
+  "differences": [],
+  "client_sanitizers": false,
+  "leak_check": false,
+  "client_sha256": "dc7613edae23bd9ebbf8ed1f6287dda90b12f26406c8b8f8a094fb85a6e43d01",
+  "corpus_sha256": "db53d7349d5916d506fd6b842024e37a6929cdd3bed1d13be9165d5ce2defd20",
+  "reference_sha256": "5cc5713a0503098f20f8a3631e370d43256ebdca0a3209e97d541e6ecf1cd917",
+  "candidate_sha256": "9803fb73149f358c7b882ab17e821434744698f495dc513d85ca2aa1ff2ee1c6"
+}

@@ -1,0 +1,13 @@
+{
+  "scope": "Original-header OpenJPEG/Rust JPEG2000 decoded samples, metadata and conversion.",
+  "cases": 9725,
+  "mismatches": 0,
+  "client_sanitizers": false,
+  "leak_check": false,
+  "client_sha256": "c7cb0444757eb1d323d165c8e0803e2ffff7aabc0c0cbd247c18342dd830311a",
+  "reference_sha256": "06c669d5019806baf0756a9b5c8ece9f7269f751bee7cda4e43926044c6d473e",
+  "candidate_sha256": "68a3c0ffc3d868513cc492826878bd571cb9e9f0395b5adb042eef9e6f035191",
+  "full_report": "jpeg2000-followup-regression-full.json.gz",
+  "full_report_sha256": "f44e4bccff39dd7acad9f75b8965f92a40ecc2ffc104c5ba6dcd428f0f31724a",
+  "compressed_report_sha256": "cd0ee6b4058947377e9afa80200fc2f568c027a16d959f0a5e3e3c5b6cfaa18f"
+}

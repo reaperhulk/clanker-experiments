@@ -1,0 +1,16 @@
+{
+  "scope": "Original-header OMAF projections, 5-bit properties, retained descriptions, decoded pixels and transforms.",
+  "successful_decodes": {
+    "reference": 16780,
+    "candidate": 16780
+  },
+  "cases": 1678,
+  "mismatches": 0,
+  "client_sanitizers": false,
+  "leak_check": false,
+  "client_sha256": "027127fc2edf4830c4590a6bcc7a11dc79431f4204675731703a9dcc9ffb3bab",
+  "corpus_sha256": "ab2002670a0b5f8552a2f2eb2a54b579bff40e4f1c40e83fdcf54cd7f519abff",
+  "differences": [],
+  "reference_sha256": "5d70927cded8be6d1b4da912971aed75d426ba079c84d0b8462785ec5b9c92f7",
+  "candidate_sha256": "801dc2af8a2ffd3480d91bf296930dd5c78dfb30fb9b5abdcf57bd68e49c5989"
+}

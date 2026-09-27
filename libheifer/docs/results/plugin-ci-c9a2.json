@@ -1,0 +1,3539 @@
+{
+  "commit": "c9a2da700f5f9216cdd1364108909e1731e17d99",
+  "ci_url": "https://github.com/reaperhulk/clanker-experiments/actions/runs/35452185151",
+  "source": "Completed Linux CI job 105921151830 logs and workflow job status",
+  "reports": [
+    {
+      "scope": "Original-header registered decoder callback dispatch, ownership, errors, polling, historical records and complete output pixels.",
+      "cases": 616,
+      "mismatches": 0,
+      "client_sanitizers": false,
+      "leak_check": false,
+      "client_sha256": "2cba2e9456595bdd8d9ca1cb149cc74544357d58168e5993007c60314371e5bc",
+      "corpus_sha256": "712bd3ea125df77af595b070be24485a38993023519bfeb4d346146e9a850460",
+      "reference_sha256": "5e26284f5807d4ff49c69495e681fbd6be022e1a6e82bf9791e8fedb94ee67a6",
+      "candidate_sha256": "c8c8585b1e03f6f53f731bb8f66341097d4113b56d74d5ab15b269a8e49815d1"
+    },
+    {
+      "scope": "Original-header registered decoder callback dispatch, ownership, errors, polling, historical records and complete output pixels.",
+      "cases": 616,
+      "mismatches": 0,
+      "client_sanitizers": true,
+      "leak_check": true,
+      "client_sha256": "2cba2e9456595bdd8d9ca1cb149cc74544357d58168e5993007c60314371e5bc",
+      "corpus_sha256": "712bd3ea125df77af595b070be24485a38993023519bfeb4d346146e9a850460",
+      "reference_sha256": "5e26284f5807d4ff49c69495e681fbd6be022e1a6e82bf9791e8fedb94ee67a6",
+      "candidate_sha256": "c8c8585b1e03f6f53f731bb8f66341097d4113b56d74d5ab15b269a8e49815d1"
+    },
+    {
+      "scope": "Original-header registered decoder callback dispatch, ownership, errors, polling, historical records and complete output pixels.",
+      "cases": 616,
+      "mismatches": 0,
+      "client_sanitizers": false,
+      "leak_check": false,
+      "client_sha256": "2cba2e9456595bdd8d9ca1cb149cc74544357d58168e5993007c60314371e5bc",
+      "corpus_sha256": "712bd3ea125df77af595b070be24485a38993023519bfeb4d346146e9a850460",
+      "reference_sha256": "5e26284f5807d4ff49c69495e681fbd6be022e1a6e82bf9791e8fedb94ee67a6",
+      "candidate_sha256": "2e015c1dd8b18ef62ca967422433fe4c24db05e301427af9409ad4206de91f5c"
+    },
+    {
+      "scope": "Independent resource accounting across decoder caching, releases and file reloads.",
+      "cases": 276,
+      "mismatches": 0,
+      "client_sha256": "59ceb887160cf06bdfe91962829050ca0fe3780ec1c7d39d4fd8a39a71f7d863",
+      "corpus_sha256": "2e3c14898cd5546e0ba383378a8f0bcf854092042ceb2d547588ded7cdadd683",
+      "reference_sha256": "5e26284f5807d4ff49c69495e681fbd6be022e1a6e82bf9791e8fedb94ee67a6",
+      "candidate_sha256": "c8c8585b1e03f6f53f731bb8f66341097d4113b56d74d5ab15b269a8e49815d1"
+    }
+  ],
+  "mutations": [
+    {
+      "mutation": "file_snapshot_origin",
+      "suite": "file_input",
+      "source": "src/input.rs",
+      "before": "|(start, offset, _)| offset + (at - start) as u64",
+      "after": "|(start, offset, _)| offset + (at - start) as u64 + 1",
+      "candidate_sha256": "88313050306675bb02f5358390721b41d3c7d0ce013684813b34762206d8078e",
+      "mismatches": 308,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "file_source_boundary",
+      "suite": "file_sequence_reading",
+      "source": "src/input.rs",
+      "before": "is_none_or(|n| n > self.length())",
+      "after": "is_none_or(|n| n >= self.length())",
+      "candidate_sha256": "7aaafda578bb178ee5a98a976f94508e44492b759fdd28eb3ea3a0cb1a8bd320",
+      "mismatches": 25,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "file_failed_open_state",
+      "suite": "file_input",
+      "source": "crates/capi/src/input.rs",
+      "before": "    let _ = state.read(Arc::new(Vec::<u8>::new()));",
+      "after": "    // deliberately retain the old file tables",
+      "candidate_sha256": "f84d13efbaeab5a1395ebf11b6293de841ece05e1f11274cd9c4e083d0cd0581",
+      "mismatches": 480,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "file_header_origin",
+      "suite": "file_input",
+      "source": "src/input.rs",
+      "before": "let prefix = take(source, 0, length.min(32))?;",
+      "after": "let prefix = take(source, 1, length.min(32))?;",
+      "candidate_sha256": "62f8dad8c7700837143260a357af6d08c631547d8d26d1f9c44c1852e838bd69",
+      "mismatches": 880,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "file_open_error_class",
+      "suite": "file_input",
+      "source": "crates/capi/src/input.rs",
+      "before": "                    1,\n                    0,\n                    format!(",
+      "after": "                    2,\n                    0,\n                    format!(",
+      "candidate_sha256": "52c474ca34e49f51d0a25c8b220c2407251e85647521830373a299c729e74e30",
+      "mismatches": 929,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "plugin_decode_threads",
+      "suite": "plugin_decoding",
+      "source": "crates/capi/src/plugin_decoding.rs",
+      "before": "num_threads: options.num_codec_threads,",
+      "after": "num_threads: options.num_codec_threads + 1,",
+      "candidate_sha256": "c275a225e057af6ab16f6511172e32b7d482df5a2675118374763d9326948a74",
+      "mismatches": 507,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "plugin_decode_strict",
+      "suite": "plugin_decoding",
+      "source": "crates/capi/src/plugin_decoding.rs",
+      "before": "strict_decoding: options.plugin_strict,",
+      "after": "strict_decoding: i32::from(options.strict),",
+      "candidate_sha256": "18519b0254f8618d09b5fba89debfc5e2bed02096273c67d0f6a4195d2d6d339",
+      "mismatches": 16,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "plugin_decode_poll_limit",
+      "suite": "plugin_decoding",
+      "source": "crates/capi/src/plugin_decoding.rs",
+      "before": "for _ in 0..50 {",
+      "after": "for _ in 0..49 {",
+      "candidate_sha256": "8d8feebb83b52d52adf5b7657ff3a140a94ca882dc2fee64784acd5e5c57892a",
+      "mismatches": 6,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "plugin_decode_release",
+      "suite": "plugin_decoding",
+      "source": "crates/capi/src/plugin_decoding.rs",
+      "before": "unsafe { f(self.state) }",
+      "after": "let _ = f;",
+      "candidate_sha256": "bb70aedf0487fedce70369dacd3c22bbfa6ffc93220e6b0c0b9ee93ef6e7afb3",
+      "mismatches": 507,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "plugin_decode_error_unpack",
+      "suite": "plugin_decoding",
+      "source": "crates/capi/src/plugin_decoding.rs",
+      "before": "if unpack && let Some(rest) = detail.strip_prefix(code) {",
+      "after": "if !unpack && let Some(rest) = detail.strip_prefix(code) {",
+      "candidate_sha256": "918d2e91a7a2ea97f7f5034d6822ced1b5f6201775c2911e5f817bfcc1df48c8",
+      "mismatches": 30,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "plugin_decode_cached_selection",
+      "suite": "plugin_decoding",
+      "source": "src/decoding.rs",
+      "before": "if let Some(cached) = cached {",
+      "after": "if let Some(cached) = cached.filter(|_| false) {",
+      "candidate_sha256": "7ee75af18d2170f883e2dace08743f5acdb2dd91b6c9e7c2f788806283c92bd5",
+      "mismatches": 539,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "plugin_decode_empty_nal",
+      "suite": "plugin_decoding",
+      "source": "src/decoding.rs",
+      "before": "if !nal.is_empty() {",
+      "after": "if true {",
+      "candidate_sha256": "8dd1837ae1be70e0d7d72c7cfc91989eee1b57a60f9bd62d95661390e2d4e893",
+      "mismatches": 8,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "av1_handle_depth",
+      "suite": "plugin_decoding",
+      "source": "src/context.rs",
+      "before": "} else if flags & 32 != 0 {",
+      "after": "} else if flags & 32 == 0 {",
+      "candidate_sha256": "b350780a02f5379881d16403e912984ba26a82273efc145fdaef0c419ef064a4",
+      "mismatches": 128,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "debug_writer_base",
+      "suite": "debug_writing",
+      "source": "src/writing.rs",
+      "before": "loc.base = debug_base;",
+      "after": "loc.base = debug_base + 1;",
+      "candidate_sha256": "a049f956ebdc7fcec92d6192b6e640c57dca62f20391c8de672ab8d30393bbcb",
+      "mismatches": 198,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "debug_writer_duplicates",
+      "suite": "debug_writing",
+      "source": "src/debug.rs",
+      "before": "self.write_meta(&layout, 0, true)",
+      "after": "self.write_meta(&layout, 0, false)",
+      "candidate_sha256": "40f4b5d29d4acd918a625d26b895038368207441fa15d387bb2dc53c0f459234",
+      "mismatches": 22,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "debug_grid_rows",
+      "suite": "debug_dump",
+      "source": "src/debug.rs",
+      "before": "grid.rows, grid.columns, grid.width, grid.height",
+      "after": "grid.rows + 1, grid.columns, grid.width, grid.height",
+      "candidate_sha256": "86e73f80441a5c5950a608267de5888ef076328705c22c2f3a330001949890b6",
+      "mismatches": 12,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "debug_overlay_offsets",
+      "suite": "debug_dump",
+      "source": "src/debug.rs",
+      "before": "write!(details, \"{x};{y} \")",
+      "after": "write!(details, \"{y};{x} \")",
+      "candidate_sha256": "e98a6395f0f25a5a0f337ff0c6b6a7957ede04c0a9ea71d16465666371fff896",
+      "mismatches": 6,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "debug_size_label",
+      "suite": "debug_dump",
+      "source": "src/debug.rs",
+      "before": "(header size: {header_size})",
+      "after": "(header size: 0)",
+      "candidate_sha256": "751066e3a762f2a74757fbdd350f6f7274edb37c5b9ac48e9141ec7fd94c9a10",
+      "mismatches": 1178,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "debug_hidden_flag",
+      "suite": "debug_dump",
+      "source": "src/debug.rs",
+      "before": "\"{indent}hidden item: {}\", flags & 1 != 0",
+      "after": "\"{indent}hidden item: {}\", flags & 1 == 0",
+      "candidate_sha256": "786ab45da3ef8006382c3074505e49a8f7f153ed2ab77ada3a43c7222b44d0f8",
+      "mismatches": 1178,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "debug_nclc_range",
+      "suite": "debug_dump",
+      "source": "src/debug.rs",
+      "before": "u64::from(matrix == 0)",
+      "after": "u64::from(matrix != 0)",
+      "candidate_sha256": "3747089c9389c41bb4d5ccec047de98e6c4790a2cfa9b1e8fcd53122851d8689",
+      "mismatches": 5,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "debug_short_write",
+      "suite": "debug_dump",
+      "source": "crates/capi/src/debug.rs",
+      "before": "write(fd, dump.as_ptr().cast(), dump.len());",
+      "after": "write(fd, dump.as_ptr().cast(), dump.len().saturating_sub(1));",
+      "candidate_sha256": "ded94fb4bdf827f2a3174c2d9614cbfef5d0d458d63c77f8d260d5d29c903314",
+      "mismatches": 1729,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "debug_property_index",
+      "suite": "debug_dump",
+      "source": "src/debug.rs",
+      "before": "let _ = writeln!(out, \"{indent}index: {index}\");",
+      "after": "let _ = writeln!(out, \"{indent}index: {}\", index + 1);",
+      "candidate_sha256": "6980f5d82dcc0719cb13829a0950de1a6b1851fef26bc2a891140dccfe3657ba",
+      "mismatches": 1178,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "reader_initial_range",
+      "suite": "reader_input",
+      "source": "src/input.rs",
+      "before": "let mut available = source.request_range(0, 1024);",
+      "after": "let mut available = source.request_range(0, 31);",
+      "candidate_sha256": "b672947449a5e1d9173e5b50723453c96cb645bbae020d6a83e45cc32557a644",
+      "mismatches": 4444,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "reader_message_release",
+      "suite": "reader_input",
+      "source": "crates/capi/src/input.rs",
+      "before": "unsafe { release(result.reader_error_msg) };",
+      "after": "let _ = release;",
+      "candidate_sha256": "b977827bfb1379340c933567681ff72f3953abf89617474e3dde3c034d14191b",
+      "mismatches": 366,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "reader_payload_origin",
+      "suite": "reader_input",
+      "source": "crates/capi/src/input.rs",
+      "before": "        Ok(Cow::Owned(data))\n    }\n    fn read_range",
+      "after": "        if let Some(first) = data.first_mut() { *first ^= 1; }\n        Ok(Cow::Owned(data))\n    }\n    fn read_range",
+      "candidate_sha256": "c69b5ecdc3f536a2ee236dd46331c85c2fde17f213ab4af4dfc913015ac53083",
+      "mismatches": 1844,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "reader_idat_wait",
+      "suite": "reader_input",
+      "source": "crates/capi/src/input.rs",
+      "before": "if status == 1 || status == 2 {",
+      "after": "if status == 0 || status == 2 {",
+      "candidate_sha256": "f831a725589680ed8e1e5a2f1fdcc4ea070f91ad7b3eb9f948b674bf1b904554",
+      "mismatches": 1876,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "reader_initial_timeout",
+      "suite": "reader_input",
+      "source": "crates/capi/src/input.rs",
+      "before": "1 => 0,",
+      "after": "1 => end,",
+      "candidate_sha256": "80c13062aa7784ec1a9f99f798f13926f81c1e9ee14c254c645ad7976120ec61",
+      "mismatches": 52,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "sequence_short_movie",
+      "suite": "sequence_reading",
+      "source": "src/context.rs",
+      "before": "151,\n                    \"No 'moov' box: Cannot read full moov box\"",
+      "after": "100,\n                    \"No 'moov' box: Cannot read full moov box\"",
+      "candidate_sha256": "831feb3c218b9b59d4418d50f78331f68394f994a3cd98bcc76f3ab22ef4c747",
+      "mismatches": 1659,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "sequence_failed_frame_advance",
+      "suite": "sequence_reading",
+      "source": "src/sequences.rs",
+      "before": "self.decode_failed = u64::from(self.next) >= self.output_count;",
+      "after": "self.next = self.next.wrapping_sub(1);\n                    self.decode_failed = u64::from(self.next) >= self.output_count;",
+      "candidate_sha256": "528f9396e18b6e9f91ad7e48daf2a8bd4ad4f581414c478755664ad0e6617359",
+      "mismatches": 44,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "file_snapshot_origin",
+      "suite": "file_input",
+      "source": "src/input.rs",
+      "before": "|(start, offset, _)| offset + (at - start) as u64",
+      "after": "|(start, offset, _)| offset + (at - start) as u64 + 1",
+      "candidate_sha256": "11c6cdb87b087d7acd209384d469cfcf1144c49ae547df38eb1675fc9117501d",
+      "mismatches": 308,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "file_source_boundary",
+      "suite": "file_sequence_reading",
+      "source": "src/input.rs",
+      "before": "is_none_or(|n| n > self.length())",
+      "after": "is_none_or(|n| n >= self.length())",
+      "candidate_sha256": "ab3cd3dd8a262fddaca62b149f05301ef1b69660d9abbb3186b89b5b8e799181",
+      "mismatches": 25,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "file_failed_open_state",
+      "suite": "file_input",
+      "source": "crates/capi/src/input.rs",
+      "before": "    let _ = state.read(Arc::new(Vec::<u8>::new()));",
+      "after": "    // deliberately retain the old file tables",
+      "candidate_sha256": "3d085676d15482db930b2e68bd30cfdf50ac98f5df37f3f106139386a5115938",
+      "mismatches": 480,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "file_header_origin",
+      "suite": "file_input",
+      "source": "src/input.rs",
+      "before": "let prefix = take(source, 0, length.min(32))?;",
+      "after": "let prefix = take(source, 1, length.min(32))?;",
+      "candidate_sha256": "5525c1ec1ca3218067b9b7bfe30db1fda8403fac73ed6e6b6a7298630b4208d7",
+      "mismatches": 880,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "file_open_error_class",
+      "suite": "file_input",
+      "source": "crates/capi/src/input.rs",
+      "before": "                    1,\n                    0,\n                    format!(",
+      "after": "                    2,\n                    0,\n                    format!(",
+      "candidate_sha256": "ef0763ac59a015e6406a079350dc2f3d502a07f7e7ef7d2a043f300a7ecf2542",
+      "mismatches": 929,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "dynamic_trailing_directory",
+      "suite": "dynamic_plugins",
+      "source": "crates/capi/src/dynamic_plugins.rs",
+      "before": "            v.pop();",
+      "after": "            // keep the trailing segment",
+      "candidate_sha256": "602645b4dd87ff546a4a4747a388463eff0a01d9a9151e8b2247054084b113b2",
+      "mismatches": 5,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "dynamic_encoder_version",
+      "suite": "dynamic_plugins",
+      "source": "crates/capi/src/dynamic_plugins.rs",
+      "before": "if field!(p, plugin_api_version) < 4 {",
+      "after": "if field!(p, plugin_api_version) < 3 {",
+      "candidate_sha256": "8d5eba4f6a04371eb72f46383e45551f61547cd32cecf865300d348593831460",
+      "mismatches": 4,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "dynamic_repeated_load",
+      "suite": "dynamic_plugins",
+      "source": "crates/capi/src/dynamic_plugins.rs",
+      "before": "            p.count += 1;",
+      "after": "            // forget the duplicate reference",
+      "candidate_sha256": "577e178ee750fb8e816f7e999784cacc3934731a5a1bc1efa464984161767ad0",
+      "mismatches": 129,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "dynamic_reload_identity",
+      "suite": "dynamic_plugins",
+      "source": "crates/capi/src/dynamic_plugins.rs",
+      "before": "p.matchable && p.handle == handle as usize",
+      "after": "p.handle == handle as usize",
+      "candidate_sha256": "93c40167a67df321f840c3fd5e4ec6d13b5c2049bb5b6be01f33eba7de68ae70",
+      "mismatches": 10,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "dynamic_bulk_capacity",
+      "suite": "dynamic_plugins",
+      "source": "crates/capi/src/dynamic_plugins.rs",
+      "before": "if n == capacity {",
+      "after": "if n >= capacity {",
+      "candidate_sha256": "5bd9fb7c410d517a4633885fc717d07b1757e78d8e6eb3b4669efa0edaae7d79",
+      "mismatches": 8,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "dynamic_bulk_count",
+      "suite": "dynamic_plugins",
+      "source": "crates/capi/src/dynamic_plugins.rs",
+      "before": "count.write(n)",
+      "after": "count.write(n+1)",
+      "candidate_sha256": "31932f1db6413d08afd2a2850aae19a3254ce370da3bb124e4292ae6d92fde08",
+      "mismatches": 112,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "dynamic_bulk_terminator",
+      "suite": "dynamic_plugins",
+      "source": "crates/capi/src/dynamic_plugins.rs",
+      "before": "out.offset(n as isize).write(ptr::null())",
+      "after": "out.offset(n as isize).write(0x1234usize as *const PluginInfo)",
+      "candidate_sha256": "9f69072467b18162116ab7def0f6e194f2aabc84ade307a26436fd8ba0c3ef40",
+      "mismatches": 48,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "dynamic_cleanup_order",
+      "suite": "dynamic_plugins",
+      "source": "crates/capi/src/plugin_registry.rs",
+      "before": "    REGISTRY.lock().unwrap().encoders.clear();\n    crate::dynamic_plugins::unload_all();",
+      "after": "    crate::dynamic_plugins::unload_all();",
+      "candidate_sha256": "ea82bc7c193eab090b95a06f461256b477ee4763b4987af173a868a6fb091677",
+      "mismatches": 67,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "sequence_default_timescale",
+      "suite": "sequences",
+      "source": "src/sequences.rs",
+      "before": "timescale: 90000,",
+      "after": "timescale: 90001,",
+      "candidate_sha256": "4b1ed86412cc810bd0b64248a938d92d582c865a4f2b2d84f09dddc51f67001d",
+      "mismatches": 18,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "sequence_fresh_handler",
+      "suite": "sequences",
+      "source": "src/sequences.rs",
+      "before": "reported_handler: 0,",
+      "after": "reported_handler: handler,",
+      "candidate_sha256": "9f224669f205890d267aad918c876e1f9d20248097517598ed4f83330f20e7d4",
+      "mismatches": 571,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "sequence_reference_order",
+      "suite": "sequences",
+      "source": "src/sequences.rs",
+      "before": "            ids.push(id);",
+      "after": "            ids.insert(0,id);",
+      "candidate_sha256": "d9c0590e6e466627151a35c130657d7672dfbe44c77d35c11793241376524477",
+      "mismatches": 9,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "sequence_sample_duration",
+      "suite": "sequences",
+      "source": "src/sequences.rs",
+      "before": "self.durations.push(sample.metadata.duration);",
+      "after": "self.durations.push(sample.metadata.duration.wrapping_add(1));",
+      "candidate_sha256": "1891bfe8cc535ec2c392fc480fa4643e10ff6817199d650689a6fb0cce4fe4bb",
+      "mismatches": 300,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "sequence_optional_tai",
+      "suite": "sequences",
+      "source": "src/sequences.rs",
+      "before": "} else if self.options.tai_presence == 1 {",
+      "after": "} else if self.options.tai_presence == 2 {",
+      "candidate_sha256": "784d5756036f19f6a417f4e7ac0f8b0e094cc8fc76d48674bee49d2fa648edaf",
+      "mismatches": 10,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "sequence_infinite_duration",
+      "suite": "sequences",
+      "source": "src/sequences.rs",
+      "before": "t.movie_duration = if self.repetitions == 0 {",
+      "after": "t.movie_duration = if self.repetitions == u32::MAX {",
+      "candidate_sha256": "c691354a37a6b24e83af5c503c960cb2bee4a7f2023aeb718b47d43e1210caae",
+      "mismatches": 73,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "sequence_sample_offset",
+      "suite": "sequences",
+      "source": "src/sequences.rs",
+      "before": "let (offset, size) = self.ranges[idx];",
+      "after": "let (offset, size) = self.ranges[idx];\n        let offset=offset+1;",
+      "candidate_sha256": "88d9d4de3746f3c1d092e5d978f5d102538183e692e39b3ba0d8b7190b3610fd",
+      "mismatches": 244,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "sequence_clock_copy",
+      "suite": "sequences",
+      "source": "src/sequences.rs",
+      "before": "t.first_clock = Some(Box::new(c));",
+      "after": "let mut c=c; c.clock_resolution=c.clock_resolution.wrapping_add(1); t.first_clock = Some(Box::new(c));",
+      "candidate_sha256": "892403296413e27755617141a24e0c4de45baa52d53e57f28e255f791a73f294",
+      "mismatches": 4,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "sequence_decoder_duration",
+      "suite": "sequences",
+      "source": "src/sequences.rs",
+      "before": "self.durations[self.next as usize % self.durations.len()]",
+      "after": "self.durations[self.next.wrapping_sub(1) as usize % self.durations.len()]",
+      "candidate_sha256": "a259a7020f12bdc370ccbf33b92a8b158a39dd80771d7c922d17d1c0021c90b9",
+      "mismatches": 6,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "sequence_raw_output_sentinel",
+      "suite": "sequences",
+      "source": "crates/capi/src/sequences.rs",
+      "before": "let result = track.track.lock().unwrap().next_raw();",
+      "after": "unsafe{out.write(ptr::null_mut())};\n    let result = track.track.lock().unwrap().next_raw();",
+      "candidate_sha256": "0a52048de71fe96a9445e8f10a1992802b52b9000c58877376c17e63bf87b437",
+      "mismatches": 571,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "sequence_coding_constraints",
+      "suite": "sequences",
+      "source": "src/sequences.rs",
+      "before": "full(*b\"ccst\", 0, 0, &[0x80, 0, 0, 0])",
+      "after": "full(*b\"ccst\", 0, 0, &[0, 0, 0, 0])",
+      "candidate_sha256": "4befeba9bf3f8c67680d19085d8d59ec528b72689453cb0709e675fc347e32a3",
+      "mismatches": 156,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "sequence_movie_validation",
+      "suite": "sequence_reading",
+      "source": "src/sequences.rs",
+      "before": "validate_sequence_boxes(movie, &self.limits.read().unwrap())?;",
+      "after": "// deliberately skip sequence box validation",
+      "candidate_sha256": "8b9144b8f2cf41a796350d520a66ebc2becbc55ace6de46e4f13db3b9202c2ea",
+      "mismatches": 111,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "grid_copy_error_propagation",
+      "suite": "tile_encoding",
+      "source": "src/decoding.rs",
+      "before": "let _ = out.paste(&image, x, y);",
+      "after": "out.paste(&image, x, y)?;",
+      "candidate_sha256": "c7bd6908c68017c9459d404ffcee7620a8b8e5710009e5e9711eacbbbccbaf11",
+      "mismatches": 2,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "tiling_coded_width",
+      "suite": "tiling",
+      "source": "src/tiling.rs",
+      "before": "t.tile_width = w;",
+      "after": "t.tile_width = w.wrapping_add(1);",
+      "candidate_sha256": "5baf4a373ba220e1a28042a0db8a4a8777c164369a34a403adc28d1d4bbe8d1b",
+      "mismatches": 1242,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "tiling_inverse_rotation",
+      "suite": "tiling",
+      "source": "src/tiling.rs",
+      "before": "1 => (self.num_rows - 1 - y, x),",
+      "after": "1 => (y, x),",
+      "candidate_sha256": "ff1fae24c44665aa81c4b5c9ee50a29d849f94a4f8247a267fb3656e2dc767b3",
+      "mismatches": 236,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "tiling_crop_offset",
+      "suite": "tiling",
+      "source": "src/tiling.rs",
+      "before": "left = left.wrapping_add(l);",
+      "after": "left = left.wrapping_add(l+1);",
+      "candidate_sha256": "debb6a648afda733f0b01e19d946897157774418b62b13e74a13738b2d1958e2",
+      "mismatches": 154,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "tile_decode_output_sentinel",
+      "suite": "tiling",
+      "source": "crates/capi/src/decoding.rs",
+      "before": "if tile.is_none() {\n        unsafe {",
+      "after": "if true {\n        unsafe {",
+      "candidate_sha256": "419c681786620563f58d645d2599d03cb5c053d9d489f3ad5378ec5c092e2b0e",
+      "mismatches": 4241,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "tile_decode_payload_index",
+      "suite": "tiling",
+      "source": "src/uncompressed_decode.rs",
+      "before": "u64::from((ty as u32).wrapping_mul(c.columns).wrapping_add(tx as u32))",
+      "after": "u64::from((ty as u32).wrapping_mul(c.columns))",
+      "candidate_sha256": "d4f366f9a90819084f0d7e8114642db907b8645666ecb651703b329e1b4d8a56",
+      "mismatches": 1600,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "grid_tile_hidden",
+      "suite": "tile_encoding",
+      "source": "src/tile_encoding.rs",
+      "before": "self.items.items.get_mut(&tile.id).unwrap().hidden = true;",
+      "after": "self.items.items.get_mut(&tile.id).unwrap().hidden = false;",
+      "candidate_sha256": "6f035c82ed91627019ebacee314cc32f0866081ad81cd4657a765008ced4a073",
+      "mismatches": 350,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "grid_orientation",
+      "suite": "tile_encoding",
+      "source": "src/tile_encoding.rs",
+      "before": "self.add_orientation(grid.id, orientation)?;",
+      "after": "self.add_orientation(grid.id, 1)?;",
+      "candidate_sha256": "6ad3f87b89858dc7337317232e93fa6bbb0095b9277c2338410a06df0f2020fc",
+      "mismatches": 256,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "unci_tile_compression_essential",
+      "suite": "tile_encoding",
+      "source": "src/tile_encoding.rs",
+      "before": "self.retained_property(&info, property(*b\"cmpC\", d), true)?;",
+      "after": "self.retained_property(&info, property(*b\"cmpC\", d), false)?;",
+      "candidate_sha256": "453e32c5848510cd10276bcd6071ab6347e8fa96d35ae8ba3a1139a3facb4619",
+      "mismatches": 23,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "unci_tile_unit_offset",
+      "suite": "tile_encoding",
+      "source": "src/tile_encoding.rs",
+      "before": "units[index] = (*next_offset, size);",
+      "after": "units[index] = (0, size);",
+      "candidate_sha256": "fb212d3412f479f13b7bd58c1fc3a75cea616dd8ebc95f2d68b4929c6c959f22",
+      "mismatches": 14,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "unci_tile_replace_offset",
+      "suite": "tile_encoding",
+      "source": "src/tile_encoding.rs",
+      "before": "let start = index * *tile_size;",
+      "after": "let start = 0 * *tile_size;",
+      "candidate_sha256": "aa0a2a6c94a903c980913eef382094953d1b3e020ffb18f47d44949cd20e81ad",
+      "mismatches": 128,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "unci_tile_incomplete_properties",
+      "suite": "tile_encoding",
+      "source": "src/writing.rs",
+      "before": "incomplete = true;",
+      "after": "incomplete = false;",
+      "candidate_sha256": "a40d374eeb332baeb4a709b05019ea7a904f938535d98474599970f96c37dccb",
+      "mismatches": 6,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "encode_mask_stride",
+      "suite": "encoding",
+      "source": "src/encoding.rs",
+      "before": ".get(y * plane.stride..y * plane.stride + image.width as usize)",
+      "after": ".get(0..image.width as usize)",
+      "candidate_sha256": "f8fe35b60628f0e37d2ffe14b87b5dffaeb8493ee9a5ca1856a33c644f06f19e",
+      "mismatches": 350,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "encode_orientation",
+      "suite": "encoding",
+      "source": "src/encoding.rs",
+      "before": "6 => (3, None)",
+      "after": "6 => (1, None)",
+      "candidate_sha256": "b34b5f8456acd6f8f31d6da7d763328e8329f26d650ee73d73f7216bd18c72e9",
+      "mismatches": 115,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "encode_primary_flag",
+      "suite": "encoding",
+      "source": "src/encoding.rs",
+      "before": "old.primary.store(false, Ordering::Relaxed);",
+      "after": "old.primary.store(true, Ordering::Relaxed);",
+      "candidate_sha256": "79dd1b66c1c038b2fc72d0e50a63241d6f803105ea5d1de3feb13d87f12df972",
+      "mismatches": 24,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "encode_profile_fallback",
+      "suite": "encoding",
+      "source": "crates/capi/src/encoding.rs",
+      "before": "        image.color.nclx\n",
+      "after": "        None\n",
+      "candidate_sha256": "e3f6d45b6d642ecb72984245410d7702e03afafb1368e4965f47af9a43efd48c",
+      "mismatches": 16,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "encode_unc_component_endian",
+      "suite": "encoding",
+      "source": "src/uncompressed_encode.rs",
+      "before": "if !dense && cfg!(target_endian = \"little\")",
+      "after": "if false",
+      "candidate_sha256": "66a87782fe95db7799f9749739faf24ca84df07199c9388fc3d86abf08af0b23",
+      "mismatches": 230,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "encode_unc_compression_flag",
+      "suite": "encoding",
+      "source": "src/uncompressed_encode.rs",
+      "before": "props.push((property(*b\"cmpC\", cmp), false));",
+      "after": "props.push((property(*b\"cmpC\", cmp), true));",
+      "candidate_sha256": "ee92c75757868b1128a3e552999a4827b37422c71ce8fef0765da6d9a7853444",
+      "mismatches": 280,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "encode_thumbnail_noop",
+      "suite": "encoding",
+      "source": "crates/capi/src/encoding.rs",
+      "before": "ContextError::new(0, 0, \"Success\")",
+      "after": "ContextError::new(5, 2006, \"Invalid thumbnail\")",
+      "candidate_sha256": "8051ed86a32da90cb56a90a7f27df666ebc6df69234f221de6c7cadf23922d7c",
+      "mismatches": 12,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "encode_thumbnail_direction",
+      "suite": "encoding",
+      "source": "crates/capi/src/encoding.rs",
+      "before": "from: image.id,\n                kind: u32::from_be_bytes(*b\"thmb\"),\n                to: vec![master.id],",
+      "after": "from: master.id,\n                kind: u32::from_be_bytes(*b\"thmb\"),\n                to: vec![image.id],",
+      "candidate_sha256": "f04a27aa12c3e30d0684ac98b8b1eb44b472395851554f9da84f4bc7c79fc8f3",
+      "mismatches": 14,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "encode_overlay_background",
+      "suite": "encoding",
+      "source": "src/encoding.rs",
+      "before": "for n in background {",
+      "after": "for n in [0u16;4] {",
+      "candidate_sha256": "98147cd089c9880d0ca820bccd5e9d5a22cbd622724a6ac717edf5c93914542d",
+      "mismatches": 8,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "encode_repeated_extent",
+      "suite": "encoding",
+      "source": "src/items.rs",
+      "before": "*len = bytes.len() as u64 + data.len() as u64;",
+      "after": "*len = data.len() as u64;",
+      "candidate_sha256": "3040e72de2b197fe82ee24139434212fdec673bcab76a9c0c8c3bdb2775e574f",
+      "mismatches": 24,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "writer_mdat_base",
+      "suite": "writing",
+      "source": "src/writing.rs",
+      "before": "out.len() as u64 + meta_size as u64 + moov_size as u64 + 8",
+      "after": "out.len() as u64 + meta_size as u64 + moov_size as u64 + 9",
+      "candidate_sha256": "28b49dd8a073a300b3201fbf4903a51de46ebb8a6b2fee69428584d1e22269fa",
+      "mismatches": 198,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "writer_brand_dedup",
+      "suite": "writing",
+      "source": "src/writing.rs",
+      "before": "if !self.brands.contains(&brand) {",
+      "after": "if true {",
+      "candidate_sha256": "fe4068437a8750ad67bce7a10b016842c122163cbb384e307be33b7f1f6c5a2b",
+      "mismatches": 265,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "writer_uuid_bytes",
+      "suite": "writing",
+      "source": "src/writing.rs",
+      "before": "p.extend(prop.uuid.unwrap_or([0; 16]));",
+      "after": "p.extend([0; 16]);",
+      "candidate_sha256": "b7981ffcea39215652706256b3ea806b46d2ee6ae4bb69d827fccfd9aad13feb",
+      "mismatches": 18,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "writer_large_property_index",
+      "suite": "writing",
+      "source": "src/writing.rs",
+      "before": "any(|i| *i >= 127)",
+      "after": "any(|i| *i >= 128)",
+      "candidate_sha256": "8738fe561e5b9582d4f3748ff540564ca84cef948cf581a1705c2efba54b771f",
+      "mismatches": 3,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "writer_userdata",
+      "suite": "writing",
+      "source": "crates/capi/src/writing.rs",
+      "before": "data.len(), userdata)",
+      "after": "data.len(), ptr::null_mut())",
+      "candidate_sha256": "fd661b77b5ac0810caaddce29c25227379ed4f91f1a6dfcfe229c8a689266765",
+      "mismatches": 265,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "writer_success_message",
+      "suite": "writing",
+      "source": "crates/capi/src/writing.rs",
+      "before": "error.message = SUCCESS.message;",
+      "after": "error.message = c\"Wrong success\".as_ptr();",
+      "candidate_sha256": "1e070916cebd8146a90cefa96492368f1f6f5ed3ed9ef5d5b30b32a67d086123",
+      "mismatches": 50,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "plugin_encoder_priority",
+      "suite": "plugins",
+      "source": "crates/capi/src/plugin_registry.rs",
+      "before": "Self::External(p) => field!(p, priority)",
+      "after": "Self::External(p) => -field!(p, priority)",
+      "candidate_sha256": "2c20700a93315e63ce1f9bef707d0d04f9cdfb8fa800b23facc590e9d8730b7c",
+      "mismatches": 164,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "plugin_decoder_negative_priority",
+      "suite": "plugins",
+      "source": "crates/capi/src/plugin_registry.rs",
+      "before": "if priority != 0 {",
+      "after": "if priority > 0 {",
+      "candidate_sha256": "5c1f89b671109b7e8d6ec5510bb2a5c6d791505ac19c75f50ec7b73c3be0b417",
+      "mismatches": 166,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "plugin_decoder_duplicate",
+      "suite": "plugins",
+      "source": "crates/capi/src/plugin_registry.rs",
+      "before": "if !r\n        .decoders",
+      "after": "if true || !r\n        .decoders",
+      "candidate_sha256": "3ecd8fe0aa4a169177c2dc75458e5466a42a9974e344d3919a21a3e8e0805515",
+      "mismatches": 208,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "plugin_cleanup_order",
+      "suite": "plugins",
+      "source": "crates/capi/src/plugin_registry.rs",
+      "before": "    REGISTRY.lock().unwrap().decoders.clear();",
+      "after": "    // deliberate: leave decoders until after encoder cleanup",
+      "candidate_sha256": "867b48ed58596383715190e7975a0d9b64814a2c914fe7fa35ad03cfbb1ae850",
+      "mismatches": 142,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "plugin_decoder_count",
+      "suite": "plugins",
+      "source": "crates/capi/src/plugin_registry.rs",
+      "before": "let n = count.min(found.len() as c_int);",
+      "after": "let n = count.max(0).min(found.len() as c_int);",
+      "candidate_sha256": "876c159556645a79d389f172c49f884b9ed4483b7b432ab24d4192fd999f5170",
+      "mismatches": 224,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "encoder_duplicate_constraints",
+      "suite": "plugins",
+      "source": "crates/capi/src/encoder.rs",
+      "before": "for p in unsafe { matching(e, name) } {",
+      "after": "for p in unsafe { matching(e, name) }.take(1) {",
+      "candidate_sha256": "997afb53cda19538ea61298c00e7d04a9f4ab0d64a0db2fe1133764cb2525c8e",
+      "mismatches": 203,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "encoder_range_boundary",
+      "suite": "plugins",
+      "source": "crates/capi/src/encoder.rs",
+      "before": "value < min",
+      "after": "value <= min",
+      "candidate_sha256": "b683ba7493d463997bcd9d3ca2a4cc5c34d752ba6a85c2c33cd12196de5121c5",
+      "mismatches": 203,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "encoder_allowed_values",
+      "suite": "plugins",
+      "source": "crates/capi/src/encoder.rs",
+      "before": "if count > 0",
+      "after": "if count > 100",
+      "candidate_sha256": "cdfaea7a1d7512ce17d04c594efbe913d1656fc0a81e8f9c201423570109e2e6",
+      "mismatches": 203,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "encoder_boolean_spelling",
+      "suite": "plugins",
+      "source": "crates/capi/src/encoder.rs",
+      "before": "b\"true\" | b\"1\"",
+      "after": "b\"true\" | b\"1\" | b\"TRUE\"",
+      "candidate_sha256": "cdab06aeb19820ef7c9bbc9fe0a60d3f0ba5bde0dbb10173d71fd08f3d11aa13",
+      "mismatches": 203,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "encoder_old_default",
+      "suite": "plugins",
+      "source": "crates/capi/src/encoder.rs",
+      "before": "if field!(p, version) < 2 {\n            1",
+      "after": "if field!(p, version) < 2 {\n            0",
+      "candidate_sha256": "a3768b5e34c2a5148d85a55dbd716370458ea168efdf3cf0fd5b1d308d78c1d9",
+      "mismatches": 203,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "encoder_output_terminator",
+      "suite": "plugins",
+      "source": "crates/capi/src/encoder.rs",
+      "before": "out.add(n).write(0)",
+      "after": "out.add(n).write(32)",
+      "candidate_sha256": "32c1ad8a5250ed1980161dcc4a4afb761f9141a6e0f8064fae15d6d3c9c67b41",
+      "mismatches": 139,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "encoder_unknown_fallback",
+      "suite": "plugins",
+      "source": "crates/capi/src/encoder.rs",
+      "before": "unsafe { heif_encoder_set_parameter_string(e, name, value) }\n    }\n}",
+      "after": "unsupported()\n    }\n}",
+      "candidate_sha256": "19ba855c2dfcb538a29b0138cb5312953278c2b31f7f9c3d401b93b7f5278495",
+      "mismatches": 203,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "parameter_raw_range_flag",
+      "suite": "encoder_parameters",
+      "source": "crates/capi/src/encoder_parameters.rs",
+      "before": "have.write(have_range.into())",
+      "after": "have.write(i32::from(have_range != 0))",
+      "candidate_sha256": "3dd6d41cf55fc5821a2d18ab0dc1346b462c672a550ed8beca961dc90eaf5d5a",
+      "mismatches": 496,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "parameter_empty_array",
+      "suite": "encoder_parameters",
+      "source": "crates/capi/src/encoder_parameters.rs",
+      "before": "if num_values > 0 && !array.is_null()",
+      "after": "if num_values >= 0 && !array.is_null()",
+      "candidate_sha256": "4b97a89fcdbd7ce541be63764d72638c1c38c69d1c93a0f07cb6f90b56159ab1",
+      "mismatches": 312,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "parameter_signed_count",
+      "suite": "encoder_parameters",
+      "source": "crates/capi/src/encoder_parameters.rs",
+      "before": "count.write(num_values)",
+      "after": "count.write(num_values.max(0))",
+      "candidate_sha256": "1e88c37a840c036a43a0d7149782618aa1560eaef3908f596a08fcbade356175",
+      "mismatches": 77,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "parameter_string_values",
+      "suite": "encoder_parameters",
+      "source": "crates/capi/src/encoder_parameters.rs",
+      "before": "array.write(ptr::addr_of!((*p).value.string.valid_values).read())",
+      "after": "array.write(ptr::null())",
+      "candidate_sha256": "f73fb4fa287e3dbdfa599c4eafab3e0c05753f1e4807a6f029acbfe50c375df4",
+      "mismatches": 328,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "parameter_alias_order",
+      "suite": "encoder_parameters",
+      "source": "crates/capi/src/encoder_parameters.rs",
+      "before": "have_max.write(have_range.into())",
+      "after": "have_max.write(have_range.into()); if !minimum.is_null() { minimum.write(ptr::addr_of!((*p).value.integer.minimum).read()); }",
+      "candidate_sha256": "80c17a2b8385cdd83f1b389c13d577b42cc951f73df994d9db1bf16495a0dad6",
+      "mismatches": 3,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "gimi_first_property",
+      "suite": "gimi",
+      "source": "src/gimi.rs",
+      "before": ".find(|p| !p.raw && p.kind == *b\"uuid\" && p.uuid == Some(CONTENT_UUID))",
+      "after": ".rfind(|p| !p.raw && p.kind == *b\"uuid\" && p.uuid == Some(CONTENT_UUID))",
+      "candidate_sha256": "0a13c17bfcc516e26d1feae553678389596fc044fb33e714fb3584988e9bc85c",
+      "mismatches": 28,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "gimi_shared_property",
+      "suite": "gimi",
+      "source": "src/gimi.rs",
+      "before": ".find_map(|p| p.gimi_components.clone())",
+      "after": ".find_map(|p| p.gimi_components.as_ref().map(|ids| Arc::new(Mutex::new(ids.lock().unwrap().clone()))))",
+      "candidate_sha256": "3e082d33b211d72db0cf8f4e61c65f5e2adeee97d6e7ef03551d64477eb86741",
+      "mismatches": 439,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "gimi_read_only_property",
+      "suite": "gimi",
+      "source": "src/gimi.rs",
+      "before": "ctx.properties.add(self.id, property.clone(), false)?;",
+      "after": "ctx.properties.add_to_file(self.id, property.clone(), false)?;",
+      "candidate_sha256": "0808ba5a73a116a4267a060afb5f4fc33776f755635bbf2f8fb77f1446cf501a",
+      "mismatches": 446,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "gimi_decoded_id",
+      "suite": "gimi",
+      "source": "src/decoding.rs",
+      "before": "image.sample.content_id = content_id;",
+      "after": "image.sample.content_id = Vec::new(); let _ = content_id;",
+      "candidate_sha256": "f965339fb13c68d2dfb72571a3cae7d4c7e4099327ce85d056e72608b2468137",
+      "mismatches": 496,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "gimi_embedded_nul_presence",
+      "suite": "gimi",
+      "source": "crates/capi/src/gimi.rs",
+      "before": "if v.is_empty() {",
+      "after": "if v.is_empty() || v.first() == Some(&0) {",
+      "candidate_sha256": "2b92b805c387ed69ce303d1ba2c23eb844444fa8dcba1c92b6d74c74bbc4ebb0",
+      "mismatches": 33,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "gimi_component_terminator",
+      "suite": "gimi",
+      "source": "src/gimi.rs",
+      "before": ".unwrap_or(data.len() - 1);",
+      "after": ".unwrap_or(data.len().saturating_sub(2));",
+      "candidate_sha256": "11ecf7b0441eb26983f64a470c8c6704b96562da56a8743ffc2f1f0c0a41f799",
+      "mismatches": 4,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "entity_group_id",
+      "suite": "entity_groups",
+      "source": "crates/capi/src/entity_groups.rs",
+      "before": "entity_group_id: g.id,",
+      "after": "entity_group_id: g.id.wrapping_add(1),",
+      "candidate_sha256": "6d4345f976c7a275d519760d0a7ac28ba2be5ceb5d22db590d68e83568a9d7e9",
+      "mismatches": 1162,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "entity_group_filter",
+      "suite": "entity_groups",
+      "source": "crates/capi/src/entity_groups.rs",
+      "before": "g.entities.contains(&item_filter)",
+      "after": "g.entities.first() == Some(&item_filter)",
+      "candidate_sha256": "a949405c57c81dcf404dd34ed8218f2a5594b1256eadfac60cf11107ab6b420d",
+      "mismatches": 1158,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "entity_group_empty_result",
+      "suite": "entity_groups",
+      "source": "crates/capi/src/entity_groups.rs",
+      "before": "if groups.children == 0 {",
+      "after": "if groups.groups.is_empty() {",
+      "candidate_sha256": "5b50b87b2715e4a810cec850e47c23e4f25c90ee5144ebaf6de2dd67018aef4d",
+      "mismatches": 48,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "entity_group_pyramid_error",
+      "suite": "entity_groups",
+      "source": "src/entity_groups.rs",
+      "before": "Err(_) if kind == *b\"pymd\" => Ok(None),",
+      "after": "Err(_) if kind == *b\"altr\" => Ok(None),",
+      "candidate_sha256": "717b29ee18c155b08aa1cea731f8d4041cf189843f00d34af73be5bb3b9ec929",
+      "mismatches": 81,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "entity_group_member_order",
+      "suite": "entity_groups",
+      "source": "src/entity_groups.rs",
+      "before": "(0..count as usize).map(|i| read(12 + 4 * i))",
+      "after": "(0..count as usize).rev().map(|i| read(12 + 4 * i))",
+      "candidate_sha256": "8468a05e80875f49ea49eac7b4b6ee21546bd98852ddafb501016dddcdfd0c22",
+      "mismatches": 1158,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "region_signed_coordinates",
+      "suite": "regions",
+      "source": "src/regions.rs",
+      "before": "value as i16 as i32",
+      "after": "value as i32",
+      "candidate_sha256": "7334b85533e79b036a822040627d4a2faa80c7c86b05aed39b58756a8997a60e",
+      "mismatches": 742,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "region_polygon_minimum",
+      "suite": "regions",
+      "source": "src/regions.rs",
+      "before": "if kind == 3 { 3 } else { 2 }",
+      "after": "if kind == 3 { 4 } else { 2 }",
+      "candidate_sha256": "1f61538bb98253efc46d2c2ccb9e8ed2884eeb2b6139ce4238f16198f0b28074",
+      "mismatches": 734,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "region_partial_parse",
+      "suite": "regions",
+      "source": "src/regions.rs",
+      "before": "let Some(g) = r.geometry(kind, limits, budget) else {\n                break;",
+      "after": "let Some(g) = r.geometry(kind, limits, budget) else {\n                item.regions.clear(); break;",
+      "candidate_sha256": "fb369575c3668573bb4ddb78222b7ffd585a4ea4229a9f10c9b1da98ff487c2b",
+      "mismatches": 201,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "region_mask_default_size",
+      "suite": "regions",
+      "source": "src/context.rs",
+      "before": "geometry.width = image.ispe.0;",
+      "after": "geometry.width = image.ispe.1;",
+      "candidate_sha256": "0ebd424b764183e77dba0f44eafa6ccd893de505a0c3e511a7699b5855960c2b",
+      "mismatches": 697,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "region_reload_registry",
+      "suite": "regions",
+      "source": "src/context.rs",
+      "before": "self.items = crate::items::ItemStore::reading(input.clone());",
+      "after": "self.region_items.clear();\n        self.items = crate::items::ItemStore::reading(input.clone());",
+      "candidate_sha256": "3c2c27d633825e2adaf67aae057f2df4ebdc4fdb50745ea8a0a67e53f123b15c",
+      "mismatches": 2330,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "region_mask_pixels",
+      "suite": "regions",
+      "source": "crates/capi/src/regions.rs",
+      "before": "255\n            } else {",
+      "after": "254\n            } else {",
+      "candidate_sha256": "9f9ea4813310b2769b85ee56bc978876fca757db0119cffe16c28e65177d4cb9",
+      "mismatches": 995,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "region_mask_high_bit",
+      "suite": "regions",
+      "source": "crates/capi/src/regions.rs",
+      "before": "& 0x80)",
+      "after": "& 0x40)",
+      "candidate_sha256": "68e0c9193d535121369fc80c5d340f48f1e60edaa9f7e530d6b949f32ae39cdd",
+      "mismatches": 222,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "encoding_option_default",
+      "suite": "encoding_options",
+      "source": "crates/capi/src/encoding_options.rs",
+      "before": "version: 8,\n            save_alpha_channel: 1,",
+      "after": "version: 8,\n            save_alpha_channel: 0,",
+      "candidate_sha256": "77de8e9f79aaece3d21c3ee2a8b5902d9ac8a9c0264ac13186d67d7f9f99bcc3",
+      "mismatches": 2242,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "encoding_option_future_version",
+      "suite": "encoding_options",
+      "source": "crates/capi/src/encoding_options.rs",
+      "before": "!(1..=$max).contains(&version)",
+      "after": "!(1..=255).contains(&version)",
+      "candidate_sha256": "6dac8db2775d27f8204e083981991e54296fbf6c482332169220a838b48c5401",
+      "mismatches": 1539,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "encoding_option_copy_boundary",
+      "suite": "encoding_options",
+      "source": "crates/capi/src/encoding_options.rs",
+      "before": "version >= $version",
+      "after": "version > $version",
+      "candidate_sha256": "909a1f54773a8e196d9f0c7b3f3b31372efb4f30358a155e49c74ca3f735adfc",
+      "mismatches": 1861,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "orientation_composition_order",
+      "suite": "encoding_options",
+      "source": "src/geometry.rs",
+      "before": "TABLE[first as usize - 1][second as usize - 1]",
+      "after": "TABLE[second as usize - 1][first as usize - 1]",
+      "candidate_sha256": "b03f6276169edf66e52cca544566d8ccae52fbfa6f1e75eeb806b24ae01b87d0",
+      "mismatches": 258,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "omaf_projection_width",
+      "suite": "omaf",
+      "source": "src/omaf.rs",
+      "before": ".map(|v| i32::from(v & 31))",
+      "after": ".map(|v| i32::from(v & 15))",
+      "candidate_sha256": "5be5384f98a3f6840f108617b012de5507b9fd077582cae4f2f1e67ed2969633",
+      "mismatches": 255,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "omaf_latest_property",
+      "suite": "omaf",
+      "source": "src/omaf.rs",
+      "before": ".find(|p| !p.raw && p.kind == *b\"prfr\")",
+      "after": ".rfind(|p| !p.raw && p.kind == *b\"prfr\")",
+      "candidate_sha256": "3bf2af7a04ae7619df1ac9a1c8a24a114477bbf63c75704c1e1a5b5568b56b49",
+      "mismatches": 25,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "omaf_description_value",
+      "suite": "omaf",
+      "source": "src/omaf.rs",
+      "before": "self.projection.store(value, Ordering::Relaxed);",
+      "after": "self.projection.store(value & 31, Ordering::Relaxed);",
+      "candidate_sha256": "218fe60afe159774a44ac19764a7cb44445d5783a6f89d4b14391b3aa58c8c76",
+      "mismatches": 1678,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "omaf_setter_property_range",
+      "suite": "omaf",
+      "source": "src/omaf.rs",
+      "before": "if !(0..32).contains(&value)",
+      "after": "if !(0..31).contains(&value)",
+      "candidate_sha256": "d2f1066525e45a21d5b33fac100b275d8861336ae15a75504f00c3931e5d2143",
+      "mismatches": 29,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "omaf_decoded_property",
+      "suite": "omaf",
+      "source": "src/decoding.rs",
+      "before": "image.projection = projection;",
+      "after": "image.projection = crate::omaf::FLAT; let _ = projection;",
+      "candidate_sha256": "b58bb7744306ab41f2a90f163605b44902f6ed95d301acafa4585a1ab64d0f9d",
+      "mismatches": 510,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "sample_payload_copy",
+      "suite": "sequence_samples",
+      "source": "src/sequence_sample.rs",
+      "before": "self.data.extend_from_slice(data);",
+      "after": "self.data.extend(data.iter().map(|v| v ^ 1));",
+      "candidate_sha256": "17aa1409e4a50055f2f9385901e5db5e72472cbcaa1f469e4bda7f943c6881ed",
+      "mismatches": 688,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "sample_empty_storage",
+      "suite": "sequence_samples",
+      "source": "src/sequence_sample.rs",
+      "before": "self.data.capacity() != 0",
+      "after": "!self.data.is_empty()",
+      "candidate_sha256": "29ba1cd6765497df839ecc54b231b5741d85476b4be5e7c54cf7201a2ba3bd31",
+      "mismatches": 688,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "sample_duration",
+      "suite": "sequence_samples",
+      "source": "crates/capi/src/sequence_sample.rs",
+      "before": "v.$field.duration = duration;",
+      "after": "v.$field.duration = duration.wrapping_add(1);",
+      "candidate_sha256": "747f004a29b4f1d7f1f18c08f8c5a4b6eb97cb4abda427ee7cfee59173bd12c6",
+      "mismatches": 712,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "sample_timestamp_presence",
+      "suite": "sequence_samples",
+      "source": "crates/capi/src/sequence_sample.rs",
+      "before": "sample.timestamp = Some(copy);",
+      "after": "sample.timestamp = None; let _ = copy;",
+      "candidate_sha256": "d047b25351ecbc52bd97923679ccc30bec8099b2036c1ef45b4bf1239555a7ac",
+      "mismatches": 713,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "sample_id_empty",
+      "suite": "sequence_samples",
+      "source": "crates/capi/src/sequence_sample.rs",
+      "before": "if $empty_null && v.$field.content_id.is_empty()",
+      "after": "if v.$field.content_id.is_empty()",
+      "candidate_sha256": "c03e7b107704029828982af612a303a15b239acbc5659f67829e7169421ba4fa",
+      "mismatches": 713,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "sample_transform_metadata",
+      "suite": "sequence_samples",
+      "source": "src/image.rs",
+      "before": "        )?\n        .with_budget(self.budget.clone());\n        out.warnings = self.warnings.clone();\n        out.color = self.color.try_clone()?;\n        out.sensor = self.sensor.clone();\n        out.sample = self.sample.clone();",
+      "after": "        )?\n        .with_budget(self.budget.clone());\n        out.warnings = self.warnings.clone();\n        out.color = self.color.try_clone()?;\n        out.sensor = self.sensor.clone();\n        out.sample = crate::sequence_sample::SampleMetadata::default();",
+      "candidate_sha256": "489fca557c8d771333aa42fd706da1d937f95501a3457e1c53b38631b771acf7",
+      "mismatches": 695,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "unc_compression_wrapper",
+      "suite": "uncompressed_units",
+      "source": "src/uncompressed_compression.rs",
+      "before": "b\"zlib\" => 4,",
+      "after": "b\"zlib\" => 3,",
+      "candidate_sha256": "56d032d04179d2fece969dca03057d8afe77992dfc9eec2fd5f215425b8aba6d",
+      "mismatches": 552,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "unc_unit_type",
+      "suite": "uncompressed_units",
+      "source": "src/uncompressed_compression.rs",
+      "before": "if unit > 4 {",
+      "after": "if unit > 3 {",
+      "candidate_sha256": "f5d7af5d1430a5f8cee90c833565ae3fba614ff4bd331f80f9980ddad38cf296",
+      "mismatches": 236,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "unc_unit_index",
+      "suite": "uncompressed_units",
+      "source": "src/uncompressed_compression.rs",
+      "before": ".get(tile as usize)",
+      "after": ".get(0)",
+      "candidate_sha256": "f093f15e962b42696995ee08e2a8995ecc774e9376973f2a05f3411b45c3f7d4",
+      "mismatches": 100,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "unc_implied_offset",
+      "suite": "uncompressed_units",
+      "source": "src/uncompressed_compression.rs",
+      "before": "implied += size;",
+      "after": "implied += 0;",
+      "candidate_sha256": "4187fed4e8923ad40e7121865bead44b8a83245495c2f7a0ed1fdd7b0d737493",
+      "mismatches": 50,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "unc_unit_overflow",
+      "suite": "uncompressed_units",
+      "source": "src/uncompressed_compression.rs",
+      "before": "size >= u64::MAX - offset",
+      "after": "size > u64::MAX - offset",
+      "candidate_sha256": "44d4331ff39fdc416824c2136da899e1795dc20c6188990906a0613b1fa180bf",
+      "mismatches": 3,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "unc_range_origin",
+      "suite": "uncompressed_units",
+      "source": "src/uncompressed_compression.rs",
+      "before": "data.copy_within(start as usize..(start + size) as usize, 0);",
+      "after": "data.copy_within(0..size as usize, 0);",
+      "candidate_sha256": "55a6510bcfd886b88c0eecd702e0f360c552a14f8239f5518423c42d55dc7fd1",
+      "mismatches": 574,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "unc_pixel_value",
+      "suite": "uncompressed_pixels",
+      "source": "src/uncompressed_decode.rs",
+      "before": "let bytes = value.to_ne_bytes();",
+      "after": "let bytes = (value ^ 1).to_ne_bytes();",
+      "candidate_sha256": "977d2cbd4280de02cd1d6b423b15c4c5f9de85d6f7a7c66eb51155ace488e32a",
+      "mismatches": 1130,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "unc_row_alignment",
+      "suite": "uncompressed_pixels",
+      "source": "src/uncompressed_decode.rs",
+      "before": "bits.align(u64::from(align), start);",
+      "after": "bits.align(0, start);",
+      "candidate_sha256": "248571d70d41b4d9c03812e40569318e84424b91ba4181fc7c38d9902acdade2",
+      "mismatches": 126,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "unc_block_padding",
+      "suite": "uncompressed_pixels",
+      "source": "src/uncompressed_decode.rs",
+      "before": "let v = (value >> shift) & ((1u64 << n) - 1);",
+      "after": "let v = (value >> shift) & ((1u64 << n) - 2);",
+      "candidate_sha256": "b85cc251b0682e32c6779dfeef0550ea4c0cff5b04d729531a29d9eefc242fa7",
+      "mismatches": 134,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "unc_component_format",
+      "suite": "uncompressed_pixels",
+      "source": "src/uncompressed.rs",
+      "before": "desc.datatype = i32::from(c.format);",
+      "after": "desc.datatype = 0;",
+      "candidate_sha256": "64464cb598b2516a8f5f14e32ead384aedab6d6efdb6907d083838b5219520a9",
+      "mismatches": 378,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "unc_preferred_chroma_output",
+      "suite": "uncompressed_pixels",
+      "source": "crates/capi/src/context.rs",
+      "before": "if !chroma.is_null() && !preserve_chroma {",
+      "after": "if !chroma.is_null() { let _ = preserve_chroma;",
+      "candidate_sha256": "9687a996de0ca801b99676a4a25867f7f07109fb0e8ababca2897c08b9f70200",
+      "mismatches": 52,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "subbyte_rgb_replication",
+      "suite": "uncompressed_pixels",
+      "source": "src/conversion.rs",
+      "before": "((v as u32 * factor) >> 8) as i32",
+      "after": "((v as u32 * factor) >> 9) as i32",
+      "candidate_sha256": "4c4e9e1190f97dc40f21aae5eb87dfefc1f9b6df8a7322728e992c18a165b71d",
+      "mismatches": 44,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "filetype_enum",
+      "suite": "brands",
+      "source": "src/brands.rs",
+      "before": "Supported = 1,",
+      "after": "Supported = 7,",
+      "candidate_sha256": "fd347d0218ec3c0fa2994e676a8354ca6349a8fc893a31074a12fda2a16d8ab2",
+      "mismatches": 533,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "error_code",
+      "suite": "brands",
+      "source": "src/error.rs",
+      "before": "Self::new(5, 2001, c\"NULL argument passed\")",
+      "after": "Self::new(2, 2001, c\"NULL argument passed\")",
+      "candidate_sha256": "b5709e4f2e3be3899fd576ac9624fba914cab4b1439f18b1e93b6e15f64b4171",
+      "mismatches": 17126,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "brand_box_truncation",
+      "suite": "brand_boxes",
+      "source": "src/box_probe.rs",
+      "before": "matches!(read_box(&mut r, 0), Err((Failure::End, _)))",
+      "after": "matches!(read_box(&mut r, 0), Err((Failure::Other, _)))",
+      "candidate_sha256": "5408300e6610bab93ce79c35defae9cfbeeb9bfa0bae46cfc65b86c184e786a7",
+      "mismatches": 64902,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "brand_optional_child",
+      "suite": "brand_boxes",
+      "source": "src/box_probe.rs",
+      "before": "if let Err((error, false)) = read_box(r, level)",
+      "after": "if let Err((error, _)) = read_box(r, level)",
+      "candidate_sha256": "bef00c5a72d01fdf0a07fe8f5f25605bdc581d2eb85607b021072f02feb9d1b3",
+      "mismatches": 1090,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "brand_parent_boundary",
+      "suite": "brand_boxes",
+      "source": "src/box_probe.rs",
+      "before": "if end > r.input.len() as u64",
+      "after": "if end > r.end as u64",
+      "candidate_sha256": "8334fa380e8852f66de277d4c76b20578545179016996db04ff307b8b8124ab1",
+      "mismatches": 9,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "item_failed_add_id",
+      "suite": "items",
+      "source": "src/items.rs",
+      "before": "self.items.remove(&id);",
+      "after": "self.items.remove(&id);\n                let _ = self.mint();",
+      "candidate_sha256": "bf59629d35d1ce96f45144ca8c361064123269de06da14468941db9d4a308cbc",
+      "mismatches": 15,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "item_reference_order",
+      "suite": "items",
+      "source": "crates/capi/src/items.rs",
+      "before": ".filter(|r| r.from == from)\n        .nth(index as usize)",
+      "after": ".filter(|r| r.from == from)\n        .rev()\n        .nth(index as usize)",
+      "candidate_sha256": "e533e7868a3d8261cab02c884778161225682e3719d59ac8fa85ff52a505c0c9",
+      "mismatches": 2839,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "item_error_compression",
+      "suite": "items",
+      "source": "crates/capi/src/items.rs",
+      "before": "&& method == 0\n        && !compression.is_null()",
+      "after": "&& false\n        && !compression.is_null()",
+      "candidate_sha256": "fcc0594d45d9d0f3815acb4289394bead7b82dcdf322448252f70966ea3458e7",
+      "mismatches": 169,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "deflate_tree_tiebreak",
+      "suite": "items",
+      "source": "src/deflate_compat.rs",
+      "before": "nodes[a].depth <= nodes[b].depth",
+      "after": "nodes[a].depth < nodes[b].depth",
+      "candidate_sha256": "3ff85a128e4361d389ac827ffdf6c852d6e954891b0693cc30ab18f48fa0013e",
+      "mismatches": 338,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "inflate_error_cause",
+      "suite": "items",
+      "source": "vendor/zlib-rs/src/inflate.rs",
+      "before": "self.error_message.get_or_insert(msg);",
+      "after": "self.error_message = Some(msg);",
+      "candidate_sha256": "b05c568b7905a849c6510973ce95f40aca59fc13e61e990d4d7b947de9800475",
+      "mismatches": 84,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "compressed_handle_metadata",
+      "suite": "metadata_compression",
+      "source": "src/context.rs",
+      "before": "if !matches!(method, 0 | 3 | 4)",
+      "after": "if method != 0",
+      "candidate_sha256": "13b7a8d3acf8042544f36f95e48dbc8dadedb886efefb6975858d4a3138271fc",
+      "mismatches": 110,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "tai_copy_version",
+      "suite": "tai",
+      "source": "crates/capi/src/tai.rs",
+      "before": "if unsafe { dst.cast::<u8>().read() } == 0",
+      "after": "if unsafe { dst.cast::<u8>().read() } <= 1",
+      "candidate_sha256": "82b82f5b2f2d608c1951d305e2e39de8f468f12394795736c4c7bcd637b62f35",
+      "mismatches": 1054,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "tai_typed_equality",
+      "suite": "tai",
+      "source": "src/properties.rs",
+      "before": "p.tai == property.tai",
+      "after": "p.data == property.data",
+      "candidate_sha256": "538b80524b472fd3b8bda61f5da4964c2b3b42731440df9ce4135d47b00cac1a",
+      "mismatches": 799,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "tai_clock_bits",
+      "suite": "tai",
+      "source": "src/tai.rs",
+      "before": "clock_type: data[20] >> 6",
+      "after": "clock_type: data[20] >> 5",
+      "candidate_sha256": "a1b8c2a5a30999aef838f83e55ac62772be877b4d57dda29f3e643ebe6c5a5b0",
+      "mismatches": 534,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "tai_decoded_value",
+      "suite": "tai",
+      "source": "src/decoding.rs",
+      "before": "image.tai_timestamp = Some(timestamp);",
+      "after": "let _ = timestamp;",
+      "candidate_sha256": "24855bba21bc25eccb06ccae65d52379f2d28196d8f2757fd2d75fd4e81ea532",
+      "mismatches": 569,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "reload_file_tables",
+      "suite": "tai",
+      "source": "crates/capi/src/decoding.rs",
+      "before": "if !has_iloc && document.images.contains_key(&handle.id)",
+      "after": "if false && !has_iloc && document.images.contains_key(&handle.id)",
+      "candidate_sha256": "28c835b4ab38b975ed93ae400e26009e7f0ed47157a69aea3f10c23cd654e921",
+      "mismatches": 1091,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "metadata_exif_offset",
+      "suite": "add_metadata",
+      "source": "src/metadata.rs",
+      "before": "&(offset as u32).to_be_bytes()",
+      "after": "&(offset as u32 + 1).to_be_bytes()",
+      "candidate_sha256": "16d9f62859053340666a095844fad4b66254edb199d0a9afd60b91b6d6926c73",
+      "mismatches": 452,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "metadata_deflate_wrapper",
+      "suite": "add_metadata",
+      "source": "src/metadata.rs",
+      "before": "let method = if matches!(compression, 3 | 4) { 4 } else { 0 };",
+      "after": "let method = if matches!(compression, 3 | 4) { compression } else { 0 };",
+      "candidate_sha256": "5cf84c5d603490a44b07fddb1edf1aac7fe9a498b5d5c01d77f579937c5f2a51",
+      "mismatches": 42,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "metadata_reference_target",
+      "suite": "add_metadata",
+      "source": "src/metadata.rs",
+      "before": "to: vec![target],",
+      "after": "to: vec![target.wrapping_add(1)],",
+      "candidate_sha256": "c95e66b34f25fd519e6249fd26223315a3f08dc88ccd00293d21adbcfb70c9a6",
+      "mismatches": 1910,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "text_reload_registry",
+      "suite": "text",
+      "source": "src/context.rs",
+      "before": "self.items = crate::items::ItemStore::reading(input.clone());",
+      "after": "self.text_items.clear();\n        self.items = crate::items::ItemStore::reading(input.clone());",
+      "candidate_sha256": "c64382df72cdae26031f03552f73b6b13b4bcc971dffbdc9298ff08cb0313442",
+      "mismatches": 736,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "text_pending_payload",
+      "suite": "text",
+      "source": "src/text.rs",
+      "before": "let id = self.items.add_pending(item)?;",
+      "after": "let id = self.items.add(item, content.clone())?;",
+      "candidate_sha256": "040f78c7f5d2992e848b2aa7be04082ede7819e0b9f5fe79540f4cb163b3154f",
+      "mismatches": 736,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "text_lookup_order",
+      "suite": "text",
+      "source": "crates/capi/src/text.rs",
+      "before": ".find(|t| t.id == id)",
+      "after": ".rfind(|t| t.id == id)",
+      "candidate_sha256": "70c0800409db6e801fa382ee763b38ae0eafdc1589065672cd5019780416898a",
+      "mismatches": 11,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "infe_string_terminator",
+      "suite": "text",
+      "source": "src/container.rs",
+      "before": ".unwrap_or(self.0.len().saturating_sub(1))",
+      "after": ".unwrap_or(self.0.len())",
+      "candidate_sha256": "b4395578efcdcfe55afcf836b8447f352a1a03a83661889d96b1c93e9e1d658d",
+      "mismatches": 4,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "extract_chroma_origin",
+      "suite": "image_area",
+      "source": "src/image_area.rs",
+      "before": "(x.div_ceil(sx), y.div_ceil(sy))",
+      "after": "(x / sx, y / sy)",
+      "candidate_sha256": "27f3778ee8db8590103b0521ba8fce67af91dd2ef281077a1f8e9daf061dac46",
+      "mismatches": 60,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "padding_reallocated_dimensions",
+      "suite": "image_area",
+      "source": "src/image_area.rs",
+      "before": "*p = dest;",
+      "after": "*p = dest;\n                if !zero { p.width = old_w; p.height = old_h; }",
+      "candidate_sha256": "9ec62025f5d16b930e2cb372f2f438bf5eb7b930193d4e406709a28553815b53",
+      "mismatches": 147,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "zero_chroma_neutral",
+      "suite": "image_area",
+      "source": "src/image_area.rs",
+      "before": "                128\n",
+      "after": "                127\n",
+      "candidate_sha256": "0db8cf95cdbffde4d7e73285ad9513a21b68b2912b6a39abc66beb1b50134897",
+      "mismatches": 102,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "extract_next_component_id",
+      "suite": "image_area",
+      "source": "src/image_area.rs",
+      "before": "out.component_ids = self.component_ids.clone();",
+      "after": "out.component_ids = self.component_ids.clone();\n        out.component_ids.next = 1;",
+      "candidate_sha256": "49497d0e1c8429efb6936f46ccfe77968867d093ca16fbcfad095835e0f2305d",
+      "mismatches": 1021,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "extract_extension_budget",
+      "suite": "image_area",
+      "source": "src/image_area.rs",
+      "before": "out.extend_area(width, height, true, budget.as_ref())?;",
+      "after": "out.extend_area(width, height, true, None)?;",
+      "candidate_sha256": "153af766b47d4a69874f7437f113677fd7cdca2910959c62bba1e6e47422abeb",
+      "mismatches": 32,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "handle_first_property",
+      "suite": "handle_color",
+      "source": "src/handle_properties.rs",
+      "before": ".find(|p| !p.raw && p.kind == kind)",
+      "after": ".rfind(|p| !p.raw && p.kind == kind)",
+      "candidate_sha256": "7cad99595b8f1a734bd2d9bf314c20c71513be97b91b0bed1cd98464de0c5759",
+      "mismatches": 716,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "handle_property_read_only",
+      "suite": "handle_color",
+      "source": "src/handle_properties.rs",
+      "before": "context.properties.add_to_file(self.id, property, false)?;",
+      "after": "context.properties.add(self.id, property, false)?;",
+      "candidate_sha256": "45740710e0d0f27eb2a1835c88395c8bc2572dfe4f17db740415ad00fd170440",
+      "mismatches": 716,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "handle_zero_clli",
+      "suite": "handle_color",
+      "source": "src/handle_properties.rs",
+      "before": "if v.max_content_light_level == 0 && v.max_pic_average_light_level == 0 {",
+      "after": "if false {",
+      "candidate_sha256": "2e721640b82ad0da56522d3ac6604293120ddfb18a3835573c87b11179a1fa98",
+      "mismatches": 231,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "typed_property_trailing_bytes",
+      "suite": "handle_color",
+      "source": "src/properties.rs",
+      "before": "&data[..size.min(data.len())]",
+      "after": "data",
+      "candidate_sha256": "520804ee81355747287746c4964184dada259da072e82035a42a2c08e4726166",
+      "mismatches": 10,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "derived_hdr_inheritance",
+      "suite": "handle_color",
+      "source": "src/decoding.rs",
+      "before": "image.color.content_light = inherited_hdr.0;",
+      "after": "image.color.content_light = Default::default();",
+      "candidate_sha256": "7d56ac7aa22d7290ff08db72ccf3f403ef6613ce250a342320eda8b37fb1b82f",
+      "mismatches": 8,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "ndwt_version_warning",
+      "suite": "handle_color",
+      "source": "src/properties.rs",
+      "before": "b\"ndwt\" if data[0] != 0 =>",
+      "after": "b\"ndwt\" if data[0] > 1 =>",
+      "candidate_sha256": "a5de8fc55d4ddaf04b366305b3374209d6199cc9236d407e3309b846dea670c2",
+      "mismatches": 1,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "cmpd_count_limit",
+      "suite": "uncompressed_config",
+      "source": "src/uncompressed.rs",
+      "before": "count > max_components",
+      "after": "count >= max_components",
+      "candidate_sha256": "a7ef8e1d7626543242b8ea577cd45b910be05548fb35437fb7496bea604110a0",
+      "mismatches": 8,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "cmpd_uri_terminator",
+      "suite": "uncompressed_config",
+      "source": "src/uncompressed.rs",
+      "before": ".unwrap_or(self.data.len().saturating_sub(1))",
+      "after": ".unwrap_or(self.data.len())",
+      "candidate_sha256": "1d87163af5ac8934ece768663fe4b83fed533981fe7f7faba2419d5b5813c955",
+      "mismatches": 27,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "uncc_pixel_limit_version",
+      "suite": "uncompressed_config",
+      "source": "src/uncompressed.rs",
+      "before": "limits.version >= 4",
+      "after": "true",
+      "candidate_sha256": "7e992a33685f18fd27d907c86f7f8cad35daf389545f1d66a3493a059145708c",
+      "mismatches": 30,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "uncc_profile_components",
+      "suite": "uncompressed_config",
+      "source": "src/uncompressed.rs",
+      "before": "b\"rgb3\" => (&[4, 5, 6],",
+      "after": "b\"rgb3\" => (&[6, 5, 4],",
+      "candidate_sha256": "cfe1fd9ccec3df8cc80ca89573eed7b30c6fcbcd6216bbeebfd4db346c88f481",
+      "mismatches": 3,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "plane_pixels",
+      "suite": "images",
+      "source": "src/image.rs",
+      "before": "storage.resize(allocation, 0);",
+      "after": "storage.resize(allocation, 0);\n        storage[..16].fill(1);",
+      "candidate_sha256": "67cfd6dda31288cd3dfdfb869968ce80afb441210959a40ed573b8a590556664",
+      "mismatches": 612,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "primary_coordinate",
+      "suite": "color",
+      "source": "src/color.rs",
+      "before": "color_primary_red_x: rx,",
+      "after": "color_primary_red_x: rx + 0.0001,",
+      "candidate_sha256": "988b04cd2882049fdfe8e44b73d5e1e16216f26aa4ff70df88089543256ebce2",
+      "mismatches": 776,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "primary_id",
+      "suite": "context",
+      "source": "crates/capi/src/context.rs",
+      "before": "out.write(doc.primary)",
+      "after": "out.write(doc.primary.wrapping_add(1))",
+      "candidate_sha256": "3d3ba9590032d2578f7a3edc6a9b0a3808ed3d3d89590999039bac28d92964f0",
+      "mismatches": 868,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "alpha_reload_state",
+      "suite": "context",
+      "source": "crates/capi/src/context.rs",
+      "before": ".is_some_and(|i| i.has_alpha)",
+      "after": ".is_some_and(|_| handle.image().has_alpha)",
+      "candidate_sha256": "2bf965f2850e6cb751baecc9134b935cb073fad3aa702ab66cd10d2ca490012d",
+      "mismatches": 166,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "grid_worker_callbacks",
+      "suite": "decode_derived",
+      "source": "src/decoding.rs",
+      "before": "if options.max_decoding_threads > 0 {",
+      "after": "if false {",
+      "candidate_sha256": "72e89763f717d77f54e495b0999bf0b81099cd4257aa6c917a6367c309f8e9af",
+      "mismatches": 184,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "warning_text",
+      "suite": "warnings",
+      "source": "crates/capi/src/image.rs",
+      "before": "libheifer::error_text::message(error.code, error.subcode)",
+      "after": "String::from(\"wrong warning text\")",
+      "candidate_sha256": "7bf25d2213a19b3bfd641922d8965a47d7436011bb9f7c44d87d864a24798737",
+      "mismatches": 1176,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "mask_samples",
+      "suite": "decode_mask",
+      "source": "src/mask.rs",
+      "before": ".copy_from_slice(&data[y * row_bytes..(y + 1) * row_bytes]);",
+      "after": ".copy_from_slice(&data[y * row_bytes..(y + 1) * row_bytes]);\n        plane.data_mut()[target] ^= 1;",
+      "candidate_sha256": "ab8fab0194aa20924cd8956c80ba9b3f9094a60669e966c769ffde6b17ec6827",
+      "mismatches": 146,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "overlay_alpha",
+      "suite": "decode_graphs",
+      "source": "src/overlay.rs",
+      "before": "((src * a + dst * (255 - a)) / 255)",
+      "after": "((src * a + dst * (255 - a)) / 256)",
+      "candidate_sha256": "9f0f905781914f1e8f375356a2c5cb5d4286e57d6c4e082b94ef0626575a76bc",
+      "mismatches": 9,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "derived_operation_budget",
+      "suite": "decode_graphs",
+      "source": "src/decoding.rs",
+      "before": ".saturating_mul(2)",
+      "after": ".saturating_mul(3)",
+      "candidate_sha256": "b63367a3eda60682abcbf6a534adb2de3b21f851dc8ef1dbf9b4554e6248e34f",
+      "mismatches": 1,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "live_memory_budget",
+      "suite": "security",
+      "source": "src/security.rs",
+      "before": ".checked_add(amount)",
+      "after": ".checked_add(0)",
+      "candidate_sha256": "1313dd48f69b5eaf793d7e58ed97c84f1ae71dbdd5569ffc92bff8f652cbc1ee",
+      "mismatches": 285,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "auxiliary_filter",
+      "suite": "auxiliary",
+      "source": "crates/capi/src/auxiliary.rs",
+      "before": "filter & 2 == 0",
+      "after": "filter & 1 == 0",
+      "candidate_sha256": "45433988d9e167714ded3b74b974a459784501eb7bb75ce9dc93321d38480b35",
+      "mismatches": 4,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "depth_value",
+      "suite": "auxiliary",
+      "source": "src/auxiliary.rs",
+      "before": "exponent - 31",
+      "after": "exponent - 30",
+      "candidate_sha256": "a1f41076bb1f09907190881b2bae0c5963dd5b362c49930b2dd2fc345dfddc8a",
+      "mismatches": 148,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "property_ids",
+      "suite": "properties",
+      "source": "crates/capi/src/properties.rs",
+      "before": "out.add(n as usize).write(index as u32 + 1)",
+      "after": "out.add(n as usize).write(index as u32 + 2)",
+      "candidate_sha256": "7a5aeca37b82a3e8259e46642b924a79c17396f01b9433a51948ce61369216eb",
+      "mismatches": 921,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "property_raw_class",
+      "suite": "properties",
+      "source": "src/properties.rs",
+      "before": "None => p.raw,",
+      "after": "None => true,",
+      "candidate_sha256": "1077a54adae27349ea2faedd77a04a81a3fa6762736792e89a1b937bca0459b4",
+      "mismatches": 921,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "description_terminator",
+      "suite": "properties",
+      "source": "src/properties.rs",
+      "before": ".unwrap_or(data.len().saturating_sub(1))",
+      "after": ".unwrap_or(data.len())",
+      "candidate_sha256": "2687fb1898645dc8492abb034065a3ac60e0800ddd2b9d356e2b008ed7254c0a",
+      "mismatches": 21,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "property_crop_origin",
+      "suite": "properties",
+      "source": "crates/capi/src/properties.rs",
+      "before": "l as c_int,",
+      "after": "(l + 1) as c_int,",
+      "candidate_sha256": "215c1d6742923965f9982df9ecac1a0cdfb8c479a8fdef9eaabca4702aa94704",
+      "mismatches": 15,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "camera_focal_scale",
+      "suite": "camera",
+      "source": "src/camera.rs",
+      "before": "focal_length_x: fx * f64::from(width as i32),",
+      "after": "focal_length_x: fx * f64::from(width as i32) * 2.0,",
+      "candidate_sha256": "d2837909b8e38d920f37a31dc04ec9f5ecf9bca7a4a0d511b3c3d2104c5cbdd8",
+      "mismatches": 365,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "camera_quaternion",
+      "suite": "camera",
+      "source": "src/camera.rs",
+      "before": "quaternion[3] = (1.0 - sum).sqrt();",
+      "after": "quaternion[3] = (1.0 - sum).sqrt() * 0.5;",
+      "candidate_sha256": "6f2e84da445e6a016a8cf96b51cda1b193347edbf8ae7f13e7ae81dd43eea6a7",
+      "mismatches": 165,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "polarization_match_order",
+      "suite": "sensor",
+      "source": "src/sensor.rs",
+      "before": ".position(|p|",
+      "after": ".rposition(|p|",
+      "candidate_sha256": "a481d2cfd88df90b775c1c60569e989f9520138ba918cdb6669d4fc49a115d6a",
+      "mismatches": 704,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "polarization_nan_bits",
+      "suite": "sensor",
+      "source": "crates/capi/src/sensor.rs",
+      "before": "value.to_bits() == u32::MAX",
+      "after": "value.to_bits() == u32::MAX - 1",
+      "candidate_sha256": "20089ed636589c80e1789ea05b2010ae660e432554bd56e3bf7f663063389d19",
+      "mismatches": 2,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "component_id_sequence",
+      "suite": "sensor",
+      "source": "src/components.rs",
+      "before": "self.next.wrapping_add(1)",
+      "after": "self.next.wrapping_add(2)",
+      "candidate_sha256": "abf8c856cc513374721e3f96f0975121b0baa145d726b3d870098e47e297daba",
+      "mismatches": 704,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "component_reference_count",
+      "suite": "components",
+      "source": "crates/capi/src/components.rs",
+      "before": "i.component_ids.descriptions.len() as u32",
+      "after": "i.component_ids.descriptions.iter().filter(|d| d.has_data).count() as u32",
+      "candidate_sha256": "2f9c09330549050ebaa8b98ed998be1972133764e18c7a150b88e4b95493b188",
+      "mismatches": 67328,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "component_typed_stride",
+      "suite": "components",
+      "source": "crates/capi/src/components.rs",
+      "before": "stride.write(plane.map_or(0, |p| p.stride / std::mem::size_of::<$ty>()));",
+      "after": "stride.write(plane.map_or(0, |p| p.stride));",
+      "candidate_sha256": "53c1cc39e8189f0302117734aee101c69f7ae3e826b02437a73bea4492988c95",
+      "mismatches": 1674,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "component_crop_datatype",
+      "suite": "components",
+      "source": "src/image.rs",
+      "before": "plane.datatype = source.datatype;",
+      "after": "plane.datatype = 0;",
+      "candidate_sha256": "2736efad4a31f3212908062e69b2243a93b35254ec1c7b49a4b84162ba1fa57c",
+      "mismatches": 1061,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "component_grid_parse_order",
+      "suite": "component_handles",
+      "source": "src/context.rs",
+      "before": "b\"grid\" => coded.map(|c| (c.colorspace, c.chroma, c.luma_bits, c.chroma_bits)),",
+      "after": "b\"grid\" => coded.map(|c| (c.colorspace, c.chroma, c.luma_bits + 1, c.chroma_bits)),",
+      "candidate_sha256": "99c69b43c72552581e472c02c2f0ebc8c24a8bb0a311a3eb009f2b9534b8a037",
+      "mismatches": 7,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "component_decode_ids",
+      "suite": "component_handles",
+      "source": "src/decoding.rs",
+      "before": "image.apply_descriptions(&document.images[&id].components);",
+      "after": "// Deliberate defect: skip component reconciliation.",
+      "candidate_sha256": "48436215437c0e85b74b15763d716e4db7d71f9d9790a901fd89b9c83da8ead9",
+      "mismatches": 4,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "component_alpha_depth",
+      "suite": "component_handles",
+      "source": "src/components.rs",
+      "before": "if depth > 0 { depth as u16 } else { 8 }",
+      "after": "if false { depth as u16 } else { 8 }",
+      "candidate_sha256": "4be155e704c8f6f04b48cb826c335ec4a818e8b1f94f351bcd475dfd81d21ff8",
+      "mismatches": 20,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "jpeg_sof_boundary",
+      "suite": "component_handles",
+      "source": "src/jpeg_config.rs",
+      "before": "11 + 3 * count >= data.len()",
+      "after": "11 + 3 * count > data.len()",
+      "candidate_sha256": "3babc516194dc133c131e4fa6cb602b2db44916b8e21554c2e4c0e9795a56190",
+      "mismatches": 1,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "coded_size_limit",
+      "suite": "hevc_limits",
+      "source": "src/decoding.rs",
+      "before": ".max(65536)",
+      "after": ".max(65535)",
+      "candidate_sha256": "e2aff3f5021996e0050e825e43420488e67a69833f6b121df3041520578691ef",
+      "mismatches": 138,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "error_field_order",
+      "suite": "abi",
+      "source": "crates/capi/src/lib.rs",
+      "before": "pub code: c_int,\n    pub subcode: c_int,",
+      "after": "pub subcode: c_int,\n    pub code: c_int,",
+      "candidate_sha256": "8664afd31c55747b862c5e0fcf835570130fb75f5e93acb8f93e00f5540f327d",
+      "detected": true
+    }
+  ],
+  "workflow_jobs": [
+    {
+      "id": 105921151830,
+      "name": "Independent C clients (Linux)",
+      "status": "completed",
+      "conclusion": "failure",
+      "run_id": 35452185151,
+      "logs_url": null,
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2
+        },
+        {
+          "name": "Run dtolnay/rust-toolchain@1.90.0",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3
+        },
+        {
+          "name": "Run python -m pip install libclang==18.1.1",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4
+        },
+        {
+          "name": "Run cargo fmt --all --check",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5
+        },
+        {
+          "name": "Run cargo clippy --locked --workspace --all-targets --all-features -- -D warnings",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6
+        },
+        {
+          "name": "Run cargo test --locked --workspace --no-default-features",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7
+        },
+        {
+          "name": "Run cargo test --locked --workspace --all-features",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 8
+        },
+        {
+          "name": "Run python tools/inventory.py --check",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 9
+        },
+        {
+          "name": "Run python tools/audit_dependencies.py",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 10
+        },
+        {
+          "name": "Run python tools/build_reference.py --hevc",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11
+        },
+        {
+          "name": "Run python tools/build_reference.py --plugins --build .build/reference-plugins",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 12
+        },
+        {
+          "name": "Run cargo build --locked --release -p libheifer-capi",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 13
+        },
+        {
+          "name": "Run cargo build --locked --release --features hevc --example hevc_probe",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 14
+        },
+        {
+          "name": "Run python tools/test_brands.py --reference-build .build/reference",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 15
+        },
+        {
+          "name": "Run python tools/test_brand_boxes.py --reference-build .build/reference",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 16
+        },
+        {
+          "name": "Run python tools/test_brand_boxes.py --reference-build .build/reference --sanitize --output .build/brand-boxes-sanitized-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 17
+        },
+        {
+          "name": "Run python tools/test_images.py --reference-build .build/reference",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 18
+        },
+        {
+          "name": "Run python tools/test_color.py --reference-build .build/reference",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 19
+        },
+        {
+          "name": "Run python tools/test_debug_dump.py --reference-build .build/reference",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 20
+        },
+        {
+          "name": "Run python tools/test_plugin_decoding.py --reference-build .build/reference",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 21
+        },
+        {
+          "name": "Run python tools/test_plugin_decoding.py --reference-build .build/reference --sanitize --work .build/plugin-decoding-sanitized --output .build/plugin-decoding-sanitized-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 22
+        },
+        {
+          "name": "Run python tools/test_debug_writing.py --reference-build .build/reference",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 23
+        },
+        {
+          "name": "Run python tools/test_debug_writing.py --reference-build .build/reference --sanitize --work .build/debug-writing-sanitized --output .build/debug-writing-sanitized-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 24
+        },
+        {
+          "name": "Run python tools/test_debug_dump.py --reference-build .build/reference --sanitize --work .build/debug-sanitized --output .build/debug-sanitized-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 25
+        },
+        {
+          "name": "Run python tools/test_reader_input.py --reference-build .build/reference",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 26
+        },
+        {
+          "name": "Run python tools/test_reader_input.py --reference-build .build/reference --sanitize --work .build/reader-sanitized --output .build/reader-sanitized-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 27
+        },
+        {
+          "name": "Run python tools/test_file_input.py --reference-build .build/reference --work .build/file_input-normal --output .build/file_input-normal-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 28
+        },
+        {
+          "name": "Run python tools/test_file_input.py --reference-build .build/reference --sanitize --work .build/file_input-sanitized --output .build/file_input-sanitized-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 29
+        },
+        {
+          "name": "Run python tools/test_file_sequence_reading.py --reference-build .build/reference --work .build/file_sequence_reading-normal --output .build/file_sequence_reading-normal-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 30
+        },
+        {
+          "name": "Run python tools/test_file_sequence_reading.py --reference-build .build/reference --sanitize --work .build/file_sequence_reading-sanitized --output .build/file_sequence_reading-sanitized-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 31
+        },
+        {
+          "name": "Run python tools/test_file_sparse.py --reference-build .build/reference --work .build/file_sparse-normal --output .build/file_sparse-normal-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 32
+        },
+        {
+          "name": "Run python tools/test_file_sparse.py --reference-build .build/reference --sanitize --work .build/file_sparse-sanitized --output .build/file_sparse-sanitized-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 33
+        },
+        {
+          "name": "Run python tools/test_mutations.py --reference-build .build/reference --output .build/file-input-mutations-report.json --only file_snapshot_origin --only file_source_boundary --only file_failed_open_state --only file_header_origin --only file_open_error_class",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 34
+        },
+        {
+          "name": "Run python tools/test_context.py --reference-build .build/reference",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 35
+        },
+        {
+          "name": "Run python tools/test_items.py --reference-build .build/reference",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 36
+        },
+        {
+          "name": "Run python tools/test_add_metadata.py --reference-build .build/reference",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 37
+        },
+        {
+          "name": "Run python tools/test_text.py --reference-build .build/reference",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 38
+        },
+        {
+          "name": "Run python tools/test_uncompressed_config.py --reference-build .build/reference",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 39
+        },
+        {
+          "name": "Run python tools/test_uncompressed_pixels.py --reference-build .build/reference",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 40
+        },
+        {
+          "name": "Run python tools/test_uncompressed_units.py --reference-build .build/reference",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 41
+        },
+        {
+          "name": "Run python tools/test_sequence_samples.py --reference-build .build/reference",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 42
+        },
+        {
+          "name": "Run python tools/test_encoder_parameters.py --reference-build .build/reference",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 43
+        },
+        {
+          "name": "Run python tools/test_dynamic_plugins.py --reference-build .build/reference-plugins",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 44
+        },
+        {
+          "name": "Run python tools/test_dynamic_plugins.py --reference-build .build/reference-plugins --sanitize --work .build/dynamic-plugins-sanitized --output .build/dynamic-plugins-sanitized-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 45
+        },
+        {
+          "name": "Run python tools/test_plugins.py --reference-build .build/reference",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 46
+        },
+        {
+          "name": "Run python tools/test_encoding.py --reference-build .build/reference",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 47
+        },
+        {
+          "name": "Run python tools/test_tiling.py --reference-build .build/reference",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 48
+        },
+        {
+          "name": "Run python tools/test_tile_encoding.py --reference-build .build/reference",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 49
+        },
+        {
+          "name": "Run python tools/test_sequences.py --reference-build .build/reference",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 50
+        },
+        {
+          "name": "Run python tools/test_sequence_reading.py --reference-build .build/reference",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 51
+        },
+        {
+          "name": "Run python tools/test_encoding.py --reference-build .build/reference --sanitize --output .build/encoding-sanitized-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 52
+        },
+        {
+          "name": "Run python tools/test_tiling.py --reference-build .build/reference --sanitize --output .build/tiling-sanitized-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 53
+        },
+        {
+          "name": "Run python tools/test_tile_encoding.py --reference-build .build/reference --sanitize --output .build/tile-encoding-sanitized-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 54
+        },
+        {
+          "name": "Run python tools/test_sequences.py --reference-build .build/reference --sanitize --output .build/sequences-sanitized-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 55
+        },
+        {
+          "name": "Run python tools/test_sequence_reading.py --reference-build .build/reference --sanitize --output .build/sequence-reading-sanitized-report.json --work .build/sequence-reading-sanitized",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 56
+        },
+        {
+          "name": "Run python tools/test_writing.py --reference-build .build/reference",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 57
+        },
+        {
+          "name": "Run python tools/test_writing.py --reference-build .build/reference --sanitize --output .build/writing-sanitized-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 58
+        },
+        {
+          "name": "Run python tools/test_plugins.py --reference-build .build/reference --sanitize --output .build/plugins-sanitized-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 59
+        },
+        {
+          "name": "Run python tools/test_encoder_parameters.py --reference-build .build/reference --sanitize --output .build/encoder-parameters-sanitized-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 60
+        },
+        {
+          "name": "Run python tools/test_gimi.py --reference-build .build/reference",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 61
+        },
+        {
+          "name": "Run python tools/test_gimi.py --reference-build .build/reference --sanitize --output .build/gimi-sanitized-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 62
+        },
+        {
+          "name": "Run python tools/test_entity_groups.py --reference-build .build/reference",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 63
+        },
+        {
+          "name": "Run python tools/test_entity_groups.py --reference-build .build/reference --sanitize --output .build/entity-groups-sanitized-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 64
+        },
+        {
+          "name": "Run python tools/test_regions.py --reference-build .build/reference",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 65
+        },
+        {
+          "name": "Run python tools/test_regions.py --reference-build .build/reference --sanitize --output .build/regions-sanitized-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 66
+        },
+        {
+          "name": "Run python tools/test_encoding_options.py --reference-build .build/reference",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 67
+        },
+        {
+          "name": "Run python tools/test_encoding_options.py --reference-build .build/reference --sanitize --output .build/encoding-options-sanitized-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 68
+        },
+        {
+          "name": "Run python tools/test_omaf.py --reference-build .build/reference",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 69
+        },
+        {
+          "name": "Run python tools/test_omaf.py --reference-build .build/reference --sanitize --output .build/omaf-sanitized-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 70
+        },
+        {
+          "name": "Run python tools/test_sequence_samples.py --reference-build .build/reference --sanitize --output .build/sequence-samples-sanitized-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 71
+        },
+        {
+          "name": "Run python tools/test_uncompressed_units.py --reference-build .build/reference --sanitize --output .build/uncompressed-units-sanitized-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 72
+        },
+        {
+          "name": "Run python tools/test_uncompressed_pixels.py --reference-build .build/reference --sanitize --output .build/uncompressed-pixels-sanitized-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 73
+        },
+        {
+          "name": "Run python tools/test_uncompressed_config.py --reference-build .build/reference --sanitize --output .build/uncompressed-config-sanitized-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 74
+        },
+        {
+          "name": "Run python tools/test_handle_color.py --reference-build .build/reference",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 75
+        },
+        {
+          "name": "Run python tools/test_handle_color.py --reference-build .build/reference --sanitize --output .build/handle-color-sanitized-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 76
+        },
+        {
+          "name": "Run python tools/test_image_area.py --reference-build .build/reference",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 77
+        },
+        {
+          "name": "Run python tools/test_image_area.py --reference-build .build/reference --sanitize --output .build/image-area-sanitized-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 78
+        },
+        {
+          "name": "Run python tools/test_text.py --reference-build .build/reference --sanitize --output .build/text-sanitized-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 79
+        },
+        {
+          "name": "Run python tools/test_add_metadata.py --reference-build .build/reference --sanitize --output .build/add-metadata-sanitized-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 80
+        },
+        {
+          "name": "Run python tools/test_metadata_compression.py --reference-build .build/reference",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 81
+        },
+        {
+          "name": "Run python tools/test_items.py --reference-build .build/reference --sanitize --output .build/items-sanitized-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 82
+        },
+        {
+          "name": "Run python tools/test_metadata_compression.py --reference-build .build/reference --sanitize --output .build/metadata-compression-sanitized-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 83
+        },
+        {
+          "name": "Run python tools/test_auxiliary.py --reference-build .build/reference",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 84
+        },
+        {
+          "name": "Run python tools/test_properties.py --reference-build .build/reference",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 85
+        },
+        {
+          "name": "Run python tools/test_properties.py --reference-build .build/reference --sanitize --output .build/properties-sanitized-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 86
+        },
+        {
+          "name": "Run python tools/test_decode_properties.py --reference-build .build/reference",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 87
+        },
+        {
+          "name": "Run python tools/test_camera.py --reference-build .build/reference",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 88
+        },
+        {
+          "name": "Run python tools/test_sensor.py --reference-build .build/reference",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 89
+        },
+        {
+          "name": "Run python tools/test_tai.py --reference-build .build/reference",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 90
+        },
+        {
+          "name": "Run python tools/test_tai.py --reference-build .build/reference --sanitize --output .build/tai-sanitized-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 91
+        },
+        {
+          "name": "Run python tools/test_components.py --reference-build .build/reference",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 92
+        },
+        {
+          "name": "Run python tools/test_component_handles.py --reference-build .build/reference",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 93
+        },
+        {
+          "name": "Run python tools/test_component_handles.py --reference-build .build/reference --sanitize --output .build/component-handles-sanitized-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 94
+        },
+        {
+          "name": "Run python tools/test_components.py --reference-build .build/reference --sanitize --output .build/components-sanitized-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 95
+        },
+        {
+          "name": "Run python tools/test_sensor.py --reference-build .build/reference --sanitize --output .build/sensor-sanitized-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 96
+        },
+        {
+          "name": "Run python tools/test_camera.py --reference-build .build/reference --sanitize --output .build/camera-sanitized-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 97
+        },
+        {
+          "name": "Run python tools/test_auxiliary.py --reference-build .build/reference --sanitize --output .build/auxiliary-sanitized-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 98
+        },
+        {
+          "name": "Run python tools/test_context.py --reference-build .build/reference --sanitize --output .build/context-sanitized-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 99
+        },
+        {
+          "name": "Run python tools/test_decoding_options.py --reference-build .build/reference",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 100
+        },
+        {
+          "name": "Run python tools/test_decoding_options.py --reference-build .build/reference --sanitize --output .build/decoding-options-sanitized-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 101
+        },
+        {
+          "name": "Run python tools/test_transforms.py --reference-build .build/reference",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 102
+        },
+        {
+          "name": "Run python tools/test_decode.py --reference-build .build/reference",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 103
+        },
+        {
+          "name": "Run python tools/test_hevc_limits.py --reference-build .build/reference",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 104
+        },
+        {
+          "name": "Run python tools/test_error_lifetimes.py --reference-build .build/reference",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 105
+        },
+        {
+          "name": "Run python tools/test_error_lifetimes.py --reference-build .build/reference --sanitize --output .build/error-lifetimes-sanitized-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 106
+        },
+        {
+          "name": "Run python tools/test_decode_geometry.py --reference-build .build/reference",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 107
+        },
+        {
+          "name": "Run python tools/test_decode_derived.py --reference-build .build/reference",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 108
+        },
+        {
+          "name": "Run python tools/test_decode_overlay.py --reference-build .build/reference",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 109
+        },
+        {
+          "name": "Run python tools/test_decode_mask.py --reference-build .build/reference",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 110
+        },
+        {
+          "name": "Run CARGO_TARGET_DIR=.build/no-codecs cargo build --locked --release -p libheifer-capi --no-default-features",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 111
+        },
+        {
+          "name": "Run python tools/test_debug_dump.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --work .build/debug-no-codecs --output .build/debug-no-codecs-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 112
+        },
+        {
+          "name": "Run python tools/test_debug_writing.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --work .build/debug-writing-no-codecs --output .build/debug-writing-no-codecs-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 113
+        },
+        {
+          "name": "Run python tools/test_plugin_decoding.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --work .build/plugin-decoding-no-codecs --output .build/plugin-decoding-no-codecs-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 114
+        },
+        {
+          "name": "Run python tools/test_reader_input.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --work .build/reader-no-codecs --output .build/reader-no-codecs-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 115
+        },
+        {
+          "name": "Run python tools/test_file_input.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --work .build/file_input-no-codecs --output .build/file_input-no-codecs-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 116
+        },
+        {
+          "name": "Run python tools/test_file_sequence_reading.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --work .build/file_sequence_reading-no-codecs --output .build/file_sequence_reading-no-codecs-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 117
+        },
+        {
+          "name": "Run python tools/test_file_sparse.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --work .build/file_sparse-no-codecs --output .build/file_sparse-no-codecs-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 118
+        },
+        {
+          "name": "Run python tools/test_gimi.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --output .build/no-codecs-gimi-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 119
+        },
+        {
+          "name": "Run python tools/test_encoder_parameters.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --output .build/no-codecs-encoder-parameters-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 120
+        },
+        {
+          "name": "Run python tools/test_dynamic_plugins.py --reference-build .build/reference-plugins --candidate .build/no-codecs/release/libheifer.so --work .build/dynamic-plugins-no-codecs --output .build/dynamic-plugins-no-codecs-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 121
+        },
+        {
+          "name": "Run python tools/test_plugins.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --output .build/no-codecs-plugins-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 122
+        },
+        {
+          "name": "Run python tools/test_encoding.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --output .build/no-codecs-encoding-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 123
+        },
+        {
+          "name": "Run python tools/test_tiling.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --output .build/no-codecs-tiling-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 124
+        },
+        {
+          "name": "Run python tools/test_tile_encoding.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --output .build/no-codecs-tile-encoding-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 125
+        },
+        {
+          "name": "Run python tools/test_sequences.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --output .build/no-codecs-sequences-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 126
+        },
+        {
+          "name": "Run python tools/test_sequence_reading.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --output .build/no-codecs-sequence-reading-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 127
+        },
+        {
+          "name": "Run python tools/test_writing.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --output .build/no-codecs-writing-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 128
+        },
+        {
+          "name": "Run python tools/test_entity_groups.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --output .build/no-codecs-entity-groups-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 129
+        },
+        {
+          "name": "Run python tools/test_regions.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --output .build/no-codecs-regions-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 130
+        },
+        {
+          "name": "Run python tools/test_encoding_options.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --output .build/no-codecs-encoding-options-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 131
+        },
+        {
+          "name": "Run python tools/test_omaf.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --output .build/no-codecs-omaf-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 132
+        },
+        {
+          "name": "Run python tools/test_sequence_samples.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --output .build/no-codecs-sequence-samples-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 133
+        },
+        {
+          "name": "Run python tools/test_uncompressed_units.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --output .build/no-codecs-uncompressed-units-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 134
+        },
+        {
+          "name": "Run python tools/test_uncompressed_pixels.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --output .build/no-codecs-uncompressed-pixels-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 135
+        },
+        {
+          "name": "Run python tools/test_uncompressed_config.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --output .build/no-codecs-uncompressed-config-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 136
+        },
+        {
+          "name": "Run python tools/test_handle_color.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --output .build/no-codecs-handle-color-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 137
+        },
+        {
+          "name": "Run python tools/test_image_area.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --output .build/no-codecs-image-area-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 138
+        },
+        {
+          "name": "Run python tools/test_text.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --output .build/no-codecs-text-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 139
+        },
+        {
+          "name": "Run python tools/test_add_metadata.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --output .build/no-codecs-add-metadata-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 140
+        },
+        {
+          "name": "Run python tools/test_tai.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --without-hevc --output .build/no-codecs-tai-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 141
+        },
+        {
+          "name": "Run python tools/test_items.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --output .build/no-codecs-items-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 142
+        },
+        {
+          "name": "Run python tools/test_metadata_compression.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --output .build/no-codecs-metadata-compression-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 143
+        },
+        {
+          "name": "Run python tools/test_auxiliary.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --output .build/no-codecs-auxiliary-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 144
+        },
+        {
+          "name": "Run python tools/test_properties.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --output .build/no-codecs-properties-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 145
+        },
+        {
+          "name": "Run python tools/test_camera.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --output .build/no-codecs-camera-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 146
+        },
+        {
+          "name": "Run python tools/test_sensor.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --output .build/no-codecs-sensor-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 147
+        },
+        {
+          "name": "Run python tools/test_components.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --output .build/no-codecs-components-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 148
+        },
+        {
+          "name": "Run python tools/test_component_handles.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --descriptions-only --output .build/no-codecs-component-handles-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 149
+        },
+        {
+          "name": "Run python tools/test_decode_mask.py --reference-build .build/reference --candidate .build/no-codecs/release/libheifer.so --work .build/no-codecs-decode --output .build/no-codecs-mask-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 150
+        },
+        {
+          "name": "Run python tools/test_decode_graphs.py --reference-build .build/reference",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 151
+        },
+        {
+          "name": "Run python tools/test_derived_handles.py --reference-build .build/reference",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 152
+        },
+        {
+          "name": "Run python tools/test_derived_handles.py --reference-build .build/reference --sanitize --output .build/derived-handles-sanitized-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 153
+        },
+        {
+          "name": "Run python tools/test_security.py --reference-build .build/reference",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 154
+        },
+        {
+          "name": "Run python tools/test_security.py --reference-build .build/reference --sanitize --output .build/security-sanitized-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 155
+        },
+        {
+          "name": "Run python tools/test_security_lifetimes.py --reference-build .build/reference",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 156
+        },
+        {
+          "name": "Run python tools/test_warnings.py --reference-build .build/reference",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 157
+        },
+        {
+          "name": "Run python tools/test_warnings.py --reference-build .build/reference --sanitize --output .build/warnings-sanitized-report.json",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 158
+        },
+        {
+          "name": "Run python tools/test_hevc.py --reference-build .build/reference --require-default-output",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 159
+        },
+        {
+          "name": "Run python tools/test_mutations.py --reference-build .build/reference",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 160
+        },
+        {
+          "name": "Run python tools/check_coverage.py --reference .build/reference/libheif/libheif.so --development",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 161
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 162
+        },
+        {
+          "name": "Full API completion (expected to fail during implementation)",
+          "status": "completed",
+          "conclusion": "failure",
+          "number": 163
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 326
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 327
+        }
+      ]
+    },
+    {
+      "id": 105921151869,
+      "name": "Rust build (windows-latest)",
+      "status": "completed",
+      "conclusion": "success",
+      "run_id": 35452185151,
+      "logs_url": null,
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2
+        },
+        {
+          "name": "Run dtolnay/rust-toolchain@1.90.0",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3
+        },
+        {
+          "name": "Run cargo test --locked -p libheifer --all-features",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4
+        },
+        {
+          "name": "Run cargo build --locked --release -p libheifer-capi",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 10
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11
+        }
+      ]
+    },
+    {
+      "id": 105921151914,
+      "name": "Rust build (ubuntu-latest)",
+      "status": "completed",
+      "conclusion": "success",
+      "run_id": 35452185151,
+      "logs_url": null,
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2
+        },
+        {
+          "name": "Run dtolnay/rust-toolchain@1.90.0",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3
+        },
+        {
+          "name": "Run cargo test --locked -p libheifer --all-features",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4
+        },
+        {
+          "name": "Run cargo build --locked --release -p libheifer-capi",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 10
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11
+        }
+      ]
+    },
+    {
+      "id": 105921151963,
+      "name": "Rust build (macos-latest)",
+      "status": "completed",
+      "conclusion": "success",
+      "run_id": 35452185151,
+      "logs_url": null,
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2
+        },
+        {
+          "name": "Run dtolnay/rust-toolchain@1.90.0",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3
+        },
+        {
+          "name": "Run cargo test --locked -p libheifer --all-features",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4
+        },
+        {
+          "name": "Run cargo build --locked --release -p libheifer-capi",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 10
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11
+        }
+      ]
+    }
+  ]
+}

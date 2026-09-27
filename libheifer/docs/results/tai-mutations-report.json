@@ -1,0 +1,56 @@
+{
+  "scope": "5 deliberate defects; not comprehensive mutation coverage",
+  "mutations": [
+    {
+      "mutation": "tai_copy_version",
+      "suite": "tai",
+      "source": "crates/capi/src/tai.rs",
+      "before": "if unsafe { dst.cast::<u8>().read() } == 0",
+      "after": "if unsafe { dst.cast::<u8>().read() } <= 1",
+      "candidate_sha256": "88b2859b7ee1b070080e88a59f80073d581eb42ac29a7c5dc72e0d075f47a70a",
+      "mismatches": 1054,
+      "detected": true
+    },
+    {
+      "mutation": "tai_typed_equality",
+      "suite": "tai",
+      "source": "src/properties.rs",
+      "before": "p.tai == property.tai",
+      "after": "p.data == property.data",
+      "candidate_sha256": "6d40b099b27403d4d5d1fa9f23f274896831f352756b82d2e2c398c4f55db8d9",
+      "mismatches": 799,
+      "detected": true
+    },
+    {
+      "mutation": "tai_clock_bits",
+      "suite": "tai",
+      "source": "src/tai.rs",
+      "before": "clock_type: data[20] >> 6",
+      "after": "clock_type: data[20] >> 5",
+      "candidate_sha256": "6cbd6ad5f2c3aa28747d8692cdb90e89cdb28f55fc2a27aaab3f4b0a31305c87",
+      "mismatches": 534,
+      "detected": true
+    },
+    {
+      "mutation": "tai_decoded_value",
+      "suite": "tai",
+      "source": "src/decoding.rs",
+      "before": "image.tai_timestamp = Some(timestamp);",
+      "after": "let _ = timestamp;",
+      "candidate_sha256": "1b112a3b2333a6d7f21650aaad8fded4bb9c16fab6f7efc832a4774e4d66e5ca",
+      "mismatches": 569,
+      "detected": true
+    },
+    {
+      "mutation": "reload_file_tables",
+      "suite": "tai",
+      "source": "crates/capi/src/decoding.rs",
+      "before": "if !has_iloc && document.images.contains_key(&handle.id)",
+      "after": "if false && !has_iloc && document.images.contains_key(&handle.id)",
+      "candidate_sha256": "72bb0cff528fcf9e20e97df66287ca7497291459718999e9ae14b7b15341cb3d",
+      "mismatches": 1091,
+      "detected": true
+    }
+  ],
+  "all_detected": true
+}

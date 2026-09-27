@@ -1,0 +1,26 @@
+{
+  "scope": "2 deliberate defects; not comprehensive mutation coverage",
+  "mutations": [
+    {
+      "mutation": "auxiliary_filter",
+      "suite": "auxiliary",
+      "source": "crates/capi/src/auxiliary.rs",
+      "before": "filter & 2 == 0",
+      "after": "filter & 1 == 0",
+      "candidate_sha256": "485edd9dda88dd9b88f4e5ac7e3634a33a60eaaf9d3d38d3d59955868f5e7564",
+      "mismatches": 4,
+      "detected": true
+    },
+    {
+      "mutation": "depth_value",
+      "suite": "auxiliary",
+      "source": "src/auxiliary.rs",
+      "before": "exponent - 31",
+      "after": "exponent - 30",
+      "candidate_sha256": "d3edaae3d35a95e71e0aa4c62950f2f8fdc40f9dea67074ca1643498f5cb44ac",
+      "mismatches": 148,
+      "detected": true
+    }
+  ],
+  "all_detected": true
+}

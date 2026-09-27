@@ -1,0 +1,126 @@
+{
+ "scope": "11 HTJ2K and packet-header defects (initial run; ht_stripe_causal survived before sparse single-block bases)",
+ "mutations": [
+  {
+   "mutation": "jpeg2000_stuff_bit",
+   "suite": "htj2k_errors",
+   "source": "vendor/hayro-jpeg2000/src/reader.rs",
+   "before": "its most significant bit is ignored.\n        self.read_bit()?;",
+   "after": "its most significant bit is ignored.\n        if self.read_bit()? != 0 {\n            return None;\n        }",
+   "candidate_sha256": "d7b76ca7b503c7d3d5213f4f39ed42c1fee07bf3313a54024296abdc6aadfc6b",
+   "mismatches": 20,
+   "process_failures": [],
+   "detected": true
+  },
+  {
+   "mutation": "jpeg2000_header_trailing_ff",
+   "suite": "htj2k_errors",
+   "source": "vendor/hayro-jpeg2000/src/j2c/segment.rs",
+   "before": "header_reader.skip_bytes(1)?;",
+   "after": "header_reader.skip_bytes(0)?;",
+   "candidate_sha256": "b6f244f3e020ff72dbaf61e3c9cc49a177cf36b112bc26bf9b50603e5ff44ff5",
+   "mismatches": 6,
+   "process_failures": [],
+   "detected": true
+  },
+  {
+   "mutation": "ht_zero_bitplanes",
+   "suite": "htj2k",
+   "source": "vendor/hayro-jpeg2000/src/j2c/decode.rs",
+   "before": "code_block.zero_bitplanes.wrapping_add(1)",
+   "after": "code_block.zero_bitplanes",
+   "candidate_sha256": "0aa2003aff4b4893bbb5d126cc9dc46495d1bdb61f3123758c25234b28717ebe",
+   "mismatches": 9013,
+   "process_failures": [],
+   "detected": true
+  },
+  {
+   "mutation": "ht_reversible_halving",
+   "suite": "htj2k",
+   "source": "vendor/hayro-jpeg2000/src/j2c/decode.rs",
+   "before": "(value / 2) as f32",
+   "after": "(value >> 1) as f32",
+   "candidate_sha256": "155a50b4a2d5800cee31dba1e15147e4e99e1b009b6a7353038cc6fc06dc83cd",
+   "mismatches": 4635,
+   "process_failures": [],
+   "detected": true
+  },
+  {
+   "mutation": "ht_mel_initial_unstuff",
+   "suite": "htj2k_errors",
+   "source": "vendor/hayro-jpeg2000/src/j2c/ht.rs",
+   "before": "if mel.unstuff && byte(data, mel.pos) > 0x8F {",
+   "after": "if false && byte(data, mel.pos) > 0x8F {",
+   "candidate_sha256": "139349bf62890e0218198e5729409c4124b74ea586b73b6a8d2da36943095128",
+   "mismatches": 4,
+   "process_failures": [],
+   "detected": true
+  },
+  {
+   "mutation": "ht_first_segment_pass",
+   "suite": "htj2k_errors",
+   "source": "vendor/hayro-jpeg2000/src/j2c/segment.rs",
+   "before": "let new_passes = if segno == 0 { 1 } else { n as u32 };",
+   "after": "let new_passes = n as u32;",
+   "candidate_sha256": "419a414839133b99f554b645ac74dc2a6b038e00c39f12ee8f439e4bb9c9672b",
+   "mismatches": 4317,
+   "process_failures": [],
+   "detected": true
+  },
+  {
+   "mutation": "ht_magref_half",
+   "suite": "htj2k_errors",
+   "source": "vendor/hayro-jpeg2000/src/j2c/ht.rs",
+   "before": "decoded[idx] |= half;",
+   "after": "decoded[idx] |= 0;",
+   "candidate_sha256": "f6fbf5e291c91208751ecda1ad07a6eeeb7b3a9ad1c924a6cc57b07579181e75",
+   "mismatches": 1265,
+   "process_failures": [],
+   "detected": true
+  },
+  {
+   "mutation": "ht_stripe_causal",
+   "suite": "htj2k_errors",
+   "source": "vendor/hayro-jpeg2000/src/j2c/ht.rs",
+   "before": "        if !stripe_causal {\n",
+   "after": "        if true {\n",
+   "candidate_sha256": "1936b0271269a163ebbd975294da4e754493d0d02ff228b6c9b884eca76e1266",
+   "mismatches": 0,
+   "process_failures": [],
+   "detected": false
+  },
+  {
+   "mutation": "ht_roi_shift",
+   "suite": "htj2k_errors",
+   "source": "vendor/hayro-jpeg2000/src/j2c/ht.rs",
+   "before": "if cb.roi_shift != 0 {",
+   "after": "if false {",
+   "candidate_sha256": "b3e66ad4d6543f794f506c95ea4629ecf618cd2f58d83467159b25f3a9f3041d",
+   "mismatches": 12,
+   "process_failures": [],
+   "detected": true
+  },
+  {
+   "mutation": "ht_mixed_style",
+   "suite": "htj2k_errors",
+   "source": "vendor/hayro-jpeg2000/src/j2c/codestream.rs",
+   "before": "        if value & 0x80 != 0 {",
+   "after": "        if value & 0x00 != 0 {",
+   "candidate_sha256": "a1ff4c0f8464cd3ab055c9cd9ab32fcfb77f7fa707926664a5607e2d23d8b260",
+   "mismatches": 256,
+   "process_failures": [],
+   "detected": true
+  },
+  {
+   "mutation": "ht_empty_refinement",
+   "suite": "htj2k_errors",
+   "source": "vendor/hayro-jpeg2000/src/j2c/ht.rs",
+   "before": "if num_passes > 1 && lengths2 == 0 {",
+   "after": "if false {",
+   "candidate_sha256": "47f77821e3bfdc05cf6d1dc2d000462b1d6d86fd726974ee5e5806f2baf036b3",
+   "mismatches": 232,
+   "process_failures": [],
+   "detected": true
+  }
+ ]
+}

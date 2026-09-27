@@ -1,0 +1,12 @@
+{
+  "scope": "Context and handle queries, color/metadata/thumbnails, copied and borrowed memory, context aliases and lifetimes; no decoding or reader callbacks",
+  "client_sanitizers": false,
+  "leak_check": false,
+  "cases": 1786,
+  "mismatches": 0,
+  "corpus_sha256": "5bf9cbdd4946c696b41f6343afb91f78e47d28a57a287e5e3870bc298b2f09bf",
+  "client_sha256": "298161b132c1ac7a48f3a5b0944920faf06fae11ee347586f4fe7daf36ce1e3a",
+  "reference_sha256": "5d70927cded8be6d1b4da912971aed75d426ba079c84d0b8462785ec5b9c92f7",
+  "candidate_sha256": "e299ff2c4c20f9ebc6344afee1fbddfa20f320c44f7d33880cc1cf815a7d898f",
+  "examples": []
+}

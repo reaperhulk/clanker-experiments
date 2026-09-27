@@ -1,0 +1,13 @@
+{
+  "scope": "Compact-container file input and retained metadata after unlink and context release.",
+  "cases": 1031,
+  "transcript_lines": 1031,
+  "mismatches": 0,
+  "differences": [],
+  "client_sanitizers": false,
+  "leak_check": false,
+  "client_sha256": "5cb4eaf71e9297c76525cf4164689dc8ff3c47e086da927e1990c4db354d96c3",
+  "corpus_sha256": "bc6aa0345a72f2453796bada9d69293580fc9d0656162b2d9eb1ddd44e85c104",
+  "reference_sha256": "5cc5713a0503098f20f8a3631e370d43256ebdca0a3209e97d541e6ecf1cd917",
+  "candidate_sha256": "b52526a476b6c7b76154f9693580d4400f0b15922a7409d4265e4879e38131b4"
+}

@@ -1,0 +1,18 @@
+{
+  "scope": "1 deliberate defects; not comprehensive mutation coverage",
+  "shard": null,
+  "mutations": [
+    {
+      "mutation": "sequence_decoder_per_description",
+      "suite": "avc_sequences",
+      "source": "src/sequences.rs",
+      "before": "if previous.is_some_and(|p| p != row[2]) {",
+      "after": "if previous.is_some() {",
+      "candidate_sha256": "233a5fb1b839c83d88a7d066a371dcbc188ac9acaf6e757fb9de0dfc54a0e74f",
+      "mismatches": 28,
+      "process_failures": [],
+      "detected": true
+    }
+  ],
+  "all_detected": true
+}

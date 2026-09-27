@@ -1,0 +1,18 @@
+{
+  "scope": "1 deliberate defects; not comprehensive mutation coverage",
+  "shard": null,
+  "mutations": [
+    {
+      "mutation": "avc_scaling_qp51",
+      "suite": "avc",
+      "source": "vendor/rusty_h264-common/src/transform.rs",
+      "before": "    if qp >= 51 {\n        return 0;\n    }",
+      "after": "    if qp >= 52 {\n        return 0;\n    }",
+      "candidate_sha256": "215d85549ec18cc53e908a955c2db46e6a7d27a6cc9c500a2b300afc90d6e38b",
+      "mismatches": 92,
+      "process_failures": [],
+      "detected": true
+    }
+  ],
+  "all_detected": true
+}

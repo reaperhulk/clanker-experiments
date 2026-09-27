@@ -1,0 +1,33 @@
+{
+  "commit": "5d03864ab23e18344f32344b0f7b0a6cfb69868e",
+  "url": "https://github.com/reaperhulk/clanker-experiments/actions/runs/35313115635",
+  "run_id": 35313115635,
+  "jobs": [
+    {
+      "name": "Rust build (windows-latest)",
+      "status": "completed",
+      "conclusion": "success",
+      "failed_steps": []
+    },
+    {
+      "name": "Independent C clients (Linux)",
+      "status": "completed",
+      "conclusion": "failure",
+      "failed_steps": [
+        "Full API completion (expected to fail during implementation)"
+      ]
+    },
+    {
+      "name": "Rust build (macos-latest)",
+      "status": "completed",
+      "conclusion": "success",
+      "failed_steps": []
+    },
+    {
+      "name": "Rust build (ubuntu-latest)",
+      "status": "completed",
+      "conclusion": "success",
+      "failed_steps": []
+    }
+  ]
+}

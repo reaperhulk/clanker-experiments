@@ -1,0 +1,12 @@
+{
+  "scope": "Original-header raw sequence buffers, durations, GIMI IDs, versioned timestamps and image propagation.",
+  "cases": 713,
+  "mismatches": 0,
+  "client_sanitizers": false,
+  "leak_check": false,
+  "client_sha256": "3485ebb39b759ce6ef4cd056aea8f1353dfd6311480ef4f4b81ade42cb383360",
+  "corpus_sha256": "13e84919bb886d3b92683e4f1897ded3023e3a52f5b998bc185389130d654351",
+  "differences": [],
+  "reference_sha256": "5cc5713a0503098f20f8a3631e370d43256ebdca0a3209e97d541e6ecf1cd917",
+  "candidate_sha256": "545447dd517b521e763bf34257408152db23c89ed3a6fd15382641d828312d95"
+}

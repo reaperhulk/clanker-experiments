@@ -1,0 +1,139 @@
+{
+  "scope": "12 deliberate defects; not comprehensive mutation coverage",
+  "shard": null,
+  "mutations": [
+    {
+      "mutation": "avc_cabac_end_of_data",
+      "suite": "avc_errors",
+      "source": "vendor/rusty_h264-decoder/src/cabac.rs",
+      "before": "self.over |= consumed > self.end_bits;",
+      "after": "self.over |= consumed > self.end_bits + 8;",
+      "candidate_sha256": "5789f4db9b1c5545dd28649a529df950f9575ef3c1bfaf53b496039ff9b42449",
+      "mismatches": 27,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "avc_intra_mode_validity",
+      "suite": "avc_errors",
+      "source": "vendor/rusty_h264-decoder/src/mb16.rs",
+      "before": "            4..=6 => top && left && self.block_corner_ok(bx, by, top, left),\n            _ => false,\n        };\n        self.intra_invalid |= !ok;",
+      "after": "            4..=6 => top && left && self.block_corner_ok(bx, by, top, left),\n            _ => false,\n        };\n        let _ = ok;",
+      "candidate_sha256": "d4bafb893b7242a2f95506f6da236aeea03c086d62d115f896be878ba92c0df7",
+      "mismatches": 108,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "avc_cavlc_end_of_slice",
+      "suite": "avc_errors",
+      "source": "vendor/rusty_h264-decoder/src/mb16.rs",
+      "before": "                if used > r.stop_pos() {",
+      "after": "                if used > r.stop_pos() + 8 {",
+      "candidate_sha256": "1718d881e6aa1510b57bb4482b2297bd5bd48610b30d4d3d42ac29d6adfe6bbe",
+      "mismatches": 15,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "avc_coeff_token_fallback",
+      "suite": "avc_errors",
+      "source": "vendor/rusty_h264-common/src/cavlc.rs",
+      "before": "c.skip(if NC_TABLE[(nc as usize).min(16)] == 3 { 6 } else { 8 })?;",
+      "after": "c.skip(if NC_TABLE[(nc as usize).min(16)] == 3 { 6 } else { 7 })?;",
+      "candidate_sha256": "131ad1ba4b40fafe1c286088cf77c5057bd2a37a02cca27e4b2272a65847ea7a",
+      "mismatches": 3,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "avc_level_gate",
+      "suite": "avc_errors",
+      "source": "src/avc_openh264.rs",
+      "before": "let (max_fs, max_dpb) = level_limits(level, constraint[3]).ok_or(Rejected)?;",
+      "after": "let (max_fs, max_dpb) = level_limits(level, constraint[3]).unwrap_or((36864, 184320));",
+      "candidate_sha256": "91831d4e58828bc90496bb8eb05a4721514407812b5aa13f0b251ee6b654ce44",
+      "mismatches": 72,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "avc_hrd_return_code",
+      "suite": "avc_errors",
+      "source": "src/avc_openh264.rs",
+      "before": "        Err(ReadError(code)) => code,",
+      "after": "        Err(ReadError(_)) => 0,",
+      "candidate_sha256": "5cf1dff9873d1de20a6d1335b48aa7d82329dd0a250fcb8a6cd6060040b9492e",
+      "mismatches": 0,
+      "process_failures": [],
+      "detected": false
+    },
+    {
+      "mutation": "avc_scaling_factor_wrap",
+      "suite": "avc",
+      "source": "vendor/rusty_h264-common/src/transform.rs",
+      "before": "(((weight * NORM_ADJUST[m][POS_GROUP_FLAT[idx]]) << (qp / 6)) as u16) as i32",
+      "after": "(weight * NORM_ADJUST[m][POS_GROUP_FLAT[idx]]) << (qp / 6)",
+      "candidate_sha256": "2e34db501e2383d5864bb5345c5e720cf88f9d2a3ba4687986ca35f37e23b76d",
+      "mismatches": 138,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "avc_scaling_qp51",
+      "suite": "avc",
+      "source": "vendor/rusty_h264-common/src/transform.rs",
+      "before": "    if qp >= 51 {\n        return 0;\n    }",
+      "after": "    if qp >= 52 {\n        return 0;\n    }",
+      "candidate_sha256": "2211b9fd629534ea01ded969a605b1f956a90a8f2129ef2ae1585ca0fc05ef62",
+      "mismatches": 0,
+      "process_failures": [],
+      "detected": false
+    },
+    {
+      "mutation": "avc_coefficient_wrap",
+      "suite": "avc_errors",
+      "source": "vendor/rusty_h264-common/src/transform.rs",
+      "before": "            wrap16((raster[i].wrapping_mul(self.ls[i]).wrapping_add(self.add)) >> self.sr)",
+      "after": "            (raster[i].wrapping_mul(self.ls[i]).wrapping_add(self.add)) >> self.sr",
+      "candidate_sha256": "3f21bca56522a34993d888398172da16f9556039ca2fbed61769b99bdddb7680",
+      "mismatches": 3,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "avc_early_construction",
+      "suite": "avc_errors",
+      "source": "src/avc_openh264.rs",
+      "before": "            6 | 9 if pending_slices => {",
+      "after": "            6 if pending_slices => {",
+      "candidate_sha256": "5503a272a5d62412470892db74ce924a14074a831036da5a6a8036ee799e58c1",
+      "mismatches": 3,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "avc_macroblock_count",
+      "suite": "avc_errors",
+      "source": "vendor/rusty_h264-decoder/src/lib.rs",
+      "before": "        if pic.mb_count != pic.total_mb {\n            return Ok(None); // picture not yet complete",
+      "after": "        if pic.next_mb < pic.total_mb {\n            return Ok(None); // picture not yet complete",
+      "candidate_sha256": "4258e7844ccd1627ff9f55fc65d7e891d99b47db6986b461a504d57391b2418c",
+      "mismatches": 3,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "avc_cr_qp_offset",
+      "suite": "avc_errors",
+      "source": "vendor/rusty_h264-decoder/src/lib.rs",
+      "before": "fd.set_chroma_qp_offset_cr(pps.second_chroma_qp_index_offset);",
+      "after": "fd.set_chroma_qp_offset_cr(pps.chroma_qp_index_offset);",
+      "candidate_sha256": "f50b5471bbbf9277060f5ff898bdf2f06473c07bb4c884d7d991dade8fb962b1",
+      "mismatches": 30,
+      "process_failures": [],
+      "detected": true
+    }
+  ],
+  "all_detected": false
+}

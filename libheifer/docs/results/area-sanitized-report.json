@@ -1,0 +1,17 @@
+{
+  "scope": "Original-header extraction, zero extension and replicated padding: pixels, metadata, components and resource limits.",
+  "cases": 3365,
+  "mismatches": 0,
+  "full_payload_bytes_equal": true,
+  "payload_sha256": {
+    "reference": "12e8f2d8da3518b181f6773d87cf2b56ea580f8360e829fa9a38bed03a99b8d8",
+    "candidate": "12e8f2d8da3518b181f6773d87cf2b56ea580f8360e829fa9a38bed03a99b8d8"
+  },
+  "client_sanitizers": true,
+  "leak_check": false,
+  "client_sha256": "c3708d9bed5846a10b117d1fe19c033d964f7261f12260ef8240450e359c050b",
+  "corpus_sha256": "461dfdf4e3dc09161de9efe3e284d06dbbecc565e41c1ac60979b92648e36f9d",
+  "differences": [],
+  "reference_sha256": "5d70927cded8be6d1b4da912971aed75d426ba079c84d0b8462785ec5b9c92f7",
+  "candidate_sha256": "134555585dc284df4127a4d1f1039e7ea754323a150c9ce41cb023bf6be1c6ee"
+}

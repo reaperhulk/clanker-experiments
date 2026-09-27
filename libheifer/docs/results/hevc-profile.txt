@@ -1,0 +1,19 @@
+
+stage        ms        %   calls        ns/call   profiler tax
+---------------------------------------------------------------
+parse       163.5    35.7%       560      291892.4       0.1 ms
+intra        93.2    20.4%    144822         643.8      21.8 ms
+transform    89.4    19.5%    116330         768.9      17.5 ms
+deblock      15.3     3.3%         2     7629090.5       0.0 ms
+sao          10.8     2.4%         2     5417942.5       0.0 ms
+dpb          25.9     5.7%         2    12962130.5       0.0 ms
+  |- sao copy    27.2     5.9%         6     4535205.7       0.0 ms
+  |- pic alloc     2.4     0.5%         2     1189968.5       0.0 ms
+---------------------------------------------------------------
+residue      29.8     6.5%   (untimed: everything not in a stage above)
+total       457.6          total decode, and 39.4 ms of that is this profiler
+
+per-scope cost measured at 150.42 ns on this machine. Compare the tax
+column against each stage before believing its share (codec-measurement §6):
+if the residue is close to the total tax there is nothing hidden in it.
+

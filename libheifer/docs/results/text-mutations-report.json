@@ -1,0 +1,46 @@
+{
+  "scope": "4 deliberate defects; not comprehensive mutation coverage",
+  "mutations": [
+    {
+      "mutation": "text_reload_registry",
+      "suite": "text",
+      "source": "src/context.rs",
+      "before": "self.items = crate::items::ItemStore::reading(input.clone());",
+      "after": "self.text_items.clear();\n        self.items = crate::items::ItemStore::reading(input.clone());",
+      "candidate_sha256": "b8d7c6379189150409b5a415a4a63c75e31c3b1e0f1953e55f57ba5f8befea63",
+      "mismatches": 736,
+      "detected": true
+    },
+    {
+      "mutation": "text_pending_payload",
+      "suite": "text",
+      "source": "src/text.rs",
+      "before": "let id = self.items.add_pending(item)?;",
+      "after": "let id = self.items.add(item, content.clone())?;",
+      "candidate_sha256": "06629e8ba02ade37babfd0fe5767527f1ff46c518191e3c2dfaddebb9745b107",
+      "mismatches": 736,
+      "detected": true
+    },
+    {
+      "mutation": "text_lookup_order",
+      "suite": "text",
+      "source": "crates/capi/src/text.rs",
+      "before": ".find(|t| t.id == id)",
+      "after": ".rfind(|t| t.id == id)",
+      "candidate_sha256": "b92f5dc46df654e933fd7e147e595be50cb5642d2e77cf181246595fa15abcf4",
+      "mismatches": 11,
+      "detected": true
+    },
+    {
+      "mutation": "infe_string_terminator",
+      "suite": "text",
+      "source": "src/container.rs",
+      "before": ".unwrap_or(self.0.len().saturating_sub(1))",
+      "after": ".unwrap_or(self.0.len())",
+      "candidate_sha256": "9908ea35da21a4376ccffe6432fc298ec19c84f4d591916150403ebc2d789ca9",
+      "mismatches": 4,
+      "detected": true
+    }
+  ],
+  "all_detected": true
+}

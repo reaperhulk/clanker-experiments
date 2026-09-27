@@ -1,0 +1,26 @@
+{
+  "scope": "2 deliberate defects; not comprehensive mutation coverage",
+  "mutations": [
+    {
+      "mutation": "camera_focal_scale",
+      "suite": "camera",
+      "source": "src/camera.rs",
+      "before": "focal_length_x: fx * f64::from(width as i32),",
+      "after": "focal_length_x: fx * f64::from(width as i32) * 2.0,",
+      "candidate_sha256": "e845e1b62fbf9537d221a64edb13869b45a776a106a1074dbeda75940dd4e3fe",
+      "mismatches": 365,
+      "detected": true
+    },
+    {
+      "mutation": "camera_quaternion",
+      "suite": "camera",
+      "source": "src/camera.rs",
+      "before": "quaternion[3] = (1.0 - sum).sqrt();",
+      "after": "quaternion[3] = (1.0 - sum).sqrt() * 0.5;",
+      "candidate_sha256": "9fead08f9d4362f677ef5c338653f0cbabf6fccfe7983dbc5319b2d0acb85cad",
+      "mismatches": 165,
+      "detected": true
+    }
+  ],
+  "all_detected": true
+}

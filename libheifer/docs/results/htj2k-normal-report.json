@@ -1,0 +1,10 @@
+{
+ "scope": "Original-header OpenJPEG/Rust HTJ2K (T.814) decoded samples, metadata and conversion.",
+ "cases": 10950,
+ "mismatches": 0,
+ "client_sanitizers": false,
+ "leak_check": false,
+ "client_sha256": "c7cb0444757eb1d323d165c8e0803e2ffff7aabc0c0cbd247c18342dd830311a",
+ "reference_sha256": "debfa8c6ff3dcf31ac288785306cd0119a0b2a94c14cb45f166f8290d1fc10dd",
+ "candidate_sha256": "aab05fcd43caa56a04c191cedc1e3bb51314c9d5a046a19d6286e4e88b585289"
+}

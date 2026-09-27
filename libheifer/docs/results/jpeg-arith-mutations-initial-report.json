@@ -1,0 +1,95 @@
+{
+  "scope": "8 deliberate defects; not comprehensive mutation coverage",
+  "shard": null,
+  "mutations": [
+    {
+      "mutation": "jpeg_arith_dc_context",
+      "suite": "jpeg_pixels",
+      "source": "vendor/jpeg-decoder/src/arithmetic.rs",
+      "before": "            12 + sign * 4\n",
+      "after": "            12 + sign * 2\n",
+      "candidate_sha256": "6101a03c96ee3bb5dc72d7e208946b010742cc96aa98ed108645424cbdc678dc",
+      "mismatches": 236,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "jpeg_arith_ac_threshold",
+      "suite": "jpeg_pixels",
+      "source": "vendor/jpeg-decoder/src/arithmetic.rs",
+      "before": "if k <= usize::from(cond.ac_k[tbl]) { 189 } else { 217 }",
+      "after": "if k < usize::from(cond.ac_k[tbl]) { 189 } else { 217 }",
+      "candidate_sha256": "b9a4ddcd8c857033aa70b095e84097ffdcd88be0ed9fac2f2c395626c1f25b09",
+      "mismatches": 316,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "jpeg_arith_refine_sign",
+      "suite": "jpeg_pixels",
+      "source": "vendor/jpeg-decoder/src/arithmetic.rs",
+      "before": "block[at] = if self.decode(reader, Bin::Fixed)? != 0 { m1 } else { p1 };",
+      "after": "block[at] = if self.decode(reader, Bin::Fixed)? != 0 { p1 } else { m1 };",
+      "candidate_sha256": "9f1bf34f1fa4caaf0c51eb4eceb844f568cbd9cb8529d3e44068d37357fa0c1a",
+      "mismatches": 204,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "jpeg_arith_restart_statistics",
+      "suite": "jpeg_pixels",
+      "source": "vendor/jpeg-decoder/src/decoder.rs",
+      "before": "                            arith.reset(&scan.dc_table_indices, &scan.ac_table_indices, arith_dc, arith_ac);\n                            // A marker left",
+      "after": "                            arith.reset(&scan.dc_table_indices, &scan.ac_table_indices, false, false);\n                            // A marker left",
+      "candidate_sha256": "84f5f785df0ffa8a29ca698f54b0486267accb91f384b9631bfdac8137977553",
+      "mismatches": 44,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "jpeg_arith_resync_other_marker",
+      "suite": "jpeg_errors",
+      "source": "vendor/jpeg-decoder/src/decoder.rs",
+      "before": "                                    _ => 3,\n",
+      "after": "                                    _ => 1,\n",
+      "candidate_sha256": "086f0f8d764cb63494383a94f076a307b0e6ebb64cee9f383f0cc8273cf01a8d",
+      "mismatches": 0,
+      "process_failures": [],
+      "detected": false
+    },
+    {
+      "mutation": "jpeg_arith_code_error",
+      "suite": "jpeg_errors",
+      "source": "vendor/jpeg-decoder/src/arithmetic.rs",
+      "before": "    fn fail(&mut self) {\n        // JWRN_ARITH_BAD_CODE\n        self.ct = -1;",
+      "after": "    fn fail(&mut self) {\n        // JWRN_ARITH_BAD_CODE\n        self.ct = 0;",
+      "candidate_sha256": "ee1ffd3ed8367e9213e7a9113bef6edc5b07dac45091c3d2fd4a805a3820d262",
+      "mismatches": 321,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "jpeg_dac_index",
+      "suite": "jpeg_errors",
+      "source": "src/jpeg_header.rs",
+      "before": "                if index >= 32 {",
+      "after": "                if index > 32 {",
+      "candidate_sha256": "9fe6e79ad54db557d514c510705150b9f2a71708615f6e06fa994519916d74ab",
+      "mismatches": 0,
+      "process_failures": [],
+      "detected": false
+    },
+    {
+      "mutation": "jpeg_reserved_marker",
+      "suite": "jpeg_errors",
+      "source": "vendor/jpeg-decoder/src/decoder.rs",
+      "before": "Marker::RES(n) => {\n                    return Err(Error::Format(format!(\"Unsupported marker type 0x{n:02x}\")));",
+      "after": "Marker::RES(n) => {\n                    return Err(Error::Format(format!(\"Unsupported marker type 0x{:02x}\", n + 1)));",
+      "candidate_sha256": "ce33165603355f3b95c9ee63699f2ff73d4a69c3988fb95b3d7ee0759aff3c29",
+      "mismatches": 213,
+      "process_failures": [],
+      "detected": true
+    }
+  ],
+  "all_detected": false
+}

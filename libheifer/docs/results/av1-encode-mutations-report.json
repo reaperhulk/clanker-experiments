@@ -1,0 +1,95 @@
+{
+  "scope": "8 deliberate defects; not comprehensive mutation coverage",
+  "shard": null,
+  "mutations": [
+    {
+      "mutation": "av1_encode_default_speed",
+      "suite": "av1_encoding",
+      "source": "crates/capi/src/builtin_av1_encoder.rs",
+      "before": "set_integer(p, c\"speed\".as_ptr(), 8);",
+      "after": "set_integer(p, c\"speed\".as_ptr(), 9);",
+      "candidate_sha256": "039e6f945e6ef8f04b665fbf38541c36e30f5f46f21cf175a0e8a4af03179efe",
+      "mismatches": 85,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "av1_encode_default_tiles",
+      "suite": "av1_encoding",
+      "source": "crates/capi/src/builtin_av1_encoder.rs",
+      "before": "set_integer(p, c\"tile-rows\".as_ptr(), 4);",
+      "after": "set_integer(p, c\"tile-rows\".as_ptr(), 1);",
+      "candidate_sha256": "3b770b6aa420f37d7225c2124c387e6ff107a3ea9b959cda3ff76bcbdec2685d",
+      "mismatches": 6,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "av1_encode_default_tile_cols",
+      "suite": "av1_encoding",
+      "source": "crates/capi/src/builtin_av1_encoder.rs",
+      "before": "set_integer(p, c\"tile-cols\".as_ptr(), 4);",
+      "after": "set_integer(p, c\"tile-cols\".as_ptr(), 1);",
+      "candidate_sha256": "9df004aa85f84688e7d3449f78320d03b744ad27274d604b02ee43039b63f16d",
+      "mismatches": 22,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "av1_encode_default_chroma",
+      "suite": "av1_encoding",
+      "source": "crates/capi/src/builtin_av1_encoder.rs",
+      "before": "set_string(p, c\"chroma\".as_ptr(), c\"420\".as_ptr());",
+      "after": "set_string(p, c\"chroma\".as_ptr(), c\"444\".as_ptr());",
+      "candidate_sha256": "76f7e41b8b01da7e04b3fce81b8a16f77a9d6fbff32000f2e6f95b5aeb1d78ca",
+      "mismatches": 117,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "av1_encode_quantizer",
+      "suite": "av1_encoding",
+      "source": "crates/capi/src/builtin_av1_encoder.rs",
+      "before": "let base_quantizer = ((100 - encoder.quality) * 255 + 50) / 100;",
+      "after": "let base_quantizer = ((100 - encoder.quality) * 255 + 99) / 100;",
+      "candidate_sha256": "f973c7027453fcce301d2bdc6e97ec40806a1695866e947f70fa1dbf4aae631a",
+      "mismatches": 4,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "av1_encode_still_picture",
+      "suite": "av1_encoding",
+      "source": "crates/capi/src/builtin_av1_encoder.rs",
+      "before": "if !image_sequence && !parse(cfg.0, c\"still_picture\", c\"true\") {",
+      "after": "if !image_sequence && !parse(cfg.0, c\"still_picture\", c\"false\") {",
+      "candidate_sha256": "f3d5c3610ff4224ce9d81abb21b9569ec9f4dfac0f250f58ee375a92cdf5b8f0",
+      "mismatches": 124,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "av1_encode_alpha_sampling",
+      "suite": "av1_encoding",
+      "source": "crates/capi/src/builtin_av1_encoder.rs",
+      "before": "let (sampling, position) = if input_class == 2 {",
+      "after": "let (sampling, position) = if input_class == 3 {",
+      "candidate_sha256": "4175b016bac168a0a134d70128415ce73359780349e155cb7b2be886bd3a06b9",
+      "mismatches": 2,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "av1_encode_bit_depths",
+      "suite": "av1_encoding",
+      "source": "crates/capi/src/builtin_av1_encoder.rs",
+      "before": "if matches!(bpp, 8 | 10 | 12) {",
+      "after": "if matches!(bpp, 8 | 10) {",
+      "candidate_sha256": "aa4af2c6930706d04e1a3e64e3211ac8b53de7ae0a3864cc6b486895357ca77d",
+      "mismatches": 3,
+      "process_failures": [],
+      "detected": true
+    }
+  ],
+  "all_detected": false
+}

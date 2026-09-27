@@ -1,0 +1,3 @@
+[submodule "libheifer/tests/upstream"]
+	path = libheifer/tests/upstream
+	url = https://github.com/strukturag/libheif.git

@@ -1,0 +1,12 @@
+{
+  "scope": "Original-header imaging metadata, NaN bits, component IDs, copies and transform propagation.",
+  "cases": 1039,
+  "mismatches": 0,
+  "client_sanitizers": true,
+  "leak_check": false,
+  "client_sha256": "3f4b9a90f58ecdaa8b44d92e97a21ea54ec233cece40bbd302442a92693ca5fe",
+  "corpus_sha256": "880f152e64d898352f9562ff77727c8623e8f0b084b1aa705f657f42cefa1dc1",
+  "differences": [],
+  "reference_sha256": "5d70927cded8be6d1b4da912971aed75d426ba079c84d0b8462785ec5b9c92f7",
+  "candidate_sha256": "d54ab9e2d9638baaa54acc91a56eb4b3058f644765356320f9f3ac998401f9aa"
+}

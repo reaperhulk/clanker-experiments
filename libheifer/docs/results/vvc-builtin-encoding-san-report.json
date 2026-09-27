@@ -1,0 +1,16 @@
+{
+  "scope": "Original-header built-in VVC encoding against libheif with its vvenc plugin: errors, parameters,\nhandles and non-codec boxes exactly; VVC configuration fields; candidate files decoded by vvdec.",
+  "cases": 121,
+  "listing": "descriptors1 lossy1 lossless1 e0,0,Success\nquality type1 default1 e0,0,Success range1,1,0,100 values0 e0,0,Success value50 e0,0,Success generic50\nlossless type2 default1 e0,0,Success value0 e0,0,Success generic0\n",
+  "mismatches": 0,
+  "files": 106,
+  "known_differences": {},
+  "known": [],
+  "decode_mismatches": [],
+  "client_sanitizers": true,
+  "corpus_sha256": "29d7a6e5f8b6f649937f208f5efa5fa52a992331a6d4814664effad68ab66802",
+  "differences": [],
+  "client_sha256": "f70e276c5a527cd2d053af2f686a4f36f3aa4f511946583d51127adbe6666418",
+  "reference_sha256": "97079f422eb42769cb9cfc52f74c37e3a687b3730052bd429d6e7f1a23657900",
+  "candidate_sha256": "bcd0711a415e8b807dc1b0cadc647be17a1cfc30a1aafafee5f92ece3510ebc9"
+}

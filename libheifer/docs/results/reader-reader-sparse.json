@@ -1,0 +1,14 @@
+{
+  "scope": "Original-header sparse input: skip 16-GiB boxes under a 256-MiB address-space limit, then decode relocated idat pixels.",
+  "cases": 3,
+  "mismatches": 0,
+  "differences": [],
+  "client_sanitizers": false,
+  "leak_check": false,
+  "address_space_limit": 268435456,
+  "skipped_box_size": 17179869184,
+  "client_sha256": "4edce62efb3b4c94d1101b99e854a9326a91a77ba32ddbebea9f17e4eab27ba4",
+  "corpus_sha256": "0351a27172a8dfc757b3604c040cc57e416c95f2dcef451256545df58df939c4",
+  "reference_sha256": "5cc5713a0503098f20f8a3631e370d43256ebdca0a3209e97d541e6ecf1cd917",
+  "candidate_sha256": "6f53820633f9cc3e171eb59a0d18df4c4e23d467169e7dad54f5aafe6e7c947f"
+}

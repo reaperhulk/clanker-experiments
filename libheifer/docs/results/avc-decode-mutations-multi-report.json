@@ -1,0 +1,29 @@
+{
+  "scope": "2 deliberate defects; not comprehensive mutation coverage",
+  "shard": null,
+  "mutations": [
+    {
+      "mutation": "avc_reorder_per_half",
+      "suite": "avc",
+      "source": "src/avc.rs",
+      "before": "    if let Some((_, frame)) = frames.pop() {",
+      "after": "    for (_, frame) in frames {",
+      "candidate_sha256": "20981904c5c9064b5dd653cede6613957be28181d471deda61a5f8567fe9ec69",
+      "mismatches": 23,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "avc_held_slice_header",
+      "suite": "avc",
+      "source": "src/avc.rs",
+      "before": "            && Some(index) != accepted.held\n",
+      "after": "            && Some(index) != None\n",
+      "candidate_sha256": "b1a26053c46f84dac85ff234c60ce7785fe267390f7bfe431ee02a9ff01ea1cc",
+      "mismatches": 115,
+      "process_failures": [],
+      "detected": true
+    }
+  ],
+  "all_detected": true
+}

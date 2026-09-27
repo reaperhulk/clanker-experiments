@@ -1,0 +1,128 @@
+{
+  "scope": "11 deliberate defects; not comprehensive mutation coverage",
+  "mutations": [
+    {
+      "mutation": "jpeg2000_packet_extent",
+      "suite": "jpeg2000_sampling",
+      "source": "vendor/hayro-jpeg2000/src/j2c/segment.rs",
+      "before": "if oversized_segment || (!complete && header.strict)",
+      "after": "if !complete && header.strict",
+      "candidate_sha256": "08a5d0f462f188efd3ea2a2c262eecce0a9b3e671755a772fd0bf0bcaf291970",
+      "mismatches": 4,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "jpeg2000_tile_transform",
+      "suite": "jpeg2000_tiles",
+      "source": "vendor/hayro-jpeg2000/src/j2c/decode.rs",
+      "before": "if tile.mct && !tile.tile_parts.is_empty()",
+      "after": "if tiles[0].mct && !tile.tile_parts.is_empty()",
+      "candidate_sha256": "fa4802494fda9794471f10cfcee2be40eca5143788874d5faf025e5d47bf4a1f",
+      "mismatches": 2968,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "jpeg2000_tile_wavelet",
+      "suite": "jpeg2000_tiles",
+      "source": "vendor/hayro-jpeg2000/src/j2c/decode.rs",
+      "before": "for (idx, component_info) in tile.component_infos.iter().enumerate()",
+      "after": "for (idx, component_info) in header.component_infos.iter().enumerate()",
+      "candidate_sha256": "fc04126872a8bf7bd0aea464979d2793ddf1336ae311ef5192f6eddd6cf915e1",
+      "mismatches": 2880,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "jpeg2000_transform_tail",
+      "suite": "jpeg2000_tiles",
+      "source": "vendor/hayro-jpeg2000/src/j2c/mct.rs",
+      "before": "let tail = s0.len() / 8 * 8;",
+      "after": "let tail = s0.len();",
+      "candidate_sha256": "1f797cbf527ccdf63a78b3f458f4ce247195d4ea98d0c5090bc5e3ccf51979de",
+      "mismatches": 1728,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "jpeg2000_raw_component_header",
+      "suite": "jpeg2000_tiles",
+      "source": "src/jpeg2000.rs",
+      "before": "hayro_jpeg2000::RawCodestream::new",
+      "after": "hayro_jpeg2000::Image::new",
+      "candidate_sha256": "f8df8dbd52e3d5d65b88178847f327138ea1d535e16f71743d2c870b61223a8f",
+      "mismatches": 16,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "jpeg2000_property_components",
+      "suite": "jpeg2000_properties",
+      "source": "src/jpeg2000_properties.rs",
+      "before": "if kind == *b\"cdef\" && max_components != 0",
+      "after": "if false && kind == *b\"cdef\" && max_components != 0",
+      "candidate_sha256": "85fb05349e27e4d3ee67c4c653faa0bd431e506c13b631c208e2cb0340577041",
+      "mismatches": 24,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "jpeg2000_palette_depth",
+      "suite": "jpeg2000_properties",
+      "source": "src/jpeg2000_properties.rs",
+      "before": "depth > 16",
+      "after": "depth > 17",
+      "candidate_sha256": "6253719daa9527373d1669c6cac73688ae2954773983b6c32482040399d0fbc9",
+      "mismatches": 72,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "jpeg2000_palette_width",
+      "suite": "jpeg2000_properties",
+      "source": "src/jpeg2000_properties.rs",
+      "before": "depth <= 8",
+      "after": "depth <= 7",
+      "candidate_sha256": "412b6fe6e5d4318ff85c5f8139b15c91c38b77b3214f3a49f097793ffa207899",
+      "mismatches": 12,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "jpeg2000_child_extent",
+      "suite": "jpeg2000_properties",
+      "source": "src/context.rs",
+      "before": "ContextError::invalid(101, \"Invalid box size\")",
+      "after": "ContextError::invalid(100, \"Unexpected end of file\")",
+      "candidate_sha256": "483c0b7a4956d6cf3377909175b0f96fe953ae3d133038da28b1875da54d1a02",
+      "mismatches": 6,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "jpeg2000_palette_dump",
+      "suite": "jpeg2000_debug",
+      "source": "src/debug.rs",
+      "before": "NE: {entries}, NPC: {columns}",
+      "after": "NE: {columns}, NPC: {columns}",
+      "candidate_sha256": "fbd31065d1046fb60ee1ad3442508d8260cfddcfd6b13b2e913ea68a93b866e8",
+      "mismatches": 228,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "jpeg2000_end_marker",
+      "suite": "jpeg2000_errors",
+      "source": "src/jpeg2000.rs",
+      "before": "if end + 2 > data.len() {\n                    return Err(error(\"opj_decode()\"));\n                }",
+      "after": "if end + 2 > data.len() {\n                    return Ok(());\n                }",
+      "candidate_sha256": "d40e2dc7e926b531d50b3e92adbc274bec65d539184fac058d6d78d95c7b4751",
+      "mismatches": 18,
+      "process_failures": [],
+      "detected": true
+    }
+  ],
+  "all_detected": true,
+  "validation_note": "The first transform-tail client run ended with PermissionError while launching the reference process and produced no comparison report. It is not counted as semantic evidence. The isolated rerun completed and detected 1728 differences. Both attempts are retained."
+}

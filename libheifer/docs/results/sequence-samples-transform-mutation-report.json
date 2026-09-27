@@ -1,0 +1,16 @@
+{
+  "scope": "1 deliberate defects; not comprehensive mutation coverage",
+  "mutations": [
+    {
+      "mutation": "sample_transform_metadata",
+      "suite": "sequence_samples",
+      "source": "src/image.rs",
+      "before": "        )?\n        .with_budget(self.budget.clone());\n        out.warnings = self.warnings.clone();\n        out.color = self.color.try_clone()?;\n        out.sensor = self.sensor.clone();\n        out.sample = self.sample.clone();",
+      "after": "        )?\n        .with_budget(self.budget.clone());\n        out.warnings = self.warnings.clone();\n        out.color = self.color.try_clone()?;\n        out.sensor = self.sensor.clone();\n        out.sample = crate::sequence_sample::SampleMetadata::default();",
+      "candidate_sha256": "9e30c1218026a9c32f21f9d12a481221c03b3e365f51cabff05f0c3d5cf561a6",
+      "mismatches": 695,
+      "detected": true
+    }
+  ],
+  "all_detected": true
+}

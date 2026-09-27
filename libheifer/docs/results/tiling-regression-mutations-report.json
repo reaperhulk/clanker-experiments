@@ -1,0 +1,26 @@
+{
+  "scope": "2 deliberate defects; not comprehensive mutation coverage",
+  "mutations": [
+    {
+      "mutation": "grid_copy_error_propagation",
+      "suite": "tile_encoding",
+      "source": "src/decoding.rs",
+      "before": "let _ = out.paste(&image, x, y);",
+      "after": "out.paste(&image, x, y)?;",
+      "candidate_sha256": "626c2d1416659d1446cac22105c3e792022c6b46d132896a0a3022ae8628c04b",
+      "mismatches": 2,
+      "detected": true
+    },
+    {
+      "mutation": "item_failed_add_id",
+      "suite": "items",
+      "source": "src/items.rs",
+      "before": "self.items.remove(&id);",
+      "after": "self.items.remove(&id);\n                let _ = self.mint();",
+      "candidate_sha256": "e980eb6dd9897b8b8065e0763b668600f5290a6139f942921a94037200322181",
+      "mismatches": 15,
+      "detected": true
+    }
+  ],
+  "all_detected": true
+}

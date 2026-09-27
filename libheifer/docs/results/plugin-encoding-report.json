@@ -1,0 +1,12 @@
+{
+  "scope": "Original-header registered AV1 encoder callbacks, pixels, errors and exact files.",
+  "cases": 441,
+  "mismatches": 0,
+  "client_sanitizers": false,
+  "leak_check": false,
+  "client_sha256": "b4515f5ed5d41ca983b40abaab4d57b2493da318d6cd7fb415ed11700b449f2a",
+  "corpus_sha256": "74e737c7122e77f93d0f710cfd5ae3bbea133580093ee6c1211676d4f3ed684e",
+  "differences": [],
+  "reference_sha256": "5cc5713a0503098f20f8a3631e370d43256ebdca0a3209e97d541e6ecf1cd917",
+  "candidate_sha256": "4fd90278b455809a3e779e26740ee6b0dcf03afa1ab029c989be06f381292ac5"
+}

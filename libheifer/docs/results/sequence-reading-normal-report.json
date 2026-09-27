@@ -1,0 +1,13 @@
+{
+  "scope": "Original-header sequence parsing and sample reads from independent native fixtures and malformed box tables.",
+  "cases": 212,
+  "mismatches": 0,
+  "process_failures": [],
+  "differences": [],
+  "client_sanitizers": false,
+  "leak_check": false,
+  "client_sha256": "0273201eb949dbe30510641922be1d222d6035623a01b329f398acc1fb41acc6",
+  "corpus_sha256": "fcfc5787d9c07120e65b74b459574815478c3eb354a1b5427d344f65a7260c65",
+  "reference_sha256": "5cc5713a0503098f20f8a3631e370d43256ebdca0a3209e97d541e6ecf1cd917",
+  "candidate_sha256": "545447dd517b521e763bf34257408152db23c89ed3a6fd15382641d828312d95"
+}

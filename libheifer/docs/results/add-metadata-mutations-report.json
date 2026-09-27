@@ -1,0 +1,36 @@
+{
+  "scope": "3 deliberate defects; not comprehensive mutation coverage",
+  "mutations": [
+    {
+      "mutation": "metadata_exif_offset",
+      "suite": "add_metadata",
+      "source": "src/metadata.rs",
+      "before": "&(offset as u32).to_be_bytes()",
+      "after": "&(offset as u32 + 1).to_be_bytes()",
+      "candidate_sha256": "fdd7aa732046a8ca01700e38ca78b0cb14eb9d92d11a2b0879e605366d283771",
+      "mismatches": 452,
+      "detected": true
+    },
+    {
+      "mutation": "metadata_deflate_wrapper",
+      "suite": "add_metadata",
+      "source": "src/metadata.rs",
+      "before": "let method = if matches!(compression, 3 | 4) { 4 } else { 0 };",
+      "after": "let method = if matches!(compression, 3 | 4) { compression } else { 0 };",
+      "candidate_sha256": "48b10c0109ee7e649c71cea5ec8764843ff286e664ee9752048df713d4d4d3b2",
+      "mismatches": 42,
+      "detected": true
+    },
+    {
+      "mutation": "metadata_reference_target",
+      "suite": "add_metadata",
+      "source": "src/metadata.rs",
+      "before": "to: vec![target],",
+      "after": "to: vec![target.wrapping_add(1)],",
+      "candidate_sha256": "99e3f7eb040792909421e51518d1f3eae665a97be4a23cbf0a8eafa697e7f4e2",
+      "mismatches": 1910,
+      "detected": true
+    }
+  ],
+  "all_detected": true
+}

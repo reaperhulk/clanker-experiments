@@ -1,0 +1,13 @@
+{
+  "scope": "Original-header native JPEG/Rust JPEG decoded pixels, metadata, conversions and callbacks.",
+  "cases": 11225,
+  "mismatches": 0,
+  "client_sanitizers": false,
+  "leak_check": false,
+  "client_sha256": "c7cb0444757eb1d323d165c8e0803e2ffff7aabc0c0cbd247c18342dd830311a",
+  "reference_sha256": "44e009fcef37fe6609c0c4ba59715b3285cfef62c79742f20c679cc5f856f000",
+  "candidate_sha256": "875a74c652aa3de0cd879a56e5b8c7dad7cba61b952d8b168dede239bdfbda9e",
+  "full_report": "jpeg-no-codecs-full.json.gz",
+  "full_report_sha256": "608f35b96ad702dd4a942694e1b123695a8f14f633693b0bad4911c40a0cd0d0",
+  "compressed_report_sha256": "97e689153a186d01baf5093cfd306764b07f675b244978271cf7b8477857241e"
+}

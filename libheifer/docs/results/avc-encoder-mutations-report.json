@@ -1,0 +1,94 @@
+{
+  "scope": "8 deliberate defects; not comprehensive mutation coverage",
+  "mutations": [
+    {
+      "mutation": "avc_interlaced_height",
+      "suite": "avc_encoding",
+      "source": "src/avc_config.rs",
+      "before": "h *= u64::from(2 - frame);",
+      "after": "h *= 1;",
+      "candidate_sha256": "4f81288beaf3300c333d1de2240ad101a1a240b522b1d37b036832b1c2a29f36",
+      "mismatches": 242,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "avc_crop_units",
+      "suite": "avc_encoding",
+      "source": "src/avc_config.rs",
+      "before": "let sx = if matches!(self.chroma, 1 | 2) { 2 } else { 1 };",
+      "after": "let sx = 1;",
+      "candidate_sha256": "cc03b98f2f4c95f96507ccb62136b62760b6b8a4113d86caff4b56c671ce2a55",
+      "mismatches": 48,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "avc_scaling_break",
+      "suite": "avc_encoding",
+      "source": "src/avc_config.rs",
+      "before": "if next == 0 {",
+      "after": "if next != 0 {",
+      "candidate_sha256": "cab3969d042dbe591b9e1dbeeb79f2302dc8d440d9fa6ad8400d3c34a76ec0fb",
+      "mismatches": 72,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "avc_sps_partial",
+      "suite": "avc_encoding",
+      "source": "src/avc_config.rs",
+      "before": "let _ = self.parse(nal);",
+      "after": "self.parse(nal)?;",
+      "candidate_sha256": "64f0f9bf30b828583375b3ac6c82ae8e83fa382ddd7b97685fffa84b95ac3945",
+      "mismatches": 30,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "avc_extended_configuration",
+      "suite": "avc_encoding",
+      "source": "src/avc_config.rs",
+      "before": "if !matches!(self.profile, 66 | 77 | 88) {",
+      "after": "if matches!(self.profile, 66 | 77 | 88) {",
+      "candidate_sha256": "a4470131dfda43ac1667d521bad9acbd071e235a2eb8c388ca974d8f13ddb369",
+      "mismatches": 1233,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "avc_parameter_count",
+      "suite": "avc_encoding",
+      "source": "src/avc_config.rs",
+      "before": "self.sps.len() > 31",
+      "after": "self.sps.len() >= 31",
+      "candidate_sha256": "7dff5f9e82b3511b5d592d8c3e2942b8f34f892c4afb8f7ab5c5b438b6662cf5",
+      "mismatches": 1,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "configuration_write_prefix",
+      "suite": "avc_encoding",
+      "source": "src/writing.rs",
+      "before": "ipco.extend([0; 8]);",
+      "after": "ipco.extend([1; 8]);",
+      "candidate_sha256": "72a90324462c9b115bca9f98e26391e97c07cebd790775b88ce8cbfadf2f976f",
+      "mismatches": 21,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "hevc_partial_depth",
+      "suite": "hevc_encoding",
+      "source": "src/hevc_config.rs",
+      "before": "self.header[17] = 0xf8 | luma as u8;",
+      "after": "// omit partial luma configuration update",
+      "candidate_sha256": "4a9726f2cadca7e735870ac5921552fff5f26c5edcbee269042bd3e39eaf2682",
+      "mismatches": 1,
+      "process_failures": [],
+      "detected": true
+    }
+  ],
+  "all_detected": true
+}

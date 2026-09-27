@@ -1,0 +1,29 @@
+{
+  "scope": "2 deliberate defects; not comprehensive mutation coverage",
+  "shard": null,
+  "mutations": [
+    {
+      "mutation": "hevc_rext_sample_order",
+      "suite": "hevc_rext",
+      "source": "src/hevc.rs",
+      "before": "dst.copy_from_slice(&(src as u16).to_ne_bytes());",
+      "after": "dst.copy_from_slice(&(src as u16).to_be_bytes());",
+      "candidate_sha256": "19919e5c0cb4520cb4f830465b198f587c5b7cd4b330cfb9f8b4aceca2bc8e1c",
+      "mismatches": 4564,
+      "process_failures": [],
+      "detected": true
+    },
+    {
+      "mutation": "rgb24_yuv_limited_luma",
+      "suite": "hevc_rext",
+      "source": "src/conversion.rs",
+      "before": "                clip(v * 0.85547, 219) + 16",
+      "after": "                clip(v * 219.0 / 256.0 + 16.0, 255)",
+      "candidate_sha256": "1166056cccb5cef3e364bcc15d428a586ddc06875e800e70db397159b9c04fd7",
+      "mismatches": 12,
+      "process_failures": [],
+      "detected": true
+    }
+  ],
+  "all_detected": true
+}

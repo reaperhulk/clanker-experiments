@@ -1,0 +1,20 @@
+{
+  "scope": "Full-byte uncompressed generic-compression units, malformed cmpC/icef and decompression errors.",
+  "successful_decodes": {
+    "reference": 2294,
+    "candidate": 2294
+  },
+  "cases": 2193,
+  "mismatches": 0,
+  "client_sanitizers": true,
+  "leak_check": false,
+  "client_sha256": "b30c3b1437b6c799c7182231b89ce2bb1f06f9d876106543ddcacf64d9c6606a",
+  "corpus_sha256": "7a0c2bde7d3f3c25fcad7a243c6d2d97148c550b5b3ddfae172298b48cd5f968",
+  "transcript_sha256": {
+    "reference": "658e0f559eef1fd4a45b7afcd7497fd31c4077d8e7e0591c3729fdebba8c0bb3",
+    "candidate": "658e0f559eef1fd4a45b7afcd7497fd31c4077d8e7e0591c3729fdebba8c0bb3"
+  },
+  "differences": [],
+  "reference_sha256": "5d70927cded8be6d1b4da912971aed75d426ba079c84d0b8462785ec5b9c92f7",
+  "candidate_sha256": "d67cf5dc3587bb9100a50856fdabf0692f25e886e7860391a806ed735a52bae3"
+}

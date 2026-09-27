@@ -1,0 +1,12 @@
+{
+  "scope": "Original-header error-buffer lifetimes across unrelated objects and aliases.",
+  "cases": 144,
+  "mismatches": 0,
+  "client_sanitizers": false,
+  "leak_check": false,
+  "client_sha256": "c2de479c5103d64b5aebe78b1267acdef2b26d11f149522030dda8007a70dbe0",
+  "corpus_sha256": "0b9282cd748b9e1ea77abd881e12875d896728954adb750b02577be573e1ff20",
+  "differences": [],
+  "reference_sha256": "5d70927cded8be6d1b4da912971aed75d426ba079c84d0b8462785ec5b9c92f7",
+  "candidate_sha256": "52449ee6f31f4044a20584a3da0e22867daefe2aef1bf6be26a15bc9d8282dac"
+}

@@ -1,0 +1,18 @@
+{
+  "scope": "1 deliberate defects; not comprehensive mutation coverage",
+  "shard": null,
+  "mutations": [
+    {
+      "mutation": "avc_mono_chroma",
+      "suite": "avc",
+      "source": "vendor/rusty_h264-decoder/src/mb16.rs",
+      "before": "                    cleft = [128; 8];",
+      "after": "                    cleft = [127; 8];",
+      "candidate_sha256": "3e07b86ea0ffa3f7e8bb5e77ed5709c903428f9f164f869c01fc02e6922ffe50",
+      "mismatches": 1702,
+      "process_failures": [],
+      "detected": true
+    }
+  ],
+  "all_detected": true
+}

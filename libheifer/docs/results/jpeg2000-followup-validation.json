@@ -1,0 +1,18 @@
+{
+  "candidate_sha256": "68a3c0ffc3d868513cc492826878bd571cb9e9f0395b5adb042eef9e6f035191",
+  "codec_free_candidate_sha256": "1ddc2d2637896f03aad8980a6052e39ff4822642f90a8aea8d57e34d09a556ee",
+  "reference_sha256": "06c669d5019806baf0756a9b5c8ece9f7269f751bee7cda4e43926044c6d473e",
+  "codec_free_reference_sha256": "989cf156b940664f9ade0740e21e99d965c81219b867fc5b5618cf537cc7564c",
+  "workspace_recovery": "Unpublished follow-up and builds were lost in workspace reset. This checkpoint reconstructs the implementation from retained notes and reruns all reported comparisons. Historical pre-reset results are not counted.",
+  "checks": [
+    "cargo fmt --all --check",
+    "cargo clippy --locked --workspace --all-targets --all-features -- -D warnings",
+    "cargo test --locked --workspace --all-features",
+    "cargo test --locked --workspace --no-default-features",
+    "original-header ABI test",
+    "inventory.py --check",
+    "check_coverage.py --development",
+    "audit_dependencies.py"
+  ],
+  "complete": false
+}

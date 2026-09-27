@@ -1,0 +1,12 @@
+{
+  "scope": "Registered AVC decoder plugins competing with the built-in AVC decoder (OpenH264 in the oracle).",
+  "cases": 480,
+  "mismatches": 0,
+  "differences": [],
+  "client_sanitizers": false,
+  "leak_check": false,
+  "client_sha256": "4d9b8ca8fad71768676a4e16f5b707f4f860f810a7862291d701a46b1216e1a8",
+  "corpus_sha256": "a87b7a71dc90e8ccb36dd0bff9b3be213543b4ccdd31aaa34312b821edefb256",
+  "reference_sha256": "44e009fcef37fe6609c0c4ba59715b3285cfef62c79742f20c679cc5f856f000",
+  "candidate_sha256": "987a648b547ff78c681a74ef43ae92501f1c7cf936095a23e6a34519248e6e20"
+}

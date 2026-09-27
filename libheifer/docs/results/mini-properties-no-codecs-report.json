@@ -1,0 +1,12 @@
+{
+  "scope": "Independent compact-container property ordering and HDR metadata comparisons.",
+  "client_sanitizers": false,
+  "leak_check": false,
+  "cases": 1990,
+  "mismatches": 0,
+  "corpus_sha256": "bd997b836f39d906120943daab0e9f3a6cade3e6d2268dced78c52a1c819565c",
+  "client_sha256": "af9a34d951270fb8aa152148e78f5569033122560d77761cd54c1303809b8b91",
+  "reference_sha256": "5cc5713a0503098f20f8a3631e370d43256ebdca0a3209e97d541e6ecf1cd917",
+  "candidate_sha256": "9803fb73149f358c7b882ab17e821434744698f495dc513d85ca2aa1ff2ee1c6",
+  "examples": []
+}

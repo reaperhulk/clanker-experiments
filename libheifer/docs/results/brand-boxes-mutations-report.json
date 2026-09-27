@@ -1,0 +1,36 @@
+{
+  "scope": "3 deliberate defects; not comprehensive mutation coverage",
+  "mutations": [
+    {
+      "mutation": "brand_box_truncation",
+      "suite": "brand_boxes",
+      "source": "src/box_probe.rs",
+      "before": "matches!(read_box(&mut r, 0), Err((Failure::End, _)))",
+      "after": "matches!(read_box(&mut r, 0), Err((Failure::Other, _)))",
+      "candidate_sha256": "313f7f32d84d363880c3ee0361c5a4de0646f05bc77c6db5f9bd286e8457c74b",
+      "mismatches": 64902,
+      "detected": true
+    },
+    {
+      "mutation": "brand_optional_child",
+      "suite": "brand_boxes",
+      "source": "src/box_probe.rs",
+      "before": "if let Err((error, false)) = read_box(r, level)",
+      "after": "if let Err((error, _)) = read_box(r, level)",
+      "candidate_sha256": "cb40a536445bb35286cc66c2234b36db84d0820eab6269a283510b2f77ab9b29",
+      "mismatches": 1090,
+      "detected": true
+    },
+    {
+      "mutation": "brand_parent_boundary",
+      "suite": "brand_boxes",
+      "source": "src/box_probe.rs",
+      "before": "if end > r.input.len() as u64",
+      "after": "if end > r.end as u64",
+      "candidate_sha256": "07d2d7199f05ba9139c8731efe08a55e0f52f81c31a2d65311b79f68da5cf0ae",
+      "mismatches": 9,
+      "detected": true
+    }
+  ],
+  "all_detected": true
+}

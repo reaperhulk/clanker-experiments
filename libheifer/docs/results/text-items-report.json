@@ -1,0 +1,17 @@
+{
+  "scope": "Original-header generic item creation, queries, payloads, references, languages and reloads.",
+  "cases": 2840,
+  "mismatches": 0,
+  "full_payload_bytes_equal": true,
+  "payload_sha256": {
+    "reference": "4e4976cdaad546af32a2e4922d75d943322511b0b46bcf0a5a90c2eafc5c6de3",
+    "candidate": "4e4976cdaad546af32a2e4922d75d943322511b0b46bcf0a5a90c2eafc5c6de3"
+  },
+  "client_sanitizers": false,
+  "leak_check": false,
+  "client_sha256": "f4b0ec55f18ddd66c59ade86e7f6b127e48731c1c3907e6bc9ae5820d4a4ff2a",
+  "corpus_sha256": "6242271c4874f646ad1510ae4fc8c3874beb9792a2e6e4f37a3e14cca92f852d",
+  "differences": [],
+  "reference_sha256": "5d70927cded8be6d1b4da912971aed75d426ba079c84d0b8462785ec5b9c92f7",
+  "candidate_sha256": "6a58e6b4d5ac7d1a6bb51d12ae4889563635a347d1ef6844d091b5ee09400eda"
+}

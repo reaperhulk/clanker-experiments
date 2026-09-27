@@ -1,0 +1,12 @@
+{
+  "scope": "Original-header entity groups, filters, ordering, parser errors, resource limits, caller-owned arrays and reload/free lifetimes.",
+  "cases": 1196,
+  "mismatches": 0,
+  "client_sanitizers": false,
+  "leak_check": false,
+  "client_sha256": "b8e8de9d55ed282aba62f820a61696684280b7b5415bd100b756e88d666b9270",
+  "corpus_sha256": "72b6bcb1a1e865ef9f135b58b57d8b663c73f4a7ea1baa872bb0bf426350b84f",
+  "differences": [],
+  "reference_sha256": "5d70927cded8be6d1b4da912971aed75d426ba079c84d0b8462785ec5b9c92f7",
+  "candidate_sha256": "8ce5deee859836792009e44acc8a6c226be1a15a2470eb63b523281d760a369d"
+}

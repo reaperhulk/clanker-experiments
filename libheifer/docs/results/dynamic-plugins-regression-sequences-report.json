@@ -1,0 +1,15 @@
+{
+  "scope": "Original-header sequence track ownership, options, references, metadata samples, timing and all defined serialized bytes (two indeterminate urim bytes excluded).",
+  "cases": 892,
+  "mismatches": 0,
+  "client_sanitizers": false,
+  "leak_check": false,
+  "undefined_oracle_fields": [
+    "Box_URIMetaSampleEntry::data_reference_index is uninitialized upstream; two bytes per urim entry are explicitly excluded, never counted as parity evidence."
+  ],
+  "client_sha256": "5bc27e9fcd8c940ee7a5e1c06ab9802fcc650d512d92ca3fe432f48d1c320c75",
+  "corpus_sha256": "0c9cee59dad1fe4547a14fd2a08c7eaf58e7101d64cddf7e818e77400652ab53",
+  "differences": [],
+  "reference_sha256": "5cc5713a0503098f20f8a3631e370d43256ebdca0a3209e97d541e6ecf1cd917",
+  "candidate_sha256": "5672d128b1ef46b48eb70ca6dfa7fac93f4996160d9627684798590847621325"
+}
