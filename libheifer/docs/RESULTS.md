@@ -2525,5 +2525,15 @@ libheif's `ifstream` shares only read and write access, so the delete fails
 and the reopen succeeds. `heif_context_read_from_file` now opens with that
 share mode on Windows (`OpenOptionsExt::share_mode`), and the cases match.
 
-The codec-specific references (JPEG, AV1, JPEG 2000, AVC, VVC, encoders)
+A second job (`Independent C clients (Windows codecs)`) builds a MinGW
+libheif oracle with libjpeg-turbo and dav1d. On head `ddb73b9` (run
+`36280284415`) all eight suites match with no mismatches: the four JPEG
+suites (`test_jpeg` 11,225 cases, `test_jpeg_errors` 24,108,
+`test_jpeg_limits` 2,297, `test_jpeg_encoding` 200) and the four dav1d AV1
+decoding suites (`test_av1` 1,400, `test_av1_errors` 540, `test_av1_limits`
+3,089, `test_mini_reader` 4,655). MinGW ships no sanitizer runtimes, so
+`test_encoding`'s safety probe runs uninstrumented there.
+
+The rav1e encoding suites (`plugin_encoding`, `mini_encoding`,
+`av1_encoding`) and the JPEG 2000, AVC, VVC and other encoder references
 are not yet run on Windows.
