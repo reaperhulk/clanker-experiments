@@ -6,6 +6,7 @@ development differential gate. The mutation suite runs separately in shards
 (tools/test_mutations.py --shard) and the strict completion gate stays last.
 """
 import argparse
+import collections
 import shlex
 import subprocess
 import sys
@@ -537,14 +538,24 @@ def main():
     for command in commands:
         print(f"::group::{command}", flush=True)
         start = time.monotonic()
-        code = subprocess.run(shlex.split(command)).returncode
+        # Stream the output and keep its tail, repeated below for failed
+        # commands so it survives log viewers that show only a run's end.
+        tail = collections.deque(maxlen=60)
+        with subprocess.Popen(shlex.split(command), stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                              text=True, errors="replace") as process:
+            for line in process.stdout:
+                sys.stdout.write(line)
+                tail.append(line if len(line) <= 2000 else line[:2000] + " ...\n")
+        code = process.returncode
         print(f"::endgroup::\n{'FAILED' if code else 'ok'} ({time.monotonic() - start:.0f}s): {command}", flush=True)
         if code:
-            failures.append(command)
+            failures.append((command, "".join(tail)))
             if not args.keep_going:
                 break
     if failures:
-        print("Failed:\n" + "\n".join(failures), file=sys.stderr)
+        for command, output in failures:
+            print(f"--- tail of failed {command}\n{output}", flush=True)
+        print("Failed:\n" + "\n".join(command for command, _ in failures), file=sys.stderr)
         raise SystemExit(1)
 
 
