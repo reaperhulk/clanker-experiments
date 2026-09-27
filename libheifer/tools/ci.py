@@ -48,6 +48,10 @@ BUILDS = {
         "cargo build --locked --release -p libheifer-capi",
         "ln -sf libheifer.dylib target/release/libheifer.so",
     ],
+    "macos-media": [
+        "cargo build --locked --release -p libheifer-capi",
+        "ln -sf libheifer.dylib target/release/libheifer.so",
+    ],
 }
 
 SUITES = {
@@ -474,6 +478,34 @@ SUITES = {
         'tools/test_plugin_encoding.py --reference-build .build/reference-av1',
         'tools/test_mini_encoding.py --reference-build .build/reference-av1',
         'tools/test_av1_encoding.py --reference-build .build/reference-av1',
+    ],
+    # JPEG 2000/HTJ2K (OpenJPEG, OpenJPH), AVC (OpenH264) and VVC (vvdec,
+    # vvenc) suites on macOS.
+    'macos-media': [
+        'tools/test_jpeg2000_tiles.py --reference-build .build/reference-jpeg2000',
+        'tools/test_jpeg2000_sampling.py --reference-build .build/reference-jpeg2000',
+        'tools/test_jpeg2000_properties.py --reference-build .build/reference-jpeg2000',
+        'tools/test_jpeg2000_property_limits.py --reference-build .build/reference-jpeg2000',
+        'tools/test_jpeg2000_debug.py --reference-build .build/reference-jpeg2000',
+        'tools/test_jpeg2000.py --reference-build .build/reference-jpeg2000',
+        'tools/test_jpeg2000_errors.py --reference-build .build/reference-jpeg2000',
+        'tools/test_jpeg2000_limits.py --reference-build .build/reference-jpeg2000',
+        'tools/test_jpeg2000_handles.py --reference-build .build/reference-jpeg2000',
+        'tools/test_htj2k.py --reference-build .build/reference-jpeg2000',
+        'tools/test_htj2k_errors.py --reference-build .build/reference-jpeg2000',
+        'tools/test_jpeg2000_encoding.py --reference-build .build/reference-jpeg2000',
+        'tools/test_htj2k_encoding.py --reference-build .build/reference-jpeg2000',
+        'tools/test_avc.py --reference-build .build/reference-avc',
+        'tools/test_avc_errors.py --reference-build .build/reference-avc',
+        'tools/test_avc_plugins.py --reference-build .build/reference-avc',
+        'tools/test_avc_limits.py --reference-build .build/reference-avc',
+        'tools/test_avc_sequences.py --reference-build .build/reference-avc',
+        'tools/test_plugin_sequences.py --reference-build .build/reference-avc',
+        'tools/test_vvc.py --reference-build .build/reference-vvc',
+        'tools/test_vvc_sequences.py --reference-build .build/reference-vvc',
+        'tools/test_vvc_encoding.py --reference-build .build/reference-vvc',
+        'tools/test_vvc_builtin_encoding.py --reference-build .build/reference-vvc',
+        'tools/test_vvc_encoder_quality.py --reference-build .build/reference-vvc',
     ],
     # Codec suites on Windows, one reference per group (each libheif.dll has
     # the same name, so PATH selects one oracle per run).

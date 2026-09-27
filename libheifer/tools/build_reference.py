@@ -320,7 +320,7 @@ def main():
             raise SystemExit("Wrong OpenH264 reference revision")
         run("make", "-C", decoder, "-j", a.j, f"USE_ASM={'Yes' if a.avc_asm else 'No'}", "BUILDTYPE=Release", f"PREFIX={install}", "install-shared")
         flags += ["-DWITH_OpenH264_DECODER=ON", f"-DOpenH264_INCLUDE_DIR={install / 'include'}",
-                  f"-DOpenH264_LIBRARY={install / 'lib/libopenh264.so'}"]
+                  f"-DOpenH264_LIBRARY={link_library(install, 'openh264')}"]
     if a.jpeg:
         decoder = build.parent / "libjpeg-turbo-source"
         install = build.parent / "libjpeg-turbo-install"
